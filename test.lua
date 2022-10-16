@@ -28,7 +28,6 @@ while true do
 			stars[k].y = 0
 		end
 	end
-	flip()
-	sleep(1/50 - (time() - cur))
+	flip(1/50)
 	frames = frames + 1
 end
