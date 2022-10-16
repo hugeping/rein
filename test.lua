@@ -20,7 +20,9 @@ while true do
 	local cur = time()
 	fps = math.floor(frames / (cur - start))
 	clear(0)
-	printf(0, 0, "FPS: %d", fps)
+	local mx, my, mb = mouse()
+	printf(0, 0, "FPS: %d\nMouse: %d, %d %s",
+		fps, mx, my, mb.left and 'left' or '')
 	for k, v in ipairs(stars) do
 		pixel(v.x, v.y, v.c)
 		stars[k].y = v.y + v.s
