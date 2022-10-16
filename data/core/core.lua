@@ -62,24 +62,25 @@ function core.init()
 		core.err("Can't load font %q", DATADIR..'/'..conf.font)
 		os.exit(1)
 	end
+	local f, e
 	for k=2,#ARGS do
 		local v = ARGS[k]
-		local f, e = loadfile(v)
+		f, e = loadfile(v, "t", env)
 		if not f then
 			core.err(e)
 			return
-		else
-			core.fn = f
 		end
 		break
 	end
 
-	if not core.fn then
+	if not f then
 		core.err("No lua file")
 		return
 	end
-	setfenv(core.fn, env)
-	core.fn = coroutine.create(core.fn)
+	if setefenv then
+		setfenv(f, env)
+	end
+	core.fn = coroutine.create(f)
 	-- system.window_mode 'fullscreen'
 	-- system.window_mode 'normal'
 end
