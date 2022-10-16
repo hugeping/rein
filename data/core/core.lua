@@ -78,7 +78,11 @@ function core.init()
 end
 
 function env.print(text, x, y, col)
-	core.print(text, x, y, col)
+	x = x or 0
+	y = y or 0
+	core.print(tostring(text),
+		x * conf.font_sz * SCALE,
+		y * conf.font_sz * SCALE, col)
 end
 
 function env.screen(w, h)
@@ -93,37 +97,58 @@ function env.flip()
 	coroutine.yield()
 end
 
+function env.sleep(to)
+	local start = system.time()
+	while true do
+		coroutine.yield()
+		local pass = system.time() - start
+		local left = to - pass
+		if left <= 0 then
+			break
+		end
+		core.render(true)
+		system.wait(left)
+	end
+end
+
 local last_render = 0
+
+function core.render(force)
+	if not env.win then
+		return
+	end
+	local start = system.time()
+	if not force and start - last_render < fps then
+		return
+	end
+	local ww, hh = gfx.win():size()
+	local w, h = env.win:size()
+	local xs, ys = ww/w, hh/h
+	local scale = (xs <= ys) and xs or ys
+	local dw = math.floor(w * scale)
+	local dh = math.floor(h * scale)
+	env.win:stretch(gfx.win(),
+		math.floor((ww - dw)/2),
+		math.floor((hh - dh)/2),
+		dw, dh)
+	gfx.flip()
+	last_render = start
+end
 
 function core.run()
 	while true do
 		local e, v, a, b
 		local start = system.time()
-		if system.time() - last_render > fps then
-			gfx.flip()
-			last_render = system.time()
-		end
 		e, v, a, b = system.poll()
 		if e == 'quit' then
 			break
 		end
+		core.render()
 		if not core.err() and coroutine.status(core.fn) ~= 'dead' then
 			local r, e = coroutine.resume(core.fn)
 			if not r then
 				core.err(e)
 			end
-		end
-		if env.win then
-			local ww, hh = gfx.win():size()
-			local w, h = env.win:size()
-			local xs, ys = ww/w, hh/h
-			local scale = (xs <= ys) and xs or ys
-			local dw = math.floor(w * scale)
-			local dh = math.floor(h * scale)
-			env.win:stretch(gfx.win(), 
-				math.floor((ww - dw)/2),
-				math.floor((hh - dh)/2),
-				dw, dh)
 		end
 		local elapsed = system.time() - start
 		system.wait(math.max(0, fps - elapsed))
