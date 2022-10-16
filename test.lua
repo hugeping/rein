@@ -28,6 +28,6 @@ while true do
 		end
 	end
 	flip()
-	sleep(1/50 - (time() - cur))
+	sleep(1/60 - (time() - cur))
 	frames = frames + 1
 end

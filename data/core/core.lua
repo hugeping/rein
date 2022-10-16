@@ -160,6 +160,7 @@ function env.clear(x, y, w, h, col)
 end
 
 function env.flip()
+	core.render(true)
 	coroutine.yield()
 end
 
@@ -175,13 +176,13 @@ end
 function env.sleep(to)
 	local start = system.time()
 	while true do
---		coroutine.yield()
+		coroutine.yield()
 		local pass = system.time() - start
 		local left = to - pass
 		if left <= 0 then
 			break
 		end
-		core.render(true)
+--		core.render(true)
 		system.wait(left)
 	end
 end
@@ -213,20 +214,20 @@ end
 function core.run()
 	while true do
 		local e, v, a, b
-		local start = system.time()
+		-- local start = system.time()
 		e, v, a, b = system.poll()
 		if e == 'quit' then
 			break
 		end
-		core.render()
+		-- core.render()
 		if not core.err() and coroutine.status(core.fn) ~= 'dead' then
 			local r, e = coroutine.resume(core.fn)
 			if not r then
 				core.err(e)
 			end
 		end
-		local elapsed = system.time() - start
-		system.wait(0) -- math.max(0, fps - elapsed))
+		-- local elapsed = system.time() - start
+		-- system.wait(0) -- math.max(0, fps - elapsed))
 	end
 end
 
