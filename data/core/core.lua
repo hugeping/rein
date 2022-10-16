@@ -41,6 +41,12 @@ function core.print(text, x, y, col)
 			x = 0
 			y = y + hh
 		end
+		if y > h - hh then -- vertical overflow
+			local off = math.floor(y - (h - hh))
+			env.win:copy(0, off, w, h - off, env.win, 0, 0) -- scroll
+			env.win:clear(0, h - off, w, off, conf.bg)
+			y = h - hh
+		end
 		p:blend(env.win, x, y)
 		x = x + ww
 		text = text:sub(s + 1)
@@ -50,7 +56,8 @@ end
 function core.init()
 	env.win = gfx.new(conf.w, conf.h)
 	env.win:fill(conf.bg)
-	core.font = gfx.font(DATADIR..'/'..conf.font, conf.font_sz * SCALE)
+	core.font = gfx.font(DATADIR..'/'..conf.font,
+		math.floor(conf.font_sz))
 	if not core.font then
 		core.err("Can't load font %q", DATADIR..'/'..conf.font)
 		os.exit(1)
@@ -81,8 +88,8 @@ function env.print(text, x, y, col)
 	x = x or 0
 	y = y or 0
 	core.print(tostring(text),
-		x * conf.font_sz * SCALE,
-		y * conf.font_sz * SCALE, col)
+		x * conf.font_sz,
+		y * conf.font_sz, col)
 end
 
 function env.screen(w, h)
