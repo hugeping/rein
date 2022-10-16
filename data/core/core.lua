@@ -222,6 +222,9 @@ function core.render(force)
 	local w, h = core.win:size()
 	local xs, ys = ww/w, hh/h
 	local scale = (xs <= ys) and xs or ys
+	if scale > 1.0 then
+		scale = math.floor(scale)
+	end
 	local dw = math.floor(w * scale)
 	local dh = math.floor(h * scale)
 	core.view_w, core.view_h = dw, dh
