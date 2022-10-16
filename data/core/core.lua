@@ -53,13 +53,15 @@ function core.print(text, x, y, col)
 	if not env.win then
 		return
 	end
+	text = text:gsub("\r", "")
 	x = x or 0
 	y = y or 0
 	local w, h = env.win:size()
 	while text ~= '' do
-		local s, e = text:find(" ", 1, true)
+		local s, e = text:find("[ \n]", 1)
 		if not s then s = text:len() end
-		local word = text:sub(1, s)
+		local nl = text:sub(s, s) == '\n'
+		local word = text:sub(1, s):gsub("\n$", "")
 		local p = core.font:text(word, col or conf.fg)
 		local ww, hh = p:size()
 		if x + ww >= w then
@@ -75,6 +77,10 @@ function core.print(text, x, y, col)
 		p:blend(env.win, x, y)
 		x = x + ww
 		text = text:sub(s + 1)
+		if nl then
+			x = 0
+			y = y + hh
+		end
 	end
 end
 
