@@ -1,6 +1,26 @@
 local fps = 1/30;
 
-local core = {}
+local core = {
+	pal = {
+		{ 0, 0, 0 },
+		{ 0x1D, 0x2B, 0x53 },
+		{ 0x7E, 0x25, 0x53 },
+		{ 0x00, 0x87, 0x51 },
+		{ 0xAB, 0x52, 0x36 },
+		{ 0x5F, 0x57, 0x4F },
+		{ 0xC2, 0xC3, 0xC7 },
+		{ 0xFF, 0xF1, 0xE8 },
+		{ 0xFF, 0x00, 0x4D },
+		{ 0xFF, 0xA3, 0x00 },
+		{ 0xFF, 0xEC, 0x27 },
+		{ 0x00, 0xE4, 0x36 },
+		{ 0x29, 0xAD, 0xFF },
+		{ 0x83, 0x76, 0x9C },
+		{ 0xFF, 0x77, 0xA8 },
+		{ 0xFF, 0xCC, 0xAA },
+	}
+}
+
 local conf = {
 	w = 512;
 	h = 512;
@@ -97,12 +117,43 @@ function env.screen(w, h)
 	env.win = gfx.new(w, h)
 end
 
-function env.fill(...)
-	env.win:fill(...)
+function env.fg(col)
+	conf.fg = core.pal[col] or conf.fg
+end
+
+function env.bg(col)
+	conf.bg = core.pal[col] or conf.bg
+end
+
+function env.fill(x, y, w, h, col)
+	if not y then
+		col = core.pal[x] or conf.bg
+		return env.win:fill(col)
+	end
+	col = core.pal[col] or conf.bg
+	return env.win:fill(x, y, w, h, col)
+end
+
+function env.clear(x, y, w, h, col)
+	if not y then
+		col = core.pal[x] or conf.bg
+		return env.win:clear(col)
+	end
+	col = core.pal[col] or conf.bg
+	return env.win:clear(x, y, w, h, col)
 end
 
 function env.flip()
 	coroutine.yield()
+end
+
+function env.pal(t)
+	if not t then
+		return core.pal
+	end
+	if type(t) == 'table' then
+		core.pal = t
+	end
 end
 
 function env.sleep(to)
