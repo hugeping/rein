@@ -1,5 +1,10 @@
 local fps = 1/30;
 
+math.round = function(num, n)
+	local m = 10 ^ (n or 0)
+	return math.floor(num * m + 0.5) / m
+end
+
 local core = {
 	pal = {
 		[0] = { 0, 0, 0 },
@@ -18,7 +23,10 @@ local core = {
 		[13] = { 0x83, 0x76, 0x9C },
 		[14] = { 0xFF, 0x77, 0xA8 },
 		[15] = { 0xFF, 0xCC, 0xAA },
-	}
+	};
+	view_x = 0;
+	view_y = 0;
+	mouse_btn = {};
 }
 
 local conf = {
@@ -50,13 +58,13 @@ function core.err(fmt, ...)
 end
 
 function core.print(text, x, y, col)
-	if not env.win then
+	if not core.win then
 		return
 	end
 	text = text:gsub("\r", "")
 	x = x or 0
 	y = y or 0
-	local w, h = env.win:size()
+	local w, h = core.win:size()
 	while text ~= '' do
 		local s, e = text:find("[ \n]", 1)
 		if not s then s = text:len() end
@@ -70,11 +78,11 @@ function core.print(text, x, y, col)
 		end
 		if y > h - hh then -- vertical overflow
 			local off = math.floor(y - (h - hh))
-			env.win:copy(0, off, w, h - off, env.win, 0, 0) -- scroll
-			env.win:clear(0, h - off, w, off, conf.bg)
+			core.win:copy(0, off, w, h - off, env.win, 0, 0) -- scroll
+			core.win:clear(0, h - off, w, off, conf.bg)
 			y = h - hh
 		end
-		p:blend(env.win, x, y)
+		p:blend(core.win, x, y)
 		x = x + ww
 		text = text:sub(s + 1)
 		if nl then
@@ -85,8 +93,8 @@ function core.print(text, x, y, col)
 end
 
 function core.init()
-	env.win = gfx.new(conf.w, conf.h)
-	env.win:fill(conf.bg)
+	core.win = gfx.new(conf.w, conf.h)
+	core.win:fill(conf.bg)
 	core.font = gfx.font(DATADIR..'/'..conf.font,
 		math.floor(conf.font_sz))
 	if not core.font then
@@ -131,7 +139,7 @@ function env.time()
 end
 
 function env.screen(w, h)
-	env.win = gfx.new(w, h)
+	core.win = gfx.new(w, h)
 end
 
 function env.fg(col)
@@ -144,25 +152,25 @@ end
 
 function env.pixel(x, y, col)
 	col = core.pal[col] or conf.fg
-	return env.win:pixel(x, y, col)
+	return core.win:pixel(x, y, col)
 end
 
 function env.fill(x, y, w, h, col)
 	if not y then
 		col = core.pal[x] or conf.bg
-		return env.win:fill(col)
+		return core.win:fill(col)
 	end
 	col = core.pal[col] or conf.bg
-	return env.win:fill(x, y, w, h, col)
+	return core.win:fill(x, y, w, h, col)
 end
 
 function env.clear(x, y, w, h, col)
 	if not y then
 		col = core.pal[x] or conf.bg
-		return env.win:clear(col)
+		return core.win:clear(col)
 	end
 	col = core.pal[col] or conf.bg
-	return env.win:clear(x, y, w, h, col)
+	return core.win:clear(x, y, w, h, col)
 end
 
 local last_flip = 0
@@ -171,6 +179,10 @@ function env.flip(fps)
 	core.render(true)
 	env.sleep((fps or conf.fps) - (env.time() - last_flip))
 	last_flip = env.time()
+end
+
+function env.mouse()
+	return core.mouse_x or 0, core.mouse_y or 0, core.mouse_btn
 end
 
 function env.pal(t)
@@ -199,7 +211,7 @@ end
 local last_render = 0
 
 function core.render(force)
-	if not env.win then
+	if not core.win then
 		return
 	end
 	local start = system.time()
@@ -207,17 +219,30 @@ function core.render(force)
 		return
 	end
 	local ww, hh = gfx.win():size()
-	local w, h = env.win:size()
+	local w, h = core.win:size()
 	local xs, ys = ww/w, hh/h
 	local scale = (xs <= ys) and xs or ys
 	local dw = math.floor(w * scale)
 	local dh = math.floor(h * scale)
-	env.win:stretch(gfx.win(),
-		math.floor((ww - dw)/2),
-		math.floor((hh - dh)/2),
-		dw, dh)
+	core.view_w, core.view_h = dw, dh
+	core.view_x, core.view_y = math.floor((ww - dw)/2), math.floor((hh - dh)/2)
+	core.win:stretch(gfx.win(),
+		core.view_x, core.view_y,
+		core.view_w, core.view_h)
 	gfx.flip()
 	last_render = start
+end
+
+function core.abs2rel(x, y)
+	local w, h = core.win:size()
+	if not core.view_w or
+		core.view_w == 0 or
+		core.view_h == 0 then
+		return 0, 0
+	end
+	x = math.round((x - core.view_x) * w / core.view_w)
+	y = math.round((y - core.view_y) * h / core.view_h)
+	return x, y
 end
 
 function core.run()
@@ -227,6 +252,11 @@ function core.run()
 		e, v, a, b = system.poll()
 		if e == 'quit' then
 			break
+		elseif e == 'mousemotion' then
+			core.mouse_x, core.mouse_y = core.abs2rel(v, a)
+		elseif e == 'mousedown' or e == 'mouseup' then
+			core.mouse_btn[v] = (e == 'mousedown')
+			core.mouse_x, core.mouse_y = core.abs2rel(a, b)
 		end
 		-- core.render()
 		if not core.err() and coroutine.status(core.fn) ~= 'dead' then
