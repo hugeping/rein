@@ -159,9 +159,12 @@ function env.clear(x, y, w, h, col)
 	return env.win:clear(x, y, w, h, col)
 end
 
-function env.flip()
+local last_flip = 0
+
+function env.flip(fps)
 	core.render(true)
-	coroutine.yield()
+	env.sleep((fps or conf.fps) - (env.time() - last_flip))
+	last_flip = env.time()
 end
 
 function env.pal(t)
