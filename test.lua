@@ -15,6 +15,7 @@ end
 local fps = 0
 local start = time()
 local frames = 0
+
 while true do
 	local cur = time()
 	fps = math.floor(frames / (cur - start))
@@ -28,6 +29,6 @@ while true do
 		end
 	end
 	flip()
-	sleep(1/60 - (time() - cur))
+	sleep(1/50 - (time() - cur))
 	frames = frames + 1
 end

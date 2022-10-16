@@ -225,6 +225,8 @@ function core.run()
 			if not r then
 				core.err(e)
 			end
+		else
+			core.render()
 		end
 		-- local elapsed = system.time() - start
 		-- system.wait(0) -- math.max(0, fps - elapsed))
