@@ -374,6 +374,11 @@ img_pixels_stretch(img_t *src, img_t *dst, int xoff, int yoff, int ww, int hh)
 	int w, h, xx, yy, dx, dy;
 	unsigned char *ptr, *p;
 	unsigned char *optr = NULL;
+	ptr = src->ptr;
+
+	if (xoff < 0 || yoff < 0)
+		return;
+
 	if (hh < 0 || ww > (dst->w - xoff))
 		ww = dst->w - xoff;
 	if (hh < 0 || hh > (dst->h - yoff))
@@ -381,7 +386,7 @@ img_pixels_stretch(img_t *src, img_t *dst, int xoff, int yoff, int ww, int hh)
 	w = src->w;
 	h = src->h;
 
-	ptr = src->ptr;
+
 	p = dst->ptr + (yoff*dst->w + xoff)*4;
 
 	dy = 0;
