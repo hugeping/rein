@@ -145,13 +145,6 @@ GetScale(void)
 
 #ifdef _WIN32
 static HINSTANCE user32_lib;
-static HINSTANCE tolk;
-static void (*Tolk_Load)() = NULL;
-static void (*Tolk_Unload)() = NULL;
-static void (*Tolk_TrySAPI)(int trySAPI) = NULL;
-static int (*Tolk_Output)(const wchar_t *str, int interrupt) = NULL;
-static wchar_t *(*Tolk_DetectScreenReader)() = NULL;
-static int Tolk_IsReader = 0;
 #endif
 
 int
@@ -159,27 +152,10 @@ PlatformInit(void)
 {
 #ifdef _WIN32
 	int (*SetProcessDPIAware)();
-	tolk = LoadLibrary("Tolk.dll");
-	if (tolk) {
-		Tolk_Load = (void*) GetProcAddress(tolk, "Tolk_Load");
-		Tolk_Unload = (void*) GetProcAddress(tolk, "Tolk_Unlad");
-		Tolk_TrySAPI = (void*) GetProcAddress(tolk, "Tolk_TrySAPI");
-		Tolk_Output = (void*) GetProcAddress(tolk, "Tolk_Output");
-		Tolk_DetectScreenReader = (void*) GetProcAddress(tolk, "Tolk_DetectScreenReader");
-		if (Tolk_TrySAPI)
-			Tolk_TrySAPI(0);
-		if (Tolk_Load)
-			Tolk_Load();
-		if (Tolk_DetectScreenReader)
-			Tolk_IsReader = !!Tolk_DetectScreenReader();
-		if (!Tolk_IsReader && Tolk_TrySAPI)
-			Tolk_TrySAPI(1);
-	}
 	user32_lib = LoadLibrary("user32.dll");
 	SetProcessDPIAware = (void*) GetProcAddress(user32_lib, "SetProcessDPIAware");
 	if (SetProcessDPIAware)
 		SetProcessDPIAware();
-	LoadLibrary("Tolk.dll");
 #endif
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
 		return -1;
@@ -194,11 +170,6 @@ PlatformDone(void)
 #ifdef _WIN32
 	if (user32_lib)
 		FreeLibrary(user32_lib);
-	if (tolk) {
-		if (Tolk_Unload)
-			Tolk_Unload();
-		FreeLibrary(tolk);
-	}
 #endif
 	if (winbuff)
 		SDL_FreeSurface(winbuff);
@@ -462,73 +433,3 @@ top:
 	}
 	return 0;
 }
-
-#ifdef __ANDROID__
-void Speak(const char *text)
-{
-	JNIEnv *env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
-	jclass cl = (*env)->GetObjectClass(env, activity);
-	jmethodID mid = (*env)->GetStaticMethodID(env, cl, "speak", "(Ljava/lang/String;)V");
-	jstring jtxt = (*env)->NewStringUTF(env, text);
-	(*env)->CallStaticVoidMethod(env, cl, mid, jtxt);
-	(*env)->DeleteLocalRef(env, jtxt);
-	(*env)->DeleteLocalRef(env, cl);
-	(*env)->DeleteLocalRef(env, activity);
-}
-
-int isSpeak()
-{
-	jboolean retval;
-	JNIEnv *env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
-	jclass cl = (*env)->GetObjectClass(env, activity);
-	jmethodID mid = (*env)->GetStaticMethodID(env, cl, "isSpeak", "()Z");
-	retval = (*env)->CallStaticBooleanMethod(env, cl, mid);
-	(*env)->DeleteLocalRef(env, cl);
-	(*env)->DeleteLocalRef(env, activity);
-	return (retval == JNI_TRUE) ? 1 : 0;
-}
-#else
-void Speak(const char *text)
-{
-#ifdef _WIN32
-	wchar_t* wstr;
-	int len;
-	if (!Tolk_Output)
-		return;
-	len = MultiByteToWideChar(CP_UTF8, 0, text, -1, NULL ,0);
-	if (len <= 0)
-		return;
-	wstr = malloc(len * sizeof(wchar_t));
-	if (!wstr)
-		return;
-	MultiByteToWideChar(CP_UTF8, 0, text, -1, wstr, len);
-	Tolk_Output(wstr, 1);
-	free(wstr);
-#endif
-#if defined(__linux__)
-	pid_t pid;
-	pid = fork();
-	if (pid != 0)
-		return;
-	if (*text)
-		execlp("spd-say", "spd-say", "-C", "--wait", text, NULL);
-	else
-		execlp("spd-say", "spd-say", "-C", NULL);
-	exit(0);
-#endif
-}
-int isSpeak()
-{
-#ifdef _WIN32
-	if (Tolk_IsReader)
-		return 1;
-#endif
-#if defined(__linux)
-/*	if (getenv("ACCESSIBILITY_ENABLED"))
-		return 1; */
-#endif
-	return 0;
-}
-#endif
