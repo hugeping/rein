@@ -1,6 +1,17 @@
 local fps = 1/30;
 
 local core = {}
+local conf = {
+	w = 512;
+	h = 512;
+	fg = { 0, 0, 0 };
+	bg = { 0xff, 0xff, 0xe8 };
+	font = "fonts/iosevka-regular.ttf",
+	font_sz = 16,
+}
+
+local env = {
+}
 
 function core.err(fmt, ...)
 	if not fmt then
@@ -8,38 +19,70 @@ function core.err(fmt, ...)
 	end
 	local t = string.format(fmt, ...)
 	core.err_msg = (core.err_msg or '') .. t
+	system.log(t)
+	core.print(t)
 	return
 end
 
+function core.print(text, x, y, col)
+	if not env.win then
+		return
+	end
+	x = x or 0
+	y = y or 0
+	local w, h = env.win:size()
+	while text ~= '' do
+		local s, e = text:find(" ", 1, true)
+		if not s then s = text:len() end
+		local word = text:sub(1, s)
+		local p = core.font:text(word, col or conf.fg)
+		local ww, hh = p:size()
+		if x + ww >= w then
+			x = 0
+			y = y + hh
+		end
+		p:blend(env.win, x, y)
+		x = x + ww
+		text = text:sub(s + 1)
+	end
+end
+
 function core.init()
+	env.win = gfx.new(conf.w, conf.h)
+	env.win:fill(conf.bg)
+	core.font = gfx.font(DATADIR..'/'..conf.font, conf.font_sz * SCALE)
+	if not core.font then
+		core.err("Can't load font %q", DATADIR..'/'..conf.font)
+		os.exit(1)
+	end
 	for k=2,#ARGS do
 		local v = ARGS[k]
 		local f, e = loadfile(v)
 		if not f then
 			core.err(e)
+			return
 		else
 			core.fn = f
 		end
 		break
 	end
-	if core.err() then
-		print(core.err())
-		os.exit(1)
-	end
+
 	if not core.fn then
-		print("No lua file")
-		os.exit(1)
+		core.err("No lua file")
+		return
 	end
+	setfenv(core.fn, env)
+	core.fn = coroutine.create(core.fn)
 	-- system.window_mode 'fullscreen'
 	-- system.window_mode 'normal'
 end
 
-local env = {
-}
+function env.print(text, x, y, col)
+	core.print(text, x, y, col)
+end
 
 function env.screen(w, h)
 	env.win = gfx.new(w, h)
-	coroutine.yield()
 end
 
 function env.fill(...)
@@ -53,8 +96,6 @@ end
 local last_render = 0
 
 function core.run()
-	setfenv(core.fn, env)
-	core.fn = coroutine.create(core.fn)
 	while true do
 		local e, v, a, b
 		local start = system.time()
@@ -66,7 +107,12 @@ function core.run()
 		if e == 'quit' then
 			break
 		end
-		coroutine.resume(core.fn)
+		if not core.err() and coroutine.status(core.fn) ~= 'dead' then
+			local r, e = coroutine.resume(core.fn)
+			if not r then
+				core.err(e)
+			end
+		end
 		if env.win then
 			local ww, hh = gfx.win():size()
 			local w, h = env.win:size()
@@ -111,10 +157,10 @@ return core
 -- clear(x, t, w, h, color) -- like fill, but w/o alpha. fast
 -- clear(color)
 -- val(x, y) -- returns r, g, b, a
--- pixel(x, y, color) -- set pixel
+-- pixel(x, y, color) -- set/blend pixel
 -- copy(dst, x, y, w, h, tox, toy) -- dst is pixels
 -- copy(dst, tox, toy) -- dst is pixels
--- blend(x, y, color) -- blend pixel
+-- blend() -- as copy but with blending
 -- line(x1, y1, x2, y2, color)
 -- lineAA(x1, y1, x2, y2, color)
 -- fill_trinagle(x1, y1, x2, y2, x3, y3, color)
