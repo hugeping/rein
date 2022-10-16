@@ -175,7 +175,7 @@ end
 function env.sleep(to)
 	local start = system.time()
 	while true do
-		coroutine.yield()
+--		coroutine.yield()
 		local pass = system.time() - start
 		local left = to - pass
 		if left <= 0 then
