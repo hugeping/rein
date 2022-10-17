@@ -1,11 +1,16 @@
 typedef struct {
 	int w;
 	int h;
+	int clip_x1;
+	int clip_y1;
+	int clip_x2;
+	int clip_y2;
 	unsigned char *ptr;
 } img_t;
 
 extern img_t *img_new(int w, int h);
-
+extern void img_clip(img_t *src, int x1, int y1, int x2, int y2);
+extern void img_noclip(img_t *src);
 #define PXL_BLEND_COPY 1
 #define PXL_BLEND_BLEND 2
 

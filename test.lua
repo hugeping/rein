@@ -17,7 +17,6 @@ local fps = 0
 local start = time()
 local frames = 0
 local txt = ''
-
 while true do
 	local cur = time()
 	fps = math.floor(frames / (cur - start))
