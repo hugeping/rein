@@ -12,7 +12,44 @@ img_new(int w, int h)
 	img->w = w;
 	img->h = h;
 	img->ptr = (unsigned char *)(img + 1);
+	img_noclip(img);
 	return img;
+}
+
+void
+img_noclip(img_t *img)
+{
+	if (!img)
+		return;
+	img->clip_x1 = 0;
+	img->clip_y1 = 0;
+	img->clip_x2 = img->w;
+	img->clip_y2 = img->h;
+}
+
+void
+img_clip(img_t *img, int x1, int y1, int x2, int y2)
+{
+	if (!img)
+		return;
+	if (x1 > x2 || y1 > y2)
+		return;
+	x1 = (x1<0)?0:x1;
+	x1 = (x1>=img->w)?img->w:x1;
+
+	y1 = (y1<0)?0:y1;
+	y1 = (y1>=img->h)?img->h:y1;
+
+	x2 = (x2<0)?0:x2;
+	x2 = (x2>=img->w)?img->w:x2;
+
+	y2 = (y2<0)?0:y2;
+	y2 = (y2>=img->h)?img->h:y2;
+
+	img->clip_x1 = x1;
+	img->clip_y1 = y1;
+	img->clip_x2 = x2;
+	img->clip_y2 = y2;
 }
 
 typedef struct {
@@ -145,14 +182,15 @@ pixels_pixel(lua_State *L)
 
 	checkcolor(L, 4, &color);
 
-	if (x < 0 || y < 0)
-		return 0;
-
 	if (!hdr || hdr->type != PIXELS_MAGIC)
 		return 0;
 
-	if (x >= hdr->img.w || y >= hdr->img.h)
+	if (x < hdr->img.clip_x1 || y < hdr->img.clip_y1)
 		return 0;
+
+	if (x >= hdr->img.clip_x2 || y >= hdr->img.clip_y2)
+		return 0;
+
 	ptr = hdr->img.ptr;
 	ptr += ((y * hdr->img.w + x) << 2);
 	col[0] = color.r; col[1] = color.g; col[2] = color.b; col[3] = color.a;
@@ -177,6 +215,7 @@ pixels_new(lua_State *L, int w, int h)
 	hdr->img.h = h;
 	hdr->size = size;
 	hdr->img.ptr = (unsigned char*)(hdr + 1);
+	img_noclip(&hdr->img);
 	memset(hdr->img.ptr, 0, size);
 	luaL_getmetatable(L, "pixels metatable");
 	lua_setmetatable(L, -2);
@@ -430,35 +469,36 @@ img_pixels_blend(img_t *src, int x, int y, int w, int h,
 	if (!h)
 		h = src->h;
 
-	if (x < 0 || x + w > src->w)
+	if (x < 0 || x + w > src->w ||
+		y < 0 || y + h > src->h)
 		return 0;
 
-	if (y < 0 || y + h > src->h)
+	if (xx < dst->clip_x1) {
+		w += xx - dst->clip_x1;
+		x -= xx - dst->clip_x1;
+		xx = dst->clip_x1;
+	}
+
+	if (w <= 0 || xx >= dst->clip_x2)
 		return 0;
+
+	if (yy < dst->clip_y1) {
+		h += yy - dst->clip_y1;
+		y -= yy - dst->clip_y1;
+		yy = dst->clip_y1;
+	}
+
+	if (h <= 0 || yy >= dst->clip_y2)
+		return 0;
+
+	if (xx + w >= dst->clip_x2)
+		w = dst->clip_x2 - xx;
+
+	if (yy + h >= dst->clip_y2)
+		h = dst->clip_y2 - yy;
 
 	if (w <= 0 || h <= 0)
 		return 0;
-
-	if (xx < 0) {
-		w += xx;
-		x -= xx;
-		xx = 0;
-	}
-	if (yy < 0) {
-		h += yy;
-		y -= yy;
-		yy = 0;
-	}
-	if (w <= 0 || h <= 0)
-		return 0;
-
-	if (xx >= dst->w || yy >= dst->h)
-		return 0;
-
-	if (xx + w > dst->w)
-		w = dst->w - xx;
-	if (yy + h > dst->h)
-		h = dst->h - yy;
 
 	ptr1 = src->ptr;
 	ptr2 = dst->ptr;
@@ -1315,17 +1355,42 @@ pixels_stretch(lua_State *L)
 	dst = (struct lua_pixels*)lua_touserdata(L, 2);
 	if (!dst || dst->type != PIXELS_MAGIC)
 		return 0;
-	x = luaL_optnumber(L, 3, 0);
-	y = luaL_optnumber(L, 4, 0);
-	w = luaL_optnumber(L, 5, -1);
-	h = luaL_optnumber(L, 6, -1);
+	x = luaL_optinteger(L, 3, 0);
+	y = luaL_optinteger(L, 4, 0);
+	w = luaL_optinteger(L, 5, -1);
+	h = luaL_optinteger(L, 6, -1);
 
 	img_pixels_stretch(&src->img, &dst->img, x, y, w, h);
 	return 0;
 }
 
+static int
+pixels_clip(lua_State *L)
+{
+	int x1, y1, x2, y2;
+	struct lua_pixels *src;
+	src = (struct lua_pixels*)lua_touserdata(L, 1);
+	if (!src || src->type != PIXELS_MAGIC)
+		return 0;
+	x1 = luaL_optinteger(L, 2, -1);
+	if (x1 == -1) {
+		img_noclip(&src->img);
+		return 0;
+	}
+	y1 = luaL_checkinteger(L, 3);
+	x2 = luaL_checkinteger(L, 4);
+	y2 = luaL_checkinteger(L, 5);
+	if (x2 < 0)
+		x2 = src->img.w - x2;
+	if (y2 < 0)
+		y2 = src->img.h - y2;
+	img_clip(&src->img, x1, y1, x2, y2);
+	return 0;
+}
+
 static const luaL_Reg pixels_mt[] = {
 	{ "val", pixels_value },
+	{ "clip", pixels_clip },
 	{ "pixel", pixels_pixel },
 	{ "size", pixels_size },
 	{ "fill", pixels_fill },
