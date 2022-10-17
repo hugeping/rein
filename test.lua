@@ -22,7 +22,7 @@ while true do
 	fps = math.floor(frames / (cur - start))
 	clear(0)
 	local mx, my, mb = mouse()
-	printf(0, 0, "FPS: %d\nМышь: %d, %d %s",
+	printf(0, 0, "FPS:%d\nМышь:%d,%d %s",
 		fps, mx, my, mb.left and 'left' or '')
 	for k, v in ipairs(stars) do
 		pixel(v.x, v.y, v.c)

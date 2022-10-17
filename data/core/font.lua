@@ -85,9 +85,14 @@ function fn:size(t)
 end
 
 function fn:glyph(cp, color)
-	local col =  { color[1], color[2], color[3], color[4] or 0xff }
+	local col =  { color[1], color[2], color[3] }
 	local v = self[cp]
 	if not v then return end
+	local key = string.format("%02x%02x%02x",
+		color[1], color[2], color[3])
+	if v.key == key then -- cached!
+		return v.spr
+	end
 	v.spr:clear { 0, 0, 0, 0 }
 	for y=1,v.h do
 		for x=1,v.w do
@@ -95,6 +100,7 @@ function fn:glyph(cp, color)
 			v.spr:pixel(x - 1, y - 1, col)
 		end
 	end
+	v.key = key
 	return v.spr
 end
 
