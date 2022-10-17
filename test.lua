@@ -26,11 +26,13 @@ while true do
 	local a, b = input()
 	if b then
 		txt = txt .. b
+	elseif a == 'return' then
+		txt = txt .. '\n'
 	elseif a == 'backspace' then
 		txt = ''
 	end
 	printf(0, 0, "FPS:%d\nМышь:%d,%d %s\nInp:%s",
-		fps, mx, my, mb.left and 'left' or '', txt)
+		fps, mx, my, mb.left and 'left' or '', txt..'\1')
 	for k, v in ipairs(stars) do
 		pixel(v.x, v.y, v.c)
 		stars[k].y = v.y + v.s
