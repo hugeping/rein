@@ -136,6 +136,9 @@ function core.init()
 	-- system.window_mode 'normal'
 end
 
+function core.done()
+end
+
 function env.print(text, x, y, col)
 	x = x or 0
 	y = y or 0
@@ -269,54 +272,51 @@ function core.abs2rel(x, y)
 end
 
 function core.run()
-	while true do
-		local e, v, a, b
-		-- local start = system.time()
-		e, v, a, b = system.poll()
+	local e, v, a, b
+	-- local start = system.time()
+	e, v, a, b = system.poll()
 
-		if (e == 'text' or e == 'keydown') and #core.input < 16 then
-			table.insert(core.input,
-				{ sym = (e == 'text' and v or false), v })
-		end
-
-		if e == 'quit' then
-			break
-		elseif e == 'keyup' then
-			if v:find("alt$") then
-				core.kbd.alt = false
-			end
-			core.kbd[v] = false
-		elseif e == 'keydown' then
-			if v:find("alt$") then
-				core.kbd.alt = true
-			end
-			core.kbd[v] = true
-			if v == 'return' and core.kbd.alt then
-				core.fullscreen = not core.fullscreen
-				if core.fullscreen then
-					system.window_mode 'fullscreen'
-				else
-					system.window_mode 'normal'
-				end
-			end
-		elseif e == 'mousemotion' then
-			core.mouse_x, core.mouse_y = core.abs2rel(v, a)
-		elseif e == 'mousedown' or e == 'mouseup' then
-			core.mouse_btn[v] = (e == 'mousedown')
-			core.mouse_x, core.mouse_y = core.abs2rel(a, b)
-		end
-		-- core.render()
-		if not core.err() and coroutine.status(core.fn) ~= 'dead' then
-			local r, e = coroutine.resume(core.fn)
-			if not r then
-				core.err(e)
-			end
-		else
-			core.render()
-		end
-		-- local elapsed = system.time() - start
-		-- system.wait(0) -- math.max(0, fps - elapsed))
+	if (e == 'text' or e == 'keydown') and #core.input < 16 then
+		table.insert(core.input,
+			{ sym = (e == 'text' and v or false), v })
 	end
+
+	if e == 'quit' then
+		return false
+	elseif e == 'keyup' then
+		if v:find("alt$") then
+			core.kbd.alt = false
+		end
+		core.kbd[v] = false
+	elseif e == 'keydown' then
+		if v:find("alt$") then
+			core.kbd.alt = true
+		end
+		core.kbd[v] = true
+		if v == 'return' and core.kbd.alt then
+			core.fullscreen = not core.fullscreen
+			if core.fullscreen then
+				system.window_mode 'fullscreen'
+			else
+				system.window_mode 'normal'
+			end
+		end
+	elseif e == 'mousemotion' then
+		core.mouse_x, core.mouse_y = core.abs2rel(v, a)
+	elseif e == 'mousedown' or e == 'mouseup' then
+		core.mouse_btn[v] = (e == 'mousedown')
+		core.mouse_x, core.mouse_y = core.abs2rel(a, b)
+	end
+	-- core.render()
+	if not core.err() and coroutine.status(core.fn) ~= 'dead' then
+		local r, e = coroutine.resume(core.fn)
+		if not r then
+			core.err(e)
+		end
+	else
+		core.render()
+	end
+	return true
 end
 
 return core
