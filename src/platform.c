@@ -95,13 +95,19 @@ SDL_WaitEventTo(int timeout)
 int
 WaitEvent(float n)
 {
+#ifdef __EMSCRIPTEN__
+	return 1;
+#else
 	return SDL_WaitEventTo((int)(n * 1000));
+#endif
 }
 
 void
 Delay(float n)
 {
+#if !defined(__EMSCRIPTEN__)
 	SDL_Delay(n * 1000);
+#endif
 }
 
 static char*
@@ -137,10 +143,17 @@ button_name(int button)
 float
 GetScale(void)
 {
+#ifdef __EMSCRIPTEN__
+	double r = EM_ASM_DOUBLE({
+		return window.devicePixelRatio;
+	});
+	return (float)r;
+#else
 	float dpi;
 	if (SDL_GetDisplayDPI(0, NULL, &dpi, NULL))
 		return 1.0f;
 	return dpi / 96.0f;
+#endif
 }
 
 #ifdef _WIN32

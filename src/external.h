@@ -26,3 +26,7 @@ extern char *dirname(char *);
 #include <lualib.h>
 #include <lauxlib.h>
 #include "lua-compat.h"
+#ifdef __EMSCRIPTEN__
+#include "emscripten.h"
+#include "emscripten/html5.h"
+#endif
