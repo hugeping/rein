@@ -114,9 +114,6 @@ function fn:text(t, color)
 			break
 		end
 		local cp = system.utf_codepoint(c)
-		if n > 1 then
---			print(string.format("%x\n", cp))
-		end
 		local v = self[cp]
 		if v then
 			self:glyph(cp, color):copy(spr, x, 0)
