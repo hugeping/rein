@@ -1,3 +1,5 @@
+local font = require "font"
+
 local fps = 1/30;
 
 math.round = function(num, n)
@@ -24,18 +26,19 @@ local core = {
 		[14] = { 0xFF, 0x77, 0xA8 },
 		[15] = { 0xFF, 0xCC, 0xAA },
 	};
+	kbd = {};
 	view_x = 0;
 	view_y = 0;
 	mouse_btn = {};
 }
 
 local conf = {
-	w = 512;
-	h = 512;
+	w = 256;
+	h = 256;
 	fg = { 0, 0, 0 };
 	bg = { 0xff, 0xff, 0xe8 };
-	font = "fonts/iosevka-regular.ttf",
-	font_sz = 16,
+	font = "fonts/8x8.fnt",
+--	font_sz = 16,
 }
 
 local env = {
@@ -95,8 +98,9 @@ end
 function core.init()
 	core.win = gfx.new(conf.w, conf.h)
 	core.win:fill(conf.bg)
-	core.font = gfx.font(DATADIR..'/'..conf.font,
-		math.floor(conf.font_sz))
+	core.font = font.new(DATADIR..'/'..conf.font)
+--	 gfx.font(DATADIR..'/'..conf.font,
+--		math.floor(conf.font_sz))
 	if not core.font then
 		core.err("Can't load font %q", DATADIR..'/'..conf.font)
 		os.exit(1)
@@ -255,6 +259,26 @@ function core.run()
 		e, v, a, b = system.poll()
 		if e == 'quit' then
 			break
+		elseif e == 'resized' then
+			print(e, v, a, b)
+		elseif e == 'keyup' then
+			if v:find("alt$") then
+				core.kbd.alt = false
+			end
+			core.kbd[v] = false
+		elseif e == 'keydown' then
+			if v:find("alt$") then
+				core.kbd.alt = true
+			end
+			core.kbd[v] = true
+			if v == 'return' and core.kbd.alt then
+				core.fullscreen = not core.fullscreen
+				if core.fullscreen then
+					system.window_mode 'fullscreen'
+				else
+					system.window_mode 'normal'
+				end
+			end
 		elseif e == 'mousemotion' then
 			core.mouse_x, core.mouse_y = core.abs2rel(v, a)
 		elseif e == 'mousedown' or e == 'mouseup' then

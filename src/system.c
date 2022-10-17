@@ -1,5 +1,6 @@
 #include "external.h"
 #include "platform.h"
+#include "gfx.h"
 
 static int
 sys_sleep(lua_State *L)
@@ -192,6 +193,17 @@ sys_utf_len(lua_State *L)
 }
 
 static int
+sys_utf_codepoint(lua_State *L)
+{
+	unsigned int cp = 0;
+	const char *s = luaL_optstring(L, 1, NULL);
+	if (s)
+		utf8_to_codepoint(s, &cp);
+	lua_pushnumber(L, cp);
+	return 1;
+}
+
+static int
 sys_readdir(lua_State *L)
 {
 	const char *path = luaL_checkstring(L, 1);
@@ -245,6 +257,7 @@ sys_lib[] = {
 	{ "utf_prev", sys_utf_prev },
 	{ "utf_len", sys_utf_len },
 	{ "utf_sym", sys_utf_sym },
+	{ "utf_codepoint", sys_utf_codepoint },
 	{ "readdir", sys_readdir },
 	{ "sleep", sys_sleep },
 	{ "input", sys_input },
