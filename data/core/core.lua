@@ -26,6 +26,7 @@ local core = {
 		[14] = { 0xFF, 0x77, 0xA8 },
 		[15] = { 0xFF, 0xCC, 0xAA },
 	};
+	input = {};
 	kbd = {};
 	view_x = 0;
 	view_y = 0;
@@ -70,6 +71,9 @@ function core.print(text, x, y, col)
 	local w, h = core.win:size()
 	while text ~= '' do
 		local s, e = text:find("[ \n]", 1)
+		if s and text:sub(s, s+1) == ' \n' then
+			s = s + 1
+		end
 		if not s then s = text:len() end
 		local nl = text:sub(s, s) == '\n'
 		local word = text:sub(1, s):gsub("\n$", "")
@@ -189,6 +193,14 @@ function env.mouse()
 	return core.mouse_x or 0, core.mouse_y or 0, core.mouse_btn
 end
 
+function env.input()
+	if #core.input == 0 then
+		return
+	end
+	local v = table.remove(core.input, 1)
+	return v[1], v.sym
+end
+
 function env.pal(t)
 	if not t then
 		return core.pal
@@ -257,6 +269,12 @@ function core.run()
 		local e, v, a, b
 		-- local start = system.time()
 		e, v, a, b = system.poll()
+
+		if (e == 'text' or e == 'keydown') and #core.input < 16 then
+			table.insert(core.input,
+				{ sym = (e == 'text' and v or false), v })
+		end
+
 		if e == 'quit' then
 			break
 		elseif e == 'keyup' then
