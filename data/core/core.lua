@@ -259,8 +259,6 @@ function core.run()
 		e, v, a, b = system.poll()
 		if e == 'quit' then
 			break
-		elseif e == 'resized' then
-			print(e, v, a, b)
 		elseif e == 'keyup' then
 			if v:find("alt$") then
 				core.kbd.alt = false
