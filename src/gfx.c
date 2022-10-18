@@ -328,22 +328,23 @@ _fill(img_t *src, int x, int y, int w, int h,
 	if (!h)
 		h = src->h;
 
-	if (x < 0) {
-		w += x;
-		x = 0;
-	}
-	if (y < 0) {
-		h += y;
-		y = 0;
+	if (x < src->clip_x1) {
+		w += x - src->clip_x1;
+		x = src->clip_x1;
 	}
 
-	if (w <= 0 || h <= 0 || x >= src->w || y >= src->h)
+	if (y < src->clip_y1) {
+		h += y - src->clip_y1;
+		y = src->clip_y1;
+	}
+
+	if (w <= 0 || h <= 0 || x >= src->clip_x2 || y >= src->clip_y2)
 		return;
 
-	if (x + w > src->w)
-		w = src->w - x;
-	if (y + h > src->h)
-		h = src->h - y;
+	if (x + w > src->clip_x2)
+		w = src->clip_x2 - x;
+	if (y + h > src->clip_y2)
+		h = src->clip_y2 - y;
 
 	ptr1 = src->ptr;
 	ptr1 += (y * src->w + x) << 2;
@@ -582,12 +583,11 @@ line0(img_t *hdr, int x1, int y1, int dx, int dy, int xd, unsigned char *col)
 	int dyx2 = dy2 - dx * 2;
 	int err = dy2 - dx;
 	unsigned char *ptr = NULL;
-	int w = hdr->w; int h = hdr->h;
 
-	int ly = w * 4;
+	int ly = hdr->w * 4;
 	int lx = xd * 4;
 
-	while ((x1 < 0 || y1 < 0 || x1 >= w) && dx --) {
+	while ((x1 < hdr->clip_x1 || y1 < hdr->clip_y1 || x1 >= hdr->clip_x2) && dx --) {
 		if (err >= 0) {
 			y1 ++;
 			err += dyx2;
@@ -599,13 +599,13 @@ line0(img_t *hdr, int x1, int y1, int dx, int dy, int xd, unsigned char *col)
 	if (dx < 0)
 		return;
 	ptr = hdr->ptr;
-	ptr += (y1 * w + x1) << 2;
+	ptr += (y1 * hdr->w + x1) << 2;
 
 	pixel(col, ptr);
 	while (dx --) {
 		if (err >= 0) {
 			y1 ++;
-			if (y1 >= h)
+			if (y1 >= hdr->clip_y2)
 				break;
 			ptr += ly;
 			err += dyx2;
@@ -613,7 +613,7 @@ line0(img_t *hdr, int x1, int y1, int dx, int dy, int xd, unsigned char *col)
 			err += dy2;
 		}
 		x1 += xd;
-		if (x1 >= w || x1 < 0)
+		if (x1 >= hdr->clip_x2 || x1 < hdr->clip_x1)
 			break;
 		ptr += lx;
 		pixel(col, ptr);
@@ -627,12 +627,11 @@ line1(img_t *hdr, int x1, int y1, int dx, int dy, int xd, unsigned char *col)
 	int dx2 = dx * 2;
 	int dxy2 = dx2 - dy * 2;
 	int err = dx2 - dy;
-	int w = hdr->w; int h = hdr->h;
 	unsigned char *ptr = NULL;
-	int ly = w * 4;
+	int ly = hdr->w * 4;
 	int lx = xd * 4;
 
-	while ((x1 < 0 || y1 < 0 || x1 >= w) && dy --) {
+	while ((x1 < hdr->clip_x1 || y1 < hdr->clip_y1 || x1 >= hdr->clip_x2) && dy --) {
 		if (err >= 0) {
 		        x1 += xd;
 			err += dxy2;
@@ -645,14 +644,14 @@ line1(img_t *hdr, int x1, int y1, int dx, int dy, int xd, unsigned char *col)
 		return;
 
 	ptr = hdr->ptr;
-	ptr += (y1 * w + x1) << 2;
+	ptr += (y1 * hdr->w + x1) << 2;
 
 	pixel(col, ptr);
 
 	while (dy --) {
 		if (err >= 0) {
 			x1 += xd;
-			if (x1 < 0 || x1 >= w)
+			if (x1 < hdr->clip_x1 || x1 >= hdr->clip_x2)
 				break;
 			ptr += lx;
 			err += dxy2;
@@ -660,7 +659,7 @@ line1(img_t *hdr, int x1, int y1, int dx, int dy, int xd, unsigned char *col)
 			err += dx2;
 		}
 		y1 ++;
-		if (y1 >= h)
+		if (y1 >= hdr->clip_y2)
 			break;
 		ptr += ly;
 		pixel(col, ptr);
@@ -678,19 +677,19 @@ line(img_t *src, int x1, int y1, int x2, int y2, int r, int g, int b, int a)
 		tmp = x1; x1 = x2; x2 = tmp;
 	}
 	col[0] = r; col[1] = g; col[2] = b; col[3] = a;
-	if (y1 >= src->h)
+	if (y1 >= src->clip_y2)
 		return;
-	if (y2 < 0)
+	if (y2 < src->clip_y1)
 		return;
 	if (x1 < x2) {
-		if (x2 < 0)
+		if (x2 < src->clip_x1)
 			return;
-		if (x1 >= src->w)
+		if (x1 >= src->clip_x2)
 			return;
 	} else {
-		if (x1 < 0)
+		if (x1 < src->clip_x1)
 			return;
-		if (x2 >= src->w)
+		if (x2 >= src->clip_x2)
 			return;
 	}
 	dx = x2 - x1;
@@ -734,30 +733,29 @@ lineAA(img_t *src, int x0, int y0, int x1, int y1,
 		 int r, int g, int b, int a)
 {
 	int dx, dy, err, e2, sx;
-	int w, h;
 	int syp, sxp, ed;
 	unsigned char *ptr;
 	unsigned char col[4];
+
 	col[0] = r; col[1] = g; col[2] = b; col[3] = a;
 	if (y0 > y1) {
 		int tmp;
 		tmp = x0; x0 = x1; x1 = tmp;
 		tmp = y0; y0 = y1; y1 = tmp;
 	}
-	w = src->w; h = src->h;
-	if (y1 < 0 || y0 >= h)
+	if (y1 < src->clip_y1 || y0 >= src->clip_y2)
 		return;
 	if (x0 < x1) {
 		sx = 1;
-		if (x0 >= w || x1 < 0)
+		if (x0 >= src->clip_x2 || x1 < src->clip_x1)
 			return;
 	} else {
 		sx = -1;
-		if (x1 >= w || x0 < 0)
+		if (x1 >= src->clip_x2 || x0 < src->clip_x1)
 			return;
 	}
 	sxp = sx * 4;
-	syp = w * 4;
+	syp = src->w * 4;
 
 	dx =  abs(x1 - x0);
 	dy = y1 - y0;
@@ -765,7 +763,7 @@ lineAA(img_t *src, int x0, int y0, int x1, int y1,
 	err = dx - dy;
 	ed = dx + dy == 0 ? 1: sqrt((float)dx * dx + (float)dy * dy);
 
-	while (y0 < 0 || x0 < 0 || x0 >= w) {
+	while (y0 < src->clip_y1 || x0 < src->clip_x1 || x0 >= src->clip_x2) {
 		e2 = err;
 		if (2 * e2 >= -dx) {
 			if (x0 == x1)
@@ -781,11 +779,11 @@ lineAA(img_t *src, int x0, int y0, int x1, int y1,
 		}
 	}
 
-	if (y0 < 0 || x0 < 0 || x0 >= w)
+	if (y0 < src->clip_y1 || x0 < src->clip_x1 || x0 >= src->clip_x2)
 		return;
 
 	ptr = (src->ptr);
-	ptr += (y0 * w + x0) << 2;
+	ptr += (y0 * src->w + x0) << 2;
 
 	while (1) {
 		unsigned char *optr = ptr;
@@ -801,7 +799,7 @@ lineAA(img_t *src, int x0, int y0, int x1, int y1,
 			}
 			err -= dy;
 			x0 += sx;
-			if (x0 < 0 || x0 >= w)
+			if (x0 < src->clip_x1 || x0 >= src->clip_x2)
 				break;
 			ptr += sxp;
 		}
@@ -814,7 +812,7 @@ lineAA(img_t *src, int x0, int y0, int x1, int y1,
 			}
 			err += dx;
 			y0 ++;
-			if (y0 >= h)
+			if (y0 >= src->clip_y2)
 				break;
 			ptr += syp;
 		}
@@ -885,28 +883,31 @@ triangle(img_t *src, int x0, int y0, int x1, int y1, int x2, int y2, int r, int 
 	int maxx = max3(x0, x1, x2);
 	int maxy = max3(y0, y1, y2);
 
-	int w0_row = orient2d(x1, y1, x2, y2, minx, miny);
-	int w1_row = orient2d(x2, y2, x0, y0, minx, miny);
-	int w2_row = orient2d(x0, y0, x1, y1, minx, miny);
-
-	int y, x, w, h;
+	int y, x, w;
 	int yd;
 	unsigned char col[4];
 	unsigned char *ptr;
-	w = src->w; h = src->h;
+	int w0_row, w1_row, w2_row;
+	w = src->w;
 	yd = 4 * w;
 	col[0] = r; col[1] = b; col[2] = g; col[3] = a;
 
-	if (minx >= w || miny >= h)
+	if (minx >= src->clip_x2 || miny >= src->clip_y2)
 		return;
-	if (minx < 0)
-		minx = 0;
-	if (miny < 0)
-		miny = 0;
-	if (maxy >= h)
-		maxy = h - 1;
-	if (maxx >= w)
-		maxx = w - 1;
+
+	if (minx < src->clip_x1)
+		minx = src->clip_x1;
+	if (miny < src->clip_y1)
+		miny = src->clip_y1;
+	if (maxy >= src->clip_y2)
+		maxy = src->clip_y2 - 1;
+	if (maxx >= src->clip_x2)
+		maxx = src->clip_x2 - 1;
+
+	w0_row = orient2d(x1, y1, x2, y2, minx, miny);
+	w1_row = orient2d(x2, y2, x0, y0, minx, miny);
+	w2_row = orient2d(x0, y0, x1, y1, minx, miny);
+
 	ptr = src->ptr + miny * yd + 4 * minx;
 
 	for (y = miny; y <= maxy; y ++) {
@@ -933,14 +934,19 @@ static void
 fill_circle(img_t *src, int xc, int yc, int radius, int r, int g, int b, int a)
 {
 	int r2 = radius * radius;
-	int x, y, x1, x2, y1, y2;
+	int x, y, xx1, xx2, yy1, yy2;
 	unsigned char col[4] = { r, g, b, a };
-	int w = src->w, h = src->h;
+	int w = src->w;
 	unsigned char *ptr;
+	int x1, y1, x2, y2;
+	x1 = src->clip_x1;
+	y1 = src->clip_y1;
+	x2 = src->clip_x2;
+	y2 = src->clip_y2;
 
-	if (xc + radius < 0 || yc + radius < 0)
+	if (xc + radius < x1 || yc + radius < y1)
 		return;
-	if (xc - radius >= w || yc - radius >= h)
+	if (xc - radius >= x2 || yc - radius >= y2)
 		return;
 
 	if (radius <= 0)
@@ -953,19 +959,19 @@ fill_circle(img_t *src, int xc, int yc, int radius, int r, int g, int b, int a)
 		pixel(col, ptr);
 		return;
 	}
-	y1 = -radius; y2 = radius;
-	x1 = -radius; x2 = radius;
-	if (yc - radius < 0)
-		y1 = -yc;
-	if (xc - radius < 0)
-		x1 = -xc;
-	if (xc + radius >= w)
-		x2 = w - xc - 1;
-	if (yc + radius >= h)
-		y2 = h - yc - 1;
-	for (y = y1; y <= y2; y ++) {
-		unsigned char *ptrl = ptr + ((y * w + x1) << 2);
-		for (x = x1; x <= x2; x++) {
+	yy1 = -radius; yy2 = radius;
+	xx1 = -radius; xx2 = radius;
+	if (yc - radius < y1)
+		yy1 = -(yc - y1);
+	if (xc - radius < x1)
+		xx1 = -(xc - x1);
+	if (xc + radius >= x2)
+		xx2 = x2 - xc - 1;
+	if (yc + radius >= y2)
+		yy2 = y2 - yc - 1;
+	for (y = yy1; y <= yy2; y ++) {
+		unsigned char *ptrl = ptr + ((y * w + xx1) << 2);
+		for (x = xx1; x <= xx2; x++) {
 			if (x*x + y*y < r2 - 1)
 				pixel(col, ptrl);
 			ptrl += 4;
@@ -979,17 +985,25 @@ circle(img_t *src, int xc, int yc, int rr, int r, int g, int b, int a)
 	int x = -rr, y = 0, err = 2 - 2 * rr;
 	unsigned char *ptr = src->ptr;
 	unsigned char col[4] = { r, g, b, a };
-	int w = src->w, h = src->h;
+	int w = src->w;
+	int x1, y1, x2, y2;
 
 	if (rr <= 0)
 		return;
-	if (xc + rr < 0 || yc + rr < 0)
+
+	x1 = src->clip_x1;
+	y1 = src->clip_y1;
+	x2 = src->clip_x2;
+	y2 = src->clip_y2;
+
+	if (xc + rr < x1 || yc + rr < y1)
 		return;
-	if (xc - rr >= w || yc - rr >= h)
+	if (xc - rr >= x2 || yc - rr >= y2)
 		return;
+
 	ptr += (w * yc + xc) * 4;
-	if (xc - rr >= 0 && xc + rr < w &&
-	    yc - rr >=0 && yc + rr < h) {
+	if (xc - rr >= x1 && xc + rr < x2 &&
+	    yc - rr >= y1 && yc + rr < y2) {
 		do {
 			int xmy = (x - y * w) * 4;
 			int yax = (y + x * w) * 4;
@@ -1010,17 +1024,17 @@ circle(img_t *src, int xc, int yc, int rr, int r, int g, int b, int a)
 	do {
 		int xmy = (x - y * w) * 4;
 		int yax = (y + x * w) * 4;
-		if (((xc - x) | (w - xc + x - 1) |
-		    (yc + y) | (h - yc - y - 1)) >= 0)
+		if (((xc - x - x1) | (x2 - xc + x - 1) |
+		    (yc + y - y1) | (y2 - yc - y - 1)) >= 0)
 			pixel(col, ptr - xmy);
-		if (((xc - y) | (w - xc + y - 1) |
-		     (yc - x) | (h - yc + x - 1)) >= 0)
+		if (((xc - y - x1) | (x2 - xc + y - 1) |
+		     (yc - x - y1) | (y2 - yc + x - 1)) >= 0)
 			pixel(col, ptr - yax);
-		if (((xc + x) | (w - xc - x - 1) |
-		     (yc - y) | (h - yc + y - 1)) >= 0)
+		if (((xc + x - x1) | (x2 - xc - x - 1) |
+		     (yc - y - y1) | (y2 - yc + y - 1)) >= 0)
 			pixel(col, ptr + xmy);
-		if (((xc + y) | (w - xc - y - 1) |
-		      (yc + x) | (h - yc - x - 1)) >= 0)
+		if (((xc + y - x1) | (x2 - xc - y - 1) |
+		      (yc + x - y1) | (y2 - yc - x - 1)) >= 0)
 			pixel(col, ptr + yax);
 		rr = err;
 		if (rr <= y)
@@ -1034,15 +1048,21 @@ static void
 circleAA(img_t *src, int xc, int yc, int rr, int r, int g, int b, int a)
 {
 	int p1, p2, p3, p4;
-	int x = -rr, y = 0, x2, e2, err = 2 - 2 * rr;
+	int x = -rr, y = 0, xx2, e2, err = 2 - 2 * rr;
 	unsigned char *ptr = src->ptr;
 	unsigned char col[4] = { r, g, b, a };
-	int w = src->w, h = src->h;
+	int w = src->w;
+	int x1, y1, x2, y2;
+	x1 = src->clip_x1;
+	y1 = src->clip_y1;
+	x2 = src->clip_x2;
+	y2 = src->clip_y2;
+
 	if (rr <= 0)
 		return;
-	if (xc + rr < 0 || yc + rr < 0)
+	if (xc + rr < x1 || yc + rr < y1)
 		return;
-	if (xc - rr >= w || yc - rr >= h)
+	if (xc - rr >= x2 || yc - rr >= y2)
 		return;
 	rr = 1 - err;
 	ptr += (w * yc + xc) * 4;
@@ -1052,39 +1072,39 @@ circleAA(img_t *src, int xc, int yc, int rr, int r, int g, int b, int a)
 		int yax = (y + x * w) * 4;
 		col[3] = ((255 - i) * a) >> 8;
 		p1 = 0; p2 = 0; p3 = 0; p4 = 0;
-		if (((xc - x) | (w - xc + x - 1) |
-		     (yc + y) | (h - yc - y - 1)) >= 0) {
+		if (((xc - x - x1) | (x2 - xc + x - 1) |
+		     (yc + y - y1) | (y2 - yc - y - 1)) >= 0) {
 			pixel(col, ptr - xmy);
 			p1 = 1;
 		}
-		if (((xc - y) | (w - xc + y - 1) |
-		     (yc - x) | (h - yc + x - 1)) >= 0) {
+		if (((xc - y - x1) | (x2 - xc + y - 1) |
+		     (yc - x - y1) | (y2 - yc + x - 1)) >= 0) {
 			pixel(col, ptr - yax);
 			p2 = 1;
 		}
-		if (((xc + x) | (w - xc - x - 1) |
-		     (yc - y) | (h - yc + y - 1)) >= 0) {
+		if (((xc + x - x1) | (x2 - xc - x - 1) |
+		     (yc - y - y1) | (y2 - yc + y - 1)) >= 0) {
 			pixel(col, ptr + xmy);
 			p3 = 1;
 		}
-		if (((xc + y) | (w - xc - y - 1) |
-		     (yc + x) | (h - yc - x - 1)) >= 0) {
+		if (((xc + y - x1) | (x2 - xc - y - 1) |
+		     (yc + x - y1) | (y2 - yc - x - 1)) >= 0) {
 			pixel(col, ptr + yax);
 			p4 = 1;
 		}
 		e2 = err;
-		x2 = x;
+		xx2 = x;
 		if (err + y > 0) {
 			i = 255 * (err - 2 * x - 1) / rr;
 			if (i < 256) {
 				col[3] = ((255 - i) * a) >> 8;
-				if (p1 && yc + y + 1 < h)
+				if (p1 && yc + y + 1 < y2)
 					pixel(col, ptr - xmy + w * 4);
-				if (p2 && xc - y - 1 >= 0)
+				if (p2 && xc - y - 1 >= x1)
 					pixel(col, ptr - yax - 4);
-				if (p3 && yc - y - 1 >= 0)
+				if (p3 && yc - y - 1 >= y1)
 					pixel(col, ptr + xmy - w * 4);
-				if (p4 && xc + y < w)
+				if (p4 && xc + y < x2)
 					pixel(col, ptr + yax + 4);
 			}
 			err += ++x * 2 + 1;
@@ -1093,13 +1113,13 @@ circleAA(img_t *src, int xc, int yc, int rr, int r, int g, int b, int a)
 			i = 255 * (2 * y + 3 - e2) / rr;
 			if (i < 256) {
 				col[3] = ((255 - i) * a) >> 8;
-				if (p1 && xc - x2 - 1 >= 0)
+				if (p1 && xc - xx2 - 1 >= x1)
 					pixel(col, ptr - xmy - 4);
-				if (p2 && yc - x2 - 1 >= 0)
+				if (p2 && yc - xx2 - 1 >= y1)
 					pixel(col, ptr - yax - w * 4);
-				if (p3 && xc + x2 + 1 < w)
+				if (p3 && xc + xx2 + 1 < x2)
 					pixel(col, ptr + xmy + 4);
-				if (p4 && yc + x2 + 1 < h)
+				if (p4 && yc + xx2 + 1 < y2)
 					pixel(col, ptr + yax + w * 4);
 			}
 			err += ++y * 2 + 1;
@@ -1137,14 +1157,14 @@ fill_poly(img_t *src, struct lua_point *v, int nr, unsigned char *col)
 		if (v[i].y > ymax)
 			ymax = v[i].y;
 	}
-	if (ymin < 0)
-		ymin = 0;
-	if (xmin < 0)
-		xmin = 0;
-	if (xmax >= src->w)
-		xmax = src->w;
-	if (ymax >= src->h)
-		ymax = src->h;
+	if (ymin < src->clip_y1)
+		ymin = src->clip_y1;
+	if (xmin < src->clip_x1)
+		xmin = src->clip_x1;
+	if (xmax >= src->clip_x2)
+		xmax = src->clip_x2;
+	if (ymax >= src->clip_y2)
+		ymax = src->clip_y2;
 	ptr += (ymin * src->w) << 2;
 	for (y = ymin; y < ymax; y ++) {
 		nodes = 0; j = nr - 1;
