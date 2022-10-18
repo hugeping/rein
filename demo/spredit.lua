@@ -95,7 +95,8 @@ function title:show()
 		dirty = '*'
 	end
 	local x, y = grid:pos2cell(mouse())
-	local info = string.format("x%02d %2d:%2d %s%s", grid.grid, x, y, SPRITE, dirty)
+	local info = string.format("x%02d %2d:%2d %s%s",
+		grid.grid, x-1, y-1, SPRITE, dirty)
 	local w, h = font:size(info)
 	self.w = w
 	self.h = h
