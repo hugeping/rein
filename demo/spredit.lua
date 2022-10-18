@@ -135,6 +135,15 @@ function grid:pan(dx, dy)
 	if self.yoff > self.max_grid then self.xoff = self.max_grid end
 end
 
+function grid:pos(x, y)
+	if not x then
+		return self.xoff, self.yoff
+	end
+	self.xoff = x
+	self.yoff = y
+	self:pan(0, 0)
+end
+
 function grid:zoom(inc)
 	local s = self
 	if inc > 0 then
@@ -298,12 +307,18 @@ function switch_ui()
 	end
 end
 
-function kbd(r, e)
+local pan_mode
+
+function proc_inp(r, e, a, b, c, d)
 	if r == 'text' then
 		if e == '+' then
 			grid:zoom(1)
 		elseif e == '-' then
 			grid:zoom(-1)
+		end
+	elseif r == 'keyup' then
+		if e == 'space' then
+			pan_mode = nil
 		end
 	elseif r == 'keydown' then
 		if e == 'tab' then
@@ -312,9 +327,22 @@ function kbd(r, e)
 			grid:save(SPRITE)
 		elseif e == 'z' then
 			grid:undo()
+		elseif e == 'space' and not pan_mode then
+			local ox, oy = mouse()
+			local x, y = grid:pos()
+			pan_mode =  { ox, oy, x, y }
 		end
 	end
-	if keydown("right") then
+	if pan_mode then
+		local x, y = mouse()
+		local dd = grid.w / grid.grid
+		local dx = floor((x - pan_mode[1])/dd)
+		local dy = floor((y - pan_mode[2])/dd)
+		grid:pos(pan_mode[3] - dx, pan_mode[4] - dy)
+		if not keydown 'space' then
+			pan_mode = nil
+		end
+	elseif keydown("right") then
 		grid:pan(1, 0)
 	elseif keydown("left") then
 		grid:pan(-1, 0)
@@ -323,6 +351,7 @@ function kbd(r, e)
 	elseif keydown("down") then
 		grid:pan(0, 1)
 	end
+	return r ~= nil
 end
 
 title:show()
@@ -335,8 +364,8 @@ while true do
 		v:show()
 	end
 	table.sort(obj, function(a, b) return a.lev <= b.lev end)
-	local r, e = input() -- todo
-	kbd(r, e)
+	local r, v, a, b = input()
+	proc_inp(r, v, a, b)
 	local mx, my, mb = mouse()
 	if mb.left or mb.right or mb.middle then
 		for _, v in ipairs(obj) do

@@ -188,7 +188,7 @@ function env_ro.input()
 		return
 	end
 	local v = table.remove(input.fifo, 1)
-	return v.nam, v.sym
+	return v.nam, table.unpack(v.args)
 end
 
 function env_ro.keydown(name)
@@ -348,10 +348,11 @@ function api.init(c)
 	return env
 end
 
-function api.event(e, v, a, b)
+function api.event(e, v, a, b, c)
 	if (e == 'text' or e == 'keydown' or e == 'keyup' or
-		e == 'mousedown' or e == 'mouseup') and #input.fifo < 16 then
-		local ev = { nam = e, sym = v }
+		e == 'mousedown' or e == 'mouseup')
+			and #input.fifo < 32 then
+		local ev = { nam = e, args = { v, a, b, c } }
 		table.insert(input.fifo, ev)
 	end
 	if e == 'keyup' then
