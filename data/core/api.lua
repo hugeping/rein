@@ -116,6 +116,16 @@ function env_ro.blend(src, fx, fy, w, h, dst, x, y)
 	src:blend(dst, x, y)
 end
 
+function env_ro.copy(src, fx, fy, w, h, dst, x, y)
+	if type(src) ~= 'userdata' then
+		return
+	end
+	if type(w) == 'number' then
+		return src:copy(fx, fy, w, h, dst, x, y)
+	end
+	src:copy(dst, x, y)
+end
+
 function env_ro.clear(x, y, w, h, col)
 	local col
 	if type(o) ~= 'userdata' then
@@ -148,6 +158,10 @@ function env_ro.input()
 	end
 	local v = table.remove(input.fifo, 1)
 	return v[1], v.sym
+end
+
+function env_ro.keydown(name)
+	return input.kbd[name]
 end
 
 function env_ro.color(k, r, g, b, a)

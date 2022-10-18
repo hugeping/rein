@@ -47,6 +47,17 @@ local start = time()
 local frames = 0
 local txt = ''
 
+local function showkeys()
+	local t = ''
+	local k = { 'left', 'right', 'up', 'down', 'space', 'z', 'x' }
+	for _, v in ipairs(k) do
+		if keydown(v) then
+			t = t .. v .. ' '
+		end
+	end
+	return t
+end
+
 while true do
 	local cur = time()
 	fps = math.floor(frames / (cur - start))
@@ -66,8 +77,9 @@ while true do
 		txt = ''
 	end
 
-	printf(0, 0, 15, "FPS:%d\nМышь:%d,%d %s\nInp:%s",
-		fps, mx, my, mb.left and 'left' or '', txt..'\1')
+	printf(0, 0, 15, "FPS:%d\nМышь:%d,%d %s\nKeys:%s\nInp:%s",
+		fps, mx, my, mb.left and 'left' or '',
+		showkeys(), txt..'\1')
 
 	for k, v in ipairs(stars) do
 		pixel(v.x, v.y, v.c)
