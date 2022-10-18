@@ -10,6 +10,7 @@ local input = {
 local conf = {
 	w = 256;
 	h = 256;
+	fullscreen = false;
 	pal = {
 		[0] = { 0, 0, 0 },
 		[1] = { 0x1D, 0x2B, 0x53 },
@@ -235,8 +236,8 @@ function api.event(e, v, a, b)
 		end
 		input.kbd[v] = true
 		if v == 'return' and input.kbd.alt then
-			core.fullscreen = not core.fullscreen
-			if core.fullscreen then
+			conf.fullscreen = not conf.fullscreen
+			if conf.fullscreen then
 				system.window_mode 'fullscreen'
 			else
 				system.window_mode 'normal'
