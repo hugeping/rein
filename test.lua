@@ -1,7 +1,7 @@
 fgcol(15)
 bgcol(0)
 
-local hspr = {[[
+local spr = {[[
 ---------------*
 	-**-**--
 	*--*--*-
@@ -29,6 +29,10 @@ local h = 256
 
 stars = {}
 
+for i=1, #spr do
+	spr[i] = sprite(spr[i])
+end
+
 for i=1, 128 do
 	table.insert(stars, {
 		x = math.random(w),
@@ -43,16 +47,17 @@ local start = time()
 local frames = 0
 local txt = ''
 
-hspr[1] = sprite(hspr[1])
-hspr[2] = sprite(hspr[2])
-
 while true do
 	local cur = time()
 	fps = math.floor(frames / (cur - start))
+
 	clear(0)
-	blend(hspr[math.floor(frames/10)%2+1], screen, 240, 0)
+
+	blend(spr[math.floor(frames/10)%2+1], screen, 240, 0)
+
 	local mx, my, mb = mouse()
 	local a, b = input()
+
 	if b then
 		txt = txt .. b
 	elseif a == 'return' then
@@ -60,8 +65,10 @@ while true do
 	elseif a == 'backspace' then
 		txt = ''
 	end
+
 	printf(0, 0, 15, "FPS:%d\nМышь:%d,%d %s\nInp:%s",
 		fps, mx, my, mb.left and 'left' or '', txt..'\1')
+
 	for k, v in ipairs(stars) do
 		pixel(v.x, v.y, v.c)
 		stars[k].y = v.y + v.s
@@ -70,6 +77,8 @@ while true do
 			stars[k].x = math.random(w)
 		end
 	end
+
 	flip(1/50)
+
 	frames = frames + 1
 end
