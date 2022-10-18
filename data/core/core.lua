@@ -10,20 +10,8 @@ math.round = function(num, n)
 end
 
 local core = {
-	input = {};
-	kbd = {};
 	view_x = 0;
 	view_y = 0;
-	mouse_btn = {};
-}
-
-local conf = {
-	w = 256;
-	h = 256;
-	fg = { 0, 0, 0 };
-	bg = { 0xff, 0xff, 0xe8 };
-	font = "fonts/8x8.fnt",
---	font_sz = 16,
 }
 
 function core.err(fmt, ...)
@@ -46,10 +34,6 @@ function core.init()
 		core.err(err)
 		os.exit(1)
 	end
-	env.screen:fill(conf.bg)
-	core.font = font.new(DATADIR..'/'..conf.font)
---	 gfx.font(DATADIR..'/'..conf.font,
---		math.floor(conf.font_sz))
 	local f, e
 	for k=2,#ARGS do
 		local v = ARGS[k]
@@ -121,37 +105,12 @@ function core.run()
 	-- local start = system.time()
 	e, v, a, b = system.poll()
 
-	if (e == 'text' or e == 'keydown') and #core.input < 16 then
-		table.insert(core.input,
-			{ sym = (e == 'text' and v or false), v })
-	end
-
 	if e == 'quit' then
 		return false
-	elseif e == 'keyup' then
-		if v:find("alt$") then
-			core.kbd.alt = false
-		end
-		core.kbd[v] = false
-	elseif e == 'keydown' then
-		if v:find("alt$") then
-			core.kbd.alt = true
-		end
-		core.kbd[v] = true
-		if v == 'return' and core.kbd.alt then
-			core.fullscreen = not core.fullscreen
-			if core.fullscreen then
-				system.window_mode 'fullscreen'
-			else
-				system.window_mode 'normal'
-			end
-		end
-	elseif e == 'mousemotion' then
-		core.mouse_x, core.mouse_y = core.abs2rel(v, a)
-	elseif e == 'mousedown' or e == 'mouseup' then
-		core.mouse_btn[v] = (e == 'mousedown')
-		core.mouse_x, core.mouse_y = core.abs2rel(a, b)
+	else
+		api.event(e, v, a, b)
 	end
+
 	-- core.render()
 	if not core.err() and coroutine.status(core.fn) ~= 'dead' then
 		local r, e = coroutine.resume(core.fn)
