@@ -31,6 +31,8 @@ function pal:show()
 		clear(x+w, y*h, w, h, color(y+8))
 	end
 	local n = s.color
+	local c = n + 7
+	if c >= 16 then c = c - 16 end
 	if n >= 8 then
 		x = x + w
 		n = n - 8
@@ -39,7 +41,7 @@ function pal:show()
 	poly({x, y*h,
 		x + w - 1, y*h,
 		x + w -1, y*h + h - 1,
-		x, y*h + h - 1}, 7)
+		x, y*h + h - 1}, c)
 end
 
 function pal:pos2col(x, y)
