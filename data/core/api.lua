@@ -250,4 +250,7 @@ function api.event(e, v, a, b)
 	end
 end
 
+function api.done()
+end
+
 return api

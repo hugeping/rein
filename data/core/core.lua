@@ -58,6 +58,7 @@ function core.init()
 end
 
 function core.done()
+	api.done()
 end
 
 local last_render = 0
