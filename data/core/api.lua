@@ -60,58 +60,75 @@ end
 
 setmetatable(env, env_ro)
 
-function env.printf(x, y, col, fmt, ...)
+function env_ro.printf(x, y, col, fmt, ...)
 	return env.print(string.format(fmt, ...), x, y, col)
 end
 
-function env.time()
+function env_ro.time()
 	return system.time()
 end
 
-function env.fg(col)
-	conf.fg = conf.pal[col] or conf.fg
+function env_ro.fgcol(col)
+	conf.fg = env.color(col) or conf.fg
 end
 
-function env.bg(col)
-	conf.bg = conf.pal[col] or conf.bg
+function env_ro.bgcol(col)
+	conf.bg = env.color(col) or conf.bg
 end
 
-function env.pixel(x, y, col)
-	col = conf.pal[col] or conf.fg
-	return env.screen:pixel(x, y, col)
-end
-
-function env.fill(x, y, w, h, col)
-	if not y then
-		col = conf.pal[x] or conf.bg
-		return env.screen:fill(col)
+function env_ro.pixel(o, x, y, ...)
+	local col
+	if type(o) == 'userdata' then
+		col = env.color(...) or conf.fg
+	else
+		col = env.color(y, ...) or conf.fg
+		x, y = o, x
+		o = env.screen
 	end
-	col = conf.pal[col] or conf.bg
-	return env.screen:fill(x, y, w, h, col)
+	return o:pixel(x, y, col)
 end
 
-function env.clear(x, y, w, h, col)
-	if not y then
-		col = conf.pal[x] or conf.bg
-		return env.screen:clear(col)
+function env_ro.fill(o, x, y, w, h, col)
+	local col
+	if type(o) ~= 'userdata' then
+		x, y, w, h, col = o, x, y, w, h
+		o = env.screen
 	end
-	col = conf.pal[col] or conf.bg
-	return env.screen:clear(x, y, w, h, col)
+	if not y then
+		col = env.color(x) or conf.fg
+		return o:fill(col)
+	end
+	col = env.color(col) or conf.fg
+	return o:fill(x, y, w, h, col)
+end
+
+function env_ro.clear(x, y, w, h, col)
+	local col
+	if type(o) ~= 'userdata' then
+		x, y, w, h, col = o, x, y, w, h
+		o = env.screen
+	end
+	if not y then
+		col = env.color(x) or conf.fg
+		return o:clear(col)
+	end
+	col = env.color(col) or conf.fg
+	return o:clear(x, y, w, h, col)
 end
 
 local last_flip = 0
 
-function env.flip(fps)
+function env_ro.flip(fps)
 	core.render(true)
 	env.sleep((fps or conf.fps) - (env.time() - last_flip))
 	last_flip = env.time()
 end
 
-function env.mouse()
+function env_ro.mouse()
 	return input.mouse.x or 0, input.mouse.y or 0, input.mouse.btn
 end
 
-function env.input()
+function env_ro.input()
 	if #input.fifo == 0 then
 		return
 	end
@@ -119,12 +136,15 @@ function env.input()
 	return v[1], v.sym
 end
 
-function env.color(k, r, g, b, a)
+function env_ro.color(k, r, g, b, a)
 	if not k then
 		return
 	end
 	if not r then
-		return conf.pal[k] or conf.pal[0]
+		if type(k) == 'table' then
+			return k
+		end
+		return conf.pal[k]
 	end
 	if r == false then
 		conf.pal[k] = nil
@@ -140,7 +160,7 @@ function env.color(k, r, g, b, a)
 	end
 end
 
-function env.sleep(to)
+function env_ro.sleep(to)
 	local start = system.time()
 	while true do
 		coroutine.yield()
@@ -154,7 +174,7 @@ function env.sleep(to)
 	end
 end
 
-function env.error(text)
+function env_ro.error(text)
 	env.screen:clear({0xff, 0xff, 0xe8})
 	env.print(text, 0, 0, { 0, 0, 0})
 	core.err_msg = text
@@ -163,17 +183,20 @@ function env.error(text)
 	end
 end
 
-function env.print(text, x, y, col)
+function env_ro.print(text, x, y, col)
 	if not env.screen then
 		system.log(text)
 		return
 	end
-	text = text:gsub("\r", ""):gsub("\t", "    ")
 	x = x or 0
 	y = y or 0
-	col = col or conf.fg
+	col = env.color(col) or conf.fg
+
+	text = text:gsub("\r", ""):gsub("\t", "    ")
+
 	local w, h = env.screen:size()
 	local ww, hh = env.font:size("")
+
 	while text ~= '' do
 		local s, e = text:find("[ \n]", 1)
 		if not s then s = text:len() end
@@ -207,8 +230,7 @@ function env.print(text, x, y, col)
 	end
 end
 
-local api = {
-}
+local api = {}
 
 function api.init(c)
 	env_ro.font = font.new(DATADIR..'/'..conf.font)

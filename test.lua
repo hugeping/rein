@@ -1,7 +1,9 @@
-fg(15)
-bg(0)
+fgcol(15)
+bgcol(0)
+
 local w = 256
 local h = 256
+
 stars = {}
 
 for i=1, 128 do
@@ -17,6 +19,7 @@ local fps = 0
 local start = time()
 local frames = 0
 local txt = ''
+
 while true do
 	local cur = time()
 	fps = math.floor(frames / (cur - start))
@@ -30,7 +33,7 @@ while true do
 	elseif a == 'backspace' then
 		txt = ''
 	end
-	printf(0, 0, color(15), "FPS:%d\nМышь:%d,%d %s\nInp:%s",
+	printf(0, 0, 15, "FPS:%d\nМышь:%d,%d %s\nInp:%s",
 		fps, mx, my, mb.left and 'left' or '', txt..'\1')
 	for k, v in ipairs(stars) do
 		pixel(v.x, v.y, v.c)
