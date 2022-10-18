@@ -349,8 +349,8 @@ function api.init(c)
 end
 
 function api.event(e, v, a, b)
-	if (e == 'text' or e == 'keydown' or
-		e == 'mousedown') and #input.fifo < 16 then
+	if (e == 'text' or e == 'keydown' or e == 'keyup' or
+		e == 'mousedown' or e == 'mouseup') and #input.fifo < 16 then
 		local ev = { nam = e, sym = v }
 		table.insert(input.fifo, ev)
 	end
