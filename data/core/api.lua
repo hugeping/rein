@@ -45,19 +45,19 @@ local env = {
 	ipairs = ipairs,
 }
 
-local ro_env = {
+local env_ro = {
 	screen = gfx.new(conf.w, conf.h)
 }
 
-ro_env.__index = ro_env
-ro_env.__newindex = function(t, nam, val)
-	if rawget(ro_env, nam) then
+env_ro.__index = env_ro
+env_ro.__newindex = function(t, nam, val)
+	if rawget(env_ro, nam) then
 		error("Can not change readonly value: "..nam, 2)
 	end
 	rawset(t, nam, val)
 end
 
-setmetatable(env, ro_env)
+setmetatable(env, env_ro)
 
 function env.printf(x, y, col, fmt, ...)
 	return env.print(string.format(fmt, ...), x, y, col)
@@ -210,10 +210,10 @@ local api = {
 }
 
 function api.init(c)
-	ro_env.font = font.new(DATADIR..'/'..conf.font)
+	env_ro.font = font.new(DATADIR..'/'..conf.font)
 	core = c
 --	 gfx.font(DATADIR..'/'..conf.font, math.floor(conf.font_sz))
-	if not ro_env.font then
+	if not env_ro.font then
 		return false, string.format("Can't load font %q", DATADIR..'/'..conf.font)
 	end
 	return env
