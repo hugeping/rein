@@ -15,22 +15,22 @@ local conf = {
 	fullscreen = false;
 	pal = {
 		[-1] = { 0, 0, 0, 0 }, -- transparent
-		[0] = { 0, 0, 0 },
-		[1] = { 0x1D, 0x2B, 0x53 },
-		[2] = { 0x7E, 0x25, 0x53 },
-		[3] = { 0x00, 0x87, 0x51 },
-		[4] = { 0xAB, 0x52, 0x36 },
-		[5] = { 0x5F, 0x57, 0x4F },
-		[6] = { 0xC2, 0xC3, 0xC7 },
-		[7] = { 0xFF, 0xF1, 0xE8 },
-		[8] = { 0xFF, 0x00, 0x4D },
-		[9] = { 0xFF, 0xA3, 0x00 },
-		[10] = { 0xFF, 0xEC, 0x27 },
-		[11] = { 0x00, 0xE4, 0x36 },
-		[12] = { 0x29, 0xAD, 0xFF },
-		[13] = { 0x83, 0x76, 0x9C },
-		[14] = { 0xFF, 0x77, 0xA8 },
-		[15] = { 0xFF, 0xCC, 0xAA },
+		[0] = { 0, 0, 0, 0xff },
+		[1] = { 0x1D, 0x2B, 0x53, 0xff },
+		[2] = { 0x7E, 0x25, 0x53, 0xff },
+		[3] = { 0x00, 0x87, 0x51, 0xff },
+		[4] = { 0xAB, 0x52, 0x36, 0xff },
+		[5] = { 0x5F, 0x57, 0x4F, 0xff },
+		[6] = { 0xC2, 0xC3, 0xC7, 0xff },
+		[7] = { 0xFF, 0xF1, 0xE8, 0xff },
+		[8] = { 0xFF, 0x00, 0x4D, 0xff },
+		[9] = { 0xFF, 0xA3, 0x00, 0xff },
+		[10] = { 0xFF, 0xEC, 0x27, 0xff },
+		[11] = { 0x00, 0xE4, 0x36, 0xff },
+		[12] = { 0x29, 0xAD, 0xFF, 0xff },
+		[13] = { 0x83, 0x76, 0x9C, 0xff },
+		[14] = { 0xFF, 0x77, 0xA8, 0xff },
+		[15] = { 0xFF, 0xCC, 0xAA, 0xff },
 	};
 	fg = { 0, 0, 0 };
 	bg = { 0xff, 0xff, 0xe8 };
@@ -113,6 +113,12 @@ function env_ro.blend(src, fx, fy, w, h, dst, x, y)
 	if type(w) == 'number' then
 		return src:blend(fx, fy, w, h, dst, x, y)
 	end
+	if type(fx) == 'number' then
+		x, y = fx, fy
+		dst = env.screen
+	else
+		dst, x, y = fx, fy, w
+	end
 	src:blend(dst, x, y)
 end
 
@@ -123,10 +129,26 @@ function env_ro.copy(src, fx, fy, w, h, dst, x, y)
 	if type(w) == 'number' then
 		return src:copy(fx, fy, w, h, dst, x, y)
 	end
+	if type(fx) == 'number' then
+		x, y = fx, fy
+		dst = env.screen
+	else
+		dst, x, y = fx, fy, w
+	end
 	src:copy(dst, x, y)
 end
 
-function env_ro.clear(x, y, w, h, col)
+function env_ro.line(o, x1, y1, x2, y2, col)
+	local col
+	if type(o) ~= 'userdata' then
+		x1, y1, x2, y2, col = o, x1, y1, x2, y2
+		o = env.screen
+	end
+	col = env.color(col) or conf.fg
+	return o:line(x1, y1, x2, y2, col)
+end
+
+function env_ro.clear(o, x, y, w, h, col)
 	local col
 	if type(o) ~= 'userdata' then
 		x, y, w, h, col = o, x, y, w, h
@@ -157,11 +179,23 @@ function env_ro.input()
 		return
 	end
 	local v = table.remove(input.fifo, 1)
-	return v[1], v.sym
+	return v.nam, v.sym
 end
 
 function env_ro.keydown(name)
 	return input.kbd[name]
+end
+
+function env_ro.poly(o, vtx, col)
+	if type(o) ~= 'userdata' then
+		vtx, col = o, vtx
+		o = env.screen
+	end
+	col = env.color(col) or conf.fg
+	for i=1, #vtx-2,2 do
+		o:line(vtx[i], vtx[i+1], vtx[i+2], vtx[i+3], col)
+	end
+	o:line(vtx[#vtx-1], vtx[#vtx], vtx[1], vtx[2], col)
 end
 
 function env_ro.color(k, r, g, b, a)
@@ -202,11 +236,20 @@ function env_ro.sleep(to)
 	end
 end
 
+function env_ro.dprint(...)
+	local t = ''
+	for k, v in ipairs({...}) do
+		if t ~= '' then t = t .. ' ' end
+		t = t .. tostring(v)
+	end
+	system.log(t)
+end
+
 function env_ro.error(text)
 	env.screen:clear({0xff, 0xff, 0xe8})
 	env.print(text, 0, 0, { 0, 0, 0})
 	core.err_msg = text
-	if coroutine.running() then
+	if _ENV == env then
 		coroutine.yield()
 	end
 end
@@ -226,7 +269,7 @@ function env_ro.print(text, x, y, col)
 	local ww, hh = env.font:size("")
 
 	while text ~= '' do
-		local s, e = text:find("[ \n]", 1)
+		local s, e = text:find("[/:,. \n]", 1)
 		if not s then s = text:len() end
 		local nl = text:sub(s, s) == '\n'
 		local word = text:sub(1, s):gsub("\n$", "")
@@ -286,9 +329,9 @@ function api.init(c)
 end
 
 function api.event(e, v, a, b)
-	if (e == 'text' or e == 'keydown') and #input.fifo < 16 then
-		table.insert(input.fifo,
-			{ sym = (e == 'text' and v or false), v })
+	if (e == 'text' or e == 'keydown' or e == 'mousedown' ) and #input.fifo < 16 then
+		local ev = { nam = e, sym = v }
+		table.insert(input.fifo, ev)
 	end
 	if e == 'keyup' then
 		if v:find("alt$") then
