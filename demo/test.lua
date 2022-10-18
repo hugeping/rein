@@ -69,11 +69,11 @@ while true do
 	local mx, my, mb = mouse()
 	local a, b = input()
 
-	if b then
+	if a == 'text' then
 		txt = txt .. b
-	elseif a == 'return' then
+	elseif b == 'return' then
 		txt = txt .. '\n'
-	elseif a == 'backspace' then
+	elseif b == 'backspace' then
 		txt = ''
 	end
 
