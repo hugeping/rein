@@ -1,4 +1,6 @@
 local font = require "font"
+local spr = require "spr"
+
 local core
 local input = {
 	fifo = {};
@@ -12,6 +14,7 @@ local conf = {
 	h = 256;
 	fullscreen = false;
 	pal = {
+		[-1] = { 0, 0, 0, 0 }, -- transparent
 		[0] = { 0, 0, 0 },
 		[1] = { 0x1D, 0x2B, 0x53 },
 		[2] = { 0x7E, 0x25, 0x53 },
@@ -100,6 +103,17 @@ function env_ro.fill(o, x, y, w, h, col)
 	end
 	col = env.color(col) or conf.fg
 	return o:fill(x, y, w, h, col)
+end
+
+
+function env_ro.blend(src, fx, fy, w, h, dst, x, y)
+	if type(src) ~= 'userdata' then
+		return
+	end
+	if type(w) == 'number' then
+		return src:blend(fx, fy, w, h, dst, x, y)
+	end
+	src:blend(dst, x, y)
 end
 
 function env_ro.clear(x, y, w, h, col)
@@ -226,6 +240,21 @@ function env_ro.print(text, x, y, col)
 		if nl then
 			x = 0
 			y = y + hh
+		end
+	end
+end
+
+function env_ro.sprite(x, y)
+	local fname
+	if type(x) == 'number' and type(y) == 'number' then
+		return gfx.new(x, y)
+	end
+	if type(x) == 'string' then
+		if x:find("\n") then
+			return spr.new({ lines = function() return core.lines(x) end }, conf.pal)
+		end
+		if x:find("%.spr$") then
+			return spr.new(x, conf.pal)
 		end
 	end
 end

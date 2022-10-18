@@ -1,6 +1,29 @@
 fgcol(15)
 bgcol(0)
 
+local hspr = {[[
+---------------*
+	-**-**--
+	*--*--*-
+	*-----*-
+	-*---*--
+	--*-*---
+	---*----
+	--------
+	--------
+]], [[
+---------------*
+	-**-**--
+	*******-
+	*******-
+	-*****--
+	--***---
+	---*----
+	--------
+	--------
+]]
+}
+
 local w = 256
 local h = 256
 
@@ -20,10 +43,14 @@ local start = time()
 local frames = 0
 local txt = ''
 
+hspr[1] = sprite(hspr[1])
+hspr[2] = sprite(hspr[2])
+
 while true do
 	local cur = time()
 	fps = math.floor(frames / (cur - start))
 	clear(0)
+	blend(hspr[math.floor(frames/10)%2+1], screen, 240, 0)
 	local mx, my, mb = mouse()
 	local a, b = input()
 	if b then

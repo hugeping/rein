@@ -14,6 +14,27 @@ local core = {
 	view_y = 0;
 }
 
+function core.lines(text)
+	text = text:gsub("\r", "")
+	local function next_line(state)
+		local text, begin, line_n = state[1], state[2], state[3]
+		if begin < 0 then
+			return nil
+		end
+		state[3] = line_n + 1
+		local b, e = text:find("\n", begin, true)
+		if b then
+			state[2] = e+1
+			return text:sub(begin, e-1), line_n
+		else
+			state[2] = -1
+			return text:sub(begin), line_n
+		end
+	end
+	local state = {text, 1, 1}
+	return next_line, state
+end
+
 function core.err(fmt, ...)
 	if not fmt then
 		return core.err_msg
