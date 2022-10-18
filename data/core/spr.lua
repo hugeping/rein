@@ -4,11 +4,13 @@ local sprite = {
 local spr = {}
 spr.__index = spr
 
-local function parse_line(l)
+local function parse_line(l, pal)
 	local r = { }
 	for i=1,l:len() do
 		local c = string.byte(l, i)
-		table.insert(r, string.char(c))
+		c = string.char(c)
+		c = pal[c or 0] or -1
+		table.insert(r, c)
 	end
 	return r
 end
@@ -31,7 +33,7 @@ function sprite.new(fname, pal)
 		if l:find("^[ \t]*$") or l:find("^;") then
 			-- comment or empty
 		elseif data then
-			local r = parse_line(l)
+			local r = parse_line(l, s.pal)
 			if s.w < #r then
 				s.w = #r
 			end
@@ -51,11 +53,14 @@ function sprite.new(fname, pal)
 	if f ~= fname then
 		f:close()
 	end
+	if not pal then
+		return s
+	end
+
 	s.spr = gfx.new(s.w, s.h)
 	for y=1, s.h do
 		for x=1, s.w do
 			local c = s[y][x]
-			c = s.pal[c or 0] or -1
 			local col = pal[c] or { 0, 0, 0, 0 }
 			s.spr:pixel(x - 1, y - 1, col) 
 		end
