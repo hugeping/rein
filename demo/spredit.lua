@@ -5,13 +5,11 @@ local spr = {}
 
 spr.X = sprite [[
 *
--------
--*---*-
---*-*--
----*---
---*-*--
--*---*-
--------
+*---*
+-*-*-
+--*--
+-*-*-
+*---*
 ]]
 
 pal = {
@@ -81,8 +79,9 @@ function grid:pos2cell(x, y)
 	local s = self
 	x = x - s.x
 	y = y - s.y
-	x = floor(x/s.grid) + 1
-	y = floor(y/s.grid) + 1
+	local dx = floor(self.w / s.grid)
+	x = floor(x/dx) + 1
+	y = floor(y/dx) + 1
 	return x, y
 end
 
@@ -106,7 +105,7 @@ function grid:show()
 	local dx = floor(self.w / s.grid)
 	clear(s.x, s.y, s.w, s.h, 1)
 	local Xd = spr.X:size()
-	Xd = (dx - Xd)/2
+	Xd = math.round((dx-Xd)/2)
 	for y=1,s.grid do
 		for x=1,s.grid do
 			local c = s.pixels[y] and s.pixels[y][x]
@@ -136,6 +135,18 @@ while true do
 	end
 	table.sort(obj, function(a, b) return a.lev <= b.lev end)
 	local r, e = input() -- todo
+	if r == 'text' then
+		local g = grid
+		if e == '+' then
+			if g.grid > 16 then
+				g.grid = g.grid / 2
+			end
+		elseif e == '-' then
+			if g.grid < 64 then
+				g.grid = g.grid * 2
+			end
+		end
+	end
 	local mx, my, mb = mouse()
 	if mb.left or mb.right then
 		for _, v in ipairs(obj) do
