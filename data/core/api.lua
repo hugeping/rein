@@ -138,6 +138,14 @@ function env_ro.copy(src, fx, fy, w, h, dst, x, y)
 	src:copy(dst, x, y)
 end
 
+function env_ro.clip(o, x1, y1, x2, y2)
+	if type(o) == 'userdata' then
+		return o:clip(x1, y1, x2, y2)
+	end
+	x1, y1, x2, y2 = o, x1, y1, x2
+	return env.screen:clip(x1, y1, x2, y2)
+end
+
 function env_ro.line(o, x1, y1, x2, y2, col)
 	local col
 	if type(o) ~= 'userdata' then
