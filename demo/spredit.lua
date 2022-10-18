@@ -110,11 +110,11 @@ function title:click(x, y, mb, click)
 	x = x - s.x
 	local w = font:size(string.format("x%02d", grid.grid))
 	if x >= w then
-		grid.dirty = false
 		if mb.left then
 			grid:save(SPRITE)
 		elseif mb.middle then
 			grid.pixels = {}
+			grid.dirty = false
 		end
 	else
 		if not grid:zoom(-1) then
@@ -218,6 +218,7 @@ function grid:save(fname)
 	end
 	f:write("\n")
 	f:close()
+	s.dirty = false
 end
 
 function grid:pos2cell(x, y)
