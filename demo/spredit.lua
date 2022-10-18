@@ -150,7 +150,9 @@ function grid:zoom(inc)
 	if inc > 0 then
 		if s.grid > s.min_grid then
 			s.grid = s.grid / 2
-			s:pan(s.grid/2, s.grid/2)
+			if s.xoff ~= 0 and s.yoff ~= 0 then
+				s:pan(s.grid/2, s.grid/2)
+			end
 			return true
 		end
 	elseif inc < 0 then
