@@ -78,6 +78,7 @@ grid = {
 	min_grid = 16;
 	lev = 1;
 	pixels = {};
+	history = { };
 }
 
 title = {
@@ -144,22 +145,10 @@ function grid:save(fname)
 	local s = self
 	local colmap = {
 		[-1] = '-',
-		[0] = '0',
-		[1] = '1',
-		[2] = '2',
-		[3] = '3',
-		[4] = '4',
-		[5] = '5',
-		[6] = '6',
-		[7] = '7',
-		[8] = '8',
-		[9] = '9',
-		[10] = 'a',
-		[11] = 'b',
-		[12] = 'c',
-		[13] = 'd',
-		[14] = 'e',
-		[15] = 'f',
+		[0] = '0', [1] = '1', [2] = '2', [3] = '3',
+		[4] = '4', [5] = '5', [6] = '6', [7] = '7',
+		[8] = '8', [9] = '9', [10] = 'a', [11] = 'b',
+		[12] = 'c', [13] = 'd', [14] = 'e', [15] = 'f',
 	}
 	local y1,x1,y2,x2
 	local cols = {}
@@ -218,6 +207,19 @@ function grid:pos2cell(x, y)
 	return x, y
 end
 
+function grid:undo(x, y, mb)
+	local s = self
+	local n = #s.history
+	if n < 1 then
+		return
+	end
+	local z = table.remove(s.history, n)
+	s.pixels[z.y][z.x] = z.val
+	if n == 1 then
+		s.dirty = false
+	end
+end
+
 function grid:click(x, y, mb)
 	local s = self
 	x, y = s:pos2cell(x, y)
@@ -225,12 +227,18 @@ function grid:click(x, y, mb)
 		return
 	end
 	s.pixels[y] = s.pixels[y] or {}
+	local oval = s.pixels[y][x]
+	local nval
 	if mb.right then
 		s.pixels[y][x] = nil
 	else
 		s.pixels[y][x] = pal.color
+		nval = pal.color
 	end
-	s.dirty = true
+	if oval ~= nval then
+		table.insert(s.history, { x = x, y = y, val = oval  })
+		s.dirty = true
+	end
 	return true
 end
 
@@ -288,6 +296,8 @@ function kbd(r, e)
 			switch_ui()
 		elseif e == 'f2' then
 			grid:save(SPRITE)
+		elseif e == 'z' then
+			grid:undo()
 		end
 	end
 end
