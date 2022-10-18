@@ -47,6 +47,7 @@ local env = {
 	string = string,
 	pairs = pairs,
 	ipairs = ipairs,
+	io = io,
 }
 
 local env_ro = {
@@ -264,6 +265,7 @@ function env_ro.error(text)
 end
 
 function env_ro.print(text, x, y, col)
+	text = tostring(text)
 	if not env.screen then
 		system.log(text)
 		return
@@ -292,12 +294,14 @@ function env_ro.print(text, x, y, col)
 			x = 0
 			y = y + hh
 		end
+--[[
 		if y > h - hh then -- vertical overflow
 			local off = math.floor(y - (h - hh))
 			env.screen:copy(0, off, w, h - off, env.win, 0, 0) -- scroll
 			env.screen:clear(0, h - off, w, off, conf.bg)
 			y = h - hh
 		end
+]]--
 		if p then
 			p:blend(env.screen, x, y)
 		end
@@ -345,7 +349,8 @@ function api.init(c)
 end
 
 function api.event(e, v, a, b)
-	if (e == 'text' or e == 'keydown' or e == 'mousedown' ) and #input.fifo < 16 then
+	if (e == 'text' or e == 'keydown' or
+		e == 'mousedown') and #input.fifo < 16 then
 		local ev = { nam = e, sym = v }
 		table.insert(input.fifo, ev)
 	end
