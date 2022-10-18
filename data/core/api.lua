@@ -1,5 +1,12 @@
 local font = require "font"
 local core
+local input = {
+	fifo = {};
+	mouse = {
+		btn = {};
+	};
+	kbd = {};
+}
 local conf = {
 	w = 256;
 	h = 256;
@@ -30,7 +37,7 @@ local res = {
 
 }
 
-local api = {
+local env = {
 	table = table,
 	math = math,
 	string = string,
@@ -38,80 +45,80 @@ local api = {
 	ipairs = ipairs,
 }
 
-local ro_api = {
+local ro_env = {
 	screen = gfx.new(conf.w, conf.h)
 }
 
-ro_api.__index = ro_api
-ro_api.__newindex = function(t, nam, val)
-	if rawget(ro_api, nam) then
+ro_env.__index = ro_env
+ro_env.__newindex = function(t, nam, val)
+	if rawget(ro_env, nam) then
 		error("Can not change readonly value: "..nam, 2)
 	end
 	rawset(t, nam, val)
 end
 
-setmetatable(api, ro_api)
+setmetatable(env, ro_env)
 
-function api.printf(x, y, col, fmt, ...)
-	return api.print(string.format(fmt, ...), x, y, col)
+function env.printf(x, y, col, fmt, ...)
+	return env.print(string.format(fmt, ...), x, y, col)
 end
 
-function api.time()
+function env.time()
 	return system.time()
 end
 
-function api.fg(col)
+function env.fg(col)
 	conf.fg = conf.pal[col] or conf.fg
 end
 
-function api.bg(col)
+function env.bg(col)
 	conf.bg = conf.pal[col] or conf.bg
 end
 
-function api.pixel(x, y, col)
+function env.pixel(x, y, col)
 	col = conf.pal[col] or conf.fg
-	return api.screen:pixel(x, y, col)
+	return env.screen:pixel(x, y, col)
 end
 
-function api.fill(x, y, w, h, col)
+function env.fill(x, y, w, h, col)
 	if not y then
 		col = conf.pal[x] or conf.bg
-		return api.screen:fill(col)
+		return env.screen:fill(col)
 	end
 	col = conf.pal[col] or conf.bg
-	return api.screen:fill(x, y, w, h, col)
+	return env.screen:fill(x, y, w, h, col)
 end
 
-function api.clear(x, y, w, h, col)
+function env.clear(x, y, w, h, col)
 	if not y then
 		col = conf.pal[x] or conf.bg
-		return api.screen:clear(col)
+		return env.screen:clear(col)
 	end
 	col = conf.pal[col] or conf.bg
-	return api.screen:clear(x, y, w, h, col)
+	return env.screen:clear(x, y, w, h, col)
 end
 
 local last_flip = 0
 
-function api.flip(fps)
+function env.flip(fps)
 	core.render(true)
-	api.sleep((fps or conf.fps) - (api.time() - last_flip))
-	last_flip = api.time()
+	env.sleep((fps or conf.fps) - (env.time() - last_flip))
+	last_flip = env.time()
 end
 
-function api.mouse()
-	return core.mouse_x or 0, core.mouse_y or 0, core.mouse_btn
+function env.mouse()
+	return input.mouse.x or 0, input.mouse.y or 0, input.mouse.btn
 end
 
-function api.input()
-	if #core.input == 0 then
+function env.input()
+	if #input.fifo == 0 then
 		return
 	end
-	local v = table.remove(core.input, 1)
+	local v = table.remove(input.fifo, 1)
 	return v[1], v.sym
 end
 
-function api.color(k, r, g, b, a)
+function env.color(k, r, g, b, a)
 	if not k then
 		return
 	end
@@ -132,7 +139,7 @@ function api.color(k, r, g, b, a)
 	end
 end
 
-function api.sleep(to)
+function env.sleep(to)
 	local start = system.time()
 	while true do
 		coroutine.yield()
@@ -146,17 +153,17 @@ function api.sleep(to)
 	end
 end
 
-function api.error(text)
-	api.screen:clear({0xff, 0xff, 0xe8})
-	api.print(text, 0, 0, { 0, 0, 0})
+function env.error(text)
+	env.screen:clear({0xff, 0xff, 0xe8})
+	env.print(text, 0, 0, { 0, 0, 0})
 	core.err_msg = text
 	if coroutine.running() then
 		coroutine.yield()
 	end
 end
 
-function api.print(text, x, y, col)
-	if not api.screen then
+function env.print(text, x, y, col)
+	if not env.screen then
 		system.log(text)
 		return
 	end
@@ -164,14 +171,14 @@ function api.print(text, x, y, col)
 	x = x or 0
 	y = y or 0
 	col = col or conf.fg
-	local w, h = api.screen:size()
-	local ww, hh = res.font:size("")
+	local w, h = env.screen:size()
+	local ww, hh = env.font:size("")
 	while text ~= '' do
 		local s, e = text:find("[ \n]", 1)
 		if not s then s = text:len() end
 		local nl = text:sub(s, s) == '\n'
 		local word = text:sub(1, s):gsub("\n$", "")
-		local p = res.font:text(word, col)
+		local p = env.font:text(word, col)
 		if p then
 			ww, hh = p:size()
 		else
@@ -183,12 +190,12 @@ function api.print(text, x, y, col)
 		end
 		if y > h - hh then -- vertical overflow
 			local off = math.floor(y - (h - hh))
-			api.screen:copy(0, off, w, h - off, env.win, 0, 0) -- scroll
-			api.screen:clear(0, h - off, w, off, conf.bg)
+			env.screen:copy(0, off, w, h - off, env.win, 0, 0) -- scroll
+			env.screen:clear(0, h - off, w, off, conf.bg)
 			y = h - hh
 		end
 		if p then
-			p:blend(api.screen, x, y)
+			p:blend(env.screen, x, y)
 		end
 		x = x + ww
 		text = text:sub(s + 1)
@@ -199,14 +206,48 @@ function api.print(text, x, y, col)
 	end
 end
 
-return {
-	init = function(c)
-		res.font = font.new(DATADIR..'/'..conf.font)
-		core = c
---	 gfx.font(DATADIR..'/'..conf.font, math.floor(conf.font_sz))
-		if not res.font then
-			return false, string.format("Can't load font %q", DATADIR..'/'..conf.font)
-		end
-		return api
-	end
+local api = {
 }
+
+function api.init(c)
+	ro_env.font = font.new(DATADIR..'/'..conf.font)
+	core = c
+--	 gfx.font(DATADIR..'/'..conf.font, math.floor(conf.font_sz))
+	if not ro_env.font then
+		return false, string.format("Can't load font %q", DATADIR..'/'..conf.font)
+	end
+	return env
+end
+
+function api.event(e, v, a, b)
+	if (e == 'text' or e == 'keydown') and #input.fifo < 16 then
+		table.insert(input.fifo,
+			{ sym = (e == 'text' and v or false), v })
+	end
+	if e == 'keyup' then
+		if v:find("alt$") then
+			input.kbd.alt = false
+		end
+		input.kbd[v] = false
+	elseif e == 'keydown' then
+		if v:find("alt$") then
+			input.kbd.alt = true
+		end
+		input.kbd[v] = true
+		if v == 'return' and input.kbd.alt then
+			core.fullscreen = not core.fullscreen
+			if core.fullscreen then
+				system.window_mode 'fullscreen'
+			else
+				system.window_mode 'normal'
+			end
+		end
+	elseif e == 'mousemotion' then
+		input.mouse.x, input.mouse.y = core.abs2rel(v, a)
+	elseif e == 'mousedown' or e == 'mouseup' then
+		input.mouse.btn[v] = (e == 'mousedown')
+		input.mouse.x, input.mouse.y = core.abs2rel(a, b)
+	end
+end
+
+return api
