@@ -107,7 +107,11 @@ function title:click(x, y, mb, click)
 	local w = font:size(string.format("x%02d", grid.grid))
 	if x >= w then
 		grid.dirty = false
-		grid:save(SPRITE)
+		if mb.left then
+			grid:save(SPRITE)
+		elseif mb.middle then
+			grid.pixels = {}
+		end
 	else
 		if not grid:zoom(1) then
 			grid:zoom(0)
@@ -301,7 +305,7 @@ while true do
 	local r, e = input() -- todo
 	kbd(r, e)
 	local mx, my, mb = mouse()
-	if mb.left or mb.right then
+	if mb.left or mb.right or mb.middle then
 		for _, v in ipairs(obj) do
 			local mx, my, mb = mouse()
 			if mx >= v.x and my >= v.y and
