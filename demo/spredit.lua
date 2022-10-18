@@ -111,7 +111,7 @@ function grid:show()
 	for y=1,s.grid do
 		for x=1,s.grid do
 			local c = s.pixels[y] and s.pixels[y][x]
-			if not c then
+			if not c or c == -1 then
 				clear(s.x+(x-1)*dx, s.y+(y-1)*dx, dx, dx, 1)
 				blend(spr.X, s.x+(x-1)*dx + Xd, s.y+(y-1)*dx + Xd)
 			else
@@ -127,6 +127,14 @@ function grid:show()
 		line(s.x+(x-1)*dx, s.y, (x-1)*dx, s.y + s.h, 0)
 		line(s.x, s.y+(x-1)*dx, s.x+s.w, s.y+(x-1)*dx, 0)
 	end
+end
+
+if #ARGS > 1 then
+	local d, e = sprite_data(ARGS[2])
+	if not d then
+		error(e)
+	end
+	grid.pixels = d
 end
 
 while true do

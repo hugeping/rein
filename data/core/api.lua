@@ -257,9 +257,10 @@ function env_ro.error(text)
 	env.screen:clear({0xff, 0xff, 0xe8})
 	env.print(text, 0, 0, { 0, 0, 0})
 	core.err_msg = text
-	if _ENV == env then
-		coroutine.yield()
+	if not core.running() then
+		return
 	end
+	coroutine.yield()
 end
 
 function env_ro.print(text, x, y, col)
@@ -307,6 +308,13 @@ function env_ro.print(text, x, y, col)
 			y = y + hh
 		end
 	end
+end
+
+function env_ro.sprite_data(fname, y)
+	if fname:find("\n") then
+		return spr.new({ lines = function() return core.lines(fname) end })
+	end
+	return spr.new(fname)
 end
 
 function env_ro.sprite(x, y)

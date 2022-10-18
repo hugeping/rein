@@ -14,6 +14,14 @@ local core = {
 	view_y = 0;
 }
 
+function core.running()
+	if _VERSION == "Lua 5.1" then
+		return coroutine.running()
+	end
+	local _, v = coroutine.running()
+	return not v
+end
+
 function core.lines(text)
 	text = text:gsub("\r", "")
 	local function next_line(state)
@@ -55,15 +63,23 @@ function core.init()
 		core.err(err)
 		os.exit(1)
 	end
+	env.ARGS = {}
 	local f, e
 	for k=2,#ARGS do
 		local v = ARGS[k]
-		f, e = loadfile(v, "t", env)
-		if not f then
-			core.err(e)
-			return
+		if v:find("-", 1, true) == 1 then
+			-- todo options
+		else -- file to run
+			for i=k,#ARGS do
+				table.insert(env.ARGS, ARGS[i])
+			end
+			f, e = loadfile(v, "t", env)
+			if not f then
+				core.err(e)
+				return
+			end
+			break
 		end
-		break
 	end
 
 	if not f then
