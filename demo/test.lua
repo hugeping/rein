@@ -71,9 +71,9 @@ while true do
 
 	if a == 'text' then
 		txt = txt .. b
-	elseif b == 'return' then
+	elseif a == 'keydown' and b == 'return' then
 		txt = txt .. '\n'
-	elseif b == 'backspace' then
+	elseif a == 'keydown' and b == 'backspace' then
 		txt = ''
 	end
 
