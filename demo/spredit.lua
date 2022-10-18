@@ -73,6 +73,8 @@ grid = {
 	y = 0;
 	w = 256;
 	h = 256;
+	xoff = 0;
+	yoff = 0;
 	grid = 16;
 	max_grid = 64;
 	min_grid = 16;
@@ -92,7 +94,8 @@ function title:show()
 	if grid.dirty then
 		dirty = '*'
 	end
-	local info = string.format("x%02d %s%s", grid.grid, SPRITE, dirty)
+	local x, y = grid:pos2cell(mouse())
+	local info = string.format("x%02d %2d:%2d %s%s", grid.grid, x, y, SPRITE, dirty)
 	local w, h = font:size(info)
 	self.w = w
 	self.h = h
@@ -114,7 +117,7 @@ function title:click(x, y, mb, click)
 			grid.pixels = {}
 		end
 	else
-		if not grid:zoom(1) then
+		if not grid:zoom(-1) then
 			grid:zoom(0)
 		end
 	end
@@ -123,20 +126,31 @@ end
 
 local obj = { pal, grid, title }
 
+function grid:pan(dx, dy)
+	self.xoff = self.xoff + dx
+	self.yoff = self.yoff + dy
+	if self.xoff < 0 then self.xoff = 0 end
+	if self.yoff < 0 then self.yoff = 0 end
+	if self.xoff > self.max_grid then self.xoff = self.max_grid end
+	if self.yoff > self.max_grid then self.xoff = self.max_grid end
+end
+
 function grid:zoom(inc)
-	local g = self
-	if inc < 0 then
-		if g.grid > g.min_grid then
-			g.grid = g.grid / 2
+	local s = self
+	if inc > 0 then
+		if s.grid > s.min_grid then
+			s.grid = s.grid / 2
+			s:pan(s.grid/2, s.grid/2)
 			return true
 		end
-	elseif inc > 0 then
-		if g.grid < g.max_grid then
-			g.grid = g.grid * 2
+	elseif inc < 0 then
+		if s.grid < s.max_grid then
+			s:pan(-s.grid/2, -s.grid/2)
+			s.grid = s.grid * 2
 			return true
 		end
 	else
-		g.grid = g.min_grid
+		s.grid = s.min_grid
 		return true
 	end
 end
@@ -202,8 +216,8 @@ function grid:pos2cell(x, y)
 	x = x - s.x
 	y = y - s.y
 	local dx = floor(self.w / s.grid)
-	x = floor(x/dx) + 1
-	y = floor(y/dx) + 1
+	x = floor(x/dx) + 1 + s.xoff
+	y = floor(y/dx) + 1 + s.yoff
 	return x, y
 end
 
@@ -250,7 +264,7 @@ function grid:show()
 	Xd = math.round((dx-Xd)/2)
 	for y=1,s.grid do
 		for x=1,s.grid do
-			local c = s.pixels[y] and s.pixels[y][x]
+			local c = s.pixels[y+s.yoff] and s.pixels[y+s.yoff][x+s.xoff]
 			if not c or c == -1 then
 				clear(s.x+(x-1)*dx, s.y+(y-1)*dx, dx, dx, 1)
 				blend(spr.X, s.x+(x-1)*dx + Xd, s.y+(y-1)*dx + Xd)
@@ -299,6 +313,15 @@ function kbd(r, e)
 		elseif e == 'z' then
 			grid:undo()
 		end
+	end
+	if keydown("right") then
+		grid:pan(1, 0)
+	elseif keydown("left") then
+		grid:pan(-1, 0)
+	elseif keydown("up") then
+		grid:pan(0, -1)
+	elseif keydown("down") then
+		grid:pan(0, 1)
 	end
 end
 
