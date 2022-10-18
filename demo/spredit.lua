@@ -99,7 +99,9 @@ function title:show()
 end
 
 function title:click(x, y, mb, click)
-	if not click then return true end
+	if not click then
+		return true
+	end
 	local s = self
 	x = x - s.x
 	local w = font:size(string.format("x%02d", grid.grid))
@@ -111,7 +113,7 @@ function title:click(x, y, mb, click)
 			grid:zoom(0)
 		end
 	end
-	return trye
+	return true
 end
 
 local obj = { pal, grid, title }
