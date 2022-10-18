@@ -139,14 +139,14 @@ function core.abs2rel(x, y)
 end
 
 function core.run()
-	local e, v, a, b
+	local e, v, a, b, c, d
 	-- local start = system.time()
-	e, v, a, b = system.poll()
+	e, v, a, b, c = system.poll()
 
 	if e == 'quit' then
 		return false
 	else
-		api.event(e, v, a, b)
+		api.event(e, v, a, b, c)
 	end
 
 	-- core.render()
