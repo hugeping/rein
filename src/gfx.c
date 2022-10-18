@@ -426,7 +426,6 @@ img_pixels_stretch(img_t *src, img_t *dst, int xoff, int yoff, int ww, int hh)
 	w = src->w;
 	h = src->h;
 
-
 	p = dst->ptr + (yoff*dst->w + xoff)*4;
 
 	dy = 0;
