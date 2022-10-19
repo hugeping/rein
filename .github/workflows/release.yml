@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-    luajit_ver: 2.0.5
+    luajit_ver: 2.1.0-beta3
     sdl_ver: 2.24.0
 
 jobs:
