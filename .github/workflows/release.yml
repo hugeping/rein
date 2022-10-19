@@ -1,0 +1,44 @@
+name: release
+
+on:
+  workflow_dispatch:
+
+env:
+    luajit_ver: 2.0.5
+    sdl_ver: 2.24.0
+
+jobs:
+  build:
+    name: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache libs
+        id: cache-libs
+        uses: actions/cache@v3
+        with:
+          path: |
+            external
+          key: ${{ runner.os }}-${{ env.luajit_ver }}-${{ env.sdl_ver }}
+
+      - name: Install Packages
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y gcc-mingw-w64-i686 mingw-w64-i686-dev binutils-mingw-w64-i686 gcc-multilib wget libsdl2-dev
+          sudo apt-get install -y build-essential
+
+      - name: build
+        run: |
+          ./contrib/build-release.sh
+
+      - name: Create Artifact
+        run: |
+          mkdir -p artifact/dein
+          cp -r release/* artifact/dein
+
+      - name: Publish Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: dein
+          path: artifact
+          retention-days: 1
