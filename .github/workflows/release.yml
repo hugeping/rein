@@ -19,7 +19,7 @@ jobs:
         with:
           path: |
             external
-          key: ${{ runner.os }}-${{ env.luajit_ver }}-${{ env.sdl_ver }}
+          key: ${{ runner.os }}-${{ env.luajit_ver }}-${{ env.sdl_ver }}-audio
 
       - name: Install Packages
         run: |

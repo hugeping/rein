@@ -338,6 +338,31 @@ function env_ro.sprite(x, y)
 	end
 end
 
+function env_ro.audio(t)
+	local idx = 1
+	local rc
+	while true do
+		rc = system.audio(t, idx)
+		if #t == rc + idx - 1 then
+			return
+		end
+		idx = idx + rc
+		coroutine.yield()
+	end
+end
+
+function env_ro.thread(fn)
+	local f, e = coroutine.create(fn)
+	if f then
+		table.insert(core.fn, f)
+	end
+	return f, e
+end
+
+function env_ro.yield(...)
+	return coroutine.yield(...)
+end
+
 local api = {}
 
 function api.init(c)

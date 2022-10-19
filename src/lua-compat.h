@@ -6,4 +6,5 @@
 extern void luaL_setfuncs_int(lua_State *L, const luaL_Reg *l, int nup);
 extern void luaL_requiref(lua_State *L, char const* modname,
 	      lua_CFunction openf, int glb);
+extern int lua_rawlen(lua_State *L, int idx);
 #endif

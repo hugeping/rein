@@ -160,9 +160,65 @@ GetScale(void)
 static HINSTANCE user32_lib;
 #endif
 
+static SDL_AudioSpec audiospec;
+static SDL_AudioDeviceID audiodev;
+
+struct {
+	unsigned char *data;
+	unsigned int head;
+	unsigned int tail;
+	unsigned int size;
+	unsigned int free;
+} audiobuff;
+
+unsigned int
+AudioWrite(void *data, unsigned int size)
+{
+	unsigned int pos, rc, towrite;
+	unsigned char *buf = data;
+	if (!audiodev)
+		return size;
+	SDL_LockAudioDevice(audiodev);
+	towrite = (size >= audiobuff.free)?audiobuff.free:size;
+	pos = audiobuff.tail;
+	audiobuff.free -= towrite;
+	rc = towrite;
+	while (towrite--)
+		audiobuff.data[pos++ % audiobuff.size] = *(buf ++);
+	audiobuff.tail = pos % audiobuff.size;
+	SDL_UnlockAudioDevice(audiodev);
+	return rc;
+}
+
+static unsigned int
+audio_read(uint8_t *stream, int len)
+{
+	unsigned int used, toread, pos, rc;
+	SDL_LockAudioDevice(audiodev);
+	used = audiobuff.size - audiobuff.free;
+	toread = (len>=used)?used:len;
+	audiobuff.free += toread;
+	pos = audiobuff.head;
+	rc = toread;
+	while (toread--)
+		*(stream++) = audiobuff.data[pos ++ % audiobuff.size];
+	audiobuff.head = pos % audiobuff.size;
+	SDL_UnlockAudioDevice(audiodev);
+	return rc;
+}
+
+static void
+audio_cb(void *userdata, uint8_t *stream, int len)
+{
+	unsigned int readed = audio_read(stream, len);
+	if (readed < len)
+		memset(stream + readed, 0, len - readed);
+}
+
 int
 PlatformInit(void)
 {
+	SDL_AudioSpec spec;
 #ifdef _WIN32
 	int (*SetProcessDPIAware)();
 	user32_lib = LoadLibrary("user32.dll");
@@ -170,8 +226,24 @@ PlatformInit(void)
 	if (SetProcessDPIAware)
 		SetProcessDPIAware();
 #endif
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO))
 		return -1;
+	spec.freq = 44100;
+	spec.format = AUDIO_S16;
+	spec.channels = 2;
+	spec.samples = 4096;
+	spec.callback = audio_cb;
+	spec.userdata = NULL;
+	audiodev = SDL_OpenAudioDevice(NULL, 0, &spec, &audiospec, SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
+	if (audiodev) {
+//		printf("Audio: %dHz\n", audiospec.freq);
+		audiobuff.size = audiospec.samples * 2 * spec.channels * 2;
+		audiobuff.free = audiobuff.size;
+		audiobuff.data = malloc(audiobuff.size);
+		audiobuff.head = 0;
+		audiobuff.tail = 0;
+	}
+	SDL_PauseAudioDevice(audiodev, 0);
 	return 0;
 }
 
@@ -180,6 +252,9 @@ static SDL_Surface *winbuff = NULL;
 void
 PlatformDone(void)
 {
+	SDL_PauseAudioDevice(audiodev, 1);
+	if (audiodev)
+		SDL_CloseAudioDevice(audiodev);
 #ifdef _WIN32
 	if (user32_lib)
 		FreeLibrary(user32_lib);

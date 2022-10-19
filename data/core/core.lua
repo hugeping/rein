@@ -14,6 +14,7 @@ if not table.unpack then
 end
 
 local core = {
+	fn = {};
 	view_x = 0;
 	view_y = 0;
 }
@@ -93,7 +94,7 @@ function core.init()
 	if setefenv then
 		setfenv(f, env)
 	end
-	core.fn = coroutine.create(f)
+	core.fn[1] = coroutine.create(f)
 	-- system.window_mode 'fullscreen'
 	-- system.window_mode 'normal'
 end
@@ -154,11 +155,23 @@ function core.run()
 	end
 
 	-- core.render()
-	if not core.err() and coroutine.status(core.fn) ~= 'dead' then
-		local r, e = coroutine.resume(core.fn)
-		if not r then
-			e = e .. '\n'..debug.traceback(core.fn)
-			core.err(e)
+	if not core.err() then
+		local i = 1
+		local n = #core.fn
+		while i <= n do
+			local fn = core.fn[i]
+			if coroutine.status(fn) ~= 'dead' then
+				local r, e = coroutine.resume(fn)
+				if not r then
+					e = e .. '\n'..debug.traceback(fn)
+					core.err(e)
+					break
+				end
+				i = i + 1
+			else
+				table.remove(core.fn, i)
+				n = n - 1
+			end
 		end
 	else
 		core.render()
