@@ -102,7 +102,7 @@ function plasma6()
 			r = v / 2
 			g = v
 			b = v + v
-			screen:val(x, y, {r, g, b, 255})
+			screen:val(x, y, {floor(r % 256), floor(g % 256), floor(b % 256), 255})
 		end
 	end
 end
