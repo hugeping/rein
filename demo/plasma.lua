@@ -128,7 +128,7 @@ while true do
 	end
 
 	frames = frames + 1
-	local col = 7 + (frames%2)*7
-	print(tostring(demo_nr).." "..fps, 0, 0, col)
+	clear(0,256-8,256,256-8,7)
+	printf(0, 256-8, 1, "Демо:%d FPS:%d", demo_nr, fps)
 	flip(1/30)
 end
