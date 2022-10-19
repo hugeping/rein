@@ -12,10 +12,10 @@ jobs:
     name: release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@main
       - name: Cache libs
         id: cache-libs
-        uses: actions/cache@v3
+        uses: actions/cache@main
         with:
           path: |
             external
@@ -42,3 +42,23 @@ jobs:
           name: dein
           path: artifact
           retention-days: 1
+  upload:
+    name: Create release and upload artifacts
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@main
+      - name: Create zip
+        run: |
+          ls -alFR
+          cd dein
+          zip -r ../dein.zip dein/
+      - name: Create release and upload artifacts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          wget -q https://github.com/TheAssassin/pyuploadtool/releases/download/continuous/pyuploadtool-x86_64.AppImage
+          chmod +x pyuploadtool-x86_64.AppImage
+          ./pyuploadtool-x86_64.AppImage dein.zip
