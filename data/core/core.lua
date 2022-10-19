@@ -9,6 +9,10 @@ math.round = function(num, n)
 	return math.floor(num * m + 0.5) / m
 end
 
+if not table.unpack then
+	table.unpack = unpack
+end
+
 local core = {
 	view_x = 0;
 	view_y = 0;
