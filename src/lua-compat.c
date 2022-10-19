@@ -2,7 +2,7 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
-#if !defined LUA_VERSION_NUM || LUA_VERSION_NUM==501
+#if (!defined LUA_VERSION_NUM || LUA_VERSION_NUM==501) && (!defined(LUAJIT_VERSION_NUM) || LUAJIT_VERSION_NUM <= 20100)
 void
 luaL_setfuncs(lua_State *L, const luaL_Reg *l, int nup)
 {
