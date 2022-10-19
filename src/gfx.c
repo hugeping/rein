@@ -1432,7 +1432,7 @@ static void
 pixels_create_meta (lua_State *L)
 {
 	luaL_newmetatable (L, "pixels metatable");
-	luaL_setfuncs(L, pixels_mt, 0);
+	luaL_setfuncs_int(L, pixels_mt, 0);
 	lua_pushvalue(L, -1);
 	lua_setfield(L, -2, "__index");
 }
@@ -1534,7 +1534,7 @@ static void
 font_create_meta(lua_State *L)
 {
 	luaL_newmetatable(L, "font metatable");
-	luaL_setfuncs(L, font_mt, 0);
+	luaL_setfuncs_int(L, font_mt, 0);
 	lua_pushvalue(L, -1);
 	lua_setfield(L, -2, "__index");
 }

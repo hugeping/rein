@@ -2,9 +2,9 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
-#if (!defined LUA_VERSION_NUM || LUA_VERSION_NUM==501) && (!defined(LUAJIT_VERSION_NUM) || LUAJIT_VERSION_NUM < 20100)
+#if !defined LUA_VERSION_NUM || LUA_VERSION_NUM==501
 void
-luaL_setfuncs(lua_State *L, const luaL_Reg *l, int nup)
+luaL_setfuncs_int(lua_State *L, const luaL_Reg *l, int nup)
 {
 	luaL_checkstack(L, nup+1, "too many upvalues");
 	for (; l->name != NULL; l++) {  /* fill the table with given functions */
@@ -35,5 +35,11 @@ luaL_requiref(lua_State *L, char const* modname,
 		lua_pushvalue(L, -1);
 		lua_setglobal(L, modname);
 	}
+}
+#else
+void
+luaL_setfuncs_int(lua_State *L, const luaL_Reg *l, int nup)
+{
+	luaL_setfuncs(L, l, nup);
 }
 #endif
