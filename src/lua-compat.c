@@ -36,6 +36,11 @@ luaL_requiref(lua_State *L, char const* modname,
 		lua_setglobal(L, modname);
 	}
 }
+int
+lua_rawlen(lua_State *L, int idx)
+{
+	return lua_objlen(L, idx);
+}
 #else
 void
 luaL_setfuncs_int(lua_State *L, const luaL_Reg *l, int nup)

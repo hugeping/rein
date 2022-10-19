@@ -244,6 +244,44 @@ sys_log(lua_State *L)
 	return 0;
 }
 
+static int
+sys_audio(lua_State *L)
+{
+	int len, i, idx;
+	int pos = 0;
+	unsigned int rc, written = 0;
+	float f;
+#define SND_BUF_SIZE 4096
+	static signed short buf[SND_BUF_SIZE];
+
+	if (!lua_istable(L, 1)) {
+		return 0;
+	}
+	idx = luaL_optnumber(L, 2, 1);
+
+	len = lua_rawlen(L, 1);
+	for (i = idx; i <= len; i++) {
+		lua_rawgeti(L, 1, i);
+		f = luaL_checknumber(L, -1);
+		lua_pop(L, 1);
+		buf[pos++] = (short)((float)f * 16384.0);
+		if (pos >= 4096) {
+			rc = AudioWrite(buf, pos * 2);
+			written += rc;
+			pos = 0;
+			if (rc < SND_BUF_SIZE)
+				break;
+		}
+	}
+	if (pos > 0) {
+		rc = AudioWrite(buf, pos * 2);
+		written += rc;
+	}
+	lua_pushinteger(L, written / 2);
+	return 1;
+#undef SND_BUF_SIZE
+}
+
 static const luaL_Reg
 sys_lib[] = {
 	{ "poll", sys_poll },
@@ -262,6 +300,7 @@ sys_lib[] = {
 	{ "sleep", sys_sleep },
 	{ "input", sys_input },
 	{ "log", sys_log },
+	{ "audio", sys_audio },
 	{ NULL, NULL }
 };
 

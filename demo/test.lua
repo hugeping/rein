@@ -58,6 +58,23 @@ local function showkeys()
 	return t
 end
 
+
+thread(function()
+	local t = {}
+	local k = 0
+	while true do
+		for i = 1, 1024,2 do
+			t[i] = math.sin(k)
+			t[i+1] = t[i]
+			k = k + 0.1
+		end
+		audio(t)
+		if k > 1000 then
+			return
+		end
+	end
+end)
+
 while true do
 	local cur = time()
 	fps = math.floor(frames / (cur - start))
