@@ -279,7 +279,7 @@ function grid:show()
 		for x=1,s.grid do
 			local c = s.pixels[y+s.yoff] and s.pixels[y+s.yoff][x+s.xoff]
 			if not c or c == -1 then
-				clear(s.x+(x-1)*dx, s.y+(y-1)*dx, dx, dx, 1)
+				clear(s.x+(x-1)*dx, s.y+(y-1)*dx, dx, dx, { 0, 64, 48, 255})
 				blend(spr.X, s.x+(x-1)*dx + Xd, s.y+(y-1)*dx + Xd)
 			else
 				clear(s.x+(x-1)*dx, s.y+(y-1)*dx, dx, dx, c)

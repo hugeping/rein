@@ -48,6 +48,8 @@ local env = {
 	pairs = pairs,
 	ipairs = ipairs,
 	io = io,
+	tonumber = tonumber,
+	tostring = tostring,
 }
 
 local env_ro = {
