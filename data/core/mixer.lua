@@ -24,12 +24,11 @@ function mixer.thread()
 					rr = rr + r
 				end
 			end
-			if mixer.chans[1] then
-				t[i] = ll / #mixer.chans
-				t[i+1] = rr / #mixer.chans
-			else
+			if not mixer.chans[1] then
 				break
 			end
+			t[i] = ll / #mixer.chans
+			t[i+1] = rr / #mixer.chans
 		end
 		if t[1] then
 			mixer.audio(t)
