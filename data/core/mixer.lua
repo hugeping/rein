@@ -1,3 +1,5 @@
+local CHUNK = 4096
+
 local mixer = {
 	chans = {};
 }
@@ -5,7 +7,7 @@ local mixer = {
 function mixer.thread()
 	while true do
 		local t = {}
-		for i = 1,4096,2 do
+		for i = 1,CHUNK,2 do
 			local mix = {}
 			local k, n = 1, #mixer.chans
 			local ll, rr = 0, 0
