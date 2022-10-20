@@ -13,6 +13,7 @@ img_new(int w, int h)
 	img->h = h;
 	img->ptr = (unsigned char *)(img + 1);
 	img_noclip(img);
+	img_offset(img, 0, 0);
 	return img;
 }
 
@@ -25,6 +26,15 @@ img_noclip(img_t *img)
 	img->clip_y1 = 0;
 	img->clip_x2 = img->w;
 	img->clip_y2 = img->h;
+}
+
+void
+img_offset(img_t *img, int x, int y)
+{
+	if (!img)
+		return;
+	img->xoff = x;
+	img->yoff = y;
 }
 
 void
@@ -137,7 +147,7 @@ pixel(unsigned char *s, unsigned char *d)
 static int
 pixels_value(lua_State *L)
 {
-	struct lua_pixels *hdr = (struct lua_pixels*)lua_touserdata(L, 1);
+	struct lua_pixels *hdr = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	int x = luaL_optnumber(L, 2, -1);
 	int y = luaL_optnumber(L, 3, -1);
 	color_t col;
@@ -149,8 +159,6 @@ pixels_value(lua_State *L)
 	if (x < 0 || y < 0)
 		return 0;
 
-	if (!hdr || hdr->type != PIXELS_MAGIC)
-		return 0;
 	if (x >= hdr->img.w || y >= hdr->img.h)
 		return 0;
 
@@ -173,7 +181,7 @@ pixels_value(lua_State *L)
 static int
 pixels_pixel(lua_State *L)
 {
-	struct lua_pixels *hdr = (struct lua_pixels*)lua_touserdata(L, 1);
+	struct lua_pixels *hdr = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	int x = luaL_optnumber(L, 2, -1);
 	int y = luaL_optnumber(L, 3, -1);
 	color_t color;
@@ -182,8 +190,8 @@ pixels_pixel(lua_State *L)
 
 	checkcolor(L, 4, &color);
 
-	if (!hdr || hdr->type != PIXELS_MAGIC)
-		return 0;
+	x += hdr->img.xoff;
+	y += hdr->img.yoff;
 
 	if (x < hdr->img.clip_x1 || y < hdr->img.clip_y1)
 		return 0;
@@ -216,6 +224,7 @@ pixels_new(lua_State *L, int w, int h)
 	hdr->size = size;
 	hdr->img.ptr = (unsigned char*)(hdr + 1);
 	img_noclip(&hdr->img);
+	img_offset(&hdr->img, 0, 0);
 	memset(hdr->img.ptr, 0, size);
 	luaL_getmetatable(L, "pixels metatable");
 	lua_setmetatable(L, -2);
@@ -298,6 +307,7 @@ gfx_pixels_win(lua_State *L)
 	hdr->img.w = w;
 	hdr->img.h = h;
 	img_noclip(&hdr->img);
+	img_offset(&hdr->img, 0, 0);
 	hdr->size = w * h * 4;
 	hdr->img.ptr = ptr;
 	//memset(hdr->img.ptr, 0, hdr->size);
@@ -309,9 +319,7 @@ gfx_pixels_win(lua_State *L)
 static int
 pixels_size(lua_State *L)
 {
-	struct lua_pixels *hdr = (struct lua_pixels*)lua_touserdata(L, 1);
-	if (!hdr || hdr->type != PIXELS_MAGIC)
-		return 0;
+	struct lua_pixels *hdr = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	lua_pushinteger(L, hdr->img.w);
 	lua_pushinteger(L, hdr->img.h);
 	return 2;
@@ -319,10 +327,17 @@ pixels_size(lua_State *L)
 
 static void
 _fill(img_t *src, int x, int y, int w, int h,
-		  int r, int g, int b, int a, int mode) {
+		  int r, int g, int b, int a, int mode)
+{
 	unsigned char col[4];
 	unsigned char *ptr1;
 	int cy, cx;
+
+	if (w)
+		x += src->xoff;
+	if (h)
+		y += src->yoff;
+
 	col[0] = r; col[1] = g; col[2] = b; col[3] = a;
 	if (!w)
 		w = src->w;
@@ -330,12 +345,12 @@ _fill(img_t *src, int x, int y, int w, int h,
 		h = src->h;
 
 	if (x < src->clip_x1) {
-		w += x - src->clip_x1;
+		w -= src->clip_x1 - x;
 		x = src->clip_x1;
 	}
 
 	if (y < src->clip_y1) {
-		h += y - src->clip_y1;
+		h -= src->clip_y1 - y;
 		y = src->clip_y1;
 	}
 
@@ -370,9 +385,8 @@ pixels_fill(lua_State *L)
 	int x = 0, y = 0, w = 0, h = 0;
 	struct lua_pixels *src;
 	color_t col;
-	src = (struct lua_pixels*)lua_touserdata(L, 1);
-	if (!src || src->type != PIXELS_MAGIC)
-		return 0;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
+
 	if (!lua_isnumber(L, 2)) {
 		checkcolor(L, 2, &col);
 	} else {
@@ -393,9 +407,8 @@ pixels_clear(lua_State *L)
 	int x = 0, y = 0, w = 0, h = 0;
 	struct lua_pixels *src;
 	color_t col;
-	src = (struct lua_pixels*)lua_touserdata(L, 1);
-	if (!src || src->type != PIXELS_MAGIC)
-		return 0;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
+
 	if (!lua_isnumber(L, 2)) {
 		checkcolor(L, 2, &col);
 	} else {
@@ -416,6 +429,9 @@ img_pixels_stretch(img_t *src, img_t *dst, int xoff, int yoff, int ww, int hh)
 	unsigned char *ptr, *p;
 	unsigned char *optr = NULL;
 	ptr = src->ptr;
+
+	xoff += dst->xoff;
+	yoff += dst->yoff;
 
 	if (ww < 0)
 		ww = dst->w;
@@ -498,6 +514,9 @@ img_pixels_blend(img_t *src, int x, int y, int w, int h,
 	unsigned char *ptr1, *ptr2;
 	int cy, cx, srcw, dstw;
 
+	xx += dst->xoff;
+	yy += dst->yoff;
+
 	if (!w)
 		w = src->w;
 	if (!h)
@@ -562,23 +581,21 @@ pixels_copy(lua_State *L)
 {
 	int x = 0, y = 0, w = 0, h = 0, xx = 0, yy = 0;
 	struct lua_pixels *src, *dst;
-	src = (struct lua_pixels*)lua_touserdata(L, 1);
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	dst = (struct lua_pixels*)lua_touserdata(L, 2);
 	if (!dst) {
 		x = luaL_optnumber(L, 2, 0);
 		y = luaL_optnumber(L, 3, 0);
 		w = luaL_optnumber(L, 4, 0);
 		h = luaL_optnumber(L, 5, 0);
-		dst = (struct lua_pixels*)lua_touserdata(L, 6);
+		dst = (struct lua_pixels*)luaL_checkudata(L, 6, "pixels metatable");
 		xx = luaL_optnumber(L, 7, 0);
 		yy = luaL_optnumber(L, 8, 0);
 	} else {
 		xx = luaL_optnumber(L, 3, 0);
 		yy = luaL_optnumber(L, 4, 0);
 	}
-	if (!src || src->type != PIXELS_MAGIC)
-		return 0;
-	if (!dst || dst->type != PIXELS_MAGIC)
+	if (dst->type != PIXELS_MAGIC)
 		return 0;
 	return img_pixels_blend(&src->img, x, y, w, h, &dst->img, xx, yy, PXL_BLEND_COPY);
 }
@@ -588,23 +605,21 @@ pixels_blend(lua_State *L)
 {
 	int x = 0, y = 0, w = 0, h = 0, xx = 0, yy = 0;
 	struct lua_pixels *src, *dst;
-	src = (struct lua_pixels*)lua_touserdata(L, 1);
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	dst = (struct lua_pixels*)lua_touserdata(L, 2);
 	if (!dst) {
 		x = luaL_optnumber(L, 2, 0);
 		y = luaL_optnumber(L, 3, 0);
 		w = luaL_optnumber(L, 4, 0);
 		h = luaL_optnumber(L, 5, 0);
-		dst = (struct lua_pixels*)lua_touserdata(L, 6);
+		dst = (struct lua_pixels*)luaL_checkudata(L, 6, "pixels metatable");
 		xx = luaL_optnumber(L, 7, 0);
 		yy = luaL_optnumber(L, 8, 0);
 	} else {
 		xx = luaL_optnumber(L, 3, 0);
 		yy = luaL_optnumber(L, 4, 0);
 	}
-	if (!src || src->type != PIXELS_MAGIC)
-		return 0;
-	if (!dst || dst->type != PIXELS_MAGIC)
+	if (dst->type != PIXELS_MAGIC)
 		return 0;
 	return img_pixels_blend(&src->img, x, y, w, h, &dst->img, xx, yy, PXL_BLEND_BLEND);
 }
@@ -705,6 +720,11 @@ line(img_t *src, int x1, int y1, int x2, int y2, int r, int g, int b, int a)
 {
 	int dx, dy, tmp;
 	unsigned char col[4];
+	x1 += src->xoff;
+	y1 += src->yoff;
+	x2 += src->xoff;
+	y2 += src->yoff;
+
 	if (y1 > y2) {
 		tmp = y1; y1 = y2; y2 = tmp;
 		tmp = x1; x1 = x2; x2 = tmp;
@@ -749,9 +769,7 @@ pixels_line(lua_State *L)
 	int x1 = 0, y1 = 0, x2 = 0, y2 = 0;
 	color_t col;
 	struct lua_pixels *src;
-	src = (struct lua_pixels*)lua_touserdata(L, 1);
-	if (!src || src->type != PIXELS_MAGIC)
-		return 0;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	x1 = luaL_optnumber(L, 2, 0);
 	y1 = luaL_optnumber(L, 3, 0);
 	x2 = luaL_optnumber(L, 4, 0);
@@ -769,6 +787,11 @@ lineAA(img_t *src, int x0, int y0, int x1, int y1,
 	int syp, sxp, ed;
 	unsigned char *ptr;
 	unsigned char col[4];
+
+	x0 += src->xoff;
+	y0 += src->yoff;
+	x1 += src->xoff;
+	y1 += src->yoff;
 
 	col[0] = r; col[1] = g; col[2] = b; col[3] = a;
 	if (y0 > y1) {
@@ -858,9 +881,7 @@ pixels_lineAA(lua_State *L)
 	int x1 = 0, y1 = 0, x2 = 0, y2 = 0;
 	color_t col;
 	struct lua_pixels *src;
-	src = (struct lua_pixels*)lua_touserdata(L, 1);
-	if (!src || src->type != PIXELS_MAGIC)
-		return 0;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	x1 = luaL_optnumber(L, 2, 0);
 	y1 = luaL_optnumber(L, 3, 0);
 	x2 = luaL_optnumber(L, 4, 0);
@@ -907,20 +928,30 @@ max3(int a, int b, int c)
 static void
 triangle(img_t *src, int x0, int y0, int x1, int y1, int x2, int y2, int r, int g, int b, int a)
 {
-	int A01 = y0 - y1, B01 = x1 - x0;
-	int A12 = y1 - y2, B12 = x2 - x1;
-	int A20 = y2 - y0, B20 = x0 - x2;
-
-	int minx = min3(x0, x1, x2);
-	int miny = min3(y0, y1, y2);
-	int maxx = max3(x0, x1, x2);
-	int maxy = max3(y0, y1, y2);
-
 	int y, x, w;
 	int yd;
 	unsigned char col[4];
 	unsigned char *ptr;
 	int w0_row, w1_row, w2_row;
+
+	int A01, A12, A20, B01, B12, B20, minx, miny, maxx, maxy;
+
+	x0 += src->xoff;
+	y0 += src->yoff;
+	x1 += src->xoff;
+	y1 += src->yoff;
+	x2 += src->xoff;
+	y2 += src->yoff;
+
+	A01 = y0 - y1; B01 = x1 - x0;
+	A12 = y1 - y2; B12 = x2 - x1;
+	A20 = y2 - y0; B20 = x0 - x2;
+
+	minx = min3(x0, x1, x2);
+	miny = min3(y0, y1, y2);
+	maxx = max3(x0, x1, x2);
+	maxy = max3(y0, y1, y2);
+
 	w = src->w;
 	yd = 4 * w;
 	col[0] = r; col[1] = b; col[2] = g; col[3] = a;
@@ -972,6 +1003,10 @@ fill_circle(img_t *src, int xc, int yc, int radius, int r, int g, int b, int a)
 	int w = src->w;
 	unsigned char *ptr;
 	int x1, y1, x2, y2;
+
+	xc += src->xoff;
+	yc += src->yoff;
+
 	x1 = src->clip_x1;
 	y1 = src->clip_y1;
 	x2 = src->clip_x2;
@@ -1023,6 +1058,9 @@ circle(img_t *src, int xc, int yc, int rr, int r, int g, int b, int a)
 
 	if (rr <= 0)
 		return;
+
+	xc += src->xoff;
+	yc += src->yoff;
 
 	x1 = src->clip_x1;
 	y1 = src->clip_y1;
@@ -1086,6 +1124,10 @@ circleAA(img_t *src, int xc, int yc, int rr, int r, int g, int b, int a)
 	unsigned char col[4] = { r, g, b, a };
 	int w = src->w;
 	int x1, y1, x2, y2;
+
+	xc += src->xoff;
+	yc += src->yoff;
+
 	x1 = src->clip_x1;
 	y1 = src->clip_y1;
 	x2 = src->clip_x2;
@@ -1251,9 +1293,7 @@ pixels_triangle(lua_State *L)
 	int x0 = 0, y0 = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
 	struct lua_pixels *src;
 	color_t col;
-	src = (struct lua_pixels*)lua_touserdata(L, 1);
-	if (!src || src->type != PIXELS_MAGIC)
-		return 0;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	x0 = luaL_optnumber(L, 2, 0);
 	y0 = luaL_optnumber(L, 3, 0);
 	x1 = luaL_optnumber(L, 4, 0);
@@ -1277,9 +1317,7 @@ pixels_circle(lua_State *L)
 	int xc = 0, yc = 0, rr = 0;
 	color_t col;
 	struct lua_pixels *src;
-	src = (struct lua_pixels*)lua_touserdata(L, 1);
-	if (!src || src->type != PIXELS_MAGIC)
-		return 0;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	xc = luaL_optnumber(L, 2, 0);
 	yc = luaL_optnumber(L, 3, 0);
 	rr = luaL_optnumber(L, 4, 0);
@@ -1294,9 +1332,7 @@ pixels_circleAA(lua_State *L)
 	int xc = 0, yc = 0, rr = 0;
 	color_t col;
 	struct lua_pixels *src;
-	src = (struct lua_pixels*)lua_touserdata(L, 1);
-	if (!src || src->type != PIXELS_MAGIC)
-		return 0;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	xc = luaL_optnumber(L, 2, 0);
 	yc = luaL_optnumber(L, 3, 0);
 	rr = luaL_optnumber(L, 4, 0);
@@ -1311,9 +1347,7 @@ pixels_fill_circle(lua_State *L)
 	int xc = 0, yc = 0, rr = 0;
 	color_t col;
 	struct lua_pixels *src;
-	src = (struct lua_pixels*)lua_touserdata(L, 1);
-	if (!src || src->type != PIXELS_MAGIC)
-		return 0;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	xc = luaL_optnumber(L, 2, 0);
 	yc = luaL_optnumber(L, 3, 0);
 	rr = luaL_optnumber(L, 4, 0);
@@ -1330,9 +1364,7 @@ pixels_fill_poly(lua_State *L)
 	struct lua_point *v;
 	unsigned char col[4];
 	color_t color;
-	src = (struct lua_pixels*)lua_touserdata(L, 1);
-	if (!src || src->type != PIXELS_MAGIC)
-		return 0;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	luaL_checktype(L, 2, LUA_TTABLE);
 #if LUA_VERSION_NUM >= 502
 	nr = lua_rawlen(L, 2);
@@ -1355,11 +1387,11 @@ pixels_fill_poly(lua_State *L)
 	for (i = 0; i < nr; i++) {
 		lua_pushinteger(L, (i * 2) + 1);
 		lua_gettable(L, -2);
-		v[i].x = lua_tonumber(L, -1);
+		v[i].x = lua_tonumber(L, -1) + src->img.xoff;
 		lua_pop(L, 1);
 		lua_pushinteger(L, (i * 2) + 2);
 		lua_gettable(L, -2);
-		v[i].y = lua_tonumber(L, -1);
+		v[i].y = lua_tonumber(L, -1) + src->img.yoff;
 		lua_pop(L, 1);
 	}
 	lua_pop(L, 1);
@@ -1375,9 +1407,7 @@ pixels_scale(lua_State *L)
 	int smooth;
 	struct lua_pixels *src;
 	img_t *dst;
-	src = (struct lua_pixels*)lua_touserdata(L, 1);
-	if (!src || src->type != PIXELS_MAGIC)
-		return 0;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	xs = luaL_optnumber(L, 2, 0.0f);
 	ys = luaL_optnumber(L, 3, 0.0f);
 	if (ys == 0.0)
@@ -1402,12 +1432,9 @@ pixels_stretch(lua_State *L)
 	struct lua_pixels *src;
 	struct lua_pixels *dst;
 	int x, y, w, h;
-	src = (struct lua_pixels*)lua_touserdata(L, 1);
-	if (!src || src->type != PIXELS_MAGIC)
-		return 0;
-	dst = (struct lua_pixels*)lua_touserdata(L, 2);
-	if (!dst || dst->type != PIXELS_MAGIC)
-		return 0;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
+	dst = (struct lua_pixels*)luaL_checkudata(L, 2, "pixels metatable");
+
 	x = luaL_optinteger(L, 3, 0);
 	y = luaL_optinteger(L, 4, 0);
 	w = luaL_optinteger(L, 5, -1);
@@ -1422,14 +1449,15 @@ pixels_clip(lua_State *L)
 {
 	int x1, y1, x2, y2;
 	struct lua_pixels *src;
-	src = (struct lua_pixels*)lua_touserdata(L, 1);
-	if (!src || src->type != PIXELS_MAGIC)
-		return 0;
-	x1 = luaL_optinteger(L, 2, -1);
-	if (x1 == -1) {
-		img_noclip(&src->img);
-		return 0;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
+	if (lua_isnil(L, 2)) {
+		lua_pushinteger(L, src->img.clip_x1);
+		lua_pushinteger(L, src->img.clip_y1);
+		lua_pushinteger(L, src->img.clip_x2);
+		lua_pushinteger(L, src->img.clip_y2);
+		return 4;
 	}
+	x1 = luaL_checkinteger(L, 2);
 	y1 = luaL_checkinteger(L, 3);
 	x2 = luaL_checkinteger(L, 4);
 	y2 = luaL_checkinteger(L, 5);
@@ -1441,9 +1469,47 @@ pixels_clip(lua_State *L)
 	return 0;
 }
 
+static int
+pixels_noclip(lua_State *L)
+{
+	struct lua_pixels *src;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
+	img_noclip(&src->img);
+	return 0;
+}
+
+static int
+pixels_offset(lua_State *L)
+{
+	int x, y;
+	struct lua_pixels *src;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
+	if (lua_isnil(L, 2)) {
+		lua_pushinteger(L, src->img.xoff);
+		lua_pushinteger(L, src->img.yoff);
+		return 2;
+	}
+	x = luaL_checkinteger(L, 2);
+	y = luaL_checkinteger(L, 3);
+	img_offset(&src->img, x, y);
+	return 0;
+}
+
+static int
+pixels_nooffset(lua_State *L)
+{
+	struct lua_pixels *src;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
+	img_offset(&src->img, 0, 0);
+	return 0;
+}
+
 static const luaL_Reg pixels_mt[] = {
 	{ "val", pixels_value },
 	{ "clip", pixels_clip },
+	{ "npclip", pixels_noclip },
+	{ "offset", pixels_offset },
+	{ "nooffset", pixels_nooffset },
 	{ "pixel", pixels_pixel },
 	{ "size", pixels_size },
 	{ "fill", pixels_fill },
@@ -1463,7 +1529,7 @@ static const luaL_Reg pixels_mt[] = {
 };
 
 static void
-pixels_create_meta (lua_State *L)
+pixels_create_meta(lua_State *L)
 {
 	luaL_newmetatable (L, "pixels metatable");
 	luaL_setfuncs_int(L, pixels_mt, 0);
@@ -1487,9 +1553,7 @@ static int
 gfx_icon(lua_State *L)
 {
 	struct lua_pixels *src;
-	src = (struct lua_pixels*)lua_touserdata(L, 1);
-	if (!src || src->type != PIXELS_MAGIC)
-		return 0;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	Icon(src->img.ptr, src->img.w, src->img.h);
 	return 0;
 }
@@ -1504,9 +1568,7 @@ struct lua_font {
 static int
 font_gc(lua_State *L)
 {
-	struct lua_font *fn = (struct lua_font*)lua_touserdata(L, 1);
-	if (!fn || fn->type != FONT_MAGIC)
-		return 0;
+	struct lua_font *fn = (struct lua_font*)luaL_checkudata(L, 1, "font metatable");
 	font_free(fn->font);
 	return 0;
 }
@@ -1514,10 +1576,8 @@ font_gc(lua_State *L)
 static int
 font_size(lua_State *L)
 {
-	struct lua_font *fn = (struct lua_font*)lua_touserdata(L, 1);
+	struct lua_font *fn = (struct lua_font*)luaL_checkudata(L, 1, "font metatable");
 	const char *text = luaL_checkstring(L, 2);
-	if (!fn || fn->type != FONT_MAGIC)
-		return 0;
 	lua_pushinteger(L, font_width(fn->font, text));
 	lua_pushinteger(L, font_height(fn->font));
 	return 2;
@@ -1541,11 +1601,9 @@ font_text(lua_State *L)
 	int w, h;
 	color_t col;
 	struct lua_pixels *pxl;
-	struct lua_font *fn = (struct lua_font*)lua_touserdata(L, 1);
+	struct lua_font *fn = (struct lua_font*)luaL_checkudata(L, 1, "font metatable");
 	const char *text = luaL_checkstring(L, 2);
 	checkcolor(L, 3, &col);
-	if (!fn || fn->type != FONT_MAGIC)
-		return 0;
 	w = font_width(fn->font, text);
 	h = font_height(fn->font);
 	pxl = pixels_new(L, w, h);
