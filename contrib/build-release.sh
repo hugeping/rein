@@ -47,7 +47,7 @@ fi
 
 ## Linux version
 
-gcc -static -Wall -O3 \
+gcc -Wall -O3 -Wl,-Bstatic \
 -Iexternal/include \
 -Iexternal/include/SDL2 \
 src/*.c \
@@ -55,6 +55,7 @@ src/*.c \
 -D_REENTRANT -Dunix -Wl,--no-undefined \
 -lSDL2 \
 -lluajit \
+--Wl,-Bdynamic \
 -lm -ldl -lpthread -lc \
 -o dein
 strip dein
