@@ -94,7 +94,7 @@ function core.init()
 	if setefenv then
 		setfenv(f, env)
 	end
-	core.fn[1] = coroutine.create(f)
+	table.insert(core.fn, coroutine.create(f))
 	-- system.window_mode 'fullscreen'
 	-- system.window_mode 'normal'
 end
