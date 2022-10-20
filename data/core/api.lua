@@ -11,6 +11,7 @@ local input = {
 	kbd = {};
 }
 local conf = {
+	fps = 1/50;
 	w = 256;
 	h = 256;
 	fullscreen = false;
