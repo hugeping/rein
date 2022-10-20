@@ -75,24 +75,7 @@ function mixer.stop(fn)
 end
 
 function mixer.add(fn)
-	local f, e
-	if type(fn) == 'table' then -- rawdata
-		local stereo = false
-		if type(fn[1]) == 'table' then
-			stereo = true
-		end
-		f, e = coroutine.create(function()
-			for i=1,#fn do
-				if stereo then
-					coroutine.yield(fn[i][1], fn[i][2])
-				else
-					coroutine.yield(fn[i], fn[i])
-				end
-			end
-		end)
-	else
-		f, e = coroutine.create(fn)
-	end
+	local f, e = coroutine.create(fn)
 	if not f then
 		return f, e
 	end
