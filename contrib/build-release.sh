@@ -45,9 +45,9 @@ if [ ! -f external/.stamp_luajit ]; then
 	touch external/.stamp_luajit
 fi
 
-## linux version
+## Linux version
 
-gcc -Wall -O3 -Wl,-Bstatic \
+gcc -static -Wall -O3 \
 -Iexternal/include \
 -Iexternal/include/SDL2 \
 src/*.c \
@@ -55,9 +55,7 @@ src/*.c \
 -D_REENTRANT -Dunix -Wl,--no-undefined \
 -lSDL2 \
 -lluajit \
--lpthread \
--Wl,-Bdynamic \
--lm -ldl -lc \
+-lm -ldl -lc -lpthread \
 -o dein
 strip dein
 
