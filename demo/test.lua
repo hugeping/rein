@@ -58,22 +58,20 @@ local function showkeys()
 	return t
 end
 
-
-thread(function()
-	local t = {}
-	local k = 0
-	while true do
-		for i = 1, 1024,2 do
-			t[i] = math.sin(k)
-			t[i+1] = t[i]
-			k = k + 0.1
-		end
-		audio(t)
-		if k > 1000 then
-			return
-		end
+beep1 = function()
+	for k=0,1000,0.1 do
+		yield(math.sin(k), math.sin(k))
 	end
-end)
+end
+
+beep2 = function()
+	for k=0,2000,0.3 do
+		yield(math.sin(k), math.sin(k))
+	end
+end
+
+mixer.add(beep1)
+mixer.add(beep2)
 
 while true do
 	local cur = time()
