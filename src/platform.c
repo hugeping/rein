@@ -242,6 +242,8 @@ PlatformInit(void)
 		audiobuff.data = malloc(audiobuff.size);
 		audiobuff.head = 0;
 		audiobuff.tail = 0;
+	} else {
+		fprintf(stderr, "No audio: %s\n", SDL_GetError());
 	}
 	SDL_PauseAudioDevice(audiodev, 0);
 	return 0;
