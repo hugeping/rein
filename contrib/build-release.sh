@@ -77,5 +77,5 @@ rm -rf release
 mkdir release
 
 cp dein release/dein.x86-64.linux
-cp -r dein.exe data/ LICENSE ChangeLog external/windows/bin/*.dll release/
+cp -r dein.exe demo/ data/ LICENSE ChangeLog external/windows/bin/*.dll release/
 i686-w64-mingw32-strip release/SDL2.dll
