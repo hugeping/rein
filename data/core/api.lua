@@ -151,6 +151,28 @@ function env_ro.clip(o, x1, y1, x2, y2)
 	return env.screen:clip(x1, y1, x2, y2)
 end
 
+function env_ro.noclip(o)
+	if type(o) == 'userdata' then
+		return o:noclip()
+	end
+	return env.screen:noclip()
+end
+
+function env_ro.offset(o, x, y)
+	if type(o) == 'userdata' then
+		return o:offset(x, y)
+	end
+	x, y = o, x
+	return env.screen:offset(x, y)
+end
+
+function env_ro.noclip(o)
+	if type(o) == 'userdata' then
+		return o:noclip()
+	end
+	return env.screen:noclip()
+end
+
 function env_ro.line(o, x1, y1, x2, y2, col)
 	local col
 	if type(o) ~= 'userdata' then
