@@ -124,7 +124,11 @@ function core.render(force)
 	local dh = math.floor(h * scale)
 	core.view_w, core.view_h = dw, dh
 	core.view_x, core.view_y = math.floor((ww - dw)/2), math.floor((hh - dh)/2)
-	env.screen:stretch(gfx.win(),
+	local win = gfx.win()
+	win:clip(core.view_x, core.view_y,
+		core.view_x + core.view_w,
+		core.view_y + core.view_h)
+	env.screen:stretch(win,
 		core.view_x, core.view_y,
 		core.view_w, core.view_h)
 	gfx.flip()

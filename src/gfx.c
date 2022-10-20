@@ -297,6 +297,7 @@ gfx_pixels_win(lua_State *L)
 	hdr->type = PIXELS_MAGIC;
 	hdr->img.w = w;
 	hdr->img.h = h;
+	img_noclip(&hdr->img);
 	hdr->size = w * h * 4;
 	hdr->img.ptr = ptr;
 	//memset(hdr->img.ptr, 0, hdr->size);
@@ -411,18 +412,22 @@ pixels_clear(lua_State *L)
 static void
 img_pixels_stretch(img_t *src, img_t *dst, int xoff, int yoff, int ww, int hh)
 {
-	int w, h, xx, yy, dx, dy;
+	int w, h, xx, yy, dx, dy, xdisp, wdisp;
 	unsigned char *ptr, *p;
 	unsigned char *optr = NULL;
 	ptr = src->ptr;
 
-	if (xoff < 0 || yoff < 0)
-		return;
+	if (ww < 0)
+		ww = dst->w;
 
-	if (hh < 0 || ww > (dst->w - xoff))
-		ww = dst->w - xoff;
-	if (hh < 0 || hh > (dst->h - yoff))
-		hh = dst->h - yoff;
+	if (hh < 0)
+		hh = dst->h;
+
+	if (xoff + ww <= dst->clip_x1 || yoff + hh <= dst->clip_y1 ||
+		xoff >= dst->clip_x2 || yoff >= dst->clip_y2) {
+		return;
+	}
+
 	w = src->w;
 	h = src->h;
 
@@ -430,16 +435,44 @@ img_pixels_stretch(img_t *src, img_t *dst, int xoff, int yoff, int ww, int hh)
 
 	dy = 0;
 
-	for (yy = 0; yy < hh; yy++) {
+	xdisp = 0;
+	wdisp = ww;
+	if (xoff < dst->clip_x1) {
+		xdisp = dst->clip_x1 - xoff;
+		wdisp -= xdisp;;
+		xdisp *= 4;
+	}
+
+	if (xoff + ww > dst->clip_x2)
+		wdisp -= xoff + ww - dst->clip_x2;
+
+	for (yy = yoff; yy < hh + yoff; yy++) {
 		unsigned char *ptrl = ptr;
+
+		if (yy >= dst->clip_y2)
+			break;
+		if (yy < dst->clip_y1) {
+			if (optr)
+				p += dst->w * 4;
+			else {
+				optr = p;
+				p = optr + dst->w * 4;
+			}
+			goto skip;
+		}
+
 		dx = 0;
 		if (optr) {
-			memcpy(p, optr, ww * 4);
+			memcpy(p + xdisp, optr + xdisp, wdisp * 4);
 			p += dst->w * 4;
 		} else {
 			optr = p;
-			for (xx = 0; xx < ww; xx++) {
-				memcpy(p, ptrl, 4); p += 4;
+			for (xx = xoff; xx < xoff + ww; xx++) {
+				if (xx >= dst->clip_x2)
+					break;
+				if (xx >= dst->clip_x1)
+					memcpy(p, ptrl, 4);
+				p += 4;
 				dx += w;
 				while (dx >= ww) {
 					dx -= ww;
@@ -448,6 +481,7 @@ img_pixels_stretch(img_t *src, img_t *dst, int xoff, int yoff, int ww, int hh)
 			}
 			p = optr + dst->w * 4;
 		}
+skip:
 		dy += h;
 		while (dy >= hh) {
 			dy -= hh;
