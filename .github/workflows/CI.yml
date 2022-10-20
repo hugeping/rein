@@ -56,6 +56,7 @@ jobs:
         run: |
           ls -alFR
           cd dein
+          chmod +x dein/dein.x86-64.linux
           zip -r ../dein.zip dein/
       - name: Create release and upload artifacts
         env:
