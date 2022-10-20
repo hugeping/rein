@@ -55,7 +55,7 @@ src/*.c \
 -D_REENTRANT -Dunix -Wl,--no-undefined \
 -lSDL2 \
 -lluajit \
---Wl,-Bdynamic \
+-Wl,-Bdynamic \
 -lm -ldl -lpthread -lc \
 -o dein
 strip dein
