@@ -514,6 +514,8 @@ img_pixels_blend(img_t *src, int x, int y, int w, int h,
 	unsigned char *ptr1, *ptr2;
 	int cy, cx, srcw, dstw;
 
+	x += src->xoff;
+	y += src->xoff;
 	xx += dst->xoff;
 	yy += dst->yoff;
 
