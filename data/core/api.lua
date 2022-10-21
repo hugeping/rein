@@ -262,6 +262,9 @@ function env_ro.sleep(to, interrupt)
 	local start = system.time()
 	repeat
 		coroutine.yield()
+		if interrupt and #input.fifo > 0 then
+			break
+		end
 		local pass = system.time() - start
 		local left = to - pass
 		if left <= 0 then
