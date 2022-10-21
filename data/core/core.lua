@@ -62,6 +62,7 @@ function core.err(fmt, ...)
 end
 
 function core.init()
+	gfx.icon(gfx.new(DATADIR..'/icon.png'))
 	local err
 	env, err = api.init(core)
 	if not env then
