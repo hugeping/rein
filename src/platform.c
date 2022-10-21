@@ -228,12 +228,12 @@ PlatformInit(void)
 	spec.freq = 44100;
 	spec.format = AUDIO_S16;
 	spec.channels = 1;
-	spec.samples = 4096;
+	spec.samples = 2048;
 	spec.callback = audio_cb;
 	spec.userdata = NULL;
-	audiodev = SDL_OpenAudioDevice(NULL, 0, &spec, &audiospec, SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
+	audiodev = SDL_OpenAudioDevice(NULL, 0, &spec, &audiospec, 0);
 	if (audiodev) {
-		printf("Audio: %dHz\n", audiospec.freq);
+		printf("Audio: %dHz size: %d\n", audiospec.freq, audiospec.samples);
 		audiobuff.size = audiospec.samples * 2 * spec.channels * 2;
 		audiobuff.free = audiobuff.size;
 		audiobuff.data = malloc(audiobuff.size);
