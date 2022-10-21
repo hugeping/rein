@@ -2,8 +2,20 @@ w, h = screen:size()
 local floor = math.floor
 local ceil = math.ceil
 local spr = {}
+local pan_mode
 
 local SPRITE = ARGS[2] or 'sprite.spr'
+
+spr.Hand = sprite [[
+----456--------f
+--------
+-f6f6---
+-f6f6f--
+6f6f6f6-
+6fffff6-
+6fffff6-
+5fffff5-
+]]
 
 spr.X = sprite [[
 *
@@ -20,10 +32,19 @@ pal = {
 	cw = 8;
 	ch = 8;
 	w = 8*2;
-	h = 8*8;
+	h = 8*8 + 8;
 	color = 0;
 	lev = -1;
 }
+
+function pal:select(x, y, c)
+	x = self.x + x * 8
+	y = self.y + y * 8
+	poly({x, y,
+		x + 8 - 1,y,
+		x + 8 -1, y + 8 -1,
+		x, y + 8-1}, c)
+end
 
 function pal:show()
 	local s = self
@@ -46,6 +67,10 @@ function pal:show()
 		x + w - 1, y*h,
 		x + w -1, y*h + h - 1,
 		x, y*h + h - 1}, c)
+	spr.Hand:copy(screen, s.x, s.h - 8)
+	if hand_mode then
+		self:select(0, 8, 8)
+	end
 end
 
 function pal:pos2col(x, y)
@@ -56,15 +81,18 @@ function pal:pos2col(x, y)
 	y = y - s.y
 	x = floor(x/w)
 	y = floor(y/h)
-	return x*8 + y
+	return x, y
 end
 
-function pal:click(x, y, mb)
-	local c = self:pos2col(x, y)
-	if not c then
-		return
+function pal:click(x, y, mb, click)
+	local x, y = self:pos2col(x, y)
+	local c
+	if y < 8 then
+		c = x*8 + y
+		self.color = c
+	elseif y == 8 and x == 0 and click then -- hand mode
+		hand_mode = not hand_mode
 	end
-	self.color = c
 	return true
 end
 
@@ -249,6 +277,9 @@ end
 
 function grid:click(x, y, mb)
 	local s = self
+	if pan_mode then
+		return
+	end
 	x, y = s:pos2cell(x, y)
 	if not x then
 		return
@@ -311,9 +342,11 @@ function switch_ui()
 	end
 end
 
-local pan_mode
-
 function proc_inp(r, e, a, b, c, d)
+	if r == 'mousewheel' then
+		r = 'text'
+		e = (e == -1) and '-' or '+'
+	end
 	if r == 'text' then
 		if e == '+' then
 			grid:zoom(1)
@@ -331,19 +364,22 @@ function proc_inp(r, e, a, b, c, d)
 			grid:save(SPRITE)
 		elseif e == 'z' then
 			grid:undo()
-		elseif e == 'space' and not pan_mode then
+		end
+	elseif hand_mode then
+		if r == 'keydown' and  e == 'space' or
+			r == 'mousedown' and hand_mode then
 			local ox, oy = mouse()
 			local x, y = grid:pos()
 			pan_mode =  { ox, oy, x, y }
 		end
 	end
 	if pan_mode then
-		local x, y = mouse()
+		local x, y, mb = mouse()
 		local dd = grid.w / grid.grid
 		local dx = floor((x - pan_mode[1])/dd)
 		local dy = floor((y - pan_mode[2])/dd)
 		grid:pos(pan_mode[3] - dx, pan_mode[4] - dy)
-		if not keydown 'space' then
+		if (not hand_mode and not keydown 'space') or (hand_mode and not mb.left) then
 			pan_mode = nil
 		end
 	elseif keydown("right") then
@@ -362,16 +398,10 @@ title:show()
 switch_ui()
 
 while true do
-	fill(1)
-	table.sort(obj, function(a, b) return a.lev > b.lev end)
-	for _, v in ipairs(obj) do
-		v:show()
-	end
-	table.sort(obj, function(a, b) return a.lev <= b.lev end)
 	local r, v, a, b = input()
-	proc_inp(r, v, a, b)
 	local mx, my, mb = mouse()
-	if mb.left or mb.right or mb.middle then
+	proc_inp(r, v, a, b)
+	if (mb.left or mb.right or mb.middle) then
 		for _, v in ipairs(obj) do
 			local mx, my, mb = mouse()
 			if mx >= v.x and my >= v.y and
@@ -383,5 +413,12 @@ while true do
 			end
 		end
 	end
+
+	fill(1)
+	table.sort(obj, function(a, b) return a.lev > b.lev end)
+	for _, v in ipairs(obj) do
+		v:show()
+	end
+	table.sort(obj, function(a, b) return a.lev <= b.lev end)
 	flip(1, true) -- wait for event
 end
