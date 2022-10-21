@@ -46,6 +46,7 @@ local res = {
 local env = {
 	table = table,
 	math = math,
+	bit = bit,
 	string = string,
 	pairs = pairs,
 	ipairs = ipairs,
