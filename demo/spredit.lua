@@ -383,5 +383,5 @@ while true do
 			end
 		end
 	end
-	flip(1/50)
+	flip(1, true) -- wait for event
 end

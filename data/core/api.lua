@@ -200,9 +200,9 @@ end
 
 local last_flip = 0
 
-function env_ro.flip(fps)
+function env_ro.flip(fps, interrupt)
 	core.render(true)
-	env.sleep((fps or conf.fps) - (env.time() - last_flip))
+	env.sleep((fps or conf.fps) - (env.time() - last_flip), interrupt)
 	last_flip = env.time()
 end
 
@@ -258,18 +258,17 @@ function env_ro.color(k, r, g, b, a)
 	end
 end
 
-function env_ro.sleep(to)
+function env_ro.sleep(to, interrupt)
 	local start = system.time()
-	while true do
+	repeat
 		coroutine.yield()
 		local pass = system.time() - start
 		local left = to - pass
 		if left <= 0 then
 			break
 		end
---		core.render(true)
 		system.wait(left)
-	end
+	until interrupt
 end
 
 function env_ro.dprint(...)
