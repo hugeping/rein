@@ -80,7 +80,10 @@ SDL_WaitEventTo(int timeout)
 				return 0;
 			if (timeout > 0 && SDL_TICKS_PASSED(SDL_GetTicks(), expiration))
 				return 0;
-			SDL_Delay(10); /* 1/100 sec */
+			if (timeout >= 10)
+				Delay(1/100);
+			else
+				Delay(1/1000); /* 1/100 sec */
 			break;
 		default:
 			/* Has events */
