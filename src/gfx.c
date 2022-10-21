@@ -148,8 +148,8 @@ static int
 pixels_value(lua_State *L)
 {
 	struct lua_pixels *hdr = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
-	int x = luaL_optnumber(L, 2, -1);
-	int y = luaL_optnumber(L, 3, -1);
+	int x = luaL_optinteger(L, 2, -1);
+	int y = luaL_optinteger(L, 3, -1);
 	color_t col;
 	int get = 0;
 	unsigned char *ptr;
@@ -203,6 +203,37 @@ pixels_pixel(lua_State *L)
 	ptr += ((y * hdr->img.w + x) << 2);
 	col[0] = color.r; col[1] = color.g; col[2] = color.b; col[3] = color.a;
 	pixel(col, ptr);
+	return 0;
+}
+
+static int
+pixels_buff(lua_State *L)
+{
+	int i;
+	unsigned int col;
+	struct lua_pixels *hdr = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
+	unsigned char *ptr = hdr->img.ptr;
+	if (!lua_istable(L, 2)) { /* return actual table */
+		lua_newtable(L);
+		for (i = 0; i < hdr->img.w * hdr->img.h; i++) {
+			col = *(ptr++);
+			col = (col << 8) | *(ptr++);
+			col = (col << 16) | *(ptr++);
+			col = (col << 24) | *(ptr++);
+			lua_pushinteger(L, col);
+			lua_rawseti(L, -2, i + 1);
+		}
+		return 1;
+	}
+	for (i = 0; i < hdr->img.w * hdr->img.h; i ++) {
+		lua_rawgeti(L, 2, i + 1);
+		col = luaL_checkinteger(L, -1);
+		*(ptr++) = (col & 0xff000000) >> 24;
+		*(ptr++) = (col & 0xff0000) >> 16;
+		*(ptr++) = (col & 0xff00) >> 8;
+		*(ptr++) = (col & 0xff);
+		lua_pop(L, 1);
+	}
 	return 0;
 }
 
@@ -1513,6 +1544,7 @@ static const luaL_Reg pixels_mt[] = {
 	{ "offset", pixels_offset },
 	{ "nooffset", pixels_nooffset },
 	{ "pixel", pixels_pixel },
+	{ "buff", pixels_buff },
 	{ "size", pixels_size },
 	{ "fill", pixels_fill },
 	{ "clear", pixels_clear },
