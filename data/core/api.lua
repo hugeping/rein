@@ -392,12 +392,19 @@ function api.init(core_mod)
 end
 
 function api.event(e, v, a, b, c)
+	if e == 'mousemotion' then
+		v, a = core.abs2rel(v, a)
+	elseif e == 'mousedown' or e == 'mouseup' then
+		a, b = core.abs2rel(a, b)
+	end
+
 	if (e == 'text' or e == 'keydown' or e == 'keyup' or
-		e == 'mousedown' or e == 'mouseup')
+		e == 'mousedown' or e == 'mouseup' or e == 'mousewheel')
 			and #input.fifo < 32 then
 		local ev = { nam = e, args = { v, a, b, c } }
 		table.insert(input.fifo, ev)
 	end
+
 	if e == 'keyup' then
 		if v:find("alt$") then
 			input.kbd.alt = false
@@ -417,10 +424,10 @@ function api.event(e, v, a, b, c)
 			end
 		end
 	elseif e == 'mousemotion' then
-		input.mouse.x, input.mouse.y = core.abs2rel(v, a)
+		input.mouse.x, input.mouse.y = v, a
 	elseif e == 'mousedown' or e == 'mouseup' then
 		input.mouse.btn[v] = (e == 'mousedown')
-		input.mouse.x, input.mouse.y = core.abs2rel(a, b)
+		input.mouse.x, input.mouse.y = a, b
 	end
 end
 
