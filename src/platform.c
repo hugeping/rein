@@ -61,6 +61,7 @@ WindowTitle(const char *title)
 	SDL_SetWindowTitle(window, title);
 }
 
+#if 0
 /* SDL2 realization after 2.0.16 may sleep. BUG? */
 int
 SDL_WaitEventTo(int timeout)
@@ -91,6 +92,7 @@ SDL_WaitEventTo(int timeout)
 		}
 	}
 }
+#endif
 
 int
 WaitEvent(float n)
@@ -98,7 +100,8 @@ WaitEvent(float n)
 #ifdef __EMSCRIPTEN__
 	return 1;
 #else
-	return SDL_WaitEventTo((int)(n * 1000));
+	//return SDL_WaitEventTo((int)(n * 1000));
+	return SDL_WaitEventTimeout(NULL, (int)(n * 1000));
 #endif
 }
 
