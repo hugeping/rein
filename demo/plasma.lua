@@ -105,7 +105,7 @@ function plasma5()
 	local i = 1
 	for y = 0, h-1 do
 		for x = 0, w-1 do
-			v = (x * x + y * y + t)
+			v = (x * x + y * y + t) % 256
 			buf[i] = col2int(0, v, v, v/2)
 			i = i + 1
 		end
