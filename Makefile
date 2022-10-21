@@ -25,6 +25,7 @@ CFILES= \
 	src/stb_image.c \
 	src/lua-compat.c \
 	src/stb_image_resize.c \
+	src/bit.c \
 	src/main.c \
 	src/gfx.c \
 	src/system.c \

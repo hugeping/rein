@@ -19,9 +19,12 @@ luaopen_gfx(lua_State *L)
 	return 1;
 }
 
+extern int luaopen_bit(lua_State *L);
+
 static const luaL_Reg lua_libs[] = {
 	{ "system",    luaopen_system },
 	{ "gfx",  luaopen_gfx },
+	{ "bit", luaopen_bit },
 	{ NULL, NULL }
 };
 
