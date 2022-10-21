@@ -383,5 +383,5 @@ while true do
 			end
 		end
 	end
-	flip(1/25)
+	flip(1/50)
 end
