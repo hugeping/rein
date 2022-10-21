@@ -220,14 +220,14 @@ pixels_buff(lua_State *L)
 			col = (col << 8) | *(ptr++);
 			col = (col << 16) | *(ptr++);
 			col = (col << 24) | *(ptr++);
-			lua_pushinteger(L, col);
+			lua_pushnumber(L, col);
 			lua_rawseti(L, -2, i + 1);
 		}
 		return 1;
 	}
 	for (i = 0; i < hdr->img.w * hdr->img.h; i ++) {
 		lua_rawgeti(L, 2, i + 1);
-		col = luaL_checkinteger(L, -1);
+		col = luaL_checknumber(L, -1);
 		*(ptr++) = (col & 0xff000000) >> 24;
 		*(ptr++) = (col & 0xff0000) >> 16;
 		*(ptr++) = (col & 0xff00) >> 8;
