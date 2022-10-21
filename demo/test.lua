@@ -60,18 +60,56 @@ end
 
 beep1 = function()
 	for k=0,1000,0.1 do
-		yield(math.sin(k), math.sin(k))
+		yield(math.sin(k))
 	end
 end
 
 beep2 = function()
 	for k=0,2000,0.3 do
-		yield(math.sin(k), math.sin(k))
+		yield(math.sin(k))
 	end
 end
 
-mixer.add(beep1)
-mixer.add(beep2)
+local SR = 44100
+local TWO_PI_BY_SR = 2 * math.pi / SR
+
+local sfx = {
+}
+
+function sfx.sin(t, freq)
+	return math.sin(TWO_PI_BY_SR * freq * t)
+end
+
+function sfx.dsf(t, freq, modscale, modamp, width)
+	local f1 = TWO_PI_BY_SR * freq * t
+	local f2 = modscale * f1
+	local ww = width * width
+	local e1 = math.sin(f1) - width * modamp * math.sin(f1 - f2)
+	local e2 = 1 + ww - 2 * width * modamp * math.cos(f2)
+	return e1 / e2
+end
+
+function sfx.saw(t, freq, width)
+	width = width or 0.5
+	return sfx.dsf(t, freq, 1, 1, width)
+end
+
+function sfx.square(t, freq, width)
+	width = width or 0.5
+	return sfx.dsf(t, freq, 2, 1, width)
+end
+
+local abs = math.abs
+
+beep3 = function()
+	for t = 0, SR * 4, 1 do
+		yield(sfx.saw(t, 220, 0.1 + 0.7 * abs(sfx.sin(t, 0.5))))
+	end
+end
+
+mixer.add(beep3)
+--mixer.add(beep1)
+--mixer.add(beep2)
 
 while true do
 	local cur = time()

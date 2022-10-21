@@ -4,10 +4,12 @@ local mixer = {
 	chans = {};
 }
 
+local CHANNELS = 1
+
 function mixer.thread()
 	while true do
 		local t = {}
-		for i = 1,CHUNK,2 do
+		for i = 1,CHUNK,CHANNELS do
 			local mix = {}
 			local k, n = 1, #mixer.chans
 			local ll, rr = 0, 0
@@ -23,14 +25,18 @@ function mixer.thread()
 				else
 					k = k + 1
 					ll = ll + l
-					rr = rr + r
+					if CHANNELS == 2 then
+						rr = rr + r
+					end
 				end
 			end
 			if not mixer.chans[1] then
 				break
 			end
 			t[i] = ll / #mixer.chans
-			t[i+1] = rr / #mixer.chans
+			if CHANNELS == 2 then
+				t[i+1] = rr / #mixer.chans
+			end
 		end
 		if t[1] then
 			mixer.audio(t)
