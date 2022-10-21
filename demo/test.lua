@@ -103,7 +103,8 @@ local abs = math.abs
 
 beep3 = function()
 	for t = 0, SR * 4, 1 do
-		yield(sfx.saw(t, 220, 0.1 + 0.7 * abs(sfx.sin(t, 0.5))))
+		local width = 0.1 + 0.7 * abs(sfx.sin(t, 0.5))
+		yield(sfx.saw(t, 220, width) * 0.5)
 	end
 end
 
