@@ -1,3 +1,5 @@
+#include "lualib.h"
+#ifndef LUA_BITLIBNAME
 /*
 * Stripped down code from the Lua BitOp library (MIT)
 ** Original code: http://bitop.luajit.org/
@@ -96,4 +98,4 @@ LUALIB_API int luaopen_bit(lua_State *L)
 	luaL_newlib(L, bit_funcs);
 	return 1;
 }
-
+#endif

@@ -8,6 +8,7 @@ local function col2int(r, g, b, a)
 	g = floor(g)
 	b = floor(b)
 	a = floor(a)
+--	return bit.bor(bit.lshift(r, 24), bit.lshift(g, 16), bit.lshift(b, 8), a)
 	return r * 0x1000000 + g * 0x10000 + b * 0x100 + a;
 end
 
