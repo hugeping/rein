@@ -5,15 +5,25 @@
 #include "platform.h"
 #include "gfx.h"
 
+static void
+img_init(img_t *img, int w, int h)
+{
+	if (!img)
+		return;
+	img->w = w;
+	img->h = h;
+	img_noclip(img);
+	img_offset(img, 0, 0);
+}
+
 img_t *
 img_new(int w, int h)
 {
 	img_t *img = malloc(sizeof(img_t) + w * h * 4);
-	img->w = w;
-	img->h = h;
+	if (!img)
+		return NULL;
 	img->ptr = (unsigned char *)(img + 1);
-	img_noclip(img);
-	img_offset(img, 0, 0);
+	img_init(img, w, h);
 	return img;
 }
 
@@ -254,8 +264,7 @@ pixels_new(lua_State *L, int w, int h)
 	hdr->img.h = h;
 	hdr->size = size;
 	hdr->img.ptr = (unsigned char*)(hdr + 1);
-	img_noclip(&hdr->img);
-	img_offset(&hdr->img, 0, 0);
+	img_init(&hdr->img, w, h);
 	memset(hdr->img.ptr, 0, size);
 	luaL_getmetatable(L, "pixels metatable");
 	lua_setmetatable(L, -2);
@@ -337,8 +346,7 @@ gfx_pixels_win(lua_State *L)
 	hdr->type = PIXELS_MAGIC;
 	hdr->img.w = w;
 	hdr->img.h = h;
-	img_noclip(&hdr->img);
-	img_offset(&hdr->img, 0, 0);
+	img_init(&hdr->img, w, h);
 	hdr->size = w * h * 4;
 	hdr->img.ptr = ptr;
 	//memset(hdr->img.ptr, 0, hdr->size);
