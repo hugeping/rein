@@ -1,7 +1,7 @@
 local font = require "font"
 local spr = require "spr"
 local mixer = require "mixer"
-
+local bit = require "bit"
 local core
 local input = {
 	fifo = {};
