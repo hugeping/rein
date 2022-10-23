@@ -263,6 +263,7 @@ thread_new(lua_State *L)
 		lua_pop(L, 1); /* remove thread */
 		lua_pushboolean(L, 0);
 		lua_pushstring(L, lua_tostring(nL, -1));
+		lua_pushstring(L, code);
 		lua_remove(nL, -2); /* remove thread */
 		rc = 2;
 		goto err2;
