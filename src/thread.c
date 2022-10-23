@@ -139,8 +139,7 @@ child_stop(lua_State *L)
 	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
 	struct lua_channel *chan = thr->chan;
 	MutexLock(chan->m);
-	if (chan->child)
-		chan->child = NULL;
+	chan->child = NULL;
 	chan->used --;
 	MutexUnlock(chan->m);
 	SemPost(chan->parent_sem);
@@ -293,11 +292,12 @@ static int
 thread_wait(lua_State *L)
 {
 	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
-	int status = ThreadWait(thr->tid);
 	struct lua_channel *chan = thr->chan;
-	MutexLock(chan->m);
-	thr->chan->child = NULL;
-	MutexUnlock(chan->m);
+	int status = ThreadWait(thr->tid);
+	chan->child = NULL;
+	chan->used = 0;
+	chan_free(chan);
+	thr->chan = NULL;
 	lua_pushboolean(L, status);
 	return 1;
 }
@@ -307,14 +307,17 @@ thread_stop(lua_State *L)
 {
 	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
 	struct lua_channel *chan = thr->chan;
+	int haschild;
+	if (!chan)
+		return 0;
 	MutexLock(chan->m);
 	chan->parent = NULL;
-	chan->used --;
+	haschild = !!chan->child;
 	MutexUnlock(chan->m);
-	SemPost(chan->child_sem);
-	thread_wait(L);
-	if (!chan->used)
-		chan_free(chan);
+	if (haschild) {
+		SemPost(chan->child_sem);
+		thread_wait(L);
+	}
 	return 0;
 }
 

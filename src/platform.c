@@ -546,7 +546,7 @@ han_open(struct handles *h, void *data)
 	if (!data)
 		return 0;
 	for (i = 0; i < h->fd_size; i ++) {
-		fd = (i + h->fd_pos)%h->fd_size;
+		fd = (i + h->fd_pos)%(h->fd_size);
 		if (!h->fds[fd]) {
 			h->fd_nr ++;
 			h->fd_pos = fd;

@@ -28,7 +28,6 @@ local function run_thread(code)
 		req.scr:buff(buf, req.x, req.y, req.w, req.h)
 		thread:write {}
 	end
-	print "quit"
 ]==]
 	local code, e = string.format("%s\n%s\n\n%s", pre, code, post)
 	return threads.new(code)
@@ -57,29 +56,14 @@ local demos = {
 			i = i + 1
 		end
 	end
-]==]
-}
-local THREADS = 4
-local thr = {}
-
-function start_demo(nr)
-	for _, t in ipairs(thr) do
-		t:write {"stop"}
-		t:wait()
-	end
-	for i=1, THREADS do
-		local a, b = run_thread(demos[nr])
-		thr[i] = a
-	end
-end
-
-function plasma2()
+]==],
+[==[
 	local cx, cy, x, y, r, g, b, v
 	local i = 1
 	t = t + 0.1
 	v = 0.0
-	for y = 0, h-1 do
-		for x = 0, w-1 do
+	for y = fy, fy + h-1 do
+		for x = fx, fx + w-1 do
 			cx = x / 100 - .25 - .5 + 0.5 * sin(t / 5)
 			cy = y / 75 - .25 - .5 + 0.5 * cos(t / 3)
 			v = v + sin(sqrt(100 * (cx * cx + cy * cy) + t) + t)
@@ -92,6 +76,20 @@ function plasma2()
 			buf[i] = col2int(r, g, b, 255)
 			i = i + 1
 		end
+	end
+]==]
+}
+local THREADS = 4
+local thr = {}
+
+function start_demo(nr)
+	for _, t in ipairs(thr) do
+		t:write()
+		t:wait()
+	end
+	for i=1, THREADS do
+		local a, b = run_thread(demos[nr])
+		thr[i] = a
 	end
 end
 
@@ -192,7 +190,7 @@ while true do
 	if r == 'keydown' and v == 'space' then
 		demo_nr = demo_nr + 1
 		if demo_nr > #demos then demo_nr = 1 end
---		start_demo(demo_nr)
+		start_demo(demo_nr)
 	end
 
 	frames = frames + 1
