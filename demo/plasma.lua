@@ -156,5 +156,5 @@ while true do
 	frames = frames + 1
 	clear(0,256-8,256,256-8,7)
 	printf(0, 256-8, 1, "Демо:%d FPS:%d", demo_nr, fps)
-	flip(1/50)
+	flip(0)
 end

@@ -1,7 +1,6 @@
 #include "external.h"
 #include "platform.h"
 #include "gfx.h"
-//extern int pixels_lua_move(lua_State *from, int idx, lua_State *to);
 
 static int
 lua_moveval(lua_State* from, int idx, lua_State* to)
@@ -265,7 +264,7 @@ thread_new(lua_State *L)
 		lua_pushstring(L, lua_tostring(nL, -1));
 		lua_pushstring(L, code);
 		lua_remove(nL, -2); /* remove thread */
-		rc = 2;
+		rc = 3;
 		goto err2;
 	}
 

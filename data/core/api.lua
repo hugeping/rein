@@ -57,6 +57,28 @@ local env = {
 	threads = thread,
 }
 
+function thread.start(code)
+	local r, e, c = thread.new(code)
+	if not r then
+		if e:find("^%[string [^%]]+%]:[0-9]+:") then
+			local nr = e:gsub("^%[string [^%]]+%]:([0-9]+):.*$", "%1")
+			nr = tonumber(nr)
+			local lnr = 1
+			local inf = ''
+			for l in core.lines(c) do
+				if lnr >= nr - 2  then
+					inf = inf .. string.format("%d%s\n", lnr, l)
+				end
+				lnr = lnr + 1
+			end
+			c = inf
+		end
+		local msg = string.format("%s\n%s", e, c)
+		core.err(msg)
+	end
+	return r
+end
+
 local env_ro = {
 	screen = gfx.new(conf.w, conf.h)
 }

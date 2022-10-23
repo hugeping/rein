@@ -30,7 +30,7 @@ local function run_thread(code)
 	end
 ]==]
 	local code, e = string.format("%s\n%s\n\n%s", pre, code, post)
-	return threads.new(code)
+	return threads.start(code)
 end
 
 local demos = {
@@ -149,7 +149,7 @@ local demos = {
 ]==]
 }
 
-local THREADS = 4
+local THREADS = 8
 local thr = {}
 
 function start_demo(nr)
@@ -194,5 +194,5 @@ while true do
 	frames = frames + 1
 	clear(0,w-8,w,h-8,7)
 	printf(0, h-8, 1, "Демо:%d FPS:%d", demo_nr, fps)
-	flip(1/50)
+	flip(0)
 end
