@@ -77,29 +77,14 @@ local demos = {
 			i = i + 1
 		end
 	end
-]==]
-}
-local THREADS = 4
-local thr = {}
-
-function start_demo(nr)
-	for _, t in ipairs(thr) do
-		t:write()
-		t:wait()
-	end
-	for i=1, THREADS do
-		local a, b = run_thread(demos[nr])
-		thr[i] = a
-	end
-end
-
-function plasma3()
+]==],
+[==[
 	local cx, cy, x, y, r, g, b, v
 	local i = 1
 	t = t + 0.1
 	v = 0.0
-	for y = 0, h-1 do
-		for x = 0, w-1 do
+	for y = fy, fy + h-1 do
+		for x = fx, fx+w-1 do
 			cx = x / 100 - .25 - .5 + 0.5 * cos(t / 5)
 			cy = y / 75 - .25 - .5 + 0.5 * sin(t / 3)
 			v = v + sin(sqrt(100 * (cx * cx + cy * cy) + t) + t / 2)
@@ -113,15 +98,14 @@ function plasma3()
 			i = i + 1
 		end
 	end
-end
-
-function plasma4()
+]==],
+[==[
 	local cx, cy, x, y, r, g, b, v
 	local i = 1
 	t = t + 0.1
 	v = 0.0
-	for y = 0, h-1 do
-		for x = 0, w-1 do
+	for y = fy, fy+h-1 do
+		for x = fx, fx+w-1 do
 			v = sqrt(x / (y + 15) + t)
 			v = v + sin(x / 100 + t)
 			v = v + cos(y / 100 + t)
@@ -133,28 +117,26 @@ function plasma4()
 			i = i + 1
 		end
 	end
-end
-
-function plasma5()
+]==],
+[==[
 	local v
 	t = floor(t) + 1
 	local i = 1
-	for y = 0, h-1 do
-		for x = 0, w-1 do
+	for y = fy, fy+h-1 do
+		for x = fx, fx+w-1 do
 			v = (x * x + y * y + t) % 256
 			buf[i] = col2int(0, v, v, v/2)
 			i = i + 1
 		end
 	end
-end
-
-function plasma6()
+]==],
+[==[
 	local x, y, r, g, b, v
 	t = t + 0.1
 	v = 0.0
 	local i = 1
-	for y = 0, h-1 do
-		for x = 0, w-1 do
+	for y = fy, fy+h-1 do
+		for x = fx, fx+w-1 do
 			v = x * x
 			v = v * y * y + sin(t * 2) * 100
 			r = v / 2
@@ -163,6 +145,22 @@ function plasma6()
 			buf[i] = col2int(r, g, b, 255)
 			i = i + 1
 		end
+	end
+]==]
+}
+
+local THREADS = 4
+local thr = {}
+
+function start_demo(nr)
+	for _, t in ipairs(thr) do
+		t:write()
+		t:wait()
+	end
+	for i=1, THREADS do
+		local a, b, c = run_thread(demos[nr])
+		dprint(a, b, c)
+		thr[i] = a
 	end
 end
 
