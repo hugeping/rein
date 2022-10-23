@@ -54,6 +54,7 @@ local env = {
 	tonumber = tonumber,
 	tostring = tostring,
 	coroutine = coroutine,
+	threads = thread,
 }
 
 local env_ro = {

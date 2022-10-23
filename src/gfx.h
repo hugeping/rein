@@ -7,10 +7,12 @@ typedef struct {
 	int clip_y2;
 	int xoff;
 	int yoff;
+	int used;
 	unsigned char *ptr;
 } img_t;
 
 extern img_t *img_new(int w, int h);
+extern void img_free(img_t *src);
 extern void img_offset(img_t *src, int x, int y);
 extern void img_clip(img_t *src, int x1, int y1, int x2, int y2);
 extern void img_noclip(img_t *src);
@@ -31,3 +33,5 @@ extern int font_height(font_t *font);
 const char *font_renderer(void);
 
 extern const char* utf8_to_codepoint(const char *p, unsigned *dst);
+extern int gfx_udata_move(lua_State *from, int idx, lua_State *to);
+extern void pixels_create_meta(lua_State *L);

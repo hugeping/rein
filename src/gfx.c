@@ -14,15 +14,35 @@ img_init(img_t *img, int w, int h)
 	img->h = h;
 	img_noclip(img);
 	img_offset(img, 0, 0);
+	img->used = 1;
+}
+
+void
+img_free(img_t *src)
+{
+	if (src->used) {
+		src->used --;
+		if (!src->used && src->ptr)
+			free(src->ptr);
+	}
+	free(src);
 }
 
 img_t *
 img_new(int w, int h)
 {
-	img_t *img = malloc(sizeof(img_t) + w * h * 4);
+	img_t *img = malloc(sizeof(img_t)); // + w * h * 4);
 	if (!img)
 		return NULL;
-	img->ptr = (unsigned char *)(img + 1);
+	if (w == 0 || h == 0)
+		img->ptr = NULL;
+	else {
+		img->ptr = (unsigned char *)malloc(w * h * 4);
+		if (!img->ptr) {
+			free(img);
+			return NULL;
+		}
+	}
 	img_init(img, w, h);
 	return img;
 }
@@ -219,10 +239,13 @@ pixels_pixel(lua_State *L)
 static int
 pixels_buff(lua_State *L)
 {
-	int i;
+	int i = 0;
 	unsigned int col;
 	struct lua_pixels *hdr = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	unsigned char *ptr = hdr->img.ptr;
+	unsigned char *pptr;
+	int x, y, w, h;
+
 	if (!lua_istable(L, 2)) { /* return actual table */
 		lua_newtable(L);
 		for (i = 0; i < hdr->img.w * hdr->img.h; i++) {
@@ -234,6 +257,31 @@ pixels_buff(lua_State *L)
 			lua_rawseti(L, -2, i + 1);
 		}
 		return 1;
+	}
+	if (lua_isnumber(L, 3)) {
+		x = luaL_checkinteger(L, 3);
+		y = luaL_checkinteger(L, 4);
+		w = luaL_checkinteger(L, 5);
+		h = luaL_checkinteger(L, 6);
+		if (x < 0 || y < 0 || x + w > hdr->img.w ||
+			y + h > hdr->img.h)
+			return 0;
+		ptr += (y*hdr->img.w + x)*4;
+		for (y = 0; y < h; y ++) {
+			pptr = ptr;
+			for (x = 0; x < w; x ++) {
+				lua_rawgeti(L, 2, i + 1);
+				col = luaL_optnumber(L, -1, 0);
+				*(ptr++) = (col & 0xff000000) >> 24;
+				*(ptr++) = (col & 0xff0000) >> 16;
+				*(ptr++) = (col & 0xff00) >> 8;
+				*(ptr++) = (col & 0xff);
+				lua_pop(L, 1);
+				i ++;
+			}
+			ptr = pptr + hdr->img.w*4;
+		}
+		return 0;
 	}
 	for (i = 0; i < hdr->img.w * hdr->img.h; i ++) {
 		lua_rawgeti(L, 2, i + 1);
@@ -256,14 +304,16 @@ pixels_new(lua_State *L, int w, int h)
 	if (w <=0 || h <= 0)
 		return NULL;
 	size = w * h * 4;
-	hdr = lua_newuserdata(L, sizeof(*hdr) + size);
+	hdr = lua_newuserdata(L, sizeof(*hdr));
 	if (!hdr)
 		return 0;
 	hdr->type = PIXELS_MAGIC;
-	hdr->img.w = w;
-	hdr->img.h = h;
 	hdr->size = size;
-	hdr->img.ptr = (unsigned char*)(hdr + 1);
+	hdr->img.ptr = (unsigned char *)malloc(size);
+	if (!hdr->img.ptr) {
+		lua_pop(L, 1);
+		return 0;
+	}
 	img_init(&hdr->img, w, h);
 	memset(hdr->img.ptr, 0, size);
 	luaL_getmetatable(L, "pixels metatable");
@@ -344,11 +394,10 @@ gfx_pixels_win(lua_State *L)
 	if (!ptr)
 		return 0;
 	hdr->type = PIXELS_MAGIC;
-	hdr->img.w = w;
-	hdr->img.h = h;
 	img_init(&hdr->img, w, h);
 	hdr->size = w * h * 4;
 	hdr->img.ptr = ptr;
+	hdr->img.used = 0; /* do not free pixels!!! */
 	//memset(hdr->img.ptr, 0, hdr->size);
 	luaL_getmetatable(L, "pixels metatable");
 	lua_setmetatable(L, -2);
@@ -1545,6 +1594,19 @@ pixels_nooffset(lua_State *L)
 	return 0;
 }
 
+static int
+pixels_free(lua_State *L)
+{
+	struct lua_pixels *src;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
+	if (!src->img.used)
+		return 0;
+	src->img.used --;
+	if (src->img.used == 0 && src->img.ptr)
+		free(src->img.ptr);
+	return 0;
+}
+
 static const luaL_Reg pixels_mt[] = {
 	{ "val", pixels_value },
 	{ "clip", pixels_clip },
@@ -1567,10 +1629,11 @@ static const luaL_Reg pixels_mt[] = {
 	{ "fill_poly", pixels_fill_poly },
 	{ "scale", pixels_scale },
 	{ "stretch", pixels_stretch },
+	{ "__gc", pixels_free },
 	{ NULL, NULL }
 };
 
-static void
+void
 pixels_create_meta(lua_State *L)
 {
 	luaL_newmetatable (L, "pixels metatable");
@@ -1730,4 +1793,25 @@ gfx_init(lua_State *L)
 	font_create_meta(L);
 	luaL_newlib(L, gfx_lib);
 	return 0;
+}
+
+int
+gfx_udata_move(lua_State *from, int idx, lua_State *to)
+{
+	struct lua_pixels *dst;
+	struct lua_pixels *src = (struct lua_pixels*)lua_touserdata(from, idx);
+	if (!src || src->type != PIXELS_MAGIC)
+		return 0;
+	dst = lua_newuserdata(to, sizeof(*dst));
+	if (!dst)
+		return 0;
+	dst->type = PIXELS_MAGIC;
+	dst->size = src->size;
+	dst->img.ptr = src->img.ptr;
+	img_init(&dst->img, src->img.w, src->img.h);
+	src->img.used ++;
+	dst->img.used = 0; /* force do not free image */
+	luaL_getmetatable(to, "pixels metatable");
+	lua_setmetatable(to, -2);
+	return 1;
 }
