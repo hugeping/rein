@@ -32,4 +32,17 @@ extern void TextInput(void);
 
 extern void Log(const char *msg);
 
+extern int Thread(int (*fn) (void *), void *data);
+extern int ThreadWait(int tid);
+
+extern int Mutex(void);
+extern int MutexDestroy(int mid);
+extern int MutexLock(int mid);
+extern int MutexUnlock(int mid);
+
+extern int Sem(int counter);
+extern int SemDestroy(int sid);
+extern int SemWait(int sid);
+extern int SemPost(int sid);
+
 #endif

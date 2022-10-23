@@ -8,3 +8,4 @@ extern void luaL_requiref(lua_State *L, char const* modname,
 extern int lua_rawlen(lua_State *L, int idx);
 #endif
 extern void luaL_setfuncs_int(lua_State *L, const luaL_Reg *l, int nup);
+extern int lua_callfn(lua_State *L);

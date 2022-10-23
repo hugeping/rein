@@ -526,3 +526,173 @@ top:
 	}
 	return 0;
 }
+
+#define MAX_HANDLES 32
+
+struct handles {
+	int fd_nr;
+	int fd_pos;
+	int fd_size;
+	void *fds[MAX_HANDLES];
+};
+#define HAN_INIT { 0, 0, MAX_HANDLES, { NULL, }}
+
+static int
+han_open(struct handles *h, void *data)
+{
+	int i, fd;
+	if (h->fd_nr >= h->fd_size)
+		return -1;
+	if (!data)
+		return 0;
+	for (i = 0; i < h->fd_size; i ++) {
+		fd = (i + h->fd_pos)%h->fd_size;
+		if (!h->fds[fd]) {
+			h->fd_nr ++;
+			h->fd_pos = fd;
+			h->fds[fd] = data;
+			return fd;
+		}
+	}
+	return -1;
+}
+
+static void*
+han_get(struct handles *h, int fd)
+{
+	if (fd >= h->fd_size || fd < 0)
+		return NULL;
+	return h->fds[fd];
+}
+
+static void*
+han_close(struct handles *h, int fd)
+{
+	void *data;
+	if (fd >= h->fd_size || fd < 0)
+		return NULL;
+	if (!h->fds[fd])
+		return NULL;
+	data = h->fds[fd];
+	h->fds[fd] = NULL;
+	h->fd_nr --;
+	h->fd_pos = fd;
+	return data;
+}
+
+static struct handles mutexes = HAN_INIT;
+
+int
+MutexDestroy(int id)
+{
+	SDL_mutex *m = han_close(&mutexes, id);
+	if (!m)
+		return -1;
+	SDL_DestroyMutex(m);
+	return 0;
+}
+
+int
+MutexLock(int id)
+{
+	SDL_mutex *m = han_get(&mutexes, id);
+	if (!m)
+		return -1;
+	return SDL_LockMutex(m);
+}
+
+int
+MutexUnlock(int id)
+{
+	SDL_mutex *m = han_get(&mutexes, id);
+	if (!m)
+		return -1;
+	return SDL_UnlockMutex(m);
+}
+
+int
+Mutex(void)
+{
+	int fd;
+	SDL_mutex *m = SDL_CreateMutex();
+	if (!m)
+		return -1;
+	if ((fd = han_open(&mutexes, m)) < 0) {
+		SDL_DestroyMutex(m);
+		return -1;
+	}
+	return fd;
+}
+
+static struct handles sems = HAN_INIT;
+
+int
+SemWait(int id)
+{
+	SDL_sem *sem = han_get(&sems, id);
+	if (!sem)
+		return -1;
+	return SDL_SemWait(sem);
+}
+
+int
+Sem(int counter)
+{
+	int fd;
+	SDL_sem *sem = SDL_CreateSemaphore(counter);
+	if (!sem)
+		return -1;
+	fd = han_open(&sems, sem);
+	if (fd < 0) {
+		SDL_DestroySemaphore(sem);
+		return -1;
+	}
+	return fd;
+}
+
+int
+SemPost(int id)
+{
+	SDL_sem *sem = han_get(&sems, id);
+	if (!sem)
+		return -1;
+	return SDL_SemPost(sem);
+}
+
+int
+SemDestroy(int id)
+{
+	SDL_sem *sem = han_close(&sems, id);
+	if (!sem)
+		return -1;
+	SDL_DestroySemaphore(sem);
+	return 0;
+}
+
+static struct handles threads = HAN_INIT;
+
+int
+ThreadWait(int id)
+{
+	int status;
+	SDL_Thread *thread = han_get(&threads, id);
+	if (!thread)
+		return -1;
+	SDL_WaitThread(thread, &status);
+	han_close(&threads, id);
+	return status;
+}
+
+int
+Thread(int (*fn) (void *), void *data)
+{
+	int fd;
+	SDL_Thread *thread;
+	fd = han_open(&threads, NULL);
+	if (fd < 0)
+		return -1;
+	thread = SDL_CreateThread(fn, NULL, data);
+	if (!thread)
+		return -1;
+	return han_open(&threads, thread);
+}

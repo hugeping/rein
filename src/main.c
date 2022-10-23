@@ -19,12 +19,22 @@ luaopen_gfx(lua_State *L)
 	return 1;
 }
 
+extern int thread_init(lua_State *L);
+
+int
+luaopen_thread(lua_State *L)
+{
+	thread_init(L);
+	return 1;
+}
+
 extern int luaopen_bit(lua_State *L);
 
 static const luaL_Reg lua_libs[] = {
 	{ "system",    luaopen_system },
 	{ "gfx",  luaopen_gfx },
 	{ "bit", luaopen_bit },
+	{ "thread", luaopen_thread },
 	{ NULL, NULL }
 };
 
@@ -61,63 +71,12 @@ void unix_path(char *path)
 }
 
 static int
-report(lua_State *L, int status)
-{
-	const char *msg;
-	if (!status || lua_isnil(L, -1))
-		return 0;
-	msg = lua_tostring(L, -1);
-	if (msg)
-		fprintf(stderr,"%s\n", msg);
-	lua_pop(L, 1);
-	return status;
-}
-
-static int traceback (lua_State *L)
-{
-#if LUA_VERSION_NUM >= 502
-	lua_rawgeti(L, LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
-	lua_getfield(L, -1, "debug");
-#else
-	lua_getfield(L, LUA_GLOBALSINDEX, "debug");
-#endif
-	if (!lua_istable(L, -1)) {
-		lua_pop(L, 1);
-		return 1;
-	}
-	lua_getfield(L, -1, "traceback");
-	if (!lua_isfunction(L, -1)) {
-		lua_pop(L, 2);
-		return 1;
-	}
-	lua_pushvalue(L, 1);  /* pass error message */
-	lua_pushinteger(L, 2);  /* skip this function and traceback */
-	lua_call(L, 2, 1);  /* call debug.traceback */
-	return 1;
-}
-
-static int
-docall(lua_State *L)
-{
-	int rc;
-	int base;
-	base = lua_gettop(L);
-	lua_pushcfunction(L, traceback);
-	lua_insert(L, base);
-	rc = lua_pcall(L, 0, LUA_MULTRET, base);
-	lua_remove(L, base);
-	if (rc != 0)
-		lua_gc(L, LUA_GCCOLLECT, 0);
-	return report(L, rc);
-}
-
-static int
 dostring(lua_State *L, const char *s)
 {
 	int rc = luaL_loadstring(L, s);
 	if (rc)
 		return rc;
-	return docall(L);
+	return lua_callfn(L);
 }
 
 static int
@@ -127,7 +86,7 @@ cycle(lua_State *L)
 	lua_getglobal(L, "core");
 	lua_getfield(L, -1, "run");
 	lua_remove(L, -2);
-	if (docall(L))
+	if (lua_callfn(L))
 		return -1;
 	rc = lua_toboolean(L, -1);
 	lua_pop(L, 1);

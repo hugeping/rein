@@ -38,7 +38,7 @@ retry:
 	if (res < 0) {
 		w *= 2;
 		h *= 2;
-		free(set->image);
+		img_free(set->image);
 		goto retry;
 	}
 	stbtt_GetFontVMetrics(&font->stbfont, &ascent, &descent, &linegap);
@@ -179,7 +179,7 @@ font_free(font_t *font)
 		glyphset_t *set = font->sets[i];
 		if (!set)
 			continue;
-		free(set->image);
+		img_free(set->image);
 		free(set);
 	}
 	free(font->data);
