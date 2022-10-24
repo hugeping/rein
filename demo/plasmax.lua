@@ -29,7 +29,7 @@ end
 
 local demos = {
 function(scr, fx, fy, w, h)
-	local sin2, abs, cos, sqrt, floor = math.sin, math.abs, math.cos, math.sqrt, math.floor
+	local sin, abs, cos, sqrt, floor = math.sin, math.abs, math.cos, math.sqrt, math.floor
 	local cx, cy, x, y, r, g, b, v
 	local i = 1
 	t = t + 0.1
@@ -177,7 +177,6 @@ while true do
 	fps = floor(frames / (cur - start))
 	local d = h / #thr
 	for i=1, THREADS do
-		dprint("write", i)
 		thr[i]:write { x = 0, y = (i-1)*d, w = w, h = d, scr = screen }
 	end
 	for i=1, THREADS do
