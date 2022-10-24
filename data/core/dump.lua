@@ -1,6 +1,6 @@
 -- idea taken from the torch7 project
-
 local dump = {
+	UPVALS = true
 }
 
 local loadstring = loadstring or load
@@ -79,14 +79,15 @@ end
 function dump:esc(msg)
 	local e = ''
 	msg = msg:gsub("\\", "\\\\")
+	local last = 1
 	for i=1,msg:len() do
 		local c = string.byte(msg, i)
 		if c == 0 then
-			e = e .. '\\0'
-		else
-			e = e .. string.char(c)
+			e = e .. msg:sub(last, i - 1).. '\\0'
+			last = i + 1
 		end
 	end
+	e = e .. msg:sub(last)
 	msg = e
 	msg = msg:gsub("[\n\r\t]", { ["\t"] = "\\t",
 		["\r"] = "\\r", ["\n"] = "\\n"  })
@@ -145,6 +146,9 @@ function dump:load(iter)
 		if not f then
 			return f, e
 		end
+		if not self.UPVALS then
+			return f
+		end
 		local upvals = self:load(iter)
 		for i, up in ipairs(upvals) do
 			if up.nam == '_ENV' then
@@ -201,7 +205,9 @@ function dump:save(ob)
 		end
 	elseif t == 'function' then
 		self:dump_fn(ob)
-		self:dump_upvalues(ob)
+		if self.UPVALS then
+			self:dump_upvalues(ob)
+		end
 	end
 end
 
@@ -234,5 +240,4 @@ function dump:dump_fn(fn)
 	local dumped = string.dump(fn)
 	self:write(dumped)
 end
-
 return dump

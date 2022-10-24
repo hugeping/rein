@@ -28,6 +28,7 @@ local function run_thread(run)
 end
 
 local demos = {
+
 function(scr, fx, fy, w, h)
 	local sin, abs, cos, sqrt, floor = math.sin, math.abs, math.cos, math.sqrt, math.floor
 	local cx, cy, x, y, r, g, b, v
