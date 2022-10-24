@@ -176,7 +176,7 @@ while true do
 	fps = floor(frames / (cur - start))
 	local d = h / #thr
 	for i=1, THREADS do
-		thr[i]:write(screen, 0, (i-1)*d, w, h)
+		thr[i]:write(screen, 0, (i-1)*d, w, d)
 	end
 	for i=1, THREADS do
 		thr[i]:read()

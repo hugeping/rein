@@ -66,6 +66,14 @@ function threads_mt.start(code)
 	local thr = { }
 end
 
+function threads_mt:poll(...)
+	local r, e = self.thread:poll(...)
+	if r == false and self.thread:err() then
+		core.err(e)
+	end
+	return
+end
+
 function threads_mt:read()
 	local r, e = self.thread:read()
 	if r == false and self.thread:err() then
