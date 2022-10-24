@@ -67,6 +67,8 @@ struct lua_channel {
 	int used;
 	int parent_sem;
 	int child_sem;
+	int parent_write;
+	int child_write;
 	lua_State *parent;
 	lua_State *child;
 };
@@ -86,6 +88,24 @@ struct lua_thread {
 	char *err;
 	struct lua_channel *chan;
 };
+
+static int
+child_poll(lua_State *L)
+{
+	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
+	struct lua_channel *chan = thr->chan;
+
+	MutexLock(chan->m);
+	if (thr->err) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, thr->err);
+		MutexUnlock(chan->m);
+		return 2;
+	}
+	lua_pushboolean(L, !!chan->parent_write);
+	MutexUnlock(chan->m);
+	return 1;
+}
 
 static int
 child_read(lua_State *L)
@@ -116,10 +136,12 @@ child_write(lua_State *L)
 		MutexUnlock(chan->m);
 		return 0;
 	}
+	chan->child_write ++;
 	MutexUnlock(chan->m);
 
 	SemWait(chan->child_sem);
 	MutexLock(chan->m);
+	chan->child_write --;
 	if (!chan->parent) {
 		MutexUnlock(chan->m);
 		return 0;
@@ -155,6 +177,7 @@ child_stop(lua_State *L)
 static const luaL_Reg child_thread_mt[] = {
 	{ "__gc", child_stop },
 	{ "read", child_read },
+	{ "poll", child_poll },
 	{ "write", child_write },
 	{ NULL, NULL }
 };
@@ -189,6 +212,24 @@ thread_err(lua_State *L)
 		return 1;
 	}
 	return 0;
+}
+
+static int
+thread_poll(lua_State *L)
+{
+	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
+	struct lua_channel *chan = thr->chan;
+
+	MutexLock(chan->m);
+	if (thr->err) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, thr->err);
+		MutexUnlock(chan->m);
+		return 2;
+	}
+	lua_pushboolean(L, !!chan->child_write);
+	MutexUnlock(chan->m);
+	return 1;
 }
 
 static int
@@ -238,10 +279,12 @@ thread_write(lua_State *L)
 		MutexUnlock(chan->m);
 		return 2;
 	}
+	chan->parent_write ++;
 	MutexUnlock(chan->m);
 
 	SemWait(chan->parent_sem);
 	MutexLock(chan->m);
+	chan->parent_write --;
 	if (!chan->child) {
 		MutexUnlock(chan->m);
 		return 0;
@@ -284,6 +327,8 @@ thread_new(lua_State *L)
 	chan->child_sem = Sem(0);
 	chan->parent = L;
 	chan->child = nL;
+	chan->child_write = 0;
+	chan->parent_write = 0;
 
 	thr = lua_newuserdata(L, sizeof(struct lua_thread));
 	thr->chan = chan;
@@ -382,6 +427,7 @@ static const luaL_Reg thread_mt[] = {
 	{ "wait", thread_wait },
 	{ "write", thread_write },
 	{ "read", thread_read },
+	{ "poll", thread_poll },
 	{ "err", thread_err },
 	{ "__gc", thread_stop },
 	{ NULL, NULL }
