@@ -58,7 +58,7 @@ report(lua_State *L, int status)
 	msg = lua_tostring(L, -1);
 	if (msg)
 		fprintf(stderr,"%s\n", msg);
-	lua_pop(L, 1);
+//	lua_pop(L, 1);
 	return status;
 }
 

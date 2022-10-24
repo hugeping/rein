@@ -83,6 +83,7 @@ chan_free(struct lua_channel *chan)
 struct lua_thread {
 	int tid;
 	lua_State *L;
+	char *err;
 	struct lua_channel *chan;
 };
 
@@ -159,7 +160,11 @@ thread(void *data)
 {
 	int rc;
 	struct lua_thread *thr = (struct lua_thread *)data;
-	lua_callfn(thr->L);
+	if (lua_callfn(thr->L)) {
+		if (!thr->err)
+			thr->err = strdup(lua_tostring(thr->L, -1));
+		lua_pop(thr->L, 1);
+	}
 	rc = lua_toboolean(thr->L, -1);
 	lua_close(thr->L);
 	return rc;
@@ -170,6 +175,12 @@ thread_read(lua_State *L)
 {
 	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
 	struct lua_channel *chan = thr->chan;
+
+	if (thr->err) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, thr->err);
+		return 2;
+	}
 
 	MutexLock(chan->m);
 	if (!chan->child) {
@@ -189,6 +200,13 @@ thread_write(lua_State *L)
 {
 	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
 	struct lua_channel *chan = thr->chan;
+
+	if (thr->err) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, thr->err);
+		return 2;
+	}
+
 	MutexLock(chan->m);
 	if (!chan->child) {
 		MutexUnlock(chan->m);
@@ -267,7 +285,14 @@ thread_new(lua_State *L)
 		rc = 3;
 		goto err2;
 	}
-
+	lua_getglobal(L, "package");
+	lua_getfield(L, -1, "path");
+	lua_getglobal(nL, "package");
+	lua_pushstring(nL, lua_tostring(L, -1));
+	lua_pop(L, 2);
+	lua_setfield(nL, -2, "path");
+	lua_pop(nL, 1);
+	thr->err = NULL;
 	thr->tid = Thread(thread, thr);
 
 	return 1;
@@ -318,6 +343,8 @@ thread_stop(lua_State *L)
 		SemPost(chan->child_sem);
 		thread_wait(L);
 	}
+	if (thr->err)
+		free(thr->err);
 	return 0;
 }
 
