@@ -158,8 +158,7 @@ function start_demo(nr)
 		t:wait()
 	end
 	for i=1, THREADS do
-		local a, b, c = run_thread(demos[nr])
-		dprint(a, b, c)
+		local a = run_thread(demos[nr])
 		thr[i] = a
 	end
 end
