@@ -76,7 +76,10 @@ dostring(lua_State *L, const char *s)
 	int rc = luaL_loadstring(L, s);
 	if (rc)
 		return rc;
-	return lua_callfn(L);
+	rc = lua_callfn(L);
+	if (rc)
+		lua_pop(L, 1);
+	return rc;
 }
 
 static int
@@ -86,8 +89,10 @@ cycle(lua_State *L)
 	lua_getglobal(L, "core");
 	lua_getfield(L, -1, "run");
 	lua_remove(L, -2);
-	if (lua_callfn(L))
+	if (lua_callfn(L)) {
+		lua_pop(L, 1);
 		return -1;
+	}
 	rc = lua_toboolean(L, -1);
 	lua_pop(L, 1);
 	return !rc;

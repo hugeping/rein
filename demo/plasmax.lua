@@ -1,40 +1,35 @@
-t = 0
+local t = 0
 local w, h = screen:size()
 local sin, abs, cos, sqrt, floor = math.sin, math.abs, math.cos, math.sqrt, math.floor
+
 local buf = {}
 
-local function run_thread(code)
-	local pre = [==[
-	local sin, abs, cos, sqrt, floor = math.sin, math.abs, math.cos, math.sqrt, math.floor
-	local t = 0
-	local buf = {}
-	local function col2int(r, g, b, a)
-		r = floor(r)
-		g = floor(g)
-		b = floor(b)
-		a = floor(a)
-		return r * 0x1000000 + g * 0x10000 + b * 0x100 + a;
-	end
-	function run(src, fx, fy, w, h)
-]==]
-	local post = [==[
-	end
-	while true do
-		local req = thread:read()
-		if not req or not req.scr then
-			break
+local function col2int(r, g, b, a)
+	local floor = math.floor
+	r = floor(r)
+	g = floor(g)
+	b = floor(b)
+	a = floor(a)
+	return r * 0x1000000 + g * 0x10000 + b * 0x100 + a;
+end
+
+local function run_thread(run)
+	return threads.start(function ()
+		while true do
+			local req = thread:read()
+			if not req or not req.scr then
+				break
+			end
+			run(req.scr, req.x, req.y, req.w, req.h)
+			req.scr:buff(buf, req.x, req.y, req.w, req.h)
+			thread:write {}
 		end
-		run(req.scr, req.x, req.y, req.w, req.h)
-		req.scr:buff(buf, req.x, req.y, req.w, req.h)
-		thread:write {}
-	end
-]==]
-	local code, e = string.format("%s\n%s\n\n%s", pre, code, post)
-	return threads.start(code)
+	end)
 end
 
 local demos = {
-[==[
+function(scr, fx, fy, w, h)
+	local sin2, abs, cos, sqrt, floor = math.sin, math.abs, math.cos, math.sqrt, math.floor
 	local cx, cy, x, y, r, g, b, v
 	local i = 1
 	t = t + 0.1
@@ -56,8 +51,9 @@ local demos = {
 			i = i + 1
 		end
 	end
-]==],
-[==[
+end,
+function(scr, fx, fy, w, h)
+	local sin, abs, cos, sqrt, floor = math.sin, math.abs, math.cos, math.sqrt, math.floor
 	local cx, cy, x, y, r, g, b, v
 	local i = 1
 	t = t + 0.1
@@ -77,8 +73,9 @@ local demos = {
 			i = i + 1
 		end
 	end
-]==],
-[==[
+end,
+function(scr, fx, fy, w, h)
+	local sin, abs, cos, sqrt, floor = math.sin, math.abs, math.cos, math.sqrt, math.floor
 	local cx, cy, x, y, r, g, b, v
 	local i = 1
 	t = t + 0.1
@@ -98,8 +95,9 @@ local demos = {
 			i = i + 1
 		end
 	end
-]==],
-[==[
+end,
+function(scr, fx, fy, w, h)
+	local sin, abs, cos, sqrt, floor = math.sin, math.abs, math.cos, math.sqrt, math.floor
 	local cx, cy, x, y, r, g, b, v
 	local i = 1
 	t = t + 0.1
@@ -117,8 +115,9 @@ local demos = {
 			i = i + 1
 		end
 	end
-]==],
-[==[
+end,
+function(scr, fx, fy, w, h)
+	local sin, abs, cos, sqrt, floor = math.sin, math.abs, math.cos, math.sqrt, math.floor
 	local v
 	t = floor(t) + 1
 	local i = 1
@@ -129,8 +128,9 @@ local demos = {
 			i = i + 1
 		end
 	end
-]==],
-[==[
+end,
+function(scr, fx, fy, w, h)
+	local sin, abs, cos, sqrt, floor = math.sin, math.abs, math.cos, math.sqrt, math.floor
 	local x, y, r, g, b, v
 	t = t + 0.1
 	v = 0.0
@@ -146,7 +146,7 @@ local demos = {
 			i = i + 1
 		end
 	end
-]==]
+end
 }
 
 local THREADS = 8
@@ -177,10 +177,14 @@ while true do
 	fps = floor(frames / (cur - start))
 	local d = h / #thr
 	for i=1, THREADS do
+		dprint("write", i)
 		thr[i]:write { x = 0, y = (i-1)*d, w = w, h = d, scr = screen }
 	end
 	for i=1, THREADS do
-		thr[i]:read()
+		local r, e = thr[i]:read()
+		if not r then
+			error(e)
+		end
 	end
 
 	local r, v = input()

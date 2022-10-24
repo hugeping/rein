@@ -2,6 +2,8 @@ local font = require "font"
 local spr = require "spr"
 local mixer = require "mixer"
 local bit = require "bit"
+local dump = require "dump"
+
 local core
 local input = {
 	fifo = {};
@@ -58,6 +60,20 @@ local env = {
 }
 
 function thread.start(code)
+	if type(code) == 'function' then
+		-- try to serialize it!
+		local r, e = dump.new(code)
+		if not r and e then -- error?
+			core.err("Can not start function.\n"..e)
+		end
+		code = string.format(
+			"local f, e = require('dump').new [=========[\n%s"..
+			"]=========]\n"..
+			"if not f and e then\n"..
+			"	error(e)\n"..
+			"end\n"..
+			"f()\n", r)
+	end
 	local r, e, c = thread.new(code)
 	if not r then
 		if e:find("^%[string [^%]]+%]:[0-9]+:") then
