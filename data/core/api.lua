@@ -56,10 +56,37 @@ local env = {
 	tonumber = tonumber,
 	tostring = tostring,
 	coroutine = coroutine,
-	threads = thread,
 }
 
-function thread.start(code)
+local threads = {}
+local threads_mt = {}
+threads_mt.__index = threads_mt
+
+function threads_mt.start(code)
+	local thr = { }
+end
+
+function threads_mt:read()
+	local r, e = self.thread:read()
+	if r == false and self.thread:err() then
+		core.err(e)
+	end
+	return
+end
+
+function threads_mt:write(...)
+	local r, e = self.thread:write(...)
+	if r == false and e then
+		core.err(e)
+	end
+	return
+end
+
+function threads_mt:wait(...)
+	return self.thread:wait(...)
+end
+
+function threads.start(code)
 	if type(code) == 'function' then
 		-- try to serialize it!
 		local r, e = dump.new(code)
@@ -91,12 +118,18 @@ function thread.start(code)
 		end
 		local msg = string.format("%s\n%s", e, c)
 		core.err(msg)
+	else
+		local thr = { thread = r }
+		setmetatable(thr, threads_mt)
+		return thr
 	end
 	return r
 end
 
+
 local env_ro = {
-	screen = gfx.new(conf.w, conf.h)
+	screen = gfx.new(conf.w, conf.h),
+	threads = threads,
 }
 
 env_ro.__index = env_ro

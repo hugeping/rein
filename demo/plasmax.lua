@@ -16,12 +16,12 @@ end
 local function run_thread(run)
 	return threads.start(function ()
 		while true do
-			local req = thread:read()
-			if not req or not req.scr then
+			local scr, x, y, w, h = thread:read()
+			if not scr then
 				break
 			end
-			run(req.scr, req.x, req.y, req.w, req.h)
-			req.scr:buff(buf, req.x, req.y, req.w, req.h)
+			run(scr, x, y, w, h)
+			scr:buff(buf, x, y, w, h)
 			thread:write {}
 		end
 	end)
@@ -177,13 +177,10 @@ while true do
 	fps = floor(frames / (cur - start))
 	local d = h / #thr
 	for i=1, THREADS do
-		thr[i]:write { x = 0, y = (i-1)*d, w = w, h = d, scr = screen }
+		thr[i]:write(screen, 0, (i-1)*d, w, h)
 	end
 	for i=1, THREADS do
-		local r, e = thr[i]:read()
-		if not r then
-			error(e)
-		end
+		thr[i]:read()
 	end
 
 	local r, v = input()
