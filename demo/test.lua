@@ -117,7 +117,7 @@ while true do
 
 	clear(0)
 
-	offset(math.sin(frames * 0.1)*6, math.cos(frames * 0.1)*6)
+	offset(math.floor(math.sin(frames * 0.1)*6), math.floor(math.cos(frames * 0.1)*6))
 	blend(spr[math.floor(frames/10)%2+1], screen, 240, 0)
 
 	local mx, my, mb = mouse()

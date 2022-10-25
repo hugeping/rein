@@ -85,7 +85,7 @@ end
 
 local env_ro = {
 	screen = gfx.new(conf.w, conf.h),
-	threads = thread,
+	thread = thread,
 }
 
 env_ro.__index = env_ro
@@ -394,7 +394,7 @@ function env_ro.sprite(x, y)
 	end
 end
 
-function env_ro.thread(fn)
+function env_ro.worker(fn)
 	local f, e = coroutine.create(fn)
 	if f then
 		table.insert(core.fn, f)
@@ -416,7 +416,7 @@ function api.init(core_mod)
 	if not env_ro.font then
 		return false, string.format("Can't load font %q", DATADIR..'/'..conf.font)
 	end
-	env.thread(mixer.thread)
+	env.worker(mixer.thread)
 	return env
 end
 

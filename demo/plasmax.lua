@@ -156,7 +156,7 @@ local thr = {}
 function start_demo(n)
 	local d = h / THREADS
 	for i=1, THREADS do
-		local a = threads.start(render)
+		local a = thread.start(render)
 		a:write(screen, 0, (i-1)*d, w, d)
 		thr[i] = a
 	end
