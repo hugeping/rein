@@ -69,6 +69,8 @@ struct lua_channel {
 	int child_sem;
 	int parent_write;
 	int child_write;
+	int parent_read;
+	int child_read;
 	lua_State *parent;
 	lua_State *child;
 };
@@ -112,10 +114,15 @@ child_read(lua_State *L)
 	struct lua_channel *chan = thr->chan;
 
 	MutexLock(chan->m);
+	if (chan->parent_read) {
+		MutexUnlock(chan->m);
+		return 0;
+	}
 	if (!chan->parent) {
 		MutexUnlock(chan->m);
 		return 0;
 	}
+	chan->child_read ++;
 	MutexUnlock(chan->m);
 	SemPost(chan->parent_sem);
 	SemWait(chan->child_sem);
@@ -141,7 +148,7 @@ child_write(lua_State *L)
 	SemWait(chan->child_sem);
 	MutexLock(chan->m);
 	chan->child_write --;
-	if (!chan->parent) {
+	if (!chan->parent || !chan->parent_read) {
 		MutexUnlock(chan->m);
 		MutexUnlock(chan->m);
 		return luaL_error(L, "No peer on child thread write");
@@ -153,6 +160,7 @@ child_write(lua_State *L)
 		else
 			lua_moveval(L, i, chan->parent);
 	}
+	chan->parent_read --;
 	MutexUnlock(chan->m);
 
 	SemPost(chan->parent_sem);
@@ -245,11 +253,15 @@ thread_read(lua_State *L)
 		MutexUnlock(chan->m);
 		return luaL_error(L, "No peer on parent thread write: %s", thr->err);
 	}
-
+	if (chan->child_read) {
+		MutexUnlock(chan->m);
+		return luaL_error(L, "Deadlock thread read");
+	}
 	if (!chan->child) {
 		MutexUnlock(chan->m);
 		return luaL_error(L, "No peer on parent thread write");
 	}
+	chan->parent_read ++;
 	MutexUnlock(chan->m);
 	SemPost(chan->child_sem);
 	SemWait(chan->parent_sem);
@@ -283,7 +295,7 @@ thread_write(lua_State *L)
 		MutexUnlock(chan->m);
 		return luaL_error(L, "No peer on parent thread write: %s", thr->err);
 	}
-	if (!chan->child) {
+	if (!chan->child || !chan->child_read) {
 		MutexUnlock(chan->m);
 		return luaL_error(L, "No peer on parent thread write");
 	}
@@ -294,6 +306,7 @@ thread_write(lua_State *L)
 		else
 			lua_moveval(L, i, chan->child);
 	}
+	chan->child_read --;
 	MutexUnlock(chan->m);
 	SemPost(chan->child_sem);
 	lua_pushboolean(L, 1);
@@ -328,6 +341,8 @@ thread_new(lua_State *L)
 	chan->child = nL;
 	chan->child_write = 0;
 	chan->parent_write = 0;
+	chan->child_read = 0;
+	chan->parent_read = 0;
 
 	thr = lua_newuserdata(L, sizeof(struct lua_thread));
 	thr->chan = chan;
