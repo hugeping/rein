@@ -109,7 +109,7 @@ function fn:text(t, color)
 	local spr = gfx.new(w, h)
 	local x, y = 0, 0
 	while t and t ~= '' do
-		local c, n = system.utf_sym(t, i)
+		local c, n = system.utf_sym(t)
 		if not n or n == 0 then
 			break
 		end
