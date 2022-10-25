@@ -116,11 +116,11 @@ child_read(lua_State *L)
 	MutexLock(chan->m);
 	if (chan->parent_read) {
 		MutexUnlock(chan->m);
-		return 0;
+		return luaL_error(L, "Deadlock thread read in child thread");
 	}
 	if (!chan->parent) {
 		MutexUnlock(chan->m);
-		return 0;
+		return luaL_error(L, "No peer on child thread read");
 	}
 	chan->child_read ++;
 	MutexUnlock(chan->m);
@@ -251,15 +251,15 @@ thread_read(lua_State *L)
 	MutexLock(chan->m);
 	if (thr->err) {
 		MutexUnlock(chan->m);
-		return luaL_error(L, "No peer on parent thread write: %s", thr->err);
+		return luaL_error(L, "No peer on parent thread read: %s", thr->err);
 	}
 	if (chan->child_read) {
 		MutexUnlock(chan->m);
-		return luaL_error(L, "Deadlock thread read");
+		return luaL_error(L, "Deadlock thread read in parent thread");
 	}
 	if (!chan->child) {
 		MutexUnlock(chan->m);
-		return luaL_error(L, "No peer on parent thread write");
+		return luaL_error(L, "No peer on parent thread read");
 	}
 	chan->parent_read ++;
 	MutexUnlock(chan->m);
