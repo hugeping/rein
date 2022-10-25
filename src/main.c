@@ -174,9 +174,9 @@ main(int argc, char **argv)
 
 #if defined(_WIN32) || defined(PLAN9) || defined(__ANDROID__)
 	#ifdef __ANDROID__
-	snprintf(base, sizeof(base), "%s/%s", SDL_AndroidGetInternalStoragePath(), "errors.txt");
+	snprintf(base, sizeof(base), "%s/%s", SDL_AndroidGetInternalStoragePath(), "log.txt");
 	#else
-	snprintf(base, sizeof(base), "%s/%s", exepath, "errors.txt");
+	snprintf(base, sizeof(base), "%s/%s", exepath, "log.txt");
 	#endif
 
 	#if defined(_WIN32)
