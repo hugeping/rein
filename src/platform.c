@@ -292,6 +292,8 @@ WindowCreate(void)
 		SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI, &window, &renderer))
 		return -1;
 	SDL_GetRendererInfo(renderer, &renderer_info);
+	fprintf(stderr, "Video: %s%s\n", renderer_info.name,
+		(renderer_info.flags & SDL_RENDERER_ACCELERATED)?" (accelerated)":"");
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 	return 0;
 }
