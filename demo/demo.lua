@@ -33,13 +33,9 @@ end
 demo = { first, second, third }
 current = 1
 local fps = 0
-local start = time()
-local frames = 0
-
 
 while true do
 	local cur = time()
-	fps = math.floor(frames / (cur - start))
 
 	t = t + 1
 	local i = 1
@@ -59,9 +55,8 @@ while true do
 	end
 
 	screen:buff(buf)
-	frames = frames + 1
 	clear(0,256-8,256,256-8,7)
 	printf(0, 256-8, 1, "Демо:%d FPS:%d", current, fps)
 
-	flip(1/50)
+	fps = flip(1/50)
 end
