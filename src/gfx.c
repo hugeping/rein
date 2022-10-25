@@ -174,6 +174,14 @@ pixel(unsigned char *s, unsigned char *d)
 	}
 }
 
+static __inline void
+pixel_textured(img_t *img, unsigned char *d, int x, int y)
+{
+	unsigned char *src = img->ptr;
+	src += (((y % img->h) * img->w + (x % img->w)) << 2);
+	pixel(src, d);
+}
+
 static int
 pixels_value(lua_State *L)
 {
@@ -415,7 +423,7 @@ pixels_size(lua_State *L)
 
 static void
 _fill(img_t *src, int x, int y, int w, int h,
-		  int r, int g, int b, int a, int mode)
+		  int r, int g, int b, int a, int mode, img_t *pat)
 {
 	unsigned char col[4];
 	unsigned char *ptr1;
@@ -458,7 +466,7 @@ _fill(img_t *src, int x, int y, int w, int h,
 			if (mode == PXL_BLEND_COPY)
 				memcpy(p1, col, 4);
 			else
-				pixel(col, p1);
+				pat?pixel_textured(pat, p1, x + cx, y + cy):pixel(col, p1);
 			p1 += 4;
 		}
 		ptr1 += (src->w * 4);
@@ -470,22 +478,29 @@ _fill(img_t *src, int x, int y, int w, int h,
 static int
 pixels_fill(lua_State *L)
 {
-	int x = 0, y = 0, w = 0, h = 0;
-	struct lua_pixels *src;
+	int x = 0, y = 0, w = 0, h = 0, col_idx = -1;
+	struct lua_pixels *src, *pat = NULL;
 	color_t col;
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 
 	if (!lua_isnumber(L, 2)) {
-		checkcolor(L, 2, &col);
+		col_idx = 2;
 	} else {
 		x = luaL_optnumber(L, 2, 0);
 		y = luaL_optnumber(L, 3, 0);
 		w = luaL_optnumber(L, 4, 0);
 		h = luaL_optnumber(L, 5, 0);
-		checkcolor(L, 6, &col);
+		col_idx = 6;
 	}
+	if (lua_isuserdata(L, col_idx)) {
+		pat = (struct lua_pixels*)luaL_checkudata(L, col_idx, "pixels metatable");
+		memset(&col, 0, sizeof(col));
+	} else
+		checkcolor(L, col_idx, &col);
+
 	_fill(&src->img, x, y, w, h, col.r, col.g, col.b, col.a,
-	      col.a == 255 ? PXL_BLEND_COPY:PXL_BLEND_BLEND);
+		col.a == 255 ? PXL_BLEND_COPY:PXL_BLEND_BLEND,
+		pat?&pat->img:NULL);
 	return 0;
 }
 
@@ -506,7 +521,7 @@ pixels_clear(lua_State *L)
 		h = luaL_optnumber(L, 5, 0);
 		checkcolor(L, 6, &col);
 	}
-	_fill(&src->img, x, y, w, h, col.r, col.g, col.b, col.a, PXL_BLEND_COPY);
+	_fill(&src->img, x, y, w, h, col.r, col.g, col.b, col.a, PXL_BLEND_COPY, NULL);
 	return 0;
 }
 
@@ -1016,7 +1031,9 @@ max3(int a, int b, int c)
 }
 
 static void
-triangle(img_t *src, int x0, int y0, int x1, int y1, int x2, int y2, int r, int g, int b, int a)
+triangle(img_t *src, int x0, int y0,
+	int x1, int y1, int x2, int y2,
+	int r, int g, int b, int a, img_t *pat)
 {
 	int y, x, w;
 	int yd;
@@ -1071,7 +1088,7 @@ triangle(img_t *src, int x0, int y0, int x1, int y1, int x2, int y2, int r, int 
 		unsigned char *p = ptr;
 		for (x = minx; x <= maxx; x++) {
 			if ((w0 | w1 | w2) >= 0)
-				pixel(col, p);
+				pat?pixel_textured(pat, p, x, y):pixel(col, p);
 			p += 4;
 			w0 += A12;
 			w1 += A20;
@@ -1085,7 +1102,7 @@ triangle(img_t *src, int x0, int y0, int x1, int y1, int x2, int y2, int r, int 
 }
 
 static void
-fill_circle(img_t *src, int xc, int yc, int radius, int r, int g, int b, int a)
+fill_circle(img_t *src, int xc, int yc, int radius, int r, int g, int b, int a, img_t *pat)
 {
 	int r2 = radius * radius;
 	int x, y, xx1, xx2, yy1, yy2;
@@ -1114,7 +1131,7 @@ fill_circle(img_t *src, int xc, int yc, int radius, int r, int g, int b, int a)
 	ptr += (w * yc + xc) << 2;
 
 	if (radius == 1) {
-		pixel(col, ptr);
+		pat?pixel_textured(pat, ptr, xc, yc):pixel(col, ptr);
 		return;
 	}
 	yy1 = -radius; yy2 = radius;
@@ -1130,8 +1147,9 @@ fill_circle(img_t *src, int xc, int yc, int radius, int r, int g, int b, int a)
 	for (y = yy1; y <= yy2; y ++) {
 		unsigned char *ptrl = ptr + ((y * w + xx1) << 2);
 		for (x = xx1; x <= xx2; x++) {
-			if (x*x + y*y < r2 - 1)
-				pixel(col, ptrl);
+			if (x*x + y*y < r2 - 1) {
+				pat?pixel_textured(pat, ptrl, xc + x, yc + y):pixel(col, ptrl);
+			}
 			ptrl += 4;
 		}
 	}
@@ -1304,7 +1322,7 @@ struct lua_point {
 */
 
 static void
-fill_poly(img_t *src, struct lua_point *v, int nr, unsigned char *col)
+fill_poly(img_t *src, struct lua_point *v, int nr, unsigned char *col, img_t *pat)
 {
 	unsigned char *ptr = src->ptr, *ptr1;
 	int y, x, xmin, xmax, ymin, ymax, swap, w;
@@ -1365,9 +1383,10 @@ fill_poly(img_t *src, struct lua_point *v, int nr, unsigned char *col)
 					v[i + 1].nodex = xmax;
 				// hline
 				w = (v[i + 1].nodex - v[i].nodex);
-				ptr1 = ptr + v[i].nodex * 4;
+				swap = v[i].nodex;
+				ptr1 = ptr + swap * 4;
 				for (x = 0; x < w; x ++) {
-					pixel(col, ptr1);
+					pat?pixel_textured(pat, ptr1, swap + x, y):pixel(col, ptr1);
 					ptr1 += 4;
 				}
 			}
@@ -1381,7 +1400,7 @@ static int
 pixels_triangle(lua_State *L)
 {
 	int x0 = 0, y0 = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
-	struct lua_pixels *src;
+	struct lua_pixels *src, *pat = NULL;
 	color_t col;
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	x0 = luaL_optnumber(L, 2, 0);
@@ -1396,8 +1415,13 @@ pixels_triangle(lua_State *L)
 		XOR_SWAP(y1, y2)
 	}
 	#undef XOR_SWAP
-	checkcolor(L, 8, &col);
-	triangle(&src->img, x0, y0, x1, y1, x2, y2, col.r, col.g, col.b, col.a);
+	if (lua_isuserdata(L, 8)) {
+		pat = (struct lua_pixels*)luaL_checkudata(L, 8, "pixels metatable");
+		memset(&col, 0, sizeof(col));
+	} else
+		checkcolor(L, 8, &col);
+	triangle(&src->img, x0, y0, x1, y1, x2, y2,
+		col.r, col.g, col.b, col.a, pat?&pat->img:NULL);
 	return 0;
 }
 
@@ -1436,13 +1460,18 @@ pixels_fill_circle(lua_State *L)
 {
 	int xc = 0, yc = 0, rr = 0;
 	color_t col;
-	struct lua_pixels *src;
+	struct lua_pixels *src, *pat = NULL;
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	xc = luaL_optnumber(L, 2, 0);
 	yc = luaL_optnumber(L, 3, 0);
 	rr = luaL_optnumber(L, 4, 0);
-	checkcolor(L, 5, &col);
-	fill_circle(&src->img, xc, yc, rr, col.r, col.g, col.b, col.a);
+	if (lua_isuserdata(L, 5)) {
+		pat = (struct lua_pixels*)luaL_checkudata(L, 5, "pixels metatable");
+		memset(&col, 0, sizeof(col));
+	} else
+		checkcolor(L, 5, &col);
+	fill_circle(&src->img, xc, yc, rr,
+		col.r, col.g, col.b, col.a, pat?&pat->img:NULL);
 	return 0;
 }
 
@@ -1450,7 +1479,7 @@ static int
 pixels_fill_poly(lua_State *L)
 {
 	int nr, i;
-	struct lua_pixels *src;
+	struct lua_pixels *src, *pat = NULL;
 	struct lua_point *v;
 	unsigned char col[4];
 	color_t color;
@@ -1463,11 +1492,16 @@ pixels_fill_poly(lua_State *L)
 #endif
 	if (nr < 6)
 		return 0;
-	checkcolor(L, 3, &color);
-	col[0] = color.r;
-	col[1] = color.g;
-	col[2] = color.b;
-	col[3] = color.a;
+	if (lua_isuserdata(L, 3)) {
+		pat = (struct lua_pixels*)luaL_checkudata(L, 3, "pixels metatable");
+		memset(col, 0, sizeof(col));
+	} else {
+		checkcolor(L, 3, &color);
+		col[0] = color.r;
+		col[1] = color.g;
+		col[2] = color.b;
+		col[3] = color.a;
+	}
 
 	nr /= 2;
 	v = malloc(sizeof(*v) * nr);
@@ -1485,7 +1519,7 @@ pixels_fill_poly(lua_State *L)
 		lua_pop(L, 1);
 	}
 	lua_pop(L, 1);
-	fill_poly(&src->img, v, nr, col);
+	fill_poly(&src->img, v, nr, col, pat?&pat->img:NULL);
 	free(v);
 	return 0;
 }

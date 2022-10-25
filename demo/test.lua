@@ -110,13 +110,27 @@ end
 mixer.add(beep3)
 --mixer.add(beep1)
 --mixer.add(beep2)
-
+local s = sprite
+[[
+-------78-----e-
+-----------
+--8888888--
+-8-------8-
+-8-78-78-8-
+-8-------8-
+-8---e---8-
+-8---e---8-
+-8-e---e-8-
+-8--eee--8-
+-8-------8-
+--8888888--
+-----------
+]];
 while true do
 	local cur = time()
 	fps = math.floor(frames / (cur - start))
-
 	clear(0)
-
+	screen:fill_circle(100, 100, 30, s)
 	offset(math.floor(math.sin(frames * 0.1)*6), math.floor(math.cos(frames * 0.1)*6))
 	blend(spr[math.floor(frames/10)%2+1], screen, 240, 0)
 
