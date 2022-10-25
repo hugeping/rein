@@ -178,6 +178,10 @@ while true do
 
 	local r, v = input()
 
+	if r == 'quit' then
+		dprint "quitting..." -- nothing to do, will exit on next cycle
+	end
+
 	if r == 'keydown' and v == 'space' then
 		for i=1, THREADS do
 			thr[i]:write 'next'
