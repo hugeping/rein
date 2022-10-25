@@ -28,8 +28,9 @@ function core.running()
 end
 
 function core.lines(text)
+	local state = {text, 1, 1}
 	text = text:gsub("\r", "")
-	local function next_line(state)
+	local function next_line()
 		local text, begin, line_n = state[1], state[2], state[3]
 		if begin < 0 then
 			return nil
@@ -44,8 +45,7 @@ function core.lines(text)
 			return text:sub(begin), line_n
 		end
 	end
-	local state = {text, 1, 1}
-	return next_line, state
+	return next_line
 end
 
 function core.err(fmt, ...)
