@@ -9,6 +9,20 @@ math.round = function(num, n)
 	return math.floor(num * m + 0.5) / m
 end
 
+function string.strip(str)
+	if not str then return str end
+	str = str:gsub("^[ \t]+",""):gsub("[ \t]+$","")
+	return str
+end
+
+function string.split(s, sep_arg)
+	local sep, fields = sep_arg or " ", {}
+	local pattern = string.format("([^%s]+)", sep)
+	s:gsub(pattern, function(c) table.insert(fields, string.strip(c)) end)
+	return fields
+end
+
+
 if not table.unpack then
 	table.unpack = unpack
 end

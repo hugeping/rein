@@ -3,8 +3,10 @@ local spr = require "spr"
 local mixer = require "mixer"
 local bit = require "bit"
 local dump = require "dump"
+local utf = require "utf"
 
 local core
+
 local input = {
 	fifo = {};
 	mouse = {
@@ -56,6 +58,7 @@ local env = {
 	tonumber = tonumber,
 	tostring = tostring,
 	coroutine = coroutine,
+	utf = utf,
 }
 
 function thread.start(code)
