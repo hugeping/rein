@@ -81,10 +81,12 @@ SDL_WaitEventTo(int timeout)
 				return 0;
 			if (timeout > 0 && SDL_TICKS_PASSED(SDL_GetTicks(), expiration))
 				return 0;
-			if (timeout >= 10)
-				Delay(1/100); /* be interactive */
+			if (timeout >= 100) /* 1/10 */
+				SDL_Delay(10);
+			else if (timeout >= 10) /* 1/100 */
+				SDL_Delay(2);
 			else
-				Delay(timeout/1000);
+				SDL_Delay(1);
 			break;
 		default:
 			/* Has events */
@@ -100,10 +102,10 @@ WaitEvent(float n)
 #ifdef __EMSCRIPTEN__
 	return 1;
 #else
-/* standard function may sleep longer than 1/100 (in Windows) */
-	if (n > 0.01f)
-		return SDL_WaitEventTimeout(NULL, (int)(n * 1000));
-	else
+/* standard function may sleep longer than 20ms (in Windows) */
+//	if (n >= 0.05f)
+//		return SDL_WaitEventTimeout(NULL, (int)(n * 1000));
+//	else
 		return SDL_WaitEventTo((int)(n * 1000));
 #endif
 }
