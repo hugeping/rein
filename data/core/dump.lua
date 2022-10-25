@@ -210,8 +210,16 @@ function dump:save(ob)
 		self:dump_fn(ob)
 		if self.UPVALS then
 			self:dump_upvalues(ob)
-		elseif debug.getupvalue(ob, 1) then
-			return false, "Function with upvalues"
+		else
+			local idx = 1
+			while(true) do
+				local n, v = debug.getupvalue(ob, idx)
+				if not n then break end
+				if n ~= '_ENV' then
+					return false, "Function with upvalues: "..tostring(n)
+				end
+				idx = idx + 1
+			end
 		end
 	end
 	return true
