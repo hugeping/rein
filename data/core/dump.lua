@@ -1,6 +1,6 @@
 -- idea taken from the torch7 project
 local dump = {
-	UPVALS = true
+	UPVALS = false
 }
 
 local loadstring = loadstring or load
@@ -39,7 +39,10 @@ function dump.new(ob)
 	if type(ob) == 'string' then
 		return data:load(ob)
 	end
-	data:save(ob)
+	local r, e = data:save(ob)
+	if not r then
+		return r, e
+	end
 	return data.dump
 end
 
@@ -174,7 +177,7 @@ end
 function dump:save(ob)
 	if not ob and type(ob) ~= 'boolean' then
 		self:write("nil")
-		return
+		return true
 	end
 	local t = self:objtype(ob)
 	if not t then
@@ -185,7 +188,7 @@ function dump:save(ob)
 		local id = self.objs[self:pointer(ob)]
 		if id then
 			self:write(id)
-			return
+			return true
 		end
 		self.objs[self:pointer(ob)] = self.objs.id
 		self:write(self.objs.id)
@@ -207,8 +210,11 @@ function dump:save(ob)
 		self:dump_fn(ob)
 		if self.UPVALS then
 			self:dump_upvalues(ob)
+		elseif debug.getupvalue(ob, 1) then
+			return false, "Function with upvalues"
 		end
 	end
+	return true
 end
 
 function dump:dump_upvalues(fn)

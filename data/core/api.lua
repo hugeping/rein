@@ -58,78 +58,26 @@ local env = {
 	coroutine = coroutine,
 }
 
-local threads = {}
-local threads_mt = {}
-threads_mt.__index = threads_mt
-
-function threads_mt.start(code)
-	local thr = { }
-end
-
-function threads_mt:poll(...)
-	local r, e = self.thread:poll(...)
-	if r == false and self.thread:err() then
-		core.err(e)
+function thread.start(code)
+	if type(code) ~= 'function' then
+		error("Wrong argument", 2)
 	end
-	return
-end
-
-function threads_mt:read()
-	local r, e = self.thread:read()
-	if r == false and self.thread:err() then
-		core.err(e)
+	-- try to serialize it!
+	local r, e = dump.new(code)
+	if not r and e then -- error?
+		core.err("Can not start thread.\n"..e)
 	end
-	return
-end
-
-function threads_mt:write(...)
-	local r, e = self.thread:write(...)
-	if r == false and e then
-		core.err(e)
-	end
-	return
-end
-
-function threads_mt:wait(...)
-	return self.thread:wait(...)
-end
-
-function threads.start(code)
-	if type(code) == 'function' then
-		-- try to serialize it!
-		local r, e = dump.new(code)
-		if not r and e then -- error?
-			core.err("Can not start function.\n"..e)
-		end
-		code = string.format(
-			"local f, e = require('dump').new [=========[\n%s"..
-			"]=========]\n"..
-			"if not f and e then\n"..
-			"	error(e)\n"..
-			"end\n"..
-			"f()\n", r)
-	end
+	code = string.format(
+		"local f, e = require('dump').new [=========[\n%s"..
+		"]=========]\n"..
+		"if not f and e then\n"..
+		"	error(e)\n"..
+		"end\n"..
+		"f()\n", r)
 	local r, e, c = thread.new(code)
 	if not r then
-		if e:find("^%[string [^%]]+%]:[0-9]+:") then
-			local nr = e:gsub("^%[string [^%]]+%]:([0-9]+):.*$", "%1")
-			nr = tonumber(nr)
-			local lnr = 1
-			local inf = ''
-			for l in core.lines(c) do
-				if lnr >= nr - 2  then
-					inf = inf .. string.format("%d%s\n", lnr, l)
-				end
-				lnr = lnr + 1
-			end
-			c = inf
-		end
 		local msg = string.format("%s\n%s", e, c)
 		core.err(msg)
-	else
-		local thr = { thread = r }
-		setmetatable(thr, threads_mt)
-		return thr
 	end
 	return r
 end
@@ -137,7 +85,7 @@ end
 
 local env_ro = {
 	screen = gfx.new(conf.w, conf.h),
-	threads = threads,
+	threads = thread,
 }
 
 env_ro.__index = env_ro
