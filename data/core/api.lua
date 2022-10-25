@@ -231,7 +231,8 @@ local last_flip = 0
 local flips = {}
 function env_ro.flip(fps, interrupt)
 	core.render(true)
-	env.sleep((fps or conf.fps) - (env.time() - last_flip), interrupt)
+	local cur_time = env.time()
+	env.sleep((fps or conf.fps) - (cur_time - last_flip), interrupt)
 	last_flip = env.time()
 	table.insert(flips, last_flip)
 	if #flips > 50 then
