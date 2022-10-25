@@ -228,11 +228,19 @@ function env_ro.clear(o, x, y, w, h, col)
 end
 
 local last_flip = 0
-
+local flips = {}
 function env_ro.flip(fps, interrupt)
 	core.render(true)
 	env.sleep((fps or conf.fps) - (env.time() - last_flip), interrupt)
 	last_flip = env.time()
+	table.insert(flips, last_flip)
+	if #flips > 50 then
+		table.remove(flips, 1)
+	end
+	if #flips == 1 then
+		return 0
+	end
+	return math.floor(#flips / math.abs(last_flip - flips[1]))
 end
 
 function env_ro.mouse()
