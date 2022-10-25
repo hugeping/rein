@@ -164,14 +164,10 @@ end
 
 local fps = 0
 local start = time()
-local frames = 0
 
 start_demo()
 
 while true do
-	local cur = time()
-	fps = floor(frames / (cur - start))
-
 	for i=1, THREADS do
 		thr[i]:write 'render'
 	end
@@ -189,8 +185,7 @@ while true do
 		end
 	end
 
-	frames = frames + 1
 	clear(0,w-8,w,h-8,7)
 	printf(0, h-8, 1, "Демо:%d FPS:%d", 1, fps)
-	flip(0)
+	fps = flip(0)
 end

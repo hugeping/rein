@@ -137,12 +137,8 @@ local demo_nr = 1
 
 local fps = 0
 local start = time()
-local frames = 0
 
 while true do
-	local cur = time()
-	fps = floor(frames / (cur - start))
-
 	demo[demo_nr]()
 	screen:buff(buf)
 
@@ -153,8 +149,7 @@ while true do
 		if demo_nr > #demo then demo_nr = 1 end
 	end
 
-	frames = frames + 1
 	clear(0,256-8,256,256-8,7)
 	printf(0, 256-8, 1, "Демо:%d FPS:%d", demo_nr, fps)
-	flip(0)
+	fps = flip(0)
 end
