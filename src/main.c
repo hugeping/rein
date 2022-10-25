@@ -120,45 +120,12 @@ main(int argc, char **argv)
 	static char base[4096];
 	int i;
 
-	lua_State *L = luaL_newstate();
-	if (!L)
-		return 1;
-
-	if (PlatformInit()) {
-		fprintf(stderr, "Can not do platform init!\n");
-		return 1;
-	}
-
-	luaL_openlibs(L);
-	lua_newtable(L);
-	for (i = 0; i < argc; i++) {
-		lua_pushstring(L, argv[i]);
-		lua_rawseti(L, -2, i + 1);
-	}
-	lua_setglobal(L, "ARGS");
-
-	lua_pushstring(L, GetPlatform());
-	lua_setglobal(L, "PLATFORM");
-
-	lua_pushnumber(L, GetScale());
-	lua_setglobal(L, "SCALE");
-
-	if (WindowCreate()) {
-		fprintf(stderr, "Can not create window!\n");
-		return 1;
-	}
-
-	for (i = 0; lua_libs[i].name; i++)
-		luaL_requiref(L, lua_libs[i].name, lua_libs[i].func, 1);
-
 	exepath = strdup(GetExePath(argv[0]));
 	unix_path(exepath);
 
-	lua_pushstring(L, exepath);
-	lua_setglobal(L, "EXEFILE");
-
-	lua_pushstring(L, font_renderer());
-	lua_setglobal(L, "FONTRENDERER");
+	lua_State *L = luaL_newstate();
+	if (!L)
+		return 1;
 
 #ifdef __ANDROID__
 	snprintf(base, sizeof(base), "%s", SDL_AndroidGetInternalStoragePath());
@@ -188,6 +155,40 @@ main(int argc, char **argv)
 		reopen_stdout(base);
 	}
 #endif
+
+	if (PlatformInit()) {
+		fprintf(stderr, "Can not do platform init!\n");
+		return 1;
+	}
+
+	luaL_openlibs(L);
+	lua_newtable(L);
+	for (i = 0; i < argc; i++) {
+		lua_pushstring(L, argv[i]);
+		lua_rawseti(L, -2, i + 1);
+	}
+	lua_setglobal(L, "ARGS");
+
+	lua_pushstring(L, GetPlatform());
+	lua_setglobal(L, "PLATFORM");
+
+	lua_pushnumber(L, GetScale());
+	lua_setglobal(L, "SCALE");
+
+	if (WindowCreate()) {
+		fprintf(stderr, "Can not create window!\n");
+		return 1;
+	}
+
+	for (i = 0; lua_libs[i].name; i++)
+		luaL_requiref(L, lua_libs[i].name, lua_libs[i].func, 1);
+
+	lua_pushstring(L, exepath);
+	lua_setglobal(L, "EXEFILE");
+
+	lua_pushstring(L, font_renderer());
+	lua_setglobal(L, "FONTRENDERER");
+
 	free(exepath);
 
 	dostring(L, "PATHSEP = package.config:sub(1, 1)\n"
