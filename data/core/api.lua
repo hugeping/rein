@@ -416,7 +416,7 @@ end
 
 env_ro.mixer = mixer
 
-local api = {}
+local api = { running = true }
 
 function api.init(core_mod)
 	env_ro.font = font.new(DATADIR..'/'..conf.font)
@@ -429,13 +429,22 @@ function api.init(core_mod)
 end
 
 function api.event(e, v, a, b, c)
+	if not api.running then
+		return false
+	end
+
+	if e == 'quit' then
+		api.running = false
+		input.fifo  = {}
+	end
+
 	if e == 'mousemotion' then
 		v, a = core.abs2rel(v, a)
 	elseif e == 'mousedown' or e == 'mouseup' then
 		a, b = core.abs2rel(a, b)
 	end
 
-	if (e == 'text' or e == 'keydown' or e == 'keyup' or
+	if (e == 'quit' or e == 'text' or e == 'keydown' or e == 'keyup' or
 		e == 'mousedown' or e == 'mouseup' or e == 'mousewheel')
 			and #input.fifo < 32 then
 		local ev = { nam = e, args = { v, a, b, c } }
@@ -466,6 +475,7 @@ function api.event(e, v, a, b, c)
 		input.mouse.btn[v] = (e == 'mousedown')
 		input.mouse.x, input.mouse.y = a, b
 	end
+	return true
 end
 
 function api.done()
