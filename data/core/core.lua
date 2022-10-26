@@ -134,10 +134,17 @@ function core.render(force)
 	if scale > 1.0 then
 		scale = math.floor(scale)
 	end
-	local dw = math.floor(w * scale)
-	local dh = math.floor(h * scale)
+	local dw = w * scale
+	local dh = h * scale
+
+	if w <= 256 and h <= 256 then
+		dw = math.floor(dw)
+		dh = math.floor(dh)
+	end
+
 	core.view_w, core.view_h = dw, dh
 	core.view_x, core.view_y = math.floor((ww - dw)/2), math.floor((hh - dh)/2)
+
 	local win = gfx.win()
 	win:clip(core.view_x, core.view_y,
 		core.view_x + core.view_w,
