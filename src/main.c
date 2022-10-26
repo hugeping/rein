@@ -1,6 +1,11 @@
 #include "external.h"
 #include "platform.h"
 #include "gfx.h" /* to get font_renderer */
+
+#ifndef VERSION
+#define VERSION "unknown"
+#endif
+
 extern int system_init(lua_State *L);
 
 static int
@@ -138,7 +143,8 @@ main(int argc, char **argv)
 	lua_pushstring(L, base);
 #endif
 	lua_setglobal(L, "DATADIR");
-
+	lua_pushstring(L, VERSION);
+	lua_setglobal(L, "VERSION");
 #if defined(_WIN32) || defined(__ANDROID__)
 	#ifdef __ANDROID__
 	snprintf(base, sizeof(base), "%s/%s", SDL_AndroidGetInternalStoragePath(), "log.txt");

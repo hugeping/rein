@@ -47,7 +47,7 @@ fi
 
 ## Linux version
 
-gcc -Wall -O3 -Wl,-Bstatic \
+gcc -DVERSION=\"`date +%y%m%d`\" -Wall -O3 -Wl,-Bstatic \
 -Iexternal/include \
 -Iexternal/include/SDL2 \
 src/*.c \
@@ -67,7 +67,7 @@ LDFLAGS="-Lexternal/windows/lib -lSDL2.dll -lSDL2main -lm -lluajit"
 
 i686-w64-mingw32-windres -i windows/resources.rc -o resources.o || exit 1
 
-i686-w64-mingw32-gcc -Wall -static -O3 $CFLAGS src/*.c resources.o $LDFLAGS -mwindows -o dein.exe || exit 1
+i686-w64-mingw32-gcc -DVERSION=\"`date +%y%m%d`\" -Wall -static -O3 $CFLAGS src/*.c resources.o $LDFLAGS -mwindows -o dein.exe || exit 1
 i686-w64-mingw32-strip dein.exe
 rm -f *.o
 
