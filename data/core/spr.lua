@@ -1,9 +1,6 @@
 local sprite = {
 }
 
-local spr = {}
-spr.__index = spr
-
 local function parse_line(l, pal)
 	local r = { }
 	for i=1,l:len() do
