@@ -129,7 +129,7 @@ while true do
 	spr[math.floor(frames/10)%2+1]:blend(screen, 240, 0)
 
 	local mx, my, mb = input.mouse()
-	local a, b = sys.poll()
+	local a, b = sys.input()
 
 	if a == 'text' then
 		txt = txt .. b

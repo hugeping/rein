@@ -175,7 +175,7 @@ while true do
 		thr[i]:read()
 	end
 
-	local r, v = sys.poll()
+	local r, v = sys.input()
 
 	if r == 'quit' then
 		dprint "quitting..." -- nothing to do, will exit on next cycle
