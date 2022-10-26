@@ -496,7 +496,7 @@ pixels_fill(lua_State *L)
 	color_t col;
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 
-	if (!lua_isnumber(L, 2)) {
+	if (!lua_isnumber(L, 3)) {
 		col_idx = 2;
 	} else {
 		x = luaL_optnumber(L, 2, 0);
@@ -525,7 +525,7 @@ pixels_clear(lua_State *L)
 	color_t col;
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 
-	if (!lua_isnumber(L, 2)) {
+	if (!lua_isnumber(L, 3)) {
 		checkcolor(L, 2, &col);
 	} else {
 		x = luaL_optnumber(L, 2, 0);
