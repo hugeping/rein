@@ -38,7 +38,7 @@ static const luaL_Reg lua_libs[] = {
 	{ NULL, NULL }
 };
 
-#if defined(_WIN32) || defined(PLAN9) || defined(__ANDROID__)
+#if defined(_WIN32) || defined(__ANDROID__)
 static void
 reopen_stderr(const char *fname)
 {
@@ -139,7 +139,7 @@ main(int argc, char **argv)
 #endif
 	lua_setglobal(L, "DATADIR");
 
-#if defined(_WIN32) || defined(PLAN9) || defined(__ANDROID__)
+#if defined(_WIN32) || defined(__ANDROID__)
 	#ifdef __ANDROID__
 	snprintf(base, sizeof(base), "%s/%s", SDL_AndroidGetInternalStoragePath(), "log.txt");
 	#else

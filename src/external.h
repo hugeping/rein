@@ -7,11 +7,7 @@
  #include <sys/wait.h>
 #endif
 #include <dirent.h>
-#ifndef PLAN9
 #include <libgen.h>
-#else
-extern char *dirname(char *);
-#endif
 #ifdef __ANDROID__
 #include <SDL_system.h>
 #endif
