@@ -396,7 +396,7 @@ title:show()
 switch_ui()
 
 while true do
-	local r, v, a, b = sys.poll()
+	local r, v, a, b = sys.input()
 	local mx, my, mb = input.mouse()
 	proc_inp(r, v, a, b)
 	if (mb.left or mb.right or mb.middle) then

@@ -35,8 +35,6 @@ current = 1
 local fps = 0
 
 while true do
-	local cur = sys.time()
-
 	t = t + 1
 	local i = 1
 	for x = 0, w-1 do
@@ -47,7 +45,7 @@ while true do
 		end
 	end
 
-	local r, v = sys.poll()
+	local r, v = sys.input()
 
 	if r == 'keydown' and v == 'space' then
 		current = current + 1

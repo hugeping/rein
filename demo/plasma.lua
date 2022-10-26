@@ -140,7 +140,7 @@ while true do
 	demo[demo_nr]()
 	screen:buff(buf)
 
-	local r, v = sys.poll()
+	local r, v = sys.input()
 
 	if r == 'keydown' and v == 'space' then
 		demo_nr = demo_nr + 1

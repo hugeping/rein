@@ -195,7 +195,7 @@ function env_ro.input.mouse()
 	return input.mouse.x or 0, input.mouse.y or 0, input.mouse.btn
 end
 
-function env_ro.sys.poll()
+function env_ro.sys.input()
 	if #input.fifo == 0 then
 		return
 	end
