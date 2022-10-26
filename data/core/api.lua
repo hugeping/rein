@@ -46,6 +46,10 @@ local conf = {
 }
 
 local env = {
+	rawset = rawset,
+	rawget = rawget,
+	setmetatable = setmetatable,
+	getmetatable = getmetatable,
 	table = table,
 	math = math,
 	bit = bit,
@@ -56,7 +60,19 @@ local env = {
 	tonumber = tonumber,
 	tostring = tostring,
 	coroutine = coroutine,
+	DATADIR = DATADIR,
+	SCALE = SCALE,
+	VERSION = VERSION,
 }
+
+env._G = env
+
+function env.require(...)
+	if setfenv then
+		setfenv(0, env)
+	end
+	return require(...)
+end
 
 function thread.start(code)
 	if type(code) ~= 'function' then
@@ -247,6 +263,7 @@ function env_ro.print(text, x, y, col)
 	end
 	x = x or 0
 	y = y or 0
+	local startx = x
 	col = col or conf.fg
 
 	text = text:gsub("\r", ""):gsub("\t", "    ")
@@ -266,7 +283,7 @@ function env_ro.print(text, x, y, col)
 			ww = 0
 		end
 		if x + ww >= w then
-			x = 0
+			x = startx
 			y = y + hh
 		end
 
@@ -283,7 +300,7 @@ function env_ro.print(text, x, y, col)
 		x = x + ww
 		text = text:sub(s + 1)
 		if nl then
-			x = 0
+			x = startx
 			y = y + hh
 		end
 	end

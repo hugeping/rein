@@ -83,22 +83,28 @@ function core.init()
 		os.exit(1)
 	end
 	env.ARGS = {}
-	local f, e
+	local f, e, optarg
 	for k=2,#ARGS do
 		local v = ARGS[k]
 		if v:find("-", 1, true) == 1 then
 			-- todo options
 		else -- file to run
-			for i=k,#ARGS do
-				table.insert(env.ARGS, ARGS[i])
-			end
-			f, e = loadfile(v, "t", env)
-			if not f then
-				core.err(e)
-				return
-			end
+			optarg = k
 			break
 		end
+	end
+	if optarg then
+		for i=optarg,#ARGS do
+			table.insert(env.ARGS, ARGS[i])
+		end
+	else
+		env.ARGS[1] = DATADIR..'/prog/boot.lua'
+	end
+
+	f, e = loadfile(env.ARGS[1], "t", env)
+	if not f then
+		core.err(e)
+		return
 	end
 
 	if not f then

@@ -1,6 +1,7 @@
 all:	dein
 
-CFLAGS=$(shell pkg-config --cflags sdl2) $(shell pkg-config --cflags luajit) -Wall -O3
+VERSION := $(shell date +%y%m%d)
+CFLAGS=$(shell pkg-config --cflags sdl2) $(shell pkg-config --cflags luajit) -Wall -O3 -DVERSION=\"${VERSION}\"
 LDFLAGS=$(shell pkg-config --libs sdl2) $(shell pkg-config --libs luajit) -lm
 
 # uncomment for system-wide install
