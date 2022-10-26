@@ -45,9 +45,6 @@ local conf = {
 	font = "fonts/8x8.fnt",
 }
 
-local res = {
-}
-
 local env = {
 	table = table,
 	math = math,
@@ -77,7 +74,8 @@ function thread.start(code)
 		"	error(e)\n"..
 		"end\n"..
 		"f()\n", r)
-	local r, e, c = thread.new(code)
+	local c
+	r, e, c = thread.new(code)
 	if not r then
 		local msg = string.format("%s\n%s", e, c)
 		core.err(msg)
@@ -133,7 +131,6 @@ function env_ro.gfx.win(w, h) -- create new win or change
 end
 
 function env_ro.gfx.new(x, y)
-	local fname
 	if type(x) == 'number' and type(y) == 'number' then
 		return gfx.new(x, y)
 	end
@@ -225,7 +222,7 @@ end
 
 function env.dprint(...)
 	local t = ''
-	for k, v in ipairs({...}) do
+	for _, v in ipairs({...}) do
 		if t ~= '' then t = t .. ' ' end
 		t = t .. tostring(v)
 	end
@@ -258,7 +255,7 @@ function env_ro.print(text, x, y, col)
 	local ww, hh = env.font:size("")
 
 	while text ~= '' do
-		local s, e = text:find("[/:,. \n]", 1)
+		local s, _ = text:find("[/:,. \n]", 1)
 		if not s then s = text:len() end
 		local nl = text:sub(s, s) == '\n'
 		local word = text:sub(1, s):gsub("\n$", "")
@@ -308,7 +305,7 @@ function env_ro.sys.go(fn)
 end
 
 function env_ro.sys.stop(fn)
-	for k, v in ipairs(core.fn) do
+	for k, f in ipairs(core.fn) do
 		if f == fn then
 			table.remove(core.fn[k])
 			return true

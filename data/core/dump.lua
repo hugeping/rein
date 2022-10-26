@@ -115,7 +115,7 @@ function dump:load(iter)
 		return tonumber(l)
 	elseif l == 'boolean' then
 		l = iter()
-		return l == 'true' and true or false 
+		return l == 'true' and true or false
 	elseif l == 'string' then
 		l = iter()
 		l = self:unesc(l)
@@ -131,7 +131,7 @@ function dump:load(iter)
 		self.refs[id] = ob
 		l = iter()
 		local nr = tonumber(l)
-		for i=1, nr do
+		for _=1, nr do
 			local k = self:load(iter)
 			local v = self:load(iter)
 			ob[k] = v
@@ -198,7 +198,7 @@ function dump:save(ob)
 	end
 	if t == 'table' then
 		local len = 0
-		for k,v in pairs(ob) do
+		for _ in pairs(ob) do
 			len = len + 1
 		end
 		self:write(len)
@@ -212,8 +212,8 @@ function dump:save(ob)
 			self:dump_upvalues(ob)
 		else
 			local idx = 1
-			while(true) do
-				local n, v = debug.getupvalue(ob, idx)
+			while true do
+				local n, _ = debug.getupvalue(ob, idx)
 				if not n then break end
 				if n ~= '_ENV' then
 					return false, "Function with upvalues: "..tostring(n)

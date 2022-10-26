@@ -1,4 +1,3 @@
-local font = require "font"
 local api = require "api"
 
 local env
@@ -42,8 +41,8 @@ function core.running()
 end
 
 function core.lines(text)
-	local state = {text, 1, 1}
 	text = text:gsub("\r", "")
+	local state = {text, 1, 1}
 	local function next_line()
 		local text, begin, line_n = state[1], state[2], state[3]
 		if begin < 0 then
@@ -106,7 +105,7 @@ function core.init()
 		core.err("No lua file")
 		return
 	end
-	if setefenv then
+	if setfenv then
 		setfenv(f, env)
 	end
 	table.insert(core.fn, coroutine.create(f))
@@ -192,67 +191,3 @@ function core.run()
 end
 
 return core
-
--- ARGS -- arguments
--- SCALE -- dpi scale 
-
--- color: { r, g, b, a }
-
--- gfx.
--- win() -- return win pixels, invalidate after resize
--- flip() -- copy backbuffer
--- new(w, h) -- create empty pixels
--- new(file) -- create pixels from image-file
--- icon(pixels) -- set icon app
--- font(file) -- load font
-
--- font:
--- text(text, color) -- create pixels with rendered text
--- size(text) -- return w, h of text (no render needed)
-
--- pixels:
--- size() -- returns w, h
--- fill(x, y, w, h, color)
--- fill(color)
--- scale(xs[, ys]) -- scale pixels, return new pixels
--- clear(x, t, w, h, color) -- like fill, but w/o alpha. fast
--- clear(color)
--- val(x, y) -- returns r, g, b, a
--- pixel(x, y, color) -- set/blend pixel
--- copy(dst, x, y, w, h, tox, toy) -- dst is pixels
--- copy(dst, tox, toy) -- dst is pixels
--- blend() -- as copy but with blending
--- line(x1, y1, x2, y2, color)
--- lineAA(x1, y1, x2, y2, color)
--- fill_trinagle(x1, y1, x2, y2, x3, y3, color)
--- circle(x, y, r, color)
--- circleAA(x, y, r, color)
--- fill_circle(x, y, r, color)
--- fill_poly({vertex}, color)
-
--- system.
---  log(text) -- log message
---  time() -- get ticks from start
---  sleep(to)
---  wait(to) -- wait event or timeout
---  poll() -- peek new events
---  events:
---    quit - close app
---    exposed -- showed win
---    resize w h -- win resized
---    keydown key
---    keyup key
---    text text
---    mousedown btn x y clicks
---    mouseup btn
---    mousemotion x y xrel yrel
---    mousewheel off
--- title(title) -- window title
--- window_mode(m) m = normal, maximized, fullscreen
--- chdir(dir)
--- mkdir(dir)
--- readdir()
--- utf_next
--- utf_prev
--- utf_len
--- utf_sym

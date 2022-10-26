@@ -67,7 +67,7 @@ end
 function fn:size(t)
 	local w, h = 0, 0
 	while t and t ~= '' do
-		local c, n = system.utf_sym(t, i)
+		local c, n = system.utf_sym(t)
 		if not n or n == 0 then
 			break
 		end
@@ -108,7 +108,7 @@ end
 function fn:text(t, color)
 	local w, h = self:size(t)
 	local spr = gfx.new(w, h)
-	local x, y = 0, 0
+	local x = 0
 	while t and t ~= '' do
 		local c, n = system.utf_sym(t)
 		if not n or n == 0 then

@@ -10,7 +10,7 @@ function mixer.thread()
 	while true do
 		local t = {}
 		for i = 1,CHUNK,CHANNELS do
-			local mix = {}
+			-- local mix = {}
 			local k, n = 1, #mixer.chans
 			local ll, rr = 0, 0
 			while k<=n do
@@ -62,7 +62,7 @@ function mixer.check(fn)
 	if not fn then
 		return #mixer.chans > 0
 	end
-	for k, v in ipairs(mixer.chans) do
+	for _, v in ipairs(mixer.chans) do
 		if v == fn then
 			return true
 		end
