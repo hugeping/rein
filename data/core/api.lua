@@ -40,7 +40,7 @@ local conf = {
 	};
 	fg = { 0, 0, 0 };
 	bg = { 0xff, 0xff, 0xe8 };
-	font = "fonts/8x8.fnt",
+	font = "fonts/8x8b.fnt",
 }
 
 local res = {
