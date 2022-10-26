@@ -38,9 +38,10 @@ local conf = {
 		[13] = { 0x83, 0x76, 0x9C, 0xff },
 		[14] = { 0xFF, 0x77, 0xA8, 0xff },
 		[15] = { 0xFF, 0xCC, 0xAA, 0xff },
+		[16] = { 0xFF, 0xFF, 0xE8, 0xff },
 	};
 	fg = { 0, 0, 0 };
-	bg = { 0xff, 0xff, 0xe8 };
+	bg = 16;
 	brd = { 0xde, 0xde, 0xde };
 	font = "fonts/8x8.fnt",
 }
@@ -343,7 +344,7 @@ function api.init(core_mod)
 		return false, string.format("Can't load font %q", DATADIR..'/'..conf.font)
 	end
 	env.sys.go(mixer.thread)
-	for i=0,15 do
+	for i=0,16 do
 		gfx.pal(i, conf.pal[i])
 	end
 	env.screen:clear(conf.bg)

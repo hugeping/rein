@@ -34,21 +34,15 @@ end
 
 function utf:sub(s, e)
 	local len = #self
-	s = s and 1
-	e = e and len
-	if s < 0 then
-		s = len - s + 1
-	end
+	s = s or 1
+	e = e or len
 	if e < 0 then
-		e = len - e + 1
+		e = len + e + 1
 	end
 	if s <= 0 then s = 1 end
 	if s >= len then s = len end
-	if e <= 0 then e = 1 end
+	if e <= 0 then e = 0 end
 	if e >= len then e = len end
-	if s > e then
-		return false, "Invalid argument"
-	end
 	local new = {}
 	for i = s, e do
 		table.insert(new, self[i])
