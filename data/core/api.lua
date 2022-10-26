@@ -93,6 +93,11 @@ local env_ro = {
 	};
 	sys = {
 		time = system.time,
+		titme = system.title,
+		log = system.log,
+		readdir = system.readdir,
+		chdir = system.chdir,
+		mkdir = system.mkdir,
 	};
 	thread = thread,
 	mixer = mixer,
