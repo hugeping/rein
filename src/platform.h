@@ -1,8 +1,5 @@
 #ifndef __PLATFORM_H
 #define __PLATFORM_H
-#ifdef PLAN9
-#define __inline
-#endif
 extern int PlatformInit(void);
 extern void PlatformDone(void);
 
