@@ -2,6 +2,8 @@
 
 ![Build status](https://github.com/gl00my/dein/actions/workflows/CI.yml/badge.svg)
 
+__Warning! Project in development and is in alpha stage!__
+
 # DEIN
 
 Minimalist pixel engine.
