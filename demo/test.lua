@@ -1,6 +1,3 @@
-fgcol(15)
-bgcol(0)
-
 local spr = {[[
 ---------------*
 	-**-**--
@@ -154,7 +151,6 @@ while true do
 			stars[k].x = math.random(w)
 		end
 	end
-
 	gfx.flip(1/50)
 	frames = frames + 1
 end

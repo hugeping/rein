@@ -41,6 +41,7 @@ local conf = {
 	};
 	fg = { 0, 0, 0 };
 	bg = { 0xff, 0xff, 0xe8 };
+	brd = { 0xde, 0xde, 0xde };
 	font = "fonts/8x8.fnt",
 }
 
@@ -147,32 +148,26 @@ function env_ro.gfx.new(x, y)
 	return gfx.new(x, y)
 end
 
-function env_ro.poly(o, vtx, col)
-	if type(o) ~= 'userdata' then
-		vtx, col = o, vtx
-		o = env.screen
-	end
-	col = env.color(col) or conf.fg
-	for i=1, #vtx-2,2 do
-		o:line(vtx[i], vtx[i+1], vtx[i+2], vtx[i+3], col)
-	end
-	o:line(vtx[#vtx-1], vtx[#vtx], vtx[1], vtx[2], col)
-end
-
 function env_ro.printf(x, y, col, fmt, ...)
 	return env.print(string.format(fmt, ...), x, y, col)
 end
 
-function env_ro.fgcol(col)
-	conf.fg = col or conf.fg
-end
-
-function env_ro.bgcol(col)
-	conf.bg = col or conf.bg
-end
 
 local last_flip = 0
 local flips = {}
+
+function env_ro.gfx.fg(col)
+	conf.fg = { gfx.pal(col or conf.fg) }
+end
+
+function env_ro.gfx.bg(col)
+	conf.bg = { gfx.pal(col or conf.bg) }
+end
+
+function env_ro.gfx.border(col)
+	conf.brd = { gfx.pal(col or conf.bg) }
+	gfx.win():clear(conf.brd)
+end
 
 function env_ro.gfx.font(fname, ...)
 	if type(fname) == 'string' and fname:find("%.[fF][nN][tT]$") then
@@ -277,14 +272,14 @@ function env_ro.print(text, x, y, col)
 			x = 0
 			y = y + hh
 		end
---[[
+
 		if y > h - hh then -- vertical overflow
 			local off = math.floor(y - (h - hh))
-			env.screen:copy(0, off, w, h - off, env.win, 0, 0) -- scroll
+			env.screen:copy(0, off, w, h - off, env.screen, 0, 0) -- scroll
 			env.screen:clear(0, h - off, w, off, conf.bg)
 			y = h - hh
 		end
-]]--
+
 		if p then
 			p:blend(env.screen, x, y)
 		end
@@ -304,12 +299,21 @@ function env_ro.sprite_data(fname)
 	return spr.new(fname)
 end
 
-function env_ro.sys.coroutine(fn)
+function env_ro.sys.go(fn)
 	local f, e = coroutine.create(fn)
 	if f then
 		table.insert(core.fn, f)
 	end
 	return f, e
+end
+
+function env_ro.sys.stop(fn)
+	for k, v in ipairs(core.fn) do
+		if f == fn then
+			table.remove(core.fn[k])
+			return true
+		end
+	end
 end
 
 function env_ro.sys.yield(...)
@@ -324,10 +328,11 @@ function api.init(core_mod)
 	if not env_ro.font then
 		return false, string.format("Can't load font %q", DATADIR..'/'..conf.font)
 	end
-	env.sys.coroutine(mixer.thread)
+	env.sys.go(mixer.thread)
 	for i=0,15 do
 		gfx.pal(i, conf.pal[i])
 	end
+	env.screen:clear(conf.bg)
 	return env
 end
 
@@ -335,7 +340,13 @@ function api.event(e, v, a, b, c)
 	if not api.running then
 		return false
 	end
-
+	if not e then
+		return true
+	end
+	if e == 'resized' or e == 'exposed' then
+		gfx.win():clear(conf.brd)
+		return true
+	end
 	if e == 'quit' then
 		api.running = false
 		input.fifo  = {}

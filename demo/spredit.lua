@@ -366,13 +366,12 @@ function proc_inp(r, e, a, b, c, d)
 			grid:undo()
 		end
 	end
-	if r == 'keydown' and  e == 'space' or
-		r == 'mousedown' and hand_mode then
+	if not pan_mode and (r == 'keydown' and  e == 'space' or
+		r == 'mousedown' and hand_mode) then
 		local ox, oy = input.mouse()
 		local x, y = grid:pos()
 		pan_mode =  { ox, oy, x, y }
-	end
-	if pan_mode then
+	elseif pan_mode then
 		local x, y, mb = input.mouse()
 		local dd = grid.w / grid.grid
 		local dx = floor((x - pan_mode[1])/dd)
