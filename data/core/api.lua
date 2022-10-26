@@ -14,6 +14,7 @@ local input = {
 	};
 	kbd = {};
 }
+
 local conf = {
 	fps = 1/50;
 	w = 256;
@@ -40,11 +41,10 @@ local conf = {
 	};
 	fg = { 0, 0, 0 };
 	bg = { 0xff, 0xff, 0xe8 };
-	font = "fonts/8x8b.fnt",
+	font = "fonts/8x8.fnt",
 }
 
 local res = {
-
 }
 
 local env = {
@@ -58,7 +58,6 @@ local env = {
 	tonumber = tonumber,
 	tostring = tostring,
 	coroutine = coroutine,
-	utf = utf,
 }
 
 function thread.start(code)
@@ -85,10 +84,19 @@ function thread.start(code)
 	return r
 end
 
-
 local env_ro = {
 	screen = gfx.new(conf.w, conf.h),
+	utf = utf,
+	gfx = {
+		pal = gfx.pal,
+		icon = gfx.icon,
+	};
+	sys = {
+		time = system.time,
+	};
 	thread = thread,
+	mixer = mixer,
+	input = {},
 }
 
 env_ro.__index = env_ro
@@ -101,166 +109,37 @@ end
 
 setmetatable(env, env_ro)
 
-function env_ro.printf(x, y, col, fmt, ...)
-	return env.print(string.format(fmt, ...), x, y, col)
+function env_ro.gfx.win(w, h) -- create new win or change
+	local oscr = env_ro.screen
+	if type(w) == 'userdata' then -- new screen?
+		env_ro.screen = w
+		return oscr
+	end
+	local nscr
+	if w then
+		nscr = gfx.new(w, h)
+	end
+	if nscr then
+		env_ro.screen = nscr
+		conf.w, conf.h = nscr:size()
+	end
+	return oscr
 end
 
-function env_ro.time()
-	return system.time()
-end
-
-function env_ro.fgcol(col)
-	conf.fg = env.color(col) or conf.fg
-end
-
-function env_ro.bgcol(col)
-	conf.bg = env.color(col) or conf.bg
-end
-
-function env_ro.pixel(o, x, y, ...)
-	local col
-	if type(o) == 'userdata' then
-		col = env.color(...) or conf.fg
-	else
-		col = env.color(y, ...) or conf.fg
-		x, y = o, x
-		o = env.screen
+function env_ro.gfx.new(x, y)
+	local fname
+	if type(x) == 'number' and type(y) == 'number' then
+		return gfx.new(x, y)
 	end
-	return o:pixel(x, y, col)
-end
-
-function env_ro.fill(o, x, y, w, h, col)
-	local col
-	if type(o) ~= 'userdata' then
-		x, y, w, h, col = o, x, y, w, h
-		o = env.screen
+	if type(x) == 'string' then
+		if x:find("\n") then
+			return spr.new({ lines = function() return core.lines(x) end }, y)
+		end
+		if x:find("%.[sS][pP][rR]$") then
+			return spr.new(x, y)
+		end
 	end
-	if not y then
-		col = env.color(x) or conf.fg
-		return o:fill(col)
-	end
-	col = env.color(col) or conf.fg
-	return o:fill(x, y, w, h, col)
-end
-
-
-function env_ro.blend(src, fx, fy, w, h, dst, x, y)
-	if type(src) ~= 'userdata' then
-		return
-	end
-	if type(w) == 'number' then
-		return src:blend(fx, fy, w, h, dst, x, y)
-	end
-	if type(fx) == 'number' then
-		x, y = fx, fy
-		dst = env.screen
-	else
-		dst, x, y = fx, fy, w
-	end
-	src:blend(dst, x, y)
-end
-
-function env_ro.copy(src, fx, fy, w, h, dst, x, y)
-	if type(src) ~= 'userdata' then
-		return
-	end
-	if type(w) == 'number' then
-		return src:copy(fx, fy, w, h, dst, x, y)
-	end
-	if type(fx) == 'number' then
-		x, y = fx, fy
-		dst = env.screen
-	else
-		dst, x, y = fx, fy, w
-	end
-	src:copy(dst, x, y)
-end
-
-function env_ro.clip(o, x1, y1, x2, y2)
-	if type(o) == 'userdata' then
-		return o:clip(x1, y1, x2, y2)
-	end
-	x1, y1, x2, y2 = o, x1, y1, x2
-	return env.screen:clip(x1, y1, x2, y2)
-end
-
-function env_ro.noclip(o)
-	if type(o) == 'userdata' then
-		return o:noclip()
-	end
-	return env.screen:noclip()
-end
-
-function env_ro.offset(o, x, y)
-	if type(o) == 'userdata' then
-		return o:offset(x, y)
-	end
-	x, y = o, x
-	return env.screen:offset(x, y)
-end
-
-function env_ro.noclip(o)
-	if type(o) == 'userdata' then
-		return o:noclip()
-	end
-	return env.screen:noclip()
-end
-
-function env_ro.line(o, x1, y1, x2, y2, col)
-	local col
-	if type(o) ~= 'userdata' then
-		x1, y1, x2, y2, col = o, x1, y1, x2, y2
-		o = env.screen
-	end
-	col = env.color(col) or conf.fg
-	return o:line(x1, y1, x2, y2, col)
-end
-
-function env_ro.clear(o, x, y, w, h, col)
-	local col
-	if type(o) ~= 'userdata' then
-		x, y, w, h, col = o, x, y, w, h
-		o = env.screen
-	end
-	if not y then
-		col = env.color(x) or conf.fg
-		return o:clear(col)
-	end
-	col = env.color(col) or conf.fg
-	return o:clear(x, y, w, h, col)
-end
-
-local last_flip = 0
-local flips = {}
-function env_ro.flip(fps, interrupt)
-	core.render(true)
-	local cur_time = env.time()
-	env.sleep((fps or conf.fps) - (cur_time - last_flip), interrupt)
-	last_flip = env.time()
-	table.insert(flips, last_flip)
-	if #flips > 50 then
-		table.remove(flips, 1)
-	end
-	if #flips == 1 then
-		return 0
-	end
-	return math.floor(#flips / math.abs(last_flip - flips[1]))
-end
-
-function env_ro.mouse()
-	return input.mouse.x or 0, input.mouse.y or 0, input.mouse.btn
-end
-
-function env_ro.input()
-	if #input.fifo == 0 then
-		return
-	end
-	local v = table.remove(input.fifo, 1)
-	return v.nam, table.unpack(v.args)
-end
-
-function env_ro.keydown(name)
-	return input.kbd[name]
+	return gfx.new(x, y)
 end
 
 function env_ro.poly(o, vtx, col)
@@ -275,31 +154,60 @@ function env_ro.poly(o, vtx, col)
 	o:line(vtx[#vtx-1], vtx[#vtx], vtx[1], vtx[2], col)
 end
 
-function env_ro.color(k, r, g, b, a)
-	if not k then
-		return
-	end
-	if not r then
-		if type(k) == 'table' then
-			return k
-		end
-		return conf.pal[k]
-	end
-	if r == false then
-		conf.pal[k] = nil
-		return
-	end
-	if type(r) == 'table' then
-		conf.pal[k] = r
-		return
-	end
-	if type(r) == 'number' then
-		conf.pal[k] = { r, g, b, a }
-		return
-	end
+function env_ro.printf(x, y, col, fmt, ...)
+	return env.print(string.format(fmt, ...), x, y, col)
 end
 
-function env_ro.sleep(to, interrupt)
+function env_ro.fgcol(col)
+	conf.fg = col or conf.fg
+end
+
+function env_ro.bgcol(col)
+	conf.bg = col or conf.bg
+end
+
+local last_flip = 0
+local flips = {}
+
+function env_ro.gfx.font(fname, ...)
+	if type(fname) == 'string' and fname:find("%.[fF][nN][tT]$") then
+		return font.new(fname, ...)
+	end
+	return gfx.font(fname)
+end
+
+function env_ro.gfx.flip(fps, interrupt)
+	core.render(true)
+	local cur_time = system.time()
+	env_ro.sys.sleep((fps or conf.fps) - (cur_time - last_flip), interrupt)
+	last_flip = system.time()
+	table.insert(flips, last_flip)
+	if #flips > 50 then
+		table.remove(flips, 1)
+	end
+	if #flips == 1 then
+		return 0
+	end
+	return math.floor(#flips / math.abs(last_flip - flips[1]))
+end
+
+function env_ro.input.mouse()
+	return input.mouse.x or 0, input.mouse.y or 0, input.mouse.btn
+end
+
+function env_ro.sys.poll()
+	if #input.fifo == 0 then
+		return
+	end
+	local v = table.remove(input.fifo, 1)
+	return v.nam, table.unpack(v.args)
+end
+
+function env_ro.input.keydown(name)
+	return input.kbd[name]
+end
+
+function env.sys.sleep(to, interrupt)
 	local start = system.time()
 	repeat
 		coroutine.yield()
@@ -315,7 +223,7 @@ function env_ro.sleep(to, interrupt)
 	until interrupt
 end
 
-function env_ro.dprint(...)
+function env.dprint(...)
 	local t = ''
 	for k, v in ipairs({...}) do
 		if t ~= '' then t = t .. ' ' end
@@ -342,7 +250,7 @@ function env_ro.print(text, x, y, col)
 	end
 	x = x or 0
 	y = y or 0
-	col = env.color(col) or conf.fg
+	col = col or conf.fg
 
 	text = text:gsub("\r", ""):gsub("\t", "    ")
 
@@ -384,29 +292,14 @@ function env_ro.print(text, x, y, col)
 	end
 end
 
-function env_ro.sprite_data(fname, y)
+function env_ro.sprite_data(fname)
 	if fname:find("\n") then
-		return spr.new({ lines = function() return core.lines(fname) end })
+		return spr.new({ lines = function() return core.lines(fname) end }, true)
 	end
 	return spr.new(fname)
 end
 
-function env_ro.sprite(x, y)
-	local fname
-	if type(x) == 'number' and type(y) == 'number' then
-		return gfx.new(x, y)
-	end
-	if type(x) == 'string' then
-		if x:find("\n") then
-			return spr.new({ lines = function() return core.lines(x) end }, conf.pal)
-		end
-		if x:find("%.spr$") then
-			return spr.new(x, conf.pal)
-		end
-	end
-end
-
-function env_ro.worker(fn)
+function env_ro.sys.coroutine(fn)
 	local f, e = coroutine.create(fn)
 	if f then
 		table.insert(core.fn, f)
@@ -414,11 +307,9 @@ function env_ro.worker(fn)
 	return f, e
 end
 
-function env_ro.yield(...)
+function env_ro.sys.yield(...)
 	return coroutine.yield(...)
 end
-
-env_ro.mixer = mixer
 
 local api = { running = true }
 
@@ -428,7 +319,10 @@ function api.init(core_mod)
 	if not env_ro.font then
 		return false, string.format("Can't load font %q", DATADIR..'/'..conf.font)
 	end
-	env.worker(mixer.thread)
+	env.sys.coroutine(mixer.thread)
+	for i=0,15 do
+		gfx.pal(i, conf.pal[i])
+	end
 	return env
 end
 

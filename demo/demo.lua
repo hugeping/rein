@@ -35,7 +35,7 @@ current = 1
 local fps = 0
 
 while true do
-	local cur = time()
+	local cur = sys.time()
 
 	t = t + 1
 	local i = 1
@@ -47,7 +47,7 @@ while true do
 		end
 	end
 
-	local r, v = input()
+	local r, v = sys.poll()
 
 	if r == 'keydown' and v == 'space' then
 		current = current + 1
@@ -55,8 +55,8 @@ while true do
 	end
 
 	screen:buff(buf)
-	clear(0,256-8,256,256-8,7)
+	screen:clear(0,256-8,256,256-8,7)
 	printf(0, 256-8, 1, "Демо:%d FPS:%d", current, fps)
 
-	fps = flip(1/50)
+	fps = gfx.flip(1/50)
 end

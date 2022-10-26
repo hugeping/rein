@@ -136,20 +136,18 @@ local demo = { plasma1, plasma2, plasma3, plasma4, plasma5, plasma6 }
 local demo_nr = 1
 
 local fps = 0
-local start = time()
-
 while true do
 	demo[demo_nr]()
 	screen:buff(buf)
 
-	local r, v = input()
+	local r, v = sys.poll()
 
 	if r == 'keydown' and v == 'space' then
 		demo_nr = demo_nr + 1
 		if demo_nr > #demo then demo_nr = 1 end
 	end
 
-	clear(0,256-8,256,256-8,7)
+	screen:clear(0,256-8,256,256-8,7)
 	printf(0, 256-8, 1, "Демо:%d FPS:%d", demo_nr, fps)
-	fps = flip(0)
+	fps = gfx.flip(0)
 end

@@ -23,14 +23,11 @@ local spr = {[[
 	--------
 ]]
 }
-
-local w = 256
-local h = 256
-
+local w, h = screen:size()
 stars = {}
 
 for i=1, #spr do
-	spr[i] = sprite(spr[i])
+	spr[i] = gfx.new(spr[i])
 end
 
 for i=1, 128 do
@@ -43,7 +40,7 @@ for i=1, 128 do
 end
 
 local fps = 0
-local start = time()
+local start = sys.time()
 local frames = 0
 local txt = ''
 
@@ -51,7 +48,7 @@ local function showkeys()
 	local t = ''
 	local k = { 'left', 'right', 'up', 'down', 'space', 'z', 'x' }
 	for _, v in ipairs(k) do
-		if keydown(v) then
+		if input.keydown(v) then
 			t = t .. v .. ' '
 		end
 	end
@@ -60,13 +57,13 @@ end
 
 beep1 = function()
 	for k=0,1000,0.1 do
-		yield(math.sin(k))
+		sys.yield(math.sin(k))
 	end
 end
 
 beep2 = function()
 	for k=0,2000,0.3 do
-		yield(math.sin(k))
+		sys.yield(math.sin(k))
 	end
 end
 
@@ -103,14 +100,14 @@ local abs = math.abs
 
 beep3 = function()
 	for t = 0, SR * 4, 1 do
-		yield(0.3 * sfx.sin(t, 2) * sfx.dsf(t, 450, 0.120, 1, 0.1 + 0.7 * abs(sfx.sin(t, 0.2))))
+		sys.yield(0.3 * sfx.sin(t, 2) * sfx.dsf(t, 450, 0.120, 1, 0.1 + 0.7 * abs(sfx.sin(t, 0.2))))
 	end
 end
 
 mixer.add(beep3)
 --mixer.add(beep1)
 --mixer.add(beep2)
-local s = sprite
+local s = gfx.new
 [[
 -------78-----e-
 -----------
@@ -127,15 +124,15 @@ local s = sprite
 -----------
 ]];
 while true do
-	local cur = time()
+	local cur = sys.time()
 	fps = math.floor(frames / (cur - start))
-	clear(0)
+	screen:clear(0)
 	screen:fill_circle(100, 100, 30, s)
-	offset(math.floor(math.sin(frames * 0.1)*6), math.floor(math.cos(frames * 0.1)*6))
-	blend(spr[math.floor(frames/10)%2+1], screen, 240, 0)
+	screen:offset(math.floor(math.sin(frames * 0.1)*6), math.floor(math.cos(frames * 0.1)*6))
+	spr[math.floor(frames/10)%2+1]:blend(screen, 240, 0)
 
-	local mx, my, mb = mouse()
-	local a, b = input()
+	local mx, my, mb = input.mouse()
+	local a, b = sys.poll()
 
 	if a == 'text' then
 		txt = txt .. b
@@ -150,7 +147,7 @@ while true do
 		showkeys(), txt..'\1')
 
 	for k, v in ipairs(stars) do
-		pixel(v.x, v.y, v.c)
+		screen:pixel(v.x, v.y, v.c)
 		stars[k].y = v.y + v.s
 		if stars[k].y > h then
 			stars[k].y = 0
@@ -158,6 +155,6 @@ while true do
 		end
 	end
 
-	flip(1/50)
+	gfx.flip(1/50)
 	frames = frames + 1
 end

@@ -163,7 +163,6 @@ function start_demo(n)
 end
 
 local fps = 0
-local start = time()
 
 start_demo()
 
@@ -176,7 +175,7 @@ while true do
 		thr[i]:read()
 	end
 
-	local r, v = input()
+	local r, v = sys.poll()
 
 	if r == 'quit' then
 		dprint "quitting..." -- nothing to do, will exit on next cycle
@@ -189,7 +188,7 @@ while true do
 		end
 	end
 
-	clear(0,w-8,w,h-8,7)
+	screen:clear(0,w-8,w,h-8,7)
 	printf(0, h-8, 1, "Демо:%d FPS:%d", 1, fps)
-	fps = flip(0)
+	fps = gfx.flip(0)
 end

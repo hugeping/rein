@@ -6,7 +6,7 @@ local pan_mode
 
 local SPRITE = ARGS[2] or 'sprite.spr'
 
-spr.Hand = sprite [[
+spr.Hand = gfx.new [[
 ----456--------f
 --------
 -f6f6---
@@ -17,7 +17,7 @@ spr.Hand = sprite [[
 5fffff5-
 ]]
 
-spr.X = sprite [[
+spr.X = gfx.new [[
 *
 *---*
 -*-*-
@@ -40,7 +40,7 @@ pal = {
 function pal:select(x, y, c)
 	x = self.x + x * 8
 	y = self.y + y * 8
-	poly({x, y,
+	screen:poly({x, y,
 		x + 8 - 1,y,
 		x + 8 -1, y + 8 -1,
 		x, y + 8-1}, c)
@@ -52,8 +52,8 @@ function pal:show()
 	local h = s.ch
 	local x, y = self.x, self.y
 	for y=0, 7 do
-		clear(x, y*h, w, h, color(y))
-		clear(x+w, y*h, w, h, color(y+8))
+		screen:clear(x, y*h, w, h, y)
+		screen:clear(x+w, y*h, w, h, y+8)
 	end
 	local n = s.color
 	local c = n + 7
@@ -63,7 +63,7 @@ function pal:show()
 		n = n - 8
 	end
 	y = n
-	poly({x, y*h,
+	screen:poly({x, y*h,
 		x + w - 1, y*h,
 		x + w -1, y*h + h - 1,
 		x, y*h + h - 1}, c)
@@ -122,7 +122,7 @@ function title:show()
 	if grid.dirty then
 		dirty = '*'
 	end
-	local x, y = grid:pos2cell(mouse())
+	local x, y = grid:pos2cell(input.mouse())
 	local info = string.format("x%02d %2d:%2d %s%s",
 		grid.grid, x-1, y-1, SPRITE, dirty)
 	local w, h = font:size(info)
@@ -303,31 +303,31 @@ end
 function grid:show()
 	local s = self
 	local dx = floor(self.w / s.grid)
-	clear(s.x, s.y, s.w, s.h, 1)
+	screen:clear(s.x, s.y, s.w, s.h, 1)
 	local Xd = spr.X:size()
 	Xd = math.round((dx-Xd)/2)
 	for y=1,s.grid do
 		for x=1,s.grid do
 			local c = s.pixels[y+s.yoff] and s.pixels[y+s.yoff][x+s.xoff]
 			if not c or c == -1 then
-				clear(s.x+(x-1)*dx, s.y+(y-1)*dx, dx, dx, { 0, 64, 48, 255})
-				blend(spr.X, s.x+(x-1)*dx + Xd, s.y+(y-1)*dx + Xd)
+				screen:clear(s.x+(x-1)*dx, s.y+(y-1)*dx, dx, dx, { 0, 64, 48, 255})
+				spr.X:blend(screen, s.x+(x-1)*dx + Xd, s.y+(y-1)*dx + Xd)
 			else
-				clear(s.x+(x-1)*dx, s.y+(y-1)*dx, dx, dx, c)
+				screen:clear(s.x+(x-1)*dx, s.y+(y-1)*dx, dx, dx, c)
 			end
 		end
 	end
-	poly({s.x, s.y,
+	screen:poly({s.x, s.y,
 		s.x + s.w, s.y,
 		s.x+s.w, s.y+s.h,
 		s.x, s.y+s.h}, 0)
 	for x=1,s.grid do
-		line(s.x+(x-1)*dx, s.y, (x-1)*dx, s.y + s.h, 0)
-		line(s.x, s.y+(x-1)*dx, s.x+s.w, s.y+(x-1)*dx, 0)
+		screen:line(s.x+(x-1)*dx, s.y, (x-1)*dx, s.y + s.h, 0)
+		screen:line(s.x, s.y+(x-1)*dx, s.x+s.w, s.y+(x-1)*dx, 0)
 	end
 end
 
-local d, e = sprite_data(SPRITE)
+local d, e = gfx.new(SPRITE, true) -- true - load data
 if d then
 	grid.pixels = d
 end
@@ -365,30 +365,29 @@ function proc_inp(r, e, a, b, c, d)
 		elseif e == 'z' then
 			grid:undo()
 		end
-	elseif hand_mode then
-		if r == 'keydown' and  e == 'space' or
-			r == 'mousedown' and hand_mode then
-			local ox, oy = mouse()
-			local x, y = grid:pos()
-			pan_mode =  { ox, oy, x, y }
-		end
+	end
+	if r == 'keydown' and  e == 'space' or
+		r == 'mousedown' and hand_mode then
+		local ox, oy = input.mouse()
+		local x, y = grid:pos()
+		pan_mode =  { ox, oy, x, y }
 	end
 	if pan_mode then
-		local x, y, mb = mouse()
+		local x, y, mb = input.mouse()
 		local dd = grid.w / grid.grid
 		local dx = floor((x - pan_mode[1])/dd)
 		local dy = floor((y - pan_mode[2])/dd)
 		grid:pos(pan_mode[3] - dx, pan_mode[4] - dy)
-		if (not hand_mode and not keydown 'space') or (hand_mode and not mb.left) then
+		if (not hand_mode and not input.keydown 'space') or (hand_mode and not mb.left) then
 			pan_mode = nil
 		end
-	elseif keydown("right") then
+	elseif input.keydown("right") then
 		grid:pan(1, 0)
-	elseif keydown("left") then
+	elseif input.keydown("left") then
 		grid:pan(-1, 0)
-	elseif keydown("up") then
+	elseif input.keydown("up") then
 		grid:pan(0, -1)
-	elseif keydown("down") then
+	elseif input.keydown("down") then
 		grid:pan(0, 1)
 	end
 	return r ~= nil
@@ -398,12 +397,12 @@ title:show()
 switch_ui()
 
 while true do
-	local r, v, a, b = input()
-	local mx, my, mb = mouse()
+	local r, v, a, b = sys.poll()
+	local mx, my, mb = input.mouse()
 	proc_inp(r, v, a, b)
 	if (mb.left or mb.right or mb.middle) then
 		for _, v in ipairs(obj) do
-			local mx, my, mb = mouse()
+			local mx, my, mb = input.mouse()
 			if mx >= v.x and my >= v.y and
 				mx < v.x + v.w and
 				my < v.y + v.h then
@@ -414,11 +413,11 @@ while true do
 		end
 	end
 
-	fill(1)
+	screen:clear(1)
 	table.sort(obj, function(a, b) return a.lev > b.lev end)
 	for _, v in ipairs(obj) do
 		v:show()
 	end
 	table.sort(obj, function(a, b) return a.lev <= b.lev end)
-	flip(1, true) -- wait for event
+	gfx.flip(1, true) -- wait for event
 end

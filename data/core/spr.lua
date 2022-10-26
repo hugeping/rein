@@ -15,7 +15,7 @@ local function parse_line(l, pal)
 	return r
 end
 
-function sprite.new(fname, pal)
+function sprite.new(fname, tabl)
 	local s = { w = 0, h = 0, pal = {} }
 	local f, e
 	if type(fname) == 'string' then
@@ -53,16 +53,15 @@ function sprite.new(fname, pal)
 	if f ~= fname then
 		f:close()
 	end
-	if not pal then
+	if tabl then
 		return s
 	end
 
 	s.spr = gfx.new(s.w, s.h)
 	for y=1, s.h do
 		for x=1, s.w do
-			local c = s[y][x]
-			local col = pal[c] or { 0, 0, 0, 0 }
-			s.spr:pixel(x - 1, y - 1, col) 
+			local c = s[y][x] or -1
+			s.spr:pixel(x - 1, y - 1, c)
 		end
 	end
 	return s.spr
