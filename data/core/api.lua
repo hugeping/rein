@@ -94,7 +94,7 @@ local env_ro = {
 	};
 	sys = {
 		time = system.time,
-		titme = system.title,
+		title = system.title,
 		log = system.log,
 		readdir = system.readdir,
 		chdir = system.chdir,
