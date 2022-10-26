@@ -12,7 +12,6 @@ function xlat(n)
 	if n == 241 then return 0x451 end
 	return n
 end
-
 local f = io.open("ESALT8X8.FNT", "r")
 for i=0,255 do
 	print(string.format("0x%04x", xlat(i)))
