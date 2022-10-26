@@ -1,5 +1,6 @@
-![Build status](https://github.com/gl00my/dein/actions/workflows/CI.yml/badge.svg)
 <img src="data/icon.png">
+
+![Build status](https://github.com/gl00my/dein/actions/workflows/CI.yml/badge.svg)
 
 # DEIN
 
@@ -13,6 +14,10 @@ $ make
 $ ./dein demo/demo.lua
 ```
 See ./make.sh if any problems.
+
+# Downloads
+
+[Continuous builds](https://github.com/gl00my/dein/releases/download/continuous/dein.zip)
 
 # Doc
 
