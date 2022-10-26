@@ -85,7 +85,8 @@ function fn:size(t)
 end
 
 function fn:glyph(cp, color)
-	local col =  { color[1], color[2], color[3] }
+	color = {gfx.pal(color)}
+	local col = { color[1], color[2], color[3] }
 	local v = self[cp]
 	if not v then return end
 	local key = string.format("%02x%02x%02x",

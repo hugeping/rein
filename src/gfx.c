@@ -99,9 +99,22 @@ typedef struct {
 	unsigned char a;
 } color_t;
 
+#define PAL_SIZE 256
+static color_t pal[PAL_SIZE];
+
 static int
 checkcolor(lua_State *L, int idx, color_t *col)
 {
+	int ci;
+	if (lua_isnumber(L, idx)) {
+		ci = luaL_checkinteger(L, idx);
+		if (ci < 0 || ci >= PAL_SIZE) {
+			col->r = col->g = col->b = col->a = 0;
+			return 1;
+		}
+		memcpy(col, &pal[ci], sizeof(*col));
+		return 1;
+	}
 	if (!lua_istable(L, idx)) {
 		col->r = col->g = col->b = 0;
 		col->a = 255;
@@ -1485,11 +1498,7 @@ pixels_fill_poly(lua_State *L)
 	color_t color;
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	luaL_checktype(L, 2, LUA_TTABLE);
-#if LUA_VERSION_NUM >= 502
 	nr = lua_rawlen(L, 2);
-#else
-	nr = lua_objlen(L, 2);
-#endif
 	if (nr < 6)
 		return 0;
 	if (lua_isuserdata(L, 3)) {
@@ -1522,6 +1531,59 @@ pixels_fill_poly(lua_State *L)
 	fill_poly(&src->img, v, nr, col, pat?&pat->img:NULL);
 	free(v);
 	return 0;
+}
+
+static int
+_pixels_poly(lua_State *L, int aa)
+{
+	int nr, i, x0, y0, x1, y1, x2, y2;
+	struct lua_pixels *src;
+	color_t color;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
+	luaL_checktype(L, 2, LUA_TTABLE);
+	nr = lua_rawlen(L, 2);
+	if (nr < 6)
+		return 0;
+	checkcolor(L, 3, &color);
+	nr /= 2;
+	lua_pushvalue(L, 2);
+	for (i = 0; i < nr; i++) {
+		lua_pushinteger(L, (i * 2) + 1);
+		lua_gettable(L, -2);
+		x2 = lua_tonumber(L, -1) + src->img.xoff;
+		lua_pop(L, 1);
+		lua_pushinteger(L, (i * 2) + 2);
+		lua_gettable(L, -2);
+		y2 = lua_tonumber(L, -1) + src->img.yoff;
+		if (i == 0) {
+			x0 = x2;
+			y0 = y2;
+		} else {
+			(aa)?lineAA(&src->img, x1, y1, x2, y2, color.r, color.g, color.b, color.a):
+				line(&src->img, x1, y1, x2, y2, color.r, color.g, color.b, color.a);
+		}
+		if (i == nr - 1) {
+			(aa)?lineAA(&src->img, x2, y2, x0, y0, color.r, color.g, color.b, color.a):
+				line(&src->img, x2, y2, x0, y0, color.r, color.g, color.b, color.a);
+		}
+		x1 = x2;
+		y1 = y2;
+		lua_pop(L, 1);
+	}
+	lua_pop(L, 1);
+	return 0;
+}
+
+static int
+pixels_poly(lua_State *L)
+{
+	return _pixels_poly(L, 0);
+}
+
+static int
+pixels_polyAA(lua_State *L)
+{
+	return _pixels_poly(L, 1);
 }
 
 static int
@@ -1661,6 +1723,8 @@ static const luaL_Reg pixels_mt[] = {
 	{ "circleAA", pixels_circleAA },
 	{ "fill_circle", pixels_fill_circle },
 	{ "fill_poly", pixels_fill_poly },
+	{ "poly", pixels_poly },
+	{ "polyAA", pixels_polyAA },
 	{ "scale", pixels_scale },
 	{ "stretch", pixels_stretch },
 	{ "__gc", pixels_free },
@@ -1810,12 +1874,43 @@ utf8_to_codepoint(const char *p, unsigned *dst)
 	return p + 1;
 }
 
+int
+gfx_pal(lua_State *L)
+{
+	color_t col;
+	int idx;
+	if (lua_istable(L, 1) && checkcolor(L, 1, &col)) { /* just return color */
+		lua_pushinteger(L, col.r);
+		lua_pushinteger(L, col.g);
+		lua_pushinteger(L, col.b);
+		lua_pushinteger(L, col.a);
+		return 4;
+	}
+	idx = luaL_checkinteger(L, 1);
+	if (checkcolor(L, 2, &col)) { /* set */
+		if (idx < 0 || idx >= PAL_SIZE)
+			return 0;
+		memcpy(&pal[idx], &col, sizeof(col));
+		return 0;
+	}
+	if (idx < 0 || idx >= PAL_SIZE)
+		memset(&col, 0, sizeof(col));
+	else
+		memcpy(&col, &pal[idx], sizeof(col));
+	lua_pushinteger(L, col.r);
+	lua_pushinteger(L, col.g);
+	lua_pushinteger(L, col.b);
+	lua_pushinteger(L, col.a);
+	return 4;
+}
+
 static const luaL_Reg
 gfx_lib[] = {
 	{ "win",  gfx_pixels_win },
 	{ "new", gfx_pixels_new },
 	{ "icon", gfx_icon },
 	{ "flip", gfx_flip },
+	{ "pal", gfx_pal },
 	{ "font", gfx_font },
 	{ NULL, NULL }
 };
