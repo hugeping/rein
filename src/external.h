@@ -18,6 +18,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <math.h>
+#include <time.h>
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
