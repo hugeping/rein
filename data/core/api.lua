@@ -76,6 +76,13 @@ function env.require(...)
 	return require(...)
 end
 
+function env.dofile(...)
+	if setfenv then
+		setfenv(0, env)
+	end
+	return dofile(...)
+end
+
 function thread.start(code)
 	if type(code) ~= 'function' then
 		error("Wrong argument", 2)
