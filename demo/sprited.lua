@@ -1,3 +1,4 @@
+sys.title "sprited v0.01"
 w, h = screen:size()
 local floor = math.floor
 local ceil = math.ceil
@@ -620,7 +621,9 @@ function proc_inp(r, e, a, b, c, d)
 			pan_mode = nil
 		end
 	elseif r == 'keydown' then
-		if e == 'tab' then
+		if e == 'f1' then
+			help_mode = not help_mode
+		elseif e == 'tab' then
 			switch_ui()
 		elseif e == 'f2' then
 			grid:save(SPRITE)
@@ -666,29 +669,61 @@ end
 
 title:show()
 switch_ui()
+HELP = [[Keys:
+z      - undo
+ctrl-c - copy selection
+ctrl-x - cut selection
+ctrl-v - paste
+cursor - pan
+space  - pan (hold+mouse)
++/-    - zoom
+tab    - change layout
+lmb    - put pixel
+rmb    - erase pixel
+wheel  - zoom
+lmb on [scale]    - zoom out
+lmb on [filename] - save
+mmb on [filename] - erase
 
+Legend:
+lmb - left mouse button
+rmb - right mouse button
+mmn - middle mouse button
+[filename] - on the status line
+[scale]    - on the status line
+]]
 while true do
 	local r, v, a, b = sys.input()
 	local mx, my, mb = input.mouse()
-	proc_inp(r, v, a, b)
-	if (mb.left or mb.right or mb.middle) then
-		for _, v in ipairs(obj) do
-			local mx, my, mb = input.mouse()
-			if mx >= v.x and my >= v.y and
-				mx < v.x + v.w and
-				my < v.y + v.h then
-				if v:click(mx, my, mb, r == 'mousedown') then
-					break
+	if help_mode then
+		screen:clear {0xff, 0xff, 0xe8, 0xff}
+		if r == 'keydown' or r == 'mousedown' then
+			help_mode = false
+		end
+		print(HELP)
+		print("Here is the status line.", 0, h - 16, 0)
+		screen:clear(0, h - 8, w, h - 8, 1)
+		title:show()
+	else
+		proc_inp(r, v, a, b)
+		if (mb.left or mb.right or mb.middle) then
+			for _, v in ipairs(obj) do
+				local mx, my, mb = input.mouse()
+				if mx >= v.x and my >= v.y and
+					mx < v.x + v.w and
+					my < v.y + v.h then
+					if v:click(mx, my, mb, r == 'mousedown') then
+						break
+					end
 				end
 			end
 		end
+		screen:clear(1)
+		table.sort(obj, function(a, b) return a.lev > b.lev end)
+		for _, v in ipairs(obj) do
+			v:show()
+		end
+		table.sort(obj, function(a, b) return a.lev <= b.lev end)
 	end
-
-	screen:clear(1)
-	table.sort(obj, function(a, b) return a.lev > b.lev end)
-	for _, v in ipairs(obj) do
-		v:show()
-	end
-	table.sort(obj, function(a, b) return a.lev <= b.lev end)
-	gfx.flip(1, true) -- wait for event
+		gfx.flip(1, true) -- wait for event
 end
