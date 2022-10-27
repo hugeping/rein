@@ -65,7 +65,7 @@ strip rein
 CFLAGS="-Isrc/instead -Iexternal/windows/include -Iexternal/windows/include/SDL2"
 LDFLAGS="-Lexternal/windows/lib -lSDL2.dll -lSDL2main -lm -lluajit"
 
-i686-w64-mingw32-windres -i windows/resources.rc -o resources.o || exit 1
+i686-w64-mingw32-windres -i contrib/resources.rc -o resources.o || exit 1
 
 i686-w64-mingw32-gcc -DVERSION=\"`date +%y%m%d`\" -Wall -static -O3 $CFLAGS src/*.c resources.o $LDFLAGS -mwindows -o rein.exe || exit 1
 i686-w64-mingw32-strip rein.exe
