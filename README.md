@@ -6,7 +6,8 @@ __Warning! Project in development and is in alpha stage!__
 
 # rein
 
-Minimalist pixel engine.
+Minimalist pixel engine. Little brother of [reinstead](https://github.com/instead-hub/reinstead) whitch
+in turn is the brother of the INSTEAD [reinstead](https://github.com/instead-hub/instead).
 
 # Build
 
