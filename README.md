@@ -2,7 +2,7 @@
 
 ![Build status](https://github.com/gl00my/rein/actions/workflows/CI.yml/badge.svg)
 
-__Warning! Project in development and is in alpha stage!__
+__Warning! Project is under heavy development and is in the alpha stage!__
 
 # rein
 
