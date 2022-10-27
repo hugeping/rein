@@ -27,14 +27,15 @@ spr.HL = gfx.new [[
 ]]
 
 spr.Hand = gfx.new [[
-----456--------f
---------
--f6f6---
--f6f6f--
-6f6f6f6-
-6fffff6-
-6fffff6-
-5fffff5-
+---------------f
+--fff---
+--ffff--
+--ffff--
+f-fffff-
+fffffff-
+fffffff-
+-fffff--
+--ffff--
 ]]
 
 spr.X = gfx.new [[
@@ -48,14 +49,14 @@ spr.X = gfx.new [[
 
 spr.G = gfx.new [[
 --------------e-
--e-e-e--
-eeeeeee-
--e-e-e--
-eeeeeee-
--e-e-e--
-eeeeeee-
--e-e-e--
---------
+--e--e--
+--e--e--
+eeeeeeee
+--e--e--
+--e--e--
+eeeeeeee
+--e--e--
+--e--e--
 ]]
 
 spr.S = gfx.new [[
@@ -84,10 +85,11 @@ pal = {
 function pal:select(x, y, c)
 	x = self.x + x * 8
 	y = self.y + y * 8
-	screen:poly({x, y,
-		x + 8 - 1,y,
-		x + 8 -1, y + 8 -1,
-		x, y + 8-1}, c)
+	screen:fill(x, y, 8, 8, c)
+--	screen:poly({x, y,
+--		x + 8 - 1,y,
+--		x + 8 -1, y + 8 -1,
+--		x, y + 8-1}, c)
 end
 
 local grid_mode = true
@@ -116,10 +118,6 @@ function pal:show()
 		x + w - 1, y*h,
 		x + w -1, y*h + h - 1,
 		x, y*h + h - 1}, c)
-	spr.Hand:copy(screen, s.x, 8*8)
-	spr.G:copy(screen, s.x + 8, 8*8)
-	spr.S:copy(screen, s.x, 8*9)
-	spr.HL:copy(screen, s.x + 8, 8*9)
 	if hand_mode then
 		self:select(0, 8, 7)
 	end
@@ -132,6 +130,10 @@ function pal:show()
 	if hl_mode then
 		self:select(1, 9, 10)
 	end
+	spr.Hand:blend(screen, s.x, 8*8)
+	spr.G:blend(screen, s.x + 8, 8*8)
+	spr.S:blend(screen, s.x, 8*9)
+	spr.HL:blend(screen, s.x + 8, 8*9)
 end
 
 function pal:pos2col(x, y)
