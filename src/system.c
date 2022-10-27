@@ -341,7 +341,7 @@ sys_lib[] = {
 	{ "input", sys_input },
 	{ "log", sys_log },
 	{ "audio", sys_audio },
-	{ "initrnd", sys_srandom },
+	{ "newrand", sys_srandom },
 	{ NULL, NULL }
 };
 
