@@ -691,7 +691,7 @@ mmb on [filename] - erase
 Legend:
 lmb - left mouse button
 rmb - right mouse button
-mmn - middle mouse button
+mmb - middle mouse button
 [filename] - on the status line
 [scale]    - on the status line
 ]]
