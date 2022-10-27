@@ -223,6 +223,14 @@ audio_cb(void *userdata, uint8_t *stream, int len)
 		memset(stream + readed, 0, len - readed);
 }
 
+/*
+void
+MouseHide(int off)
+{
+	SDL_ShowCursor(!off?SDL_ENABLE:SDL_DISABLE);
+}
+*/
+
 int
 PlatformInit(void)
 {
