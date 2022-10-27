@@ -1,10 +1,10 @@
 <img src="data/icon.png">
 
-![Build status](https://github.com/gl00my/dein/actions/workflows/CI.yml/badge.svg)
+![Build status](https://github.com/gl00my/rein/actions/workflows/CI.yml/badge.svg)
 
 __Warning! Project in development and is in alpha stage!__
 
-# DEIN
+# rein
 
 Minimalist pixel engine.
 
@@ -13,13 +13,13 @@ Minimalist pixel engine.
 Deps: SDL2, luajit.
 ```
 $ make
-$ ./dein demo/demo.lua
+$ ./rein demo/demo.lua
 ```
 See ./make.sh if any problems.
 
 # Downloads
 
-[Continuous builds](https://github.com/gl00my/dein/releases/download/continuous/dein.zip)
+[Continuous builds](https://github.com/gl00my/rein/releases/download/continuous/rein.zip)
 
 # Doc
 
