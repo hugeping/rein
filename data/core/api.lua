@@ -116,6 +116,7 @@ local env_ro = {
 		chdir = system.chdir,
 		mkdir = system.mkdir,
 		initrnd = system.initrnd,
+		-- hidemouse = system.hidemouse,
 	};
 	thread = thread,
 	mixer = mixer,
@@ -259,6 +260,7 @@ function env_ro.error(text)
 end
 
 function env_ro.print(text, x, y, col)
+	local scroll = not x
 	text = tostring(text)
 	if not env.screen then
 		system.log(text)
@@ -290,7 +292,7 @@ function env_ro.print(text, x, y, col)
 			y = y + hh
 		end
 
-		if y > h - hh then -- vertical overflow
+		if scroll and y > h - hh then -- vertical overflow
 			local off = math.floor(y - (h - hh))
 			env.screen:copy(0, off, w, h - off, env.screen, 0, 0) -- scroll
 			env.screen:clear(0, h - off, w, off, conf.bg)
@@ -386,11 +388,15 @@ function api.event(e, v, a, b, c)
 	if e == 'keyup' then
 		if v:find("alt$") then
 			input.kbd.alt = false
+		elseif v:find("ctrl$") then
+			input.kbd.ctrl = false
 		end
 		input.kbd[v] = false
 	elseif e == 'keydown' then
 		if v:find("alt$") then
 			input.kbd.alt = true
+		elseif v:find("ctrl$") then
+			input.kbd.ctrl = true
 		end
 		input.kbd[v] = true
 		if v == 'return' and input.kbd.alt then

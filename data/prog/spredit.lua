@@ -5,6 +5,26 @@ local spr = {}
 local pan_mode
 
 local SPRITE = ARGS[2] or 'sprite.spr'
+spr.C = gfx.new [[
+-------*
+--*--
+-----
+*-*-*
+-----
+--*--
+]]
+
+spr.HL = gfx.new [[
+--------89------
+--------
+-88--88-
+-8----8-
+---99---
+---99---
+-8----8-
+-88--88-
+--------
+]]
 
 spr.Hand = gfx.new [[
 ----456--------f
@@ -26,13 +46,37 @@ spr.X = gfx.new [[
 *---*
 ]]
 
+spr.G = gfx.new [[
+--------------e-
+-e-e-e--
+eeeeeee-
+-e-e-e--
+eeeeeee-
+-e-e-e--
+eeeeeee-
+-e-e-e--
+--------
+]]
+
+spr.S = gfx.new [[
+------------c---
+--------
+-cc--cc-
+-c----c-
+--------
+--------
+-c----c-
+-cc--cc-
+--------
+]]
+
 pal = {
 	x = 0;
 	y = 0;
 	cw = 8;
 	ch = 8;
 	w = 8*2;
-	h = 8*8 + 8;
+	h = 8*8 + 16;
 	color = 0;
 	lev = -1;
 }
@@ -45,6 +89,11 @@ function pal:select(x, y, c)
 		x + 8 -1, y + 8 -1,
 		x, y + 8-1}, c)
 end
+
+local grid_mode = true
+local sel_mode = false
+local hand_mode = false
+local hl_mode = false
 
 function pal:show()
 	local s = self
@@ -67,9 +116,21 @@ function pal:show()
 		x + w - 1, y*h,
 		x + w -1, y*h + h - 1,
 		x, y*h + h - 1}, c)
-	spr.Hand:copy(screen, s.x, s.h - 8)
+	spr.Hand:copy(screen, s.x, 8*8)
+	spr.G:copy(screen, s.x + 8, 8*8)
+	spr.S:copy(screen, s.x, 8*9)
+	spr.HL:copy(screen, s.x + 8, 8*9)
 	if hand_mode then
-		self:select(0, 8, 8)
+		self:select(0, 8, 7)
+	end
+	if grid_mode then
+		self:select(1, 8, 10)
+	end
+	if sel_mode then
+		self:select(0, 9, 7)
+	end
+	if hl_mode then
+		self:select(1, 9, 10)
 	end
 end
 
@@ -92,6 +153,14 @@ function pal:click(x, y, mb, click)
 		self.color = c
 	elseif y == 8 and x == 0 and click then -- hand mode
 		hand_mode = not hand_mode
+		sel_mode = false
+	elseif y == 8 and x == 1 and click then -- grid mode
+		grid_mode = not grid_mode
+	elseif y == 9 and x == 0 and click then
+		sel_mode = not sel_mode
+		hand_mode = false
+	elseif y == 9 and x == 1 and click then
+		hl_mode = not hl_mode
 	end
 	return true
 end
@@ -104,7 +173,7 @@ grid = {
 	xoff = 0;
 	yoff = 0;
 	grid = 16;
-	max_grid = 64;
+	max_grid = 128;
 	min_grid = 16;
 	lev = 1;
 	pixels = {};
@@ -123,7 +192,7 @@ function title:show()
 		dirty = '*'
 	end
 	local x, y = grid:pos2cell(input.mouse())
-	local info = string.format("x%02d %2d:%2d %s%s",
+	local info = string.format("x%-3d %3d:%3d %s%s",
 		grid.grid, x-1, y-1, SPRITE, dirty)
 	local w, h = font:size(info)
 	self.w = w
@@ -223,6 +292,10 @@ function grid:save(fname)
 	if not x1 then
 		return
 	end
+	x1, y1 = 1, 1 -- no spaces!
+	if s.sel_x1 then
+		x1, y1, x2, y2 = s:getsel()
+	end
 	local f, e = io.open(fname, "wb")
 	if not f then
 		return f, e
@@ -269,13 +342,145 @@ function grid:undo(x, y, mb)
 		return
 	end
 	local z = table.remove(s.history, n)
+	if z.pixels then
+		local i = 1
+		for y = z.y1, z.y2 do
+			s.pixels[y] = s.pixels[y] or {}
+			for x = z.x1, z.x2 do
+				s.pixels[y][x] = z.pixels[i]
+				i = i + 1
+			end
+		end
+		return
+	end
 	s.pixels[z.y][z.x] = z.val
 	if n == 1 then
 		s.dirty = false
 	end
 end
 
-function grid:click(x, y, mb)
+function grid:histadd(x1, y1, x2, y2)
+	local s = self
+	local b = {}
+	for y = y1, y2 do
+		s.pixels[y] = s.pixels[y] or {}
+		for x = x1, x2 do
+			table.insert(b, s.pixels[y][x] or -1)
+		end
+	end
+	table.insert(s.history, { x1 = x1, y1 = y1,
+		x2 = x2, y2 = y2, pixels = b })
+end
+
+function grid:fliph()
+	local s = self
+	local x1, y1, x2, y2 = s:getsel()
+	if not x1 then
+		return
+	end
+
+	local empty = s:isempty(x1, y1, x2, y2)
+	if not empty then
+		s:histadd(x1, y1, x2, y2)
+	end
+
+	local xc = x1 + floor((x2 - x1)/2)
+	for y=y1,y2 do
+		s.pixels[y] = s.pixels[y] or {}
+		for x=x1,xc do
+			local tmp = s.pixels[y][x]
+			s.pixels[y][x] = s.pixels[y][x2-(x-x1)]
+			s.pixels[y][x2-(x-x1)] = tmp
+		end
+	end
+end
+
+function grid:flipv()
+	local s = self
+	local x1, y1, x2, y2 = s:getsel()
+	if not x1 then
+		return
+	end
+
+	local empty = s:isempty(x1, y1, x2, y2)
+	if not empty then
+		s:histadd(x1, y1, x2, y2)
+	end
+
+	local yc = y1 + floor((y2 - y1)/2)
+	for x=x1,x2 do
+		for y=y1,yc do
+			s.pixels[y] = s.pixels[y] or {}
+			local tmp = s.pixels[y][x]
+			s.pixels[y][x] = s.pixels[y2-(y-y1)][x]
+			s.pixels[y2-(y-y1)][x] = tmp
+		end
+	end
+end
+
+function grid:paste()
+	local s = self
+	if not s.clipboard then
+		return
+	end
+	local x, y = input.mouse()
+	local tox, toy = s:pos2cell(x, y)
+	s:histadd(tox, toy,
+		tox + s.clipboard.w - 1,
+		toy + s.clipboard.h - 1)
+	for y=1, s.clipboard.h do
+		s.pixels[toy+y-1] = s.pixels[toy+y-1] or {}
+		for x=1,s.clipboard.w do
+			s.pixels[toy+y-1][x+tox-1] = s.clipboard[y][x]
+		end
+	end
+end
+
+function grid:isempty(x1, y1, x2, y2)
+	local s = self
+	local col
+	for y = y1, y2 do
+		for x = x1, x2 do
+			col = s.pixels[y] and s.pixels[y][x]
+			if col and col ~= -1 then
+				col = true
+				break
+			end
+		end
+	end
+	return not col
+end
+
+function grid:cut(copy)
+	local s = self
+	local x1, y1, x2, y2 = s:getsel()
+	if not x1 then
+		return
+	end
+	s.clipboard = {}
+
+	local empty = s:isempty(x1, y1, x2, y2)
+
+	if not empty and not copy then
+		s:histadd(x1, y1, x2, y2)
+	end
+
+	for y = y1, y2 do
+		s.clipboard[y - y1 + 1] = {}
+		s.pixels[y] = s.pixels[y] or {}
+		for x = x1, x2 do
+			s.clipboard[y - y1 + 1][x - x1 + 1] = s.pixels[y][x]
+			if not copy then
+				s.pixels[y][x] = -1
+			end
+		end
+	end
+	s.clipboard.w = x2 - x1 + 1
+	s.clipboard.h = y2 - y1 + 1
+	return true
+end
+
+function grid:click(x, y, mb, click)
 	local s = self
 	if pan_mode then
 		return
@@ -283,6 +488,19 @@ function grid:click(x, y, mb)
 	x, y = s:pos2cell(x, y)
 	if not x then
 		return
+	end
+	if sel_mode then
+		if click then
+			if mb.right then
+				self.sel_x1, self.sel_y1 = false, false
+				return true
+			end
+			self.sel_x1, self.sel_y1 = x, y
+			self.sel_x2, self.sel_y2 = x, y
+			return true
+		end
+		self.sel_x2, self.sel_y2 = x, y
+		return true
 	end
 	s.pixels[y] = s.pixels[y] or {}
 	local oval = s.pixels[y][x]
@@ -299,9 +517,22 @@ function grid:click(x, y, mb)
 	end
 	return true
 end
-
+function grid:getsel()
+	local s = self
+	if not s.sel_x1 then
+		return
+	end
+	local xmin = math.min(s.sel_x1, s.sel_x2)
+	local ymin = math.min(s.sel_y1, s.sel_y2)
+	local xmax = math.max(s.sel_x1, s.sel_x2)
+	local ymax = math.max(s.sel_y1, s.sel_y2)
+	return xmin, ymin, xmax, ymax
+end
 function grid:show()
 	local s = self
+	local mx, my = input.mouse()
+	mx, my = s:pos2cell(mx, my)
+
 	local dx = floor(self.w / s.grid)
 	screen:clear(s.x, s.y, s.w, s.h, 1)
 	local Xd = spr.X:size()
@@ -311,9 +542,18 @@ function grid:show()
 			local c = s.pixels[y+s.yoff] and s.pixels[y+s.yoff][x+s.xoff]
 			if not c or c == -1 then
 				screen:clear(s.x+(x-1)*dx, s.y+(y-1)*dx, dx, dx, { 0, 64, 48, 255})
-				spr.X:blend(screen, s.x+(x-1)*dx + Xd, s.y+(y-1)*dx + Xd)
+				if s.grid < 128 then
+					spr.X:blend(screen, s.x+(x-1)*dx + Xd, s.y+(y-1)*dx + Xd)
+				end
 			else
 				screen:clear(s.x+(x-1)*dx, s.y+(y-1)*dx, dx, dx, c)
+			end
+			if hl_mode and  mx == s.xoff + x and my == s.yoff + y then
+				c = (c or 0)+ 8
+				if c >= 16 then c = 16 - c end
+				c = { gfx.pal(c) }
+				c[4] = 128
+				screen:fill(s.x+(x-1)*dx, s.y+(y-1)*dx, dx, dx, c)
 			end
 		end
 	end
@@ -321,9 +561,29 @@ function grid:show()
 		s.x + s.w, s.y,
 		s.x+s.w, s.y+s.h,
 		s.x, s.y+s.h}, 0)
-	for x=1,s.grid do
-		screen:line(s.x+(x-1)*dx, s.y, (x-1)*dx, s.y + s.h, 0)
-		screen:line(s.x, s.y+(x-1)*dx, s.x+s.w, s.y+(x-1)*dx, 0)
+	if s.grid < 128 then
+		for x=1,s.grid do
+			local colx = (((s.xoff + x - 1)%8 == 0) and grid_mode and 2) or 0
+			local coly = (((s.yoff + x - 1)%8 == 0) and grid_mode and 2) or 0
+			screen:line(s.x+(x-1)*dx, s.y, (x-1)*dx, s.y + s.h,
+				colx)
+			screen:line(s.x, s.y+(x-1)*dx, s.x+s.w, s.y+(x-1)*dx,
+				coly)
+		end
+	end
+	if grid.sel_x1 then
+		local xmin, ymin, xmax, ymax = s:getsel()
+		if xmax < s.xoff or ymax < s.yoff or xmin > s.xoff + s.grid or
+			ymin > s.yoff + s.grid then
+				return
+		end
+		local dx = floor(s.w / s.grid)
+		xmin = xmin - 1
+		ymin = ymin - 1
+		screen:poly({(xmin - s.xoff)*dx, (ymin - s.yoff)*dx,
+			(xmax - s.xoff)*dx, (ymin - s.yoff)*dx,
+			(xmax - s.xoff)*dx, (ymax - s.yoff)*dx,
+			(xmin - s.xoff)*dx, (ymax - s.yoff)*dx}, 7)
 	end
 end
 
@@ -364,6 +624,16 @@ function proc_inp(r, e, a, b, c, d)
 			grid:save(SPRITE)
 		elseif e == 'z' then
 			grid:undo()
+		elseif e == 'c' and input.keydown'ctrl' then
+			grid:cut(true)
+		elseif e == 'x' and input.keydown'ctrl' then
+			grid:cut()
+		elseif e == 'v' and input.keydown'ctrl' then
+			grid:paste()
+		elseif e == 'h' then
+			grid:fliph()
+		elseif e == 'v' then
+			grid:flipv()
 		end
 	end
 	if not pan_mode and (r == 'keydown' and  e == 'space' or

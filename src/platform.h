@@ -42,4 +42,6 @@ extern int SemDestroy(int sid);
 extern int SemWait(int sid);
 extern int SemPost(int sid);
 
+/* extern void MouseHide(int hide); */
+
 #endif
