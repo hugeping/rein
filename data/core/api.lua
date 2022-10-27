@@ -58,6 +58,7 @@ local env = {
 	pairs = pairs,
 	ipairs = ipairs,
 	io = io,
+	os = os,
 	tonumber = tonumber,
 	tostring = tostring,
 	coroutine = coroutine,
@@ -114,6 +115,7 @@ local env_ro = {
 		readdir = system.readdir,
 		chdir = system.chdir,
 		mkdir = system.mkdir,
+		initrnd = system.initrnd,
 	};
 	thread = thread,
 	mixer = mixer,
@@ -338,6 +340,7 @@ end
 local api = { running = true }
 
 function api.init(core_mod)
+	math.randomseed(os.time())
 	env_ro.font = font.new(DATADIR..'/'..conf.font)
 	core = core_mod
 	if not env_ro.font then

@@ -1,6 +1,7 @@
 #include "external.h"
 #include "platform.h"
 #include "gfx.h"
+#include "tinymt32.h"
 
 static int
 sys_sleep(lua_State *L)
@@ -282,6 +283,45 @@ sys_audio(lua_State *L)
 #undef SND_BUF_SIZE
 }
 
+static int
+sys_srandom(lua_State *L)
+{
+	int seed;
+	tinymt32_t *mt;
+	if (lua_isnumber(L, 1))
+		seed = luaL_checknumber(L, 1);
+	else
+		seed = rand();
+	mt = lua_newuserdata(L, sizeof(tinymt32_t));
+	if (!mt)
+		return 0;
+	memset(mt, 0, sizeof(*mt));
+	tinymt32_init(mt, seed);
+	luaL_getmetatable(L, "mt metatable");
+	lua_setmetatable(L, -2);
+	return 1;
+}
+
+static int
+sys_random(lua_State *L)
+{
+	tinymt32_t *mt = (tinymt32_t *)luaL_checkudata(L, 1, "mt metatable");
+	unsigned int r = 0;
+	long a = luaL_optnumber(L, 2, -1);
+	long b = luaL_optnumber(L, 3, -1);
+	if (a == -1 && b == -1) {
+		lua_pushnumber(L, tinymt32_generate_32double(mt));
+		return 1;
+	}
+	r = tinymt32_generate_uint32(mt);
+	if (a >= 0 && b > a)
+		r = a + (r % (b - a + 1));
+	else if (a > 0 && b == -1)
+		r = (r % a) + 1;
+	lua_pushinteger(L, r);
+	return 1;
+}
+
 static const luaL_Reg
 sys_lib[] = {
 	{ "poll", sys_poll },
@@ -301,12 +341,30 @@ sys_lib[] = {
 	{ "input", sys_input },
 	{ "log", sys_log },
 	{ "audio", sys_audio },
+	{ "initrnd", sys_srandom },
 	{ NULL, NULL }
 };
+
+static const luaL_Reg
+rand_mt[] = {
+	{ "rnd", sys_random },
+	{ NULL, NULL }
+};
+
+static void
+mt_create_meta(lua_State *L)
+{
+	luaL_newmetatable(L, "mt metatable");
+	luaL_setfuncs_int(L, rand_mt, 0);
+	lua_pushvalue(L, -1);
+	lua_setfield(L, -2, "__index");
+}
 
 int
 system_init(lua_State *L)
 {
+	srand(time(NULL));
+	mt_create_meta(L);
 	luaL_newlib(L, sys_lib);
 	return 0;
 }
