@@ -4,11 +4,11 @@ local mixer = {
 	chans = {};
 }
 
-local CHANNELS = 1
+local CHANNELS = 2
 
 function mixer.thread()
 	while true do
-		local t = {}
+		local t = { channels = CHANNELS }
 		for i = 1,CHUNK,CHANNELS do
 			-- local mix = {}
 			local k, n = 1, #mixer.chans
@@ -16,6 +16,7 @@ function mixer.thread()
 			while k<=n do
 				local fn = mixer.chans[k]
 				local st, l, r = coroutine.resume(fn)
+				r = r or l
 				if not st or not l then
 					table.remove(mixer.chans, k)
 					n = n - 1
@@ -25,7 +26,7 @@ function mixer.thread()
 				else
 					k = k + 1
 					ll = ll + l
-					if CHANNELS == 2 then
+					if t.channels == 2 then
 						rr = rr + r
 					end
 				end
@@ -34,7 +35,7 @@ function mixer.thread()
 				break
 			end
 			t[i] = ll / #mixer.chans
-			if CHANNELS == 2 then
+			if t.channels == 2 then
 				t[i+1] = rr / #mixer.chans
 			end
 		end
