@@ -1,4 +1,4 @@
-all:	dein
+all:	rein
 
 VERSION := $(shell date +%y%m%d)
 CFLAGS=$(shell pkg-config --cflags sdl2) $(shell pkg-config --cflags luajit) -Wall -O3 -DVERSION=\"${VERSION}\"
@@ -8,17 +8,17 @@ LDFLAGS=$(shell pkg-config --libs sdl2) $(shell pkg-config --libs luajit) -lm
 # PREFIX=/usr/local
 
 ifneq ($(PREFIX),)
-DATADIR=-DDATADIR=\"$(PREFIX)/share/dein\"
-install: dein
+DATADIR=-DDATADIR=\"$(PREFIX)/share/rein\"
+install: rein
 	install -d -m 0755 $(DESTDIR)$(PREFIX)/bin
-	install -d -m 0755 $(DESTDIR)$(PREFIX)/share/dein
-	install -m 0755 dein $(DESTDIR)$(PREFIX)/bin
-	cp -r data/* $(DESTDIR)$(PREFIX)/share/dein
+	install -d -m 0755 $(DESTDIR)$(PREFIX)/share/rein
+	install -m 0755 rein $(DESTDIR)$(PREFIX)/bin
+	cp -r data/* $(DESTDIR)$(PREFIX)/share/rein
 	install -d -m 0755 $(DESTDIR)$(PREFIX)/share/pixmaps/
 
 uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/bin/dein
-	rm -rf $(DESTDIR)$(PREFIX)/share/dein
+	rm -f $(DESTDIR)$(PREFIX)/bin/rein
+	rm -rf $(DESTDIR)$(PREFIX)/share/rein
 endif
 
 CFILES= \
@@ -39,8 +39,8 @@ OFILES  := $(patsubst %.c, %.o, $(CFILES))
 $(OFILES): %.o : %.c
 	$(CC) -c $(<) $(I) $(CFLAGS) $(DATADIR) -o $(@)
 
-dein:  $(OFILES)
+rein:  $(OFILES)
 	$(CC) $(CFLAGS) $(^) $(LDFLAGS) -o $(@)
 
 clean:
-	$(RM) -f src/lua/*.o src/*.o dein
+	$(RM) -f src/lua/*.o src/*.o rein

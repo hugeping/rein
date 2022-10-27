@@ -57,8 +57,8 @@ src/*.c \
 -lluajit \
 -Wl,-Bdynamic \
 -lm -ldl -lpthread -lc \
--o dein
-strip dein
+-o rein
+strip rein
 
 ## Windows version
 
@@ -67,8 +67,8 @@ LDFLAGS="-Lexternal/windows/lib -lSDL2.dll -lSDL2main -lm -lluajit"
 
 i686-w64-mingw32-windres -i windows/resources.rc -o resources.o || exit 1
 
-i686-w64-mingw32-gcc -DVERSION=\"`date +%y%m%d`\" -Wall -static -O3 $CFLAGS src/*.c resources.o $LDFLAGS -mwindows -o dein.exe || exit 1
-i686-w64-mingw32-strip dein.exe
+i686-w64-mingw32-gcc -DVERSION=\"`date +%y%m%d`\" -Wall -static -O3 $CFLAGS src/*.c resources.o $LDFLAGS -mwindows -o rein.exe || exit 1
+i686-w64-mingw32-strip rein.exe
 rm -f *.o
 
 ## make release
@@ -76,6 +76,6 @@ rm -f *.o
 rm -rf release
 mkdir release
 
-cp dein release/dein.x86-64.linux
-cp -r dein.exe demo/ data/ LICENSE ChangeLog external/windows/bin/*.dll release/
+cp rein release/rein.x86-64.linux
+cp -r rein.exe demo/ data/ LICENSE ChangeLog external/windows/bin/*.dll release/
 i686-w64-mingw32-strip release/SDL2.dll
