@@ -6,7 +6,7 @@ __Warning! Project is under heavy development and is in the alpha stage!__
 
 # rein
 
-Minimalist pixel engine. Little brother of [reinstead](https://github.com/instead-hub/reinstead) whitch
+Minimalist engine for 2d games & demos. Little brother of [reinstead](https://github.com/instead-hub/reinstead) whitch
 in turn is the brother of the [INSTEAD](https://github.com/instead-hub/instead).
 
 # Build
