@@ -13,9 +13,6 @@ typedef struct {
 
 extern img_t *img_new(int w, int h);
 extern void img_free(img_t *src);
-extern void img_offset(img_t *src, int x, int y);
-extern void img_clip(img_t *src, int x1, int y1, int x2, int y2);
-extern void img_noclip(img_t *src);
 #define PXL_BLEND_COPY 1
 #define PXL_BLEND_BLEND 2
 
