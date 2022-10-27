@@ -6,6 +6,51 @@
 #include "gfx.h"
 
 static void
+img_noclip(img_t *img)
+{
+	if (!img)
+		return;
+	img->clip_x1 = 0;
+	img->clip_y1 = 0;
+	img->clip_x2 = img->w;
+	img->clip_y2 = img->h;
+}
+
+static void
+img_offset(img_t *img, int x, int y)
+{
+	if (!img)
+		return;
+	img->xoff = x;
+	img->yoff = y;
+}
+
+static void
+img_clip(img_t *img, int x1, int y1, int x2, int y2)
+{
+	if (!img)
+		return;
+	if (x1 > x2 || y1 > y2)
+		return;
+	x1 = (x1<0)?0:x1;
+	x1 = (x1>=img->w)?img->w:x1;
+
+	y1 = (y1<0)?0:y1;
+	y1 = (y1>=img->h)?img->h:y1;
+
+	x2 = (x2<0)?0:x2;
+	x2 = (x2>=img->w)?img->w:x2;
+
+	y2 = (y2<0)?0:y2;
+	y2 = (y2>=img->h)?img->h:y2;
+
+	img->clip_x1 = x1;
+	img->clip_y1 = y1;
+	img->clip_x2 = x2;
+	img->clip_y2 = y2;
+}
+
+static void
 img_init(img_t *img, int w, int h)
 {
 	if (!img)
@@ -47,50 +92,6 @@ img_new(int w, int h)
 	return img;
 }
 
-void
-img_noclip(img_t *img)
-{
-	if (!img)
-		return;
-	img->clip_x1 = 0;
-	img->clip_y1 = 0;
-	img->clip_x2 = img->w;
-	img->clip_y2 = img->h;
-}
-
-void
-img_offset(img_t *img, int x, int y)
-{
-	if (!img)
-		return;
-	img->xoff = x;
-	img->yoff = y;
-}
-
-void
-img_clip(img_t *img, int x1, int y1, int x2, int y2)
-{
-	if (!img)
-		return;
-	if (x1 > x2 || y1 > y2)
-		return;
-	x1 = (x1<0)?0:x1;
-	x1 = (x1>=img->w)?img->w:x1;
-
-	y1 = (y1<0)?0:y1;
-	y1 = (y1>=img->h)?img->h:y1;
-
-	x2 = (x2<0)?0:x2;
-	x2 = (x2>=img->w)?img->w:x2;
-
-	y2 = (y2<0)?0:y2;
-	y2 = (y2>=img->h)?img->h:y2;
-
-	img->clip_x1 = x1;
-	img->clip_y1 = y1;
-	img->clip_x2 = x2;
-	img->clip_y2 = y2;
-}
 
 typedef struct {
 	unsigned char r;
@@ -392,14 +393,45 @@ static img_t*
 img_scale(img_t *src, float xscale, float yscale, int smooth)
 {
 	img_t *ret;
-	int w = ceil(src->w * xscale);
-	int h = ceil(src->h * yscale);
+	int w = round(src->w * xscale);
+	int h = round(src->h * yscale);
 	ret = img_new(w, h);
 	if (!ret)
 		return NULL;
 	stbir_resize_uint8(src->ptr, src->w, src->h, 0,
 		ret->ptr, w, h, 0, 4);
 	return ret;
+}
+
+static void
+_img_flip(img_t *src, int h, int v, img_t *dst)
+{
+	int x, y;
+	unsigned char *s, *d;
+	s = src->ptr;
+	d = dst->ptr;
+
+	if (v)
+		s += (src->h - 1) * src->w * 4;
+
+	if (h)
+		s += (src->w - 1) * 4;
+
+	for (y = 0; y < src->h; y++) {
+		for (x = 0; x < src->w; x++) {
+			*(unsigned int*)d = *(unsigned int*)s;
+			if (h)
+				s -= 4;
+			else
+				s += 4;
+			d += 4;
+		}
+		if (!v && h) {
+			s += (src->w * 8);
+		} else if (v && !h) {
+			s -= (src->w * 8);
+		}
+	}
 }
 
 static int
@@ -1587,10 +1619,26 @@ pixels_polyAA(lua_State *L)
 }
 
 static int
+pixels_flip(lua_State *L)
+{
+	struct lua_pixels *src, *dst;
+	int h, v;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
+	h = lua_toboolean(L, 2);
+	v = lua_toboolean(L, 3);
+	dst = pixels_new(L, src->img.w, src->img.h);
+	if (!dst)
+		return 0;
+	_img_flip(&src->img, h, v, &dst->img);
+	return 1;
+}
+
+static int
 pixels_scale(lua_State *L)
 {
 	float xs, ys;
 	int smooth;
+	int h, v;
 	struct lua_pixels *src;
 	img_t *dst;
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
@@ -1598,6 +1646,10 @@ pixels_scale(lua_State *L)
 	ys = luaL_optnumber(L, 3, 0.0f);
 	if (ys == 0.0)
 		ys = xs;
+	h = (xs < 0);
+	v = (ys < 0);
+	xs = abs(xs);
+	ys = abs(ys);
 	smooth = lua_toboolean(L, 4);
 	dst = img_scale(&src->img, xs, ys, smooth);
 	if (!dst)
@@ -1607,7 +1659,7 @@ pixels_scale(lua_State *L)
 		free(dst);
 		return 0;
 	}
-	memcpy(src->img.ptr, dst->ptr, src->size);
+	_img_flip(dst, h, v, &src->img);
 	free(dst);
 	return 1;
 }
@@ -1726,6 +1778,7 @@ static const luaL_Reg pixels_mt[] = {
 	{ "poly", pixels_poly },
 	{ "polyAA", pixels_polyAA },
 	{ "scale", pixels_scale },
+	{ "flip", pixels_flip },
 	{ "stretch", pixels_stretch },
 	{ "__gc", pixels_free },
 	{ NULL, NULL }
