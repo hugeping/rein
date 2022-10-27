@@ -468,9 +468,9 @@ pixels_size(lua_State *L)
 
 static void
 _fill(img_t *src, int x, int y, int w, int h,
-		  int r, int g, int b, int a, int mode, img_t *pat)
+		  color_t *color, int mode, img_t *pat)
 {
-	unsigned char col[4];
+	unsigned char col[4] = { color->r, color->g, color->b, color->a };
 	unsigned char *ptr1;
 	int cy, cx;
 
@@ -479,7 +479,6 @@ _fill(img_t *src, int x, int y, int w, int h,
 	if (h)
 		y += src->yoff;
 
-	col[0] = r; col[1] = g; col[2] = b; col[3] = a;
 	if (!w)
 		w = src->w;
 	if (!h)
@@ -543,7 +542,7 @@ pixels_fill(lua_State *L)
 	} else
 		checkcolor(L, col_idx, &col);
 
-	_fill(&src->img, x, y, w, h, col.r, col.g, col.b, col.a,
+	_fill(&src->img, x, y, w, h, &col,
 		col.a == 255 ? PXL_BLEND_COPY:PXL_BLEND_BLEND,
 		pat?&pat->img:NULL);
 	return 0;
@@ -566,7 +565,7 @@ pixels_clear(lua_State *L)
 		h = luaL_optnumber(L, 5, 0);
 		checkcolor(L, 6, &col);
 	}
-	_fill(&src->img, x, y, w, h, col.r, col.g, col.b, col.a, PXL_BLEND_COPY, NULL);
+	_fill(&src->img, x, y, w, h, &col, PXL_BLEND_COPY, NULL);
 	return 0;
 }
 
@@ -866,10 +865,11 @@ line1(img_t *hdr, int x1, int y1, int dx, int dy, int xd, unsigned char *col)
 }
 
 static void
-line(img_t *src, int x1, int y1, int x2, int y2, int r, int g, int b, int a)
+line(img_t *src, int x1, int y1, int x2, int y2, color_t *color)
 {
 	int dx, dy, tmp;
-	unsigned char col[4];
+	unsigned char col[4] = { color->r, color->g, color->b, color->a };
+
 	x1 += src->xoff;
 	y1 += src->yoff;
 	x2 += src->xoff;
@@ -879,7 +879,6 @@ line(img_t *src, int x1, int y1, int x2, int y2, int r, int g, int b, int a)
 		tmp = y1; y1 = y2; y2 = tmp;
 		tmp = x1; x1 = x2; x2 = tmp;
 	}
-	col[0] = r; col[1] = g; col[2] = b; col[3] = a;
 	if (y1 >= src->clip_y2)
 		return;
 	if (y2 < src->clip_y1)
@@ -925,25 +924,25 @@ pixels_line(lua_State *L)
 	x2 = luaL_optnumber(L, 4, 0);
 	y2 = luaL_optnumber(L, 5, 0);
 	checkcolor(L, 6, &col);
-	line(&src->img, x1, y1, x2, y2, col.r, col.g, col.b, col.a);
+	line(&src->img, x1, y1, x2, y2, &col);
 	return 0;
 }
 
 static void
 lineAA(img_t *src, int x0, int y0, int x1, int y1,
-		 int r, int g, int b, int a)
+		 color_t *color)
 {
 	int dx, dy, err, e2, sx;
 	int syp, sxp, ed;
 	unsigned char *ptr;
-	unsigned char col[4];
+	unsigned char col[4] = { color->r, color->g, color->b, color->a };
+	int a = color->a;
 
 	x0 += src->xoff;
 	y0 += src->yoff;
 	x1 += src->xoff;
 	y1 += src->yoff;
 
-	col[0] = r; col[1] = g; col[2] = b; col[3] = a;
 	if (y0 > y1) {
 		int tmp;
 		tmp = x0; x0 = x1; x1 = tmp;
@@ -1037,7 +1036,7 @@ pixels_lineAA(lua_State *L)
 	x2 = luaL_optnumber(L, 4, 0);
 	y2 = luaL_optnumber(L, 5, 0);
 	checkcolor(L, 6, &col);
-	lineAA(&src->img, x1, y1, x2, y2, col.r, col.g, col.b, col.a);
+	lineAA(&src->img, x1, y1, x2, y2, &col);
 	return 0;
 }
 
@@ -1078,11 +1077,11 @@ max3(int a, int b, int c)
 static void
 triangle(img_t *src, int x0, int y0,
 	int x1, int y1, int x2, int y2,
-	int r, int g, int b, int a, img_t *pat)
+	color_t *color, img_t *pat)
 {
 	int y, x, w;
 	int yd;
-	unsigned char col[4];
+	unsigned char col[4] = { color->r, color->g, color->b, color->a };
 	unsigned char *ptr;
 	int w0_row, w1_row, w2_row;
 
@@ -1106,7 +1105,6 @@ triangle(img_t *src, int x0, int y0,
 
 	w = src->w;
 	yd = 4 * w;
-	col[0] = r; col[1] = b; col[2] = g; col[3] = a;
 
 	if (minx >= src->clip_x2 || miny >= src->clip_y2)
 		return;
@@ -1147,11 +1145,11 @@ triangle(img_t *src, int x0, int y0,
 }
 
 static void
-fill_circle(img_t *src, int xc, int yc, int radius, int r, int g, int b, int a, img_t *pat)
+fill_circle(img_t *src, int xc, int yc, int radius, color_t *color, img_t *pat)
 {
 	int r2 = radius * radius;
+	unsigned char col[4] = { color->r, color->g, color->b, color->a };
 	int x, y, xx1, xx2, yy1, yy2;
-	unsigned char col[4] = { r, g, b, a };
 	int w = src->w;
 	unsigned char *ptr;
 	int x1, y1, x2, y2;
@@ -1201,11 +1199,11 @@ fill_circle(img_t *src, int xc, int yc, int radius, int r, int g, int b, int a, 
 }
 
 static void
-circle(img_t *src, int xc, int yc, int rr, int r, int g, int b, int a)
+circle(img_t *src, int xc, int yc, int rr, color_t *color)
 {
 	int x = -rr, y = 0, err = 2 - 2 * rr;
+	unsigned char col[4] = { color->r, color->g, color->b, color->a };
 	unsigned char *ptr = src->ptr;
-	unsigned char col[4] = { r, g, b, a };
 	int w = src->w;
 	int x1, y1, x2, y2;
 
@@ -1269,12 +1267,14 @@ circle(img_t *src, int xc, int yc, int rr, int r, int g, int b, int a)
 
 }
 static void
-circleAA(img_t *src, int xc, int yc, int rr, int r, int g, int b, int a)
+circleAA(img_t *src, int xc, int yc, int rr, color_t *color)
 {
 	int p1, p2, p3, p4;
 	int x = -rr, y = 0, xx2, e2, err = 2 - 2 * rr;
 	unsigned char *ptr = src->ptr;
-	unsigned char col[4] = { r, g, b, a };
+	unsigned char col[4] = { color->r, color->g, color->b, color->a };
+	int a = color->a;
+
 	int w = src->w;
 	int x1, y1, x2, y2;
 
@@ -1466,7 +1466,7 @@ pixels_triangle(lua_State *L)
 	} else
 		checkcolor(L, 8, &col);
 	triangle(&src->img, x0, y0, x1, y1, x2, y2,
-		col.r, col.g, col.b, col.a, pat?&pat->img:NULL);
+		&col, pat?&pat->img:NULL);
 	return 0;
 }
 
@@ -1481,7 +1481,7 @@ pixels_circle(lua_State *L)
 	yc = luaL_optnumber(L, 3, 0);
 	rr = luaL_optnumber(L, 4, 0);
 	checkcolor(L, 5, &col);
-	circle(&src->img, xc, yc, rr, col.r, col.g, col.b, col.a);
+	circle(&src->img, xc, yc, rr, &col);
 	return 0;
 }
 
@@ -1496,7 +1496,7 @@ pixels_circleAA(lua_State *L)
 	yc = luaL_optnumber(L, 3, 0);
 	rr = luaL_optnumber(L, 4, 0);
 	checkcolor(L, 5, &col);
-	circleAA(&src->img, xc, yc, rr, col.r, col.g, col.b, col.a);
+	circleAA(&src->img, xc, yc, rr, &col);
 	return 0;
 }
 
@@ -1516,7 +1516,7 @@ pixels_fill_circle(lua_State *L)
 	} else
 		checkcolor(L, 5, &col);
 	fill_circle(&src->img, xc, yc, rr,
-		col.r, col.g, col.b, col.a, pat?&pat->img:NULL);
+		&col, pat?&pat->img:NULL);
 	return 0;
 }
 
@@ -1591,12 +1591,12 @@ _pixels_poly(lua_State *L, int aa)
 			x0 = x2;
 			y0 = y2;
 		} else {
-			(aa)?lineAA(&src->img, x1, y1, x2, y2, color.r, color.g, color.b, color.a):
-				line(&src->img, x1, y1, x2, y2, color.r, color.g, color.b, color.a);
+			(aa)?lineAA(&src->img, x1, y1, x2, y2, &color):
+				line(&src->img, x1, y1, x2, y2, &color);
 		}
 		if (i == nr - 1) {
-			(aa)?lineAA(&src->img, x2, y2, x0, y0, color.r, color.g, color.b, color.a):
-				line(&src->img, x2, y2, x0, y0, color.r, color.g, color.b, color.a);
+			(aa)?lineAA(&src->img, x2, y2, x0, y0, &color):
+				line(&src->img, x2, y2, x0, y0, &color);
 		}
 		x1 = x2;
 		y1 = y2;
