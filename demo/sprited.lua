@@ -560,14 +560,16 @@ function grid:show()
 			end
 		end
 	end
-	screen:poly({s.x, s.y,
-		s.x + s.w, s.y,
-		s.x+s.w, s.y+s.h,
-		s.x, s.y+s.h}, 0)
 	if s.grid < 128 then
-		for x=1,s.grid do
+		screen:poly({s.x, s.y,
+			s.x + s.w, s.y,
+			s.x+s.w, s.y+s.h,
+			s.x, s.y+s.h}, 0)
+			for x=1,s.grid do
+
 			local colx = (((s.xoff + x - 1)%8 == 0) and grid_mode and 2) or 0
 			local coly = (((s.yoff + x - 1)%8 == 0) and grid_mode and 2) or 0
+
 			screen:line(s.x+(x-1)*dx, s.y, (x-1)*dx, s.y + s.h,
 				colx)
 			screen:line(s.x, s.y+(x-1)*dx, s.x+s.w, s.y+(x-1)*dx,
