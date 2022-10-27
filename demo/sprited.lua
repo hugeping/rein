@@ -674,6 +674,7 @@ z      - undo
 ctrl-c - copy selection
 ctrl-x - cut selection
 ctrl-v - paste
+h/v    - flip selection
 cursor - pan
 space  - pan (hold+mouse)
 +/-    - zoom
