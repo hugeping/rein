@@ -1648,8 +1648,10 @@ pixels_scale(lua_State *L)
 		ys = xs;
 	h = (xs < 0);
 	v = (ys < 0);
-	xs = abs(xs);
-	ys = abs(ys);
+	if (h)
+		xs = -xs;
+	if (v)
+		ys = -ys;
 	smooth = lua_toboolean(L, 4);
 	dst = img_scale(&src->img, xs, ys, smooth);
 	if (!dst)
