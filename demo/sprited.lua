@@ -180,7 +180,7 @@ grid = {
 	min_grid = 16;
 	lev = 1;
 	pixels = {};
-	history = { };
+	history = {};
 }
 
 title = {
@@ -365,6 +365,13 @@ end
 function grid:histadd(x1, y1, x2, y2)
 	local s = self
 	local b = {}
+	if #s.history > 1024 then
+		table.remove(s.history, 1)
+	end
+	if not x2 then
+		table.insert(s.history, { x = x1, y = y1, val = s.pixels[y1][x1] })
+		return
+	end
 	for y = y1, y2 do
 		s.pixels[y] = s.pixels[y] or {}
 		for x = x1, x2 do
@@ -507,17 +514,12 @@ function grid:click(x, y, mb, click)
 	end
 	s.pixels[y] = s.pixels[y] or {}
 	local oval = s.pixels[y][x]
-	local nval
-	if mb.right then
-		s.pixels[y][x] = nil
-	else
-		s.pixels[y][x] = pal.color
-		nval = pal.color
-	end
+	local nval = not mb.right and pal.color or nil
 	if oval ~= nval then
-		table.insert(s.history, { x = x, y = y, val = oval  })
+		s:histadd(x, y)
 		s.dirty = true
 	end
+	s.pixels[y][x] = nval
 	return true
 end
 function grid:getsel()
