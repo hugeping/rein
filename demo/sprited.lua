@@ -375,6 +375,7 @@ function grid:fliph()
 			local tmp = s.pixels[y][x]
 			s.pixels[y][x] = s.pixels[y][x2-(x-x1)]
 			s.pixels[y][x2-(x-x1)] = tmp
+			s.dirty = true
 		end
 	end
 end
@@ -398,6 +399,7 @@ function grid:flipv()
 			local tmp = s.pixels[y][x]
 			s.pixels[y][x] = s.pixels[y2-(y-y1)][x]
 			s.pixels[y2-(y-y1)][x] = tmp
+			s.dirty = true
 		end
 	end
 end
@@ -432,7 +434,7 @@ function grid:isempty(x1, y1, x2, y2)
 			end
 		end
 	end
-	return not col
+	return not (col == true)
 end
 
 function grid:cut(copy)
@@ -456,6 +458,7 @@ function grid:cut(copy)
 			s.clipboard[y - y1 + 1][x - x1 + 1] = s.pixels[y][x]
 			if not copy then
 				s.pixels[y][x] = -1
+				s.dirty = true
 			end
 		end
 	end
