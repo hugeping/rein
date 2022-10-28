@@ -630,7 +630,7 @@ function grid:fill(x, y, c, t)
 				end
 			end
 			x1 = x1 + 1
-			while x1 < x2 and s:get(x1, y) ~= t do
+			while x1 < x2 and s:get(x1, y) ~= t and s:get(x1, y) do
 				x1 = x1 + 1
 			end
 			x = x1

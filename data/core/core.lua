@@ -98,7 +98,7 @@ function core.init()
 			table.insert(env.ARGS, ARGS[i])
 		end
 	else
-		env.ARGS[1] = DATADIR..'/prog/boot.lua'
+		env.ARGS[1] = DATADIR..'/boot.lua'
 	end
 
 	f, e = loadfile(env.ARGS[1], "t", env)
