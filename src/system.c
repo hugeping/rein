@@ -335,7 +335,6 @@ sys_random(lua_State *L)
 	return 1;
 }
 
-/*
 static int
 sys_hidemouse(lua_State *L)
 {
@@ -347,7 +346,6 @@ sys_hidemouse(lua_State *L)
 	MouseHide(hide);
 	return 0;
 }
-*/
 
 static const luaL_Reg
 sys_lib[] = {
@@ -369,7 +367,7 @@ sys_lib[] = {
 	{ "log", sys_log },
 	{ "audio", sys_audio },
 	{ "newrand", sys_srandom },
-/*	{ "hidemouse", sys_hidemouse }, */
+	{ "hidemouse", sys_hidemouse },
 	{ NULL, NULL }
 };
 
