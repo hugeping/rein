@@ -161,7 +161,11 @@ function title:show()
 		dirty = '*'
 	end
 	local x, y = grid:pos2cell(input.mouse())
-	local info = string.format("x%-3d %3d:%3d %s%s",
+	if grid:getsel() then
+		local x1, y1, x2, y2 = grid:getsel()
+		x, y = x2 - x1 + 1, y2 - y1 + 1
+	end
+	local info = string.format("x%-3d %3d:%-3d %s%s",
 		grid.grid, x-1, y-1, SPRITE, dirty)
 	local w, h = font:size(info)
 	self.w = w
