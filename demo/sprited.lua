@@ -34,9 +34,7 @@ local grid_mode = true
 local sel_mode = false
 local hand_mode = false
 local hl_mode = false
-local l_mode = false
-local b_mode = false
-local c_mode = false
+local draw_mode = false
 
 function pal:show()
 	local s = self
@@ -82,7 +80,7 @@ function pal:show()
 	spr.Hand:blend(screen, s.x, py*8)
 	spr.G:blend(screen, s.x + 8, py*8)
 	spr.S:blend(screen, s.x, (py+1)*8)
-	spr.HL:blend(screen, s.x + 8, (py+1)*8)
+--	spr.HL:blend(screen, s.x + 8, (py+1)*8)
 	spr.L:blend(screen, s.x, (py+2)*8)
 	spr.B:blend(screen, s.x + 8, (py+2)*8)
 	spr.C:blend(screen, s.x, (py+3)*8)
