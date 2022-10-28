@@ -294,7 +294,7 @@ function env_ro.print(text, x, y, col, scroll)
 		else
 			ww = 0
 		end
-		if x + ww >= w then
+		if x + ww >= w and scroll then
 			x = startx
 			y = y + hh
 		end
