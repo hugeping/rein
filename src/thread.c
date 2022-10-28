@@ -105,6 +105,10 @@ thread_poll(lua_State *L)
 		MutexUnlock(chan->m);
 		return 2;
 	}
+	if (!other->L) {
+		MutexUnlock(chan->m);
+		return luaL_error(L, "No peer on thread poll");
+	}
 	lua_pushboolean(L, !!other->write);
 	MutexUnlock(chan->m);
 	return 1;
@@ -266,6 +270,7 @@ thread_new(lua_State *L)
 	struct lua_thread *thr = NULL, *child = NULL;
 	struct lua_channel *chan = NULL;
 	const char *code = luaL_checkstring(L, 1);
+	int file = lua_toboolean(L, 2);
 	if (!code)
 		return 0;
 	nL = luaL_newstate();
@@ -315,7 +320,11 @@ thread_new(lua_State *L)
 	child->chan = chan;
 	child->err = NULL;
 
-	if (luaL_loadstring(nL, code)) {
+	if (file)
+		rc = luaL_loadfile(nL, code);
+	else
+		rc = luaL_loadstring(nL, code);
+	if (rc) {
 		lua_pop(L, 1); /* remove thread */
 		lua_pushboolean(L, 0);
 		lua_pushstring(L, lua_tostring(nL, -1));

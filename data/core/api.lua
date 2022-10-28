@@ -105,23 +105,27 @@ function env.dofile(n)
 end
 
 function thread.start(code)
-	if type(code) ~= 'function' then
+	local c
+	if type(code) ~= 'function' and type(code) ~= 'string' then
 		error("Wrong argument", 2)
 	end
-	-- try to serialize it!
-	local r, e = dump.new(code)
-	if not r and e then -- error?
-		core.err("Can not start thread.\n"..e)
+	if type(code) == 'string' then
+		r, e, c = thread.new(code, true)
+	else
+		-- try to serialize it!
+		local r, e = dump.new(code)
+		if not r and e then -- error?
+			core.err("Can not start thread.\n"..e)
+		end
+		code = string.format(
+			"local f, e = require('dump').new [=========[\n%s"..
+			"]=========]\n"..
+			"if not f and e then\n"..
+			"	error(e)\n"..
+			"end\n"..
+			"f()\n", r)
+		r, e, c = thread.new(code)
 	end
-	code = string.format(
-		"local f, e = require('dump').new [=========[\n%s"..
-		"]=========]\n"..
-		"if not f and e then\n"..
-		"	error(e)\n"..
-		"end\n"..
-		"f()\n", r)
-	local c
-	r, e, c = thread.new(code)
 	if not r then
 		local msg = string.format("%s\n%s", e, c)
 		core.err(msg)
@@ -377,6 +381,7 @@ function api.init(core_mod)
 		return false, string.format("Can't load font %q", DATADIR..'/'..conf.font)
 	end
 	env.sys.go(mixer.thread)
+	-- print(thread.start(DATADIR.."/core/mixer-thread.lua"))
 	for i=0,16 do
 		gfx.pal(i, conf.pal[i])
 	end
