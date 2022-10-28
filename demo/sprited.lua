@@ -70,17 +70,17 @@ function pal:show()
 	if hl_mode then
 		self:select(1, py+1, 10)
 	end
-	if l_mode then
+	if draw_mode == 'line' then
 		self:select(0, py+2, 8)
-	elseif b_mode then
+	elseif draw_mode == 'box' then
 		self:select(1, py+2, 8)
-	elseif c_mode then
+	elseif draw_mode == 'circle' then
 		self:select(0, py+3, 8)
 	end
 	spr.Hand:blend(screen, s.x, py*8)
 	spr.G:blend(screen, s.x + 8, py*8)
 	spr.S:blend(screen, s.x, (py+1)*8)
---	spr.HL:blend(screen, s.x + 8, (py+1)*8)
+	spr.HL:blend(screen, s.x + 8, (py+1)*8)
 	spr.L:blend(screen, s.x, (py+2)*8)
 	spr.B:blend(screen, s.x + 8, (py+2)*8)
 	spr.C:blend(screen, s.x, (py+3)*8)
@@ -105,23 +105,20 @@ function pal:click(x, y, mb, click)
 		self.color = c
 	elseif y == HCOLORS and x == 0 and click then -- hand mode
 		hand_mode = not hand_mode
-		sel_mode, l_mode, b_mode, c_mode = false, false, false, false
 	elseif y == HCOLORS and x == 1 and click then -- grid mode
 		grid_mode = not grid_mode
 	elseif y == HCOLORS+1 and x == 0 and click then
 		sel_mode = not sel_mode
-		l_mode, hand_mode = false, false
+		draw_mode = false
+		hand_mode = false
 	elseif y == HCOLORS+1 and x == 1 and click then
-		hl_mode = not hl_mod
+		hl_mode = not hl_mode
 	elseif y == HCOLORS+2 and x == 0 and click then
-		l_mode = not l_mode
-		sel_mode, hand_mode, b_mode, c_mode = false, false, false, false
+		draw_mode = draw_mode ~= 'line' and 'line' or false
 	elseif y == HCOLORS+2 and x == 1 and click then
-		b_mode = not b_mode
-		sel_mode, hand_mode, l_mode, c_mode = false, false, false, false
+		draw_mode = draw_mode ~= 'box' and 'box' or false
 	elseif y == HCOLORS+3 and x == 0 and click then
-		c_mode = not c_mode
-		sel_mode, hand_mode, l_mode, b_mode = false, false, false, false
+		draw_mode = draw_mode ~= 'circle' and 'circle' or false
 	end
 
 	return true
@@ -458,7 +455,7 @@ function grid:click(x, y, mb, click)
 	if not x then
 		return
 	end
-	if sel_mode or l_mode or b_mode or c_mode then
+	if draw_mode or sel_mode then
 		if click then
 			if mb.right then
 				self.sel_x1, self.sel_y1 = false, false
@@ -668,12 +665,12 @@ function grid:show()
 				return
 		end
 		local dx = floor(s.w / s.grid)
-		if l_mode then
+		if draw_mode == 'line' then
 			xmin, ymin, xmax, ymax = s:getsel(true)
 			s:show_line(xmin, ymin, xmax, ymax, pal.color)
-		elseif b_mode then
+		elseif draw_mode == 'box'  then
 			s:show_box(xmin, ymin, xmax, ymax, pal.color)
-		elseif c_mode then
+		elseif draw_mode == 'circle' then
 			s:show_circle(xmin, ymin, xmax, ymax, pal.color)
 		end
 		xmin, ymin, xmax, ymax = s:getsel()
@@ -682,7 +679,6 @@ function grid:show()
 			(xmax - s.xoff)*dx, (ymin - s.yoff)*dx,
 			(xmax - s.xoff)*dx, (ymax - s.yoff)*dx,
 			(xmin - s.xoff)*dx, (ymax - s.yoff)*dx}, 7)
-		--end
 	end
 end
 
@@ -737,19 +733,19 @@ function proc_inp(r, e, a, b, c, d)
 			grid:flipv()
 		end
 	elseif r == 'mouseup' then
-		if l_mode then
+		if draw_mode == 'line' then
 			local x1, y1, x2, y2 = grid:getsel(true)
 			if x1 then
 				grid:show_line(x1, y1, x2, y2, pal.color, true)
 				grid.sel_x1 = false
 			end
-		elseif b_mode then
+		elseif draw_mode == 'box'  then
 			local x1, y1, x2, y2 = grid:getsel()
 			if x1 then
 				grid:show_box(x1, y1, x2, y2, pal.color, true)
 				grid.sel_x1 = false
 			end
-		elseif c_mode then
+		elseif draw_mode == 'circle'  then
 			local x1, y1, x2, y2 = grid:getsel()
 			if x1 then
 				grid:show_circle(x1, y1, x2, y2, pal.color, true)
