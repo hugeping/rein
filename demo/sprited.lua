@@ -202,8 +202,8 @@ function grid:pan(dx, dy)
 	self.yoff = self.yoff + dy
 	if self.xoff < 0 then self.xoff = 0 end
 	if self.yoff < 0 then self.yoff = 0 end
-	if self.xoff > self.max_grid then self.xoff = self.max_grid end
-	if self.yoff > self.max_grid then self.xoff = self.max_grid end
+	if self.xoff + self.grid > self.w then self.xoff = self.w - self.grid end
+	if self.yoff + self.grid > self.h then self.yoff = self.h - self.grid end
 end
 
 function grid:pos(x, y)
@@ -525,6 +525,9 @@ function grid:get(x, y)
 end
 
 function grid:set(x, y, c)
+	if x < 1 or x > self.w or y < 1 or y > self.h then
+		return
+	end
 	self.pixels[y] = self.pixels[y] or {}
 	self.pixels[y][x] = c
 end
@@ -605,44 +608,54 @@ function grid:show_box(x1, y1, x2, y2, c, draw)
 	end
 end
 
+
 function grid:fill(x, y, c, t)
 	t = t or -1
 	local q = {}
 	local s = self
-	if x < 1 or x > s.w or y < 1 or y > s.h then
+	local function inside(x, y)
+		if x < 1 or y < 1 or
+			x > s.w or x > s.h then
+			return false
+		end
+		return s:get(x, y) == t
+	end
+	local function enq(x1, x2, y, dy)
+		table.insert(q, { x1, x2, y, dy })
+	end
+	if not inside(x, y) or t == c then
 		return
 	end
 	local v = s:get(x,y)
-	if v ~= t then return end
-	table.insert(q, { x, x, y, 1 })
-	table.insert(q, { x, x, y - 1, -1})
+	enq(x, x, y, 1)
+	enq(x, x, y - 1, -1)
 	local hist = {}
 	while #q > 0 do
 		v = table.remove(q, 1)
 		local x1, x2, y, dy = v[1], v[2], v[3], v[4]
-		x = v[1]
-		if s:get(x, y) == t then
-			while s:get(x - 1, y) == t do
+		x = x1
+		if inside(x, y) then
+			while inside(x - 1, y) do
 				table.insert(hist, { x = x - 1, y = y, val = t})
 				s:set(x - 1, y, c)
 				x = x - 1
 			end
 		end
 		if x < x1 then
-			table.insert(q, { x, x1 - 1, y - dy, -dy })
+			enq(x, x1 - 1, y - dy, -dy)
 		end
 		while x1 <= x2 do
-			while s:get(x1, y) == t do
+			while inside(x1, y) do
 				table.insert(hist, { x = x1, y = y, val = t})
 				s:set(x1, y, c)
 				x1 = x1 + 1
-				table.insert(q, { x, x1 - 1, y + dy, dy })
+				enq(x, x1 - 1, y + dy, dy)
 				if x1 - 1 > x2 then
-					table.insert(q, { x2 + 1, x1 - 1, y - dy, -dy })
+					enq(x2 + 1, x1 - 1, y - dy, -dy)
 				end
 			end
 			x1 = x1 + 1
-			while x1 < x2 and s:get(x1, y) ~= t and s:get(x1, y) do
+			while x1 < x2 and not inside(x1, y) do
 				x1 = x1 + 1
 			end
 			x = x1
