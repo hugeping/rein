@@ -141,7 +141,7 @@ grid = {
 	yoff = 0;
 	grid = 16;
 	max_grid = 128;
-	min_grid = 16;
+	min_grid = 8;
 	lev = 1;
 	pixels = {};
 	history = {};
@@ -783,7 +783,7 @@ function switch_ui()
 		title.x = 0
 	end
 end
-
+local bookmarks = {}
 function proc_inp(r, e, a, b, c, d)
 	if r == 'mousewheel' then
 		r = 'text'
@@ -818,6 +818,14 @@ function proc_inp(r, e, a, b, c, d)
 			grid:fliph()
 		elseif e == 'v' then
 			grid:flipv()
+		elseif string.byte(e) >= string.byte('0')
+			and string.byte(e) <= string.byte('9') then
+			if input.keydown'ctrl' then
+				dprint("Bookmark added: ", e)
+				bookmarks[e] = { x = grid.xoff, y = grid.yoff }
+			elseif bookmarks[e] then
+				grid.xoff, grid.yoff = bookmarks[e].x, bookmarks[e].y
+			end
 		end
 	elseif r == 'mouseup' then
 		if draw_mode == 'line' then
@@ -854,14 +862,14 @@ function proc_inp(r, e, a, b, c, d)
 		if (not hand_mode and not input.keydown 'space') or (hand_mode and not mb.left) then
 			pan_mode = nil
 		end
-	elseif input.keydown("right") then
-		grid:pan(1, 0)
-	elseif input.keydown("left") then
-		grid:pan(-1, 0)
-	elseif input.keydown("up") then
-		grid:pan(0, -1)
-	elseif input.keydown("down") then
-		grid:pan(0, 1)
+	elseif r == 'keydown' and e == 'right' then
+		grid:pan(input.keydown"shift" and grid.grid or 1, 0)
+	elseif r == 'keydown' and e == 'left' then
+		grid:pan(input.keydown"shift" and -grid.grid or -1, 0)
+	elseif  r == 'keydown' and e == 'up' then
+		grid:pan(0, input.keydown"shift" and -grid.grid or -1)
+	elseif  r == 'keydown' and e == 'down' then
+		grid:pan(0, input.keydown"shift" and grid.grid or 1)
 	end
 	return r ~= nil
 end
@@ -874,9 +882,11 @@ ctrl-c - copy selection
 ctrl-x - cut selection
 ctrl-v - paste
 h/v    - flip selection
-cursor - pan
+cursor - pan (+shift by grid)
 space  - pan (hold+mouse)
 +/-    - zoom
+^0..9  - make bookmark
+0...9  - jump to bookmark
 tab    - change layout
 lmb    - put pixel
 rmb    - erase pixel
@@ -886,6 +896,7 @@ lmb on [filename] - save
 mmb on [filename] - erase
 
 Legend:
+^   - control
 lmb - left mouse button
 rmb - right mouse button
 mmb - middle mouse button

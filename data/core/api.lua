@@ -258,8 +258,8 @@ function env.dprint(...)
 end
 
 function env_ro.error(text)
-	env.screen:clear({0xff, 0xff, 0xe8})
-	env.print(text, 0, 0, { 0, 0, 0})
+	env.screen:clear(conf.bg)
+	env.print(text, 0, 0, conf.fg, true)
 	core.err_msg = text
 	if not core.running() then
 		return
@@ -267,8 +267,7 @@ function env_ro.error(text)
 	coroutine.yield()
 end
 
-function env_ro.print(text, x, y, col)
-	local scroll = not x
+function env_ro.print(text, x, y, col, scroll)
 	text = tostring(text)
 	if not env.screen then
 		system.log(text)
@@ -398,6 +397,8 @@ function api.event(e, v, a, b, c)
 			input.kbd.alt = false
 		elseif v:find("ctrl$") then
 			input.kbd.ctrl = false
+		elseif v:find("shift$") then
+			input.kbd.shift = false
 		end
 		input.kbd[v] = false
 	elseif e == 'keydown' then
@@ -405,6 +406,8 @@ function api.event(e, v, a, b, c)
 			input.kbd.alt = true
 		elseif v:find("ctrl$") then
 			input.kbd.ctrl = true
+		elseif v:find("shift$") then
+			input.kbd.shift = true
 		end
 		input.kbd[v] = true
 		if v == 'return' and input.kbd.alt then
