@@ -7,7 +7,7 @@ logo = logo:scale(0.5)
 logo:blend(screen, 4, 6)
 local frames = 0
 
-printf(40, 4, 0, fmt([[DEIN %s
+printf(40, 4, 0, fmt([[REIN %s
 Usage:rein <lua file>
 
 (c)2022 Peter Kosyh
