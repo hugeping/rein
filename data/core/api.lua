@@ -105,7 +105,7 @@ function env.dofile(n)
 end
 
 function thread.start(code)
-	local c
+	local r, e, c
 	if type(code) ~= 'function' and type(code) ~= 'string' then
 		error("Wrong argument", 2)
 	end
@@ -113,7 +113,7 @@ function thread.start(code)
 		r, e, c = thread.new(code, true)
 	else
 		-- try to serialize it!
-		local r, e = dump.new(code)
+		r, e = dump.new(code)
 		if not r and e then -- error?
 			core.err("Can not start thread.\n"..e)
 		end
