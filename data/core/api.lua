@@ -47,6 +47,7 @@ local conf = {
 }
 
 local env = {
+	type = type,
 	rawset = rawset,
 	rawget = rawget,
 	setmetatable = setmetatable,
