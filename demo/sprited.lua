@@ -165,6 +165,8 @@ function title:show()
 	local w, h = font:size(info)
 	self.w = w
 	self.h = h
+	print(info, self.x+1, self.y+1, 0)
+	print(info, self.x-1, self.y+1, 0)
 	print(info, self.x, self.y, 15)
 end
 
@@ -178,6 +180,8 @@ function title:click(x, y, mb, click)
 	if x >= w then
 		if mb.left then
 			grid:save(SPRITE)
+		elseif mb.right then
+			grid:save(SPRITE, true)
 		elseif mb.middle then
 			grid.pixels = {}
 			grid.dirty = false
@@ -232,7 +236,7 @@ function grid:zoom(inc)
 	end
 end
 
-function grid:save(fname)
+function grid:save(fname, sel)
 	local s = self
 	local colmap = {
 		[-1] = '-',
@@ -261,7 +265,7 @@ function grid:save(fname)
 		return
 	end
 	x1, y1 = 1, 1 -- no spaces!
-	if s.sel_x1 then
+	if s.sel_x1 and sel then
 		x1, y1, x2, y2 = s:getsel()
 	end
 	local f, e = io.open(fname, "wb")
@@ -421,6 +425,8 @@ function grid:paste()
 			s.pixels[toy+y-1][x+tox-1] = s.clipboard[y][x]
 		end
 	end
+	s.sel_x1, s.sel_y1, s.sel_x2, s.sel_y2 = tox, toy,
+		tox + s.clipboard.w - 1, toy + s.clipboard.h - 1
 end
 
 function grid:isempty(x1, y1, x2, y2)
@@ -774,6 +780,12 @@ function grid:show()
 			(xmax - s.xoff)*dx, (ymin - s.yoff)*dx,
 			(xmax - s.xoff)*dx, (ymax - s.yoff)*dx,
 			(xmin - s.xoff)*dx, (ymax - s.yoff)*dx}, 7)
+
+		screen:poly({(xmin - s.xoff)*dx+1, (ymin - s.yoff)*dx+1,
+			(xmax - s.xoff)*dx-1, (ymin - s.yoff)*dx+1,
+			(xmax - s.xoff)*dx-1, (ymax - s.yoff)*dx-1,
+			(xmin - s.xoff)*dx+1, (ymax - s.yoff)*dx-1}, 8)
+
 	end
 end
 
@@ -901,6 +913,7 @@ rmb    - erase pixel
 wheel  - zoom
 lmb on [scale]    - zoom out
 lmb on [filename] - save
+rmb on [filename] - save selection
 mmb on [filename] - erase
 
 Legend:
