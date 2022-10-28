@@ -170,8 +170,8 @@ function title:show()
 	local w, h = font:size(info)
 	self.w = w
 	self.h = h
+	screen:fill(0, grid.h - 8, grid.w, grid.h - 8, { 0, 0, 0, 96 })
 	print(info, self.x+1, self.y+1, 0)
-	print(info, self.x-1, self.y+1, 0)
 	print(info, self.x, self.y, 15)
 end
 
