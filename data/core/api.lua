@@ -70,18 +70,38 @@ local env = {
 
 env._G = env
 
-function env.require(...)
+local mods = {}
+function env.require(n)
 	if setfenv then
 		setfenv(0, env)
+	else
+		if mods[n] then
+			return mods[n]
+		end
+		local name = DATADIR..'/lib/'..n..'.lua'
+		local f = io.open(name, "r")
+		if f then
+			f:close()
+			mods[n] = env.dofile(name)
+		else
+			mods[n] = env.dofile(n..'.lua')
+		end
+		return mods[n]
 	end
-	return require(...)
+	return require(n)
 end
 
-function env.dofile(...)
+function env.dofile(n)
 	if setfenv then
 		setfenv(0, env)
+	else
+		local r, e = loadfile(n, "t", env)
+		if not r then
+			core.err(e..'\n'..debug.traceback())
+		end
+		return r()
 	end
-	return dofile(...)
+	return dofile(n)
 end
 
 function thread.start(code)
