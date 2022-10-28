@@ -387,10 +387,27 @@ mt_create_meta(lua_State *L)
 }
 
 int
-system_init(lua_State *L)
+luaopen_system(lua_State *L)
 {
 	srand(time(NULL));
 	mt_create_meta(L);
 	luaL_newlib(L, sys_lib);
-	return 0;
+	return 1;
+}
+
+static const luaL_Reg
+sys_thread_lib[] = {
+	{ "time", sys_time },
+	{ "sleep", sys_sleep },
+	{ "audio", sys_audio },
+	{ "newrand", sys_srandom },
+	{ NULL, NULL }
+};
+
+int
+luaopen_system_thread(lua_State *L)
+{
+	mt_create_meta(L);
+	luaL_newlib(L, sys_thread_lib);
+	return 1;
 }

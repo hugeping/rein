@@ -50,7 +50,7 @@ function mixer.audio(t)
 	local idx = 1
 	local rc
 	while true do
-		rc = system.audio(t, idx)
+		rc = sys.audio(t, idx)
 		if #t == rc + idx - 1 then
 			return
 		end

@@ -67,7 +67,7 @@ function core.err(fmt, ...)
 	end
 	local t = string.format(fmt, ...)
 	core.err_msg = (core.err_msg or '') .. t
-	system.log(t)
+	sys.log(t)
 	if env.error then
 		env.error(t)
 	end
@@ -115,8 +115,8 @@ function core.init()
 		setfenv(f, env)
 	end
 	table.insert(core.fn, coroutine.create(f))
-	-- system.window_mode 'fullscreen'
-	-- system.window_mode 'normal'
+	-- sys.window_mode 'fullscreen'
+	-- sys.window_mode 'normal'
 end
 
 function core.done()
@@ -129,7 +129,7 @@ function core.render(force)
 	if not env.screen then
 		return
 	end
-	local start = system.time()
+	local start = sys.time()
 	if not force and start - last_render < fps then
 		return
 	end
@@ -175,7 +175,7 @@ function core.abs2rel(x, y)
 end
 
 function core.run()
-	if not api.event(system.poll()) then
+	if not api.event(sys.poll()) then
 		return false
 	end
 

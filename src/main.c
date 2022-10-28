@@ -6,37 +6,13 @@
 #define VERSION "unknown"
 #endif
 
-extern int system_init(lua_State *L);
-
-static int
-luaopen_system(lua_State *L)
-{
-	system_init(L);
-	return 1;
-}
-
-extern int gfx_init(lua_State *L);
-
-int
-luaopen_gfx(lua_State *L)
-{
-	gfx_init(L);
-	return 1;
-}
-
-extern int thread_init(lua_State *L);
-
-int
-luaopen_thread(lua_State *L)
-{
-	thread_init(L);
-	return 1;
-}
-
 extern int luaopen_bit(lua_State *L);
+extern int luaopen_system(lua_State *L);
+extern int luaopen_thread(lua_State *L);
+extern int luaopen_gfx(lua_State *L);
 
 static const luaL_Reg lua_libs[] = {
-	{ "system",    luaopen_system },
+	{ "sys",    luaopen_system },
 	{ "gfx",  luaopen_gfx },
 	{ "bit", luaopen_bit },
 	{ "thread", luaopen_thread },

@@ -6,7 +6,7 @@ function utf.chars(b)
 	local i = 1
 	local s
 	local res = {}
-	local ff = system.utf_next
+	local ff = sys.utf_next
 	while i <= b:len() do
 		s = i
 		i = i + ff(b, i)
@@ -16,7 +16,7 @@ function utf.chars(b)
 end
 
 function utf.codepoint(sym)
-	return system.utf_codepoint(sym)
+	return sys.utf_codepoint(sym)
 end
 
 function utf.new(s)
@@ -67,7 +67,7 @@ function utf:iter()
 end
 
 function utf.next(str)
-	local c, n = system.utf_sym(str)
+	local c, n = sys.utf_sym(str)
 	return c, n
 end
 
