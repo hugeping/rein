@@ -1,4 +1,3 @@
-sys.title "sprited v0.01"
 w, h = screen:size()
 local floor = math.floor
 local ceil = math.ceil
@@ -8,6 +7,8 @@ local pan_mode
 local SPRITE = ARGS[2] or 'sprite.spr'
 local COLORS = 16
 local HCOLORS = COLORS/2
+
+sys.title ("sprited: " .. SPRITE)
 
 pal = {
 	x = 0;
@@ -834,6 +835,8 @@ function proc_inp(r, e, a, b, c, d)
 			grid:cut()
 		elseif e == 'v' and input.keydown'ctrl' then
 			grid:paste()
+		elseif e == 's' and input.keydown'ctrl' then
+			grid:save(SPRITE)
 		elseif e == 'h' then
 			grid:fliph()
 		elseif e == 'v' then
