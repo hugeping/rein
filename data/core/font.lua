@@ -67,11 +67,11 @@ end
 function fn:size(t)
 	local w, h = 0, 0
 	while t and t ~= '' do
-		local c, n = system.utf_sym(t)
+		local c, n = sys.utf_sym(t)
 		if not n or n == 0 then
 			break
 		end
-		local cp = system.utf_codepoint(c)
+		local cp = sys.utf_codepoint(c)
 		local v = self[cp]
 		if v then
 			w = w + v.w
@@ -110,11 +110,11 @@ function fn:text(t, color)
 	local spr = gfx.new(w, h)
 	local x = 0
 	while t and t ~= '' do
-		local c, n = system.utf_sym(t)
+		local c, n = sys.utf_sym(t)
 		if not n or n == 0 then
 			break
 		end
-		local cp = system.utf_codepoint(c)
+		local cp = sys.utf_codepoint(c)
 		local v = self[cp]
 		if v then
 			self:glyph(cp, color):copy(spr, x, 0)

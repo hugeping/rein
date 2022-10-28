@@ -240,6 +240,23 @@ thread_err(lua_State *L)
 	return 0;
 }
 
+extern int luaopen_system_thread(lua_State *L);
+extern int luaopen_bit(lua_State *L);
+
+static const luaL_Reg lua_libs[] = {
+	{ "sys",  luaopen_system_thread },
+	{ "bit", luaopen_bit },
+	{ NULL, NULL }
+};
+
+static int
+lua_thread_init(lua_State *L)
+{
+	int i;
+	for (i = 0; lua_libs[i].name; i++)
+		luaL_requiref(L, lua_libs[i].name, lua_libs[i].func, 1);
+	return 0;
+}
 
 static int
 thread_new(lua_State *L)
@@ -291,6 +308,8 @@ thread_new(lua_State *L)
 	luaL_getmetatable(nL, "thread metatable");
 	lua_setmetatable(nL, -2);
 	lua_setglobal(nL, "thread");
+
+	lua_thread_init(nL);
 
 	child->tid = -1;
 	child->chan = chan;
@@ -384,7 +403,7 @@ thread_lib[] = {
 };
 
 int
-thread_init(lua_State *L)
+luaopen_thread(lua_State *L)
 {
 	luaL_newmetatable (L, "thread metatable");
 	luaL_setfuncs_int(L, thread_mt, 0);
@@ -392,5 +411,5 @@ thread_init(lua_State *L)
 	lua_setfield(L, -2, "__index");
 
 	luaL_newlib(L, thread_lib);
-	return 0;
+	return 1;
 }

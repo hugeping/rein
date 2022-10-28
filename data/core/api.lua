@@ -117,14 +117,15 @@ local env_ro = {
 		icon = gfx.icon,
 	};
 	sys = {
-		time = system.time,
-		title = system.title,
-		log = system.log,
-		readdir = system.readdir,
-		chdir = system.chdir,
-		mkdir = system.mkdir,
-		initrnd = system.initrnd,
-		hidemouse = system.hidemouse,
+		time = sys.time,
+		title = sys.title,
+		log = sys.log,
+		readdir = sys.readdir,
+		chdir = sys.chdir,
+		mkdir = sys.mkdir,
+		initrnd = sys.initrnd,
+		hidemouse = sys.hidemouse,
+		audio = sys.audio,
 	};
 	thread = thread,
 	mixer = mixer,
@@ -203,9 +204,9 @@ end
 
 function env_ro.gfx.flip(fps, interrupt)
 	core.render(true)
-	local cur_time = system.time()
+	local cur_time = sys.time()
 	env_ro.sys.sleep((fps or conf.fps) - (cur_time - last_flip), interrupt)
-	last_flip = system.time()
+	last_flip = sys.time()
 	table.insert(flips, last_flip)
 	if #flips > 50 then
 		table.remove(flips, 1)
@@ -233,18 +234,18 @@ function env_ro.input.keydown(name)
 end
 
 function env.sys.sleep(to, interrupt)
-	local start = system.time()
+	local start = sys.time()
 	repeat
 		coroutine.yield()
 		if interrupt and #input.fifo > 0 then
 			break
 		end
-		local pass = system.time() - start
+		local pass = sys.time() - start
 		local left = to - pass
 		if left <= 0 then
 			break
 		end
-		system.wait(left)
+		sys.wait(left)
 	until interrupt
 end
 
@@ -254,7 +255,7 @@ function env.dprint(...)
 		if t ~= '' then t = t .. ' ' end
 		t = t .. tostring(v)
 	end
-	system.log(t)
+	sys.log(t)
 end
 
 function env_ro.error(text)
@@ -270,7 +271,7 @@ end
 function env_ro.print(text, x, y, col, scroll)
 	text = tostring(text)
 	if not env.screen then
-		system.log(text)
+		sys.log(text)
 		return
 	end
 	x = x or 0
@@ -413,9 +414,9 @@ function api.event(e, v, a, b, c)
 		if v == 'return' and input.kbd.alt then
 			conf.fullscreen = not conf.fullscreen
 			if conf.fullscreen then
-				system.window_mode 'fullscreen'
+				sys.window_mode 'fullscreen'
 			else
-				system.window_mode 'normal'
+				sys.window_mode 'normal'
 			end
 		end
 	elseif e == 'mousemotion' then

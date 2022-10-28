@@ -1979,15 +1979,6 @@ gfx_lib[] = {
 };
 
 int
-gfx_init(lua_State *L)
-{
-	pixels_create_meta(L);
-	font_create_meta(L);
-	luaL_newlib(L, gfx_lib);
-	return 0;
-}
-
-int
 gfx_udata_move(lua_State *from, int idx, lua_State *to)
 {
 	struct lua_pixels *dst;
@@ -2005,5 +1996,14 @@ gfx_udata_move(lua_State *from, int idx, lua_State *to)
 	dst->img.used = 0; /* force do not free image */
 	luaL_getmetatable(to, "pixels metatable");
 	lua_setmetatable(to, -2);
+	return 1;
+}
+
+int
+luaopen_gfx(lua_State *L)
+{
+	pixels_create_meta(L);
+	font_create_meta(L);
+	luaL_newlib(L, gfx_lib);
 	return 1;
 }
