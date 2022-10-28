@@ -252,7 +252,9 @@ PlatformInit(void)
 	spec.userdata = NULL;
 	audiodev = SDL_OpenAudioDevice(NULL, 0, &spec, &audiospec, 0);
 	if (audiodev) {
-		printf("Audio: %dHz size: %d\n", audiospec.freq, audiospec.samples);
+		printf("Audio: %dHz channels: %d size: %d\n", audiospec.freq,
+			audiospec.channels,
+			audiospec.samples);
 		audiobuff.size = audiospec.samples * 2 * spec.channels * 2;
 		audiobuff.free = audiobuff.size;
 		audiobuff.data = malloc(audiobuff.size);
