@@ -236,11 +236,12 @@ pixels_pixel(lua_State *L)
 	struct lua_pixels *hdr = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	int x = luaL_optnumber(L, 2, -1);
 	int y = luaL_optnumber(L, 3, -1);
+	int get;
 	color_t color;
 	unsigned char col[4];
 	unsigned char *ptr;
 
-	checkcolor(L, 4, &color);
+	get = !checkcolor(L, 4, &color);
 
 	x += hdr->img.xoff;
 	y += hdr->img.yoff;
@@ -253,6 +254,13 @@ pixels_pixel(lua_State *L)
 
 	ptr = hdr->img.ptr;
 	ptr += ((y * hdr->img.w + x) << 2);
+	if (get) {
+		lua_pushinteger(L, *(ptr ++));
+		lua_pushinteger(L, *(ptr ++));
+		lua_pushinteger(L, *(ptr ++));
+		lua_pushinteger(L, *ptr);
+		return 4;
+	}
 	col[0] = color.r; col[1] = color.g; col[2] = color.b; col[3] = color.a;
 	pixel(col, ptr);
 	return 0;
