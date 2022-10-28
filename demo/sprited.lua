@@ -76,6 +76,8 @@ function pal:show()
 		self:select(1, py+2, 8)
 	elseif draw_mode == 'circle' then
 		self:select(0, py+3, 8)
+	elseif draw_mode == 'fill' then
+		self:select(1, py+3, 8)
 	end
 	spr.Hand:blend(screen, s.x, py*8)
 	spr.G:blend(screen, s.x + 8, py*8)
@@ -84,6 +86,7 @@ function pal:show()
 	spr.L:blend(screen, s.x, (py+2)*8)
 	spr.B:blend(screen, s.x + 8, (py+2)*8)
 	spr.C:blend(screen, s.x, (py+3)*8)
+	spr.F:blend(screen, s.x + 8, (py+3)*8)
 end
 
 function pal:pos2col(x, y)
@@ -109,6 +112,9 @@ function pal:click(x, y, mb, click)
 		grid_mode = not grid_mode
 	elseif y == HCOLORS+1 and x == 0 and click then
 		sel_mode = not sel_mode
+		if not sel_mode then
+			grid.sel_x1 = false
+		end
 		draw_mode = false
 		hand_mode = false
 	elseif y == HCOLORS+1 and x == 1 and click then
@@ -119,6 +125,8 @@ function pal:click(x, y, mb, click)
 		draw_mode = draw_mode ~= 'box' and 'box' or false
 	elseif y == HCOLORS+3 and x == 0 and click then
 		draw_mode = draw_mode ~= 'circle' and 'circle' or false
+	elseif y == HCOLORS+3 and x == 1 and click then
+		draw_mode = draw_mode ~= 'fill' and 'fill' or false
 	end
 
 	return true
@@ -300,6 +308,9 @@ function grid:undo(x, y, mb)
 	if n < 1 then
 		return
 	end
+	if n == 1 then
+		s.dirty = false
+	end
 	local z = table.remove(s.history, n)
 	if z.pixels then
 		local i = 1
@@ -312,9 +323,12 @@ function grid:undo(x, y, mb)
 		end
 		return
 	end
-	s.pixels[z.y][z.x] = z.val
-	if n == 1 then
-		s.dirty = false
+	if z.val then
+		s.pixels[z.y][z.x] = z.val
+		return
+	end
+	for _, v in ipairs(z) do
+		s.pixels[v.y][v.x] = v.val
 	end
 end
 
@@ -324,8 +338,12 @@ function grid:histadd(x1, y1, x2, y2)
 	if #s.history > 1024 then
 		table.remove(s.history, 1)
 	end
+	if type(x1) == 'table' then
+		table.insert(s.history, x1)
+		return
+	end
 	if not x2 then
-		table.insert(s.history, { x = x1, y = y1, val = s.pixels[y1][x1] })
+		table.insert(s.history, { x = x1, y = y1, val = s.pixels[y1][x1] or -1 })
 		return
 	end
 	for y = y1, y2 do
@@ -457,6 +475,10 @@ function grid:click(x, y, mb, click)
 	end
 	if draw_mode or sel_mode then
 		if click then
+			if draw_mode == 'fill' then
+				s:fill(x, y, pal.color, s:get(x, y))
+				return true
+			end
 			if mb.right then
 				self.sel_x1, self.sel_y1 = false, false
 				return true
@@ -477,6 +499,19 @@ function grid:click(x, y, mb, click)
 	end
 	s.pixels[y][x] = nval
 	return true
+end
+
+function grid:get(x, y)
+	local s = self
+	if x <= 0 or y <= 0 or x > s.w or y > s.h then
+		return false
+	end
+	return s.pixels[y] and s.pixels[y][x] or -1
+end
+
+function grid:set(x, y, c)
+	self.pixels[y] = self.pixels[y] or {}
+	self.pixels[y][x] = c
 end
 
 function grid:getsel(nosort)
@@ -516,6 +551,7 @@ function grid:show_line(x1, y1, x2, y2, c, draw)
 			x, y = math.round(x1), math.round(y1)
 			s.pixels[y] = s.pixels[y] or {}
 			s.pixels[y][x] = c
+			s.dirty = true
 		end
 		x1 = x1 + x_step
 		y1 = y1 + y_step
@@ -538,6 +574,7 @@ function grid:show_box(x1, y1, x2, y2, c, draw)
 			s.pixels[y1][x] = c
 			s.pixels[y2] = s.pixels[y2] or {}
 			s.pixels[y2][x] = c
+			s.dirty = true
 		end
 	end
 	for y=y1,y2 do
@@ -551,6 +588,55 @@ function grid:show_box(x1, y1, x2, y2, c, draw)
 			s.pixels[y][x2] = c
 		end
 	end
+end
+
+function grid:fill(x, y, c, t)
+	t = t or -1
+	local q = {}
+	local s = self
+	if x < 1 or x > s.w or y < 1 or y > s.h then
+		return
+	end
+	local v = s:get(x,y)
+	if v ~= t then return end
+	table.insert(q, { x, x, y, 1 })
+	table.insert(q, { x, x, y - 1, -1})
+	local hist = {}
+	while #q > 0 do
+		v = table.remove(q, 1)
+		local x1, x2, y, dy = v[1], v[2], v[3], v[4]
+		x = v[1]
+		if s:get(x, y) == t then
+			while s:get(x - 1, y) == t do
+				table.insert(hist, { x = x - 1, y = y, val = t})
+				s:set(x - 1, y, c)
+				x = x - 1
+			end
+		end
+		if x < x1 then
+			table.insert(q, { x, x1 - 1, y - dy, -dy })
+		end
+		while x1 <= x2 do
+			while s:get(x1, y) == t do
+				table.insert(hist, { x = x1, y = y, val = t})
+				s:set(x1, y, c)
+				x1 = x1 + 1
+				table.insert(q, { x, x1 - 1, y + dy, dy })
+				if x1 - 1 > x2 then
+					table.insert(q, { x2 + 1, x1 - 1, y - dy, -dy })
+				end
+			end
+			x1 = x1 + 1
+			while x1 < x2 and s:get(x1, y) ~= t do
+				x1 = x1 + 1
+			end
+			x = x1
+		end
+	end
+	if #hist > 0 then
+		s.dirty = true
+	end
+	s:histadd(hist)
 end
 
 local function ellipse(x0, y0, x1, y1, pixel)
@@ -609,6 +695,7 @@ function grid:show_circle(x1, y1, x2, y2, c, draw)
 		if draw then
 			s.pixels[y] = s.pixels[y] or {}
 			s.pixels[y][x] = c
+			s.dirty = true
 		end
 	end)
 end
@@ -946,6 +1033,18 @@ spr.S = gfx.new [[
 -c----c-
 -cc--cc-
 --------
+]]
+
+spr.F = gfx.new [[
+------6---a--d--
+dddddddd
+d--a6--d
+d-a666-d
+da66666d
+da66666d
+da-666-d
+d---6--d
+dddddddd
 ]]
 
 run()
