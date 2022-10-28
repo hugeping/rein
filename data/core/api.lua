@@ -124,7 +124,7 @@ local env_ro = {
 		chdir = system.chdir,
 		mkdir = system.mkdir,
 		initrnd = system.initrnd,
-		-- hidemouse = system.hidemouse,
+		hidemouse = system.hidemouse,
 	};
 	thread = thread,
 	mixer = mixer,
