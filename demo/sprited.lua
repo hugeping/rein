@@ -41,6 +41,7 @@ function pal:show()
 	local w = s.cw
 	local h = s.ch
 	local x, y = self.x, self.y
+	screen:clear(x-1, y-1, s.w+2, s.h+2, 5)
 	for y=0, HCOLORS-1 do
 		screen:clear(x, y*h, w, h, y)
 		screen:clear(x+w, y*h, w, h, y+HCOLORS)
@@ -479,7 +480,11 @@ function grid:click(x, y, mb, click)
 	if draw_mode or sel_mode then
 		if click then
 			if draw_mode == 'fill' then
-				s:fill(x, y, pal.color, s:get(x, y))
+				if mb.right then
+					s:fill(x, y, -1, s:get(x, y))
+				else
+					s:fill(x, y, pal.color, s:get(x, y))
+				end
 				return true
 			end
 			if mb.right then
