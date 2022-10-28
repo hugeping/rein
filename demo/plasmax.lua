@@ -137,7 +137,7 @@ function render()
 		demos[demo_nr](scr, x, y, w, h)
 		local cmd = thread:read()
 		scr:buff(buf, x, y, w, h)
-		if not cmd then
+		if not cmd or cmd == 'quit' then
 			break
 		end
 		if cmd == 'next' then
@@ -148,9 +148,10 @@ function render()
 			break
 		end
 	end
+	print ("Thread end")
 end
 
-local THREADS = 8
+local THREADS = 4
 local thr = {}
 
 function start_demo(n)
@@ -179,6 +180,9 @@ while true do
 
 	if r == 'quit' then
 		dprint "quitting..." -- nothing to do, will exit on next cycle
+		for i=1, THREADS do
+			thr[i]:write 'quit'
+		end
 	end
 
 	if r == 'keydown' and v == 'space' then
