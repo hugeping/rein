@@ -2,6 +2,7 @@ local dump = require "dump"
 local THREADED = true
 local CHUNK = 8192
 local CHANNELS = 8
+local DELAY = 1/30
 
 local mixer = {
 	req = { };
@@ -97,7 +98,7 @@ function mixer.getreq()
 		mixer.req = false
 		return table.unpack(r)
 	else
-		local r, v = thread:read(1/20)
+		local r, v = thread:read(DELAY)
 		if r == 'add' then
 			v = dump.new(v) -- function
 		end
