@@ -510,6 +510,13 @@ function grid:click(x, y, mb, click)
 		self.sel_x2, self.sel_y2 = x, y
 		return true
 	end
+	if mb.middle then
+		pal.color = s:get(x, y)
+		if pal.color == -1 then
+			pal.color = 0
+		end
+		return true
+	end
 	s.pixels[y] = s.pixels[y] or {}
 	local oval = s.pixels[y][x]
 	local nval = not mb.right and pal.color or nil
@@ -931,6 +938,7 @@ space  - pan (hold+mouse)
 tab    - change layout
 lmb    - put pixel
 rmb    - erase pixel
+mmb    - get color
 wheel  - zoom
 lmb on [scale]    - zoom out
 lmb on [filename] - save
