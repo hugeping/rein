@@ -351,20 +351,11 @@ function env_ro.sprite_data(fname)
 end
 
 function env_ro.sys.go(fn)
-	local f, e = coroutine.create(fn)
-	if f then
-		table.insert(core.fn, f)
-	end
-	return f, e
+	return core.go(fn)
 end
 
 function env_ro.sys.stop(fn)
-	for k, f in ipairs(core.fn) do
-		if f == fn then
-			table.remove(core.fn[k])
-			return true
-		end
-	end
+	return core.stop(fn)
 end
 
 function env_ro.sys.yield(...)
@@ -380,19 +371,7 @@ function api.init(core_mod)
 	if not env_ro.font then
 		return false, string.format("Can't load font %q", DATADIR..'/'..conf.font)
 	end
-
-	local t, e = thread.start(function()
-		local mixer = require "mixer"
-		mixer.thr = thread
-		mixer.thread()
-	end)
-
-	if not t then
-		print("Audio: coroutine mode")
-	end
-	mixer.thr = t
-	env.sys.go(mixer.coroutine)
-
+	mixer.init(core_mod)
 	for i=0,16 do
 		gfx.pal(i, conf.pal[i])
 	end

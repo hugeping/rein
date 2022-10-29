@@ -32,6 +32,23 @@ local core = {
 	view_y = 0;
 }
 
+function core.go(fn)
+	local f, e = coroutine.create(fn)
+	if f then
+		table.insert(core.fn, f)
+	end
+	return f, e
+end
+
+function core.stop(fn)
+	for k, f in ipairs(core.fn) do
+		if f == fn then
+			table.remove(core.fn[k])
+			return true
+		end
+	end
+end
+
 function core.running()
 	if _VERSION == "Lua 5.1" then
 		return coroutine.running()

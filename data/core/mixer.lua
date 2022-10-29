@@ -1,5 +1,5 @@
 local dump = require "dump"
-
+local THREADED = true
 local CHUNK = 8192
 local CHANNELS = 8
 
@@ -192,6 +192,22 @@ function mixer.stop()
 	if mixer.thr then
 		mixer.clireq 'quit'
 	end
+end
+
+function mixer.init(core)
+	local t, r
+	if THREADED then
+		t, e = thread.start(function()
+			local mixer = require "mixer"
+			mixer.thr = thread
+			mixer.thread()
+		end)
+	end
+	if not t then
+		print("Audio: coroutine mode")
+	end
+	mixer.thr = t
+	core.go(mixer.coroutine)
 end
 
 return mixer
