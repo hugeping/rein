@@ -380,8 +380,12 @@ function api.init(core_mod)
 	if not env_ro.font then
 		return false, string.format("Can't load font %q", DATADIR..'/'..conf.font)
 	end
-	env.sys.go(mixer.thread)
-	-- print(thread.start(DATADIR.."/core/mixer-thread.lua"))
+	local t, e = thread.start(DATADIR.."/core/mixer-thread.lua")
+	if not t then
+		return false, e
+	end
+	mixer.thr = t
+	env.sys.go(mixer.coroutine)
 	for i=0,16 do
 		gfx.pal(i, conf.pal[i])
 	end
@@ -454,6 +458,7 @@ function api.event(e, v, a, b, c)
 end
 
 function api.done()
+	mixer.stop()
 end
 
 return api

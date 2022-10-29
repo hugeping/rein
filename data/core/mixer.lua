@@ -1,50 +1,5 @@
-local CHUNK = 4096
-
-local mixer = {
-	chans = {};
-}
-
-local CHANNELS = 2
-
-function mixer.thread()
-	while true do
-		local t = { channels = CHANNELS }
-		for i = 1,CHUNK,CHANNELS do
-			-- local mix = {}
-			local k, n = 1, #mixer.chans
-			local ll, rr = 0, 0
-			while k<=n do
-				local fn = mixer.chans[k]
-				local st, l, r = coroutine.resume(fn)
-				r = r or l
-				if not st or not l then
-					table.remove(mixer.chans, k)
-					n = n - 1
-					if not st then
-						core.err(l..'\n'..debug.traceback(fn))
-					end
-				else
-					k = k + 1
-					ll = ll + l
-					if t.channels == 2 then
-						rr = rr + r
-					end
-				end
-			end
-			if not mixer.chans[1] then
-				break
-			end
-			t[i] = ll / #mixer.chans
-			if t.channels == 2 then
-				t[i+1] = rr / #mixer.chans
-			end
-		end
-		if t[1] then
-			mixer.audio(t)
-		end
-		coroutine.yield()
-	end
-end
+local dump = require "dump"
+local mixer = {}
 
 function mixer.audio(t)
 	local idx = 1
@@ -59,36 +14,24 @@ function mixer.audio(t)
 	end
 end
 
-function mixer.check(fn)
-	if not fn then
-		return #mixer.chans > 0
-	end
-	for _, v in ipairs(mixer.chans) do
-		if v == fn then
-			return true
-		end
-	end
-end
-
-function mixer.stop(fn)
-	if not fn then
-		mixer.chans = {}
-	end
-	for k, v in ipairs(mixer.chans) do
-		if v == fn then
-			table.remove(mixer.chans, k)
-			return
-		end
+function mixer.coroutine()
+	while true do
+		mixer.thr:poll() -- force show peer end error msg
+		coroutine.yield()
 	end
 end
 
 function mixer.add(fn)
-	local f, e = coroutine.create(fn)
-	if not f then
-		return f, e
+	local c, e = dump.new(fn)
+	if not c then
+		error(e)
 	end
-	table.insert(mixer.chans, f)
-	return f
+	mixer.thr:write('add', c)
+	return mixer.thr:read()
+end
+
+function mixer.stop()
+	mixer.thr:write 'quit'
 end
 
 return mixer

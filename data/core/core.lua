@@ -100,7 +100,6 @@ function core.init()
 	else
 		env.ARGS[1] = DATADIR..'/boot.lua'
 	end
-
 	f, e = loadfile(env.ARGS[1], "t", env)
 	if not f then
 		core.err(e)
