@@ -390,7 +390,7 @@ function api.init(core_mod)
 	if not t then
 		print("Audio: coroutine mode")
 	end
-	mixer.thr = false
+	mixer.thr = t
 	env.sys.go(mixer.coroutine)
 
 	for i=0,16 do
