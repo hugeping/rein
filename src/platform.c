@@ -253,7 +253,7 @@ PlatformInit(void)
 		printf("Audio: %dHz channels: %d size: %d\n", audiospec.freq,
 			audiospec.channels,
 			audiospec.samples);
-		audiobuff.size = audiospec.samples * 2 * spec.channels * 2;
+		audiobuff.size = audiospec.samples * spec.channels * 2 * 2;
 		audiobuff.free = audiobuff.size;
 		audiobuff.data = malloc(audiobuff.size);
 		audiobuff.head = 0;
