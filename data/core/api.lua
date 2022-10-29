@@ -402,7 +402,7 @@ function api.event(e, v, a, b, c)
 	end
 
 	if (e == 'quit' or e == 'text' or e == 'keydown' or e == 'keyup' or
-		e == 'mousedown' or e == 'mouseup' or e == 'mousewheel')
+		e == 'mousedown' or e == 'mouseup' or e == 'mousewheel' or e == 'mousemotion')
 			and #input.fifo < 32 then
 		local ev = { nam = e, args = { v, a, b, c } }
 		table.insert(input.fifo, ev)
