@@ -107,7 +107,6 @@ main(int argc, char **argv)
 	lua_State *L = luaL_newstate();
 	if (!L)
 		return 1;
-
 #ifdef __ANDROID__
 	snprintf(base, sizeof(base), "%s", SDL_AndroidGetInternalStoragePath());
 #else
@@ -167,9 +166,6 @@ main(int argc, char **argv)
 
 	lua_pushstring(L, exepath);
 	lua_setglobal(L, "EXEFILE");
-
-	lua_pushstring(L, font_renderer());
-	lua_setglobal(L, "FONTRENDERER");
 
 	free(exepath);
 

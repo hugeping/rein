@@ -642,12 +642,12 @@ Mutex(void)
 static struct handles sems = HAN_INIT;
 
 int
-SemWait(int id)
+SemWait(int id, int ms)
 {
 	SDL_sem *sem = han_get(&sems, id);
 	if (!sem)
 		return -1;
-	return SDL_SemWait(sem);
+	return SDL_SemWaitTimeout(sem, ms);
 }
 
 int

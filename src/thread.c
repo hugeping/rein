@@ -96,7 +96,7 @@ thread_poll(lua_State *L)
 {
 	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
 	struct lua_channel *chan = thr->chan;
-	struct lua_peer *other = (L == chan->peers[0].L)?&chan->peers[1]:&chan->peers[0];
+	struct lua_peer *other = (thr->tid >= 0)?&chan->peers[1]:&chan->peers[0];
 
 	MutexLock(chan->m);
 	if (thr->err) {
@@ -118,10 +118,13 @@ static int
 thread_read(lua_State *L)
 {
 	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
+	float to = luaL_optnumber(L, 2, -1);
+	int ms = -1;
 	struct lua_channel *chan = thr->chan;
-	struct lua_peer *other = (L == chan->peers[0].L)?&chan->peers[1]:&chan->peers[0];
-	struct lua_peer *self = (L == chan->peers[0].L)?&chan->peers[0]:&chan->peers[1];
-
+	struct lua_peer *other = (thr->tid >= 0)?&chan->peers[1]:&chan->peers[0];
+	struct lua_peer *self = (thr->tid >= 0)?&chan->peers[0]:&chan->peers[1];
+	if (to != -1)
+		ms = to * 1000; /* seconds to ms */
 	MutexLock(chan->m);
 	if (thr->err) {
 		MutexUnlock(chan->m);
@@ -136,10 +139,12 @@ thread_read(lua_State *L)
 		return luaL_error(L, "No peer on thread read");
 	}
 	self->read ++;
+	if (self->L != L) /* coroutines? */
+		self->L = L;
 	MutexUnlock(chan->m);
 	SemPost(other->sem);
-	SemWait(self->sem);
-	return lua_gettop(L) - 1;
+	SemWait(self->sem, ms);
+	return lua_gettop(L) - 2;
 }
 
 static int
@@ -148,8 +153,8 @@ thread_write(lua_State *L)
 	int i, top;
 	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
 	struct lua_channel *chan = thr->chan;
-	struct lua_peer *other = (L == chan->peers[0].L)?&chan->peers[1]:&chan->peers[0];
-	struct lua_peer *self = (L == chan->peers[0].L)?&chan->peers[0]:&chan->peers[1];
+	struct lua_peer *other = (thr->tid >= 0)?&chan->peers[1]:&chan->peers[0];
+	struct lua_peer *self = (thr->tid >= 0)?&chan->peers[0]:&chan->peers[1];
 
 	MutexLock(chan->m);
 	if (thr->err) {
@@ -162,11 +167,17 @@ thread_write(lua_State *L)
 		return luaL_error(L, "No peer on thread write");
 	}
 	self->write ++;
+	if (self->L != L) /* coroutines? */
+		self->L = L;
 	MutexUnlock(chan->m);
-
-	SemWait(self->sem);
+	SemWait(self->sem, -1);
 	MutexLock(chan->m);
 	self->write --;
+	if (!other->read) {
+		MutexUnlock(chan->m);
+		lua_pushboolean(L, 0);
+		return 1;
+	}
 	if (thr->err) {
 		MutexUnlock(chan->m);
 		return luaL_error(L, "No peer on thread write: %s", thr->err);
@@ -315,6 +326,16 @@ thread_new(lua_State *L)
 	lua_setglobal(nL, "thread");
 
 	lua_thread_init(nL);
+
+	lua_getglobal(L, "EXEFILE");
+	lua_pushstring(nL, lua_tostring(L, -1));
+	lua_pop(L, 1);
+	lua_setglobal(nL, "EXEFILE");
+
+	lua_getglobal(L, "DATADIR");
+	lua_pushstring(nL, lua_tostring(L, -1));
+	lua_pop(L, 1);
+	lua_setglobal(nL, "DATADIR");
 
 	child->tid = -1;
 	child->chan = chan;
