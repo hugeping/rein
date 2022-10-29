@@ -22,9 +22,12 @@ function mixer.coroutine()
 end
 
 function mixer.add(fn)
+	if type(fn) ~= 'function' then
+		error("Wrong argument to mixer.add()", 2)
+	end
 	local c, e = dump.new(fn)
 	if not c then
-		error(e)
+		error(e, 2)
 	end
 	mixer.thr:write('add', c)
 	return mixer.thr:read()
