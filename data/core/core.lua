@@ -1,7 +1,7 @@
 local api = require "api"
 
 local env
-local fps = 1/30 -- fallback, low fps
+local fps = 1/20 -- fallback, low fps
 
 math.round = function(num, n)
 	local m = 10 ^ (n or 0)
@@ -176,6 +176,7 @@ function core.render(force)
 		core.view_w, core.view_h)
 	gfx.flip()
 	last_render = start
+	return true
 end
 
 function core.abs2rel(x, y)
@@ -215,7 +216,9 @@ function core.run()
 			end
 		end
 	end
-	core.render()
+	if core.render() then
+		sys.sleep(fps)
+	end
 	return true
 end
 
