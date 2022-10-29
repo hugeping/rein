@@ -1,4 +1,5 @@
 w, h = screen:size()
+sys.hidemouse()
 local floor = math.floor
 local ceil = math.ceil
 local spr = {}
@@ -944,8 +945,8 @@ mmb - middle mouse button
 [filename] - on the status line
 [scale]    - on the status line
 ]]
-
 function run()
+	local curw, curh = spr.Cur:size()
 while true do
 	local r, v, a, b = sys.input()
 	local mx, my, mb = input.mouse()
@@ -979,7 +980,15 @@ while true do
 		end
 		table.sort(obj, function(a, b) return a.lev <= b.lev end)
 	end
-		gfx.flip(1, true) -- wait for event
+	if mx < 0 or my < 0 or mx > w or my > h then
+		sys.hidemouse(false)
+		nomouse = false
+	elseif not nomouse then
+		sys.hidemouse()
+		nomouse = true
+	end
+	spr.Cur:blend(screen, mx - floor(curw/2), my - floor(curh/2))
+	gfx.flip(1, true) -- wait for event
 end
 end
 
@@ -1019,16 +1028,16 @@ spr.C = gfx.new [[
 --------
 ]]
 
---[==[
-spr.C = gfx.new [[
--------*
---*--
------
-*-*-*
------
---*--
+spr.Cur = gfx.new [[
+0------7--------
+---0---
+---7---
+---0---
+0707070
+---0---
+---7---
+---0---
 ]]
-]==]--
 
 spr.HL = gfx.new [[
 --------89------
