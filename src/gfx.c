@@ -557,6 +557,36 @@ pixels_fill(lua_State *L)
 }
 
 static int
+pixels_fill_rect(lua_State *L)
+{
+	int x1, y1, x2, y2, xmin, ymin, w, h;
+	struct lua_pixels *src, *pat = NULL;
+	color_t col;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
+
+	x1 = luaL_checknumber(L, 2);
+	y1 = luaL_checknumber(L, 3);
+	x2 = luaL_checknumber(L, 4);
+	y2 = luaL_checknumber(L, 5);
+
+	if (lua_isuserdata(L, 6)) {
+		pat = (struct lua_pixels*)luaL_checkudata(L, 6, "pixels metatable");
+		memset(&col, 0, sizeof(col));
+	} else
+		checkcolor(L, 6, &col);
+
+	w = abs(x2 - x1) + 1;
+	h = abs(y2 - y1) + 1;
+	xmin = (x1<x2)?x1:x2;
+	ymin = (y1<y2)?y1:y2;
+
+	_fill(&src->img, xmin, ymin, w, h, &col,
+		col.a == 255 ? PXL_BLEND_COPY:PXL_BLEND_BLEND,
+		pat?&pat->img:NULL);
+	return 0;
+}
+
+static int
 pixels_clear(lua_State *L)
 {
 	int x = 0, y = 0, w = 0, h = 0;
@@ -1615,6 +1645,27 @@ _pixels_poly(lua_State *L, int aa)
 }
 
 static int
+_pixels_rect(lua_State *L, int aa)
+{
+	struct lua_pixels *src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
+	color_t color;
+	int x1 = luaL_checknumber(L, 2);
+	int y1 = luaL_checknumber(L, 3);
+	int x2 = luaL_checknumber(L, 4);
+	int y2 = luaL_checknumber(L, 5);
+	checkcolor(L, 6, &color);
+	(aa)?lineAA(&src->img, x1, y1, x2, y1, &color):
+		line(&src->img, x1, y1, x2, y1, &color);
+	(aa)?lineAA(&src->img, x2, y1, x2, y2, &color):
+		line(&src->img, x2, y1, x2, y2, &color);
+	(aa)?lineAA(&src->img, x1, y2, x2, y2, &color):
+		line(&src->img, x1, y2, x2, y2, &color);
+	(aa)?lineAA(&src->img, x1, y1, x1, y2, &color):
+		line(&src->img, x1, y1, x1, y2, &color);
+	return 0;
+}
+
+static int
 pixels_poly(lua_State *L)
 {
 	return _pixels_poly(L, 0);
@@ -1624,6 +1675,18 @@ static int
 pixels_polyAA(lua_State *L)
 {
 	return _pixels_poly(L, 1);
+}
+
+static int
+pixels_rect(lua_State *L)
+{
+	return _pixels_rect(L, 0);
+}
+
+static int
+pixels_rectAA(lua_State *L)
+{
+	return _pixels_rect(L, 1);
 }
 
 static int
@@ -1781,12 +1844,15 @@ static const luaL_Reg pixels_mt[] = {
 	{ "line", pixels_line },
 	{ "lineAA", pixels_lineAA },
 	{ "fill_triangle", pixels_triangle },
+	{ "fill_rect", pixels_fill_rect },
 	{ "circle", pixels_circle },
 	{ "circleAA", pixels_circleAA },
 	{ "fill_circle", pixels_fill_circle },
 	{ "fill_poly", pixels_fill_poly },
 	{ "poly", pixels_poly },
 	{ "polyAA", pixels_polyAA },
+	{ "rect", pixels_rect },
+	{ "rectAA", pixels_rectAA },
 	{ "scale", pixels_scale },
 	{ "flip", pixels_flip },
 	{ "stretch", pixels_stretch },

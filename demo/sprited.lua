@@ -56,10 +56,7 @@ function pal:show()
 		n = n - HCOLORS
 	end
 	y = n
-	screen:poly({x, y*h,
-		x + w - 1, y*h,
-		x + w -1, y*h + h - 1,
-		x, y*h + h - 1}, c)
+	screen:rect(x, y*h, x+w-1, y*h +h -1, c)
 	local py = HCOLORS
 	if hand_mode then
 		self:select(0, py, 7)
@@ -770,11 +767,8 @@ function grid:show()
 		end
 	end
 	if s.grid < 128 then
-		screen:poly({s.x, s.y,
-			s.x + s.w, s.y,
-			s.x+s.w, s.y+s.h,
-			s.x, s.y+s.h}, 0)
-			for x=1,s.grid do
+		screen:rect(s.x, s.y, s.x + s.w, s.y + s.h, 0)
+		for x=1,s.grid do
 
 			local colx = (((s.xoff + x - 1)%8 == 0) and grid_mode and 2) or 0
 			local coly = (((s.yoff + x - 1)%8 == 0) and grid_mode and 2) or 0
@@ -802,16 +796,10 @@ function grid:show()
 		end
 		xmin, ymin, xmax, ymax = s:getsel()
 		xmin = xmin - 1; ymin = ymin - 1
-		screen:poly({(xmin - s.xoff)*dx, (ymin - s.yoff)*dx,
-			(xmax - s.xoff)*dx, (ymin - s.yoff)*dx,
-			(xmax - s.xoff)*dx, (ymax - s.yoff)*dx,
-			(xmin - s.xoff)*dx, (ymax - s.yoff)*dx}, 7)
-
-		screen:poly({(xmin - s.xoff)*dx+1, (ymin - s.yoff)*dx+1,
-			(xmax - s.xoff)*dx-1, (ymin - s.yoff)*dx+1,
-			(xmax - s.xoff)*dx-1, (ymax - s.yoff)*dx-1,
-			(xmin - s.xoff)*dx+1, (ymax - s.yoff)*dx-1}, 8)
-
+		screen:rect((xmin - s.xoff)*dx, (ymin - s.yoff)*dx,
+			(xmax - s.xoff)*dx, (ymax - s.yoff)*dx, 7)
+		screen:rect((xmin - s.xoff)*dx+1, (ymin - s.yoff)*dx+1,
+			(xmax - s.xoff)*dx-1, (ymax - s.yoff)*dx-1, 8)
 	end
 end
 
