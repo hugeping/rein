@@ -754,10 +754,10 @@ function grid:show()
 				screen:clear(s.x+(x-1)*dx, s.y+(y-1)*dx, dx, dx, c)
 			end
 			if hl_mode and  mx == s.xoff + x and my == s.yoff + y then
-				c = (c or 0)+ 8
-				if c >= 16 then c = 16 - c end
+				c = (c or -1)+ HCOLORS
+				if c >= COLORS then c = COLORS - c end
 				c = { gfx.pal(c) }
-				c[4] = 128
+				c[4] = 164
 				screen:fill(s.x+(x-1)*dx, s.y+(y-1)*dx, dx, dx, c)
 			end
 		end
