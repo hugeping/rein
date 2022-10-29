@@ -39,7 +39,7 @@ extern int MutexUnlock(int mid);
 
 extern int Sem(int counter);
 extern int SemDestroy(int sid);
-extern int SemWait(int sid);
+extern int SemWait(int sid, int ms);
 extern int SemPost(int sid);
 
 extern void MouseHide(int hide);
