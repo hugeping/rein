@@ -100,10 +100,8 @@ thread_poll(lua_State *L)
 
 	MutexLock(chan->m);
 	if (thr->err) {
-		lua_pushboolean(L, 0);
-		lua_pushstring(L, thr->err);
 		MutexUnlock(chan->m);
-		return 2;
+		return luaL_error(L, thr->err);
 	}
 	if (!other->L) {
 		MutexUnlock(chan->m);
@@ -120,11 +118,14 @@ thread_read(lua_State *L)
 	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
 	float to = luaL_optnumber(L, 2, -1);
 	int ms = -1;
+	int idx = 1;
 	struct lua_channel *chan = thr->chan;
 	struct lua_peer *other = (thr->tid >= 0)?&chan->peers[1]:&chan->peers[0];
 	struct lua_peer *self = (thr->tid >= 0)?&chan->peers[0]:&chan->peers[1];
-	if (to != -1)
+	if (to != -1) {
+		idx ++;
 		ms = to * 1000; /* seconds to ms */
+	}
 	MutexLock(chan->m);
 	if (thr->err) {
 		MutexUnlock(chan->m);
@@ -144,7 +145,7 @@ thread_read(lua_State *L)
 	MutexUnlock(chan->m);
 	SemPost(other->sem);
 	SemWait(self->sem, ms);
-	return lua_gettop(L) - 2;
+	return lua_gettop(L) - idx;
 }
 
 static int
