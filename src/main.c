@@ -170,7 +170,7 @@ main(int argc, char **argv)
 	free(exepath);
 
 	dostring(L, "PATHSEP = package.config:sub(1, 1)\n"
-		"  package.path = DATADIR .. '/core/?.lua;' .. package.path\n"
+		"  package.path = DATADIR .. '/core/?.lua;' .. DATADIR .. '/lib/?.lua;' .. package.path\n"
 		"  core = require('core')\n"
 		"  core.init()\n");
 #if __EMSCRIPTEN__
