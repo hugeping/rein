@@ -380,12 +380,19 @@ function api.init(core_mod)
 	if not env_ro.font then
 		return false, string.format("Can't load font %q", DATADIR..'/'..conf.font)
 	end
-	local t, e = thread.start(DATADIR.."/core/mixer-thread.lua")
+
+	local t, e = thread.start(function()
+		local mixer = require "mixer"
+		mixer.thr = thread
+		mixer.thread()
+	end)
+
 	if not t then
-		return false, e
+		print("Audio: coroutine mode")
 	end
-	mixer.thr = t
+	mixer.thr = false
 	env.sys.go(mixer.coroutine)
+
 	for i=0,16 do
 		gfx.pal(i, conf.pal[i])
 	end

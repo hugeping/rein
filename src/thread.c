@@ -144,7 +144,12 @@ thread_read(lua_State *L)
 		self->L = L;
 	MutexUnlock(chan->m);
 	SemPost(other->sem);
-	SemWait(self->sem, ms);
+	if (SemWait(self->sem, ms)) {
+		MutexLock(chan->m);
+		if (self->read)
+			self->read --;
+		MutexUnlock(chan->m);
+	}
 	return lua_gettop(L) - idx;
 }
 
@@ -156,7 +161,6 @@ thread_write(lua_State *L)
 	struct lua_channel *chan = thr->chan;
 	struct lua_peer *other = (thr->tid >= 0)?&chan->peers[1]:&chan->peers[0];
 	struct lua_peer *self = (thr->tid >= 0)?&chan->peers[0]:&chan->peers[1];
-
 	MutexLock(chan->m);
 	if (thr->err) {
 		MutexUnlock(chan->m);
@@ -174,11 +178,6 @@ thread_write(lua_State *L)
 	SemWait(self->sem, -1);
 	MutexLock(chan->m);
 	self->write --;
-	if (!other->read) {
-		MutexUnlock(chan->m);
-		lua_pushboolean(L, 0);
-		return 1;
-	}
 	if (thr->err) {
 		MutexUnlock(chan->m);
 		return luaL_error(L, "No peer on thread write: %s", thr->err);
