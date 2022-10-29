@@ -38,11 +38,14 @@ logo:blend(screen, 4, 6)
 
 local frames = 0
 
-printf(40, 4, 0, [[REIN %s
-Usage:rein <lua file>
+printf(40, 4, 0, [[REIN Version:%s
 
 (c)2022 Peter Kosyh
 https://hugeping.ru]], VERSION)
+
+printf(8, 44, 0,
+	[[Usage:
+    rein <lua file>]])
 
 gfx.border(7)
 
