@@ -453,8 +453,8 @@ top:
 	case SDL_WINDOWEVENT:
 		if (e.window.event == SDL_WINDOWEVENT_RESIZED) {
 			lua_pushstring(L, "resized");
-			lua_pushnumber(L, e.window.data1);
-			lua_pushnumber(L, e.window.data2);
+			lua_pushinteger(L, e.window.data1);
+			lua_pushinteger(L, e.window.data2);
 			WindowResize(e.window.data1, e.window.data2);
 			return 3;
 		} else if (e.window.event == SDL_WINDOWEVENT_EXPOSED ||
@@ -500,16 +500,16 @@ top:
 		if (e.button.button == 1) { SDL_CaptureMouse(1); }
 		lua_pushstring(L, "mousedown");
 		lua_pushstring(L, button_name(e.button.button));
-		lua_pushnumber(L, e.button.x);
-		lua_pushnumber(L, e.button.y);
-		lua_pushnumber(L, e.button.clicks);
+		lua_pushinteger(L, e.button.x);
+		lua_pushinteger(L, e.button.y);
+		lua_pushinteger(L, e.button.clicks);
 		return 5;
 	case SDL_MOUSEBUTTONUP:
 		if (e.button.button == 1) { SDL_CaptureMouse(0); }
 		lua_pushstring(L, "mouseup");
 		lua_pushstring(L, button_name(e.button.button));
-		lua_pushnumber(L, e.button.x);
-		lua_pushnumber(L, e.button.y);
+		lua_pushinteger(L, e.button.x);
+		lua_pushinteger(L, e.button.y);
 		return 4;
 	case SDL_MOUSEMOTION:
 		lua_pushstring(L, "mousemotion");
@@ -523,10 +523,10 @@ top:
 			xrel += e.motion.xrel;
 			yrel += e.motion.yrel;
 		}
-		lua_pushnumber(L, x);
-		lua_pushnumber(L, y);
-		lua_pushnumber(L, xrel);
-		lua_pushnumber(L, yrel);
+		lua_pushinteger(L, x);
+		lua_pushinteger(L, y);
+		lua_pushinteger(L, xrel);
+		lua_pushinteger(L, yrel);
 		return 5;
 	case SDL_MOUSEWHEEL:
 		lua_pushstring(L, "mousewheel");
@@ -534,7 +534,7 @@ top:
 		while (SDL_PeepEvents(&e, 1, SDL_GETEVENT, SDL_MOUSEWHEEL, SDL_MOUSEWHEEL) > 0) {
 			my = my + e.wheel.y;
 		}
-		lua_pushnumber(L, my);
+		lua_pushinteger(L, my);
 		return 2;
 	default:
 		goto top;
