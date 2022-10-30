@@ -12,13 +12,13 @@ mouse = input.mouse
 keydown = input.keydown
 
 local function make_wrapper(name)
-	_G[name] = function(...)
-		return screen[name](screen, ...)
-	end
+  _G[name] = function(...)
+    return screen[name](screen, ...)
+  end
 end
 
 for _, n in ipairs { 'clear', 'pixel', 'fill', 'line', 'lineAA',
-	'circle', 'circleAA', 'fill_circle', 'fill_triangle',
-	'fill_poly', 'poly' } do
-	make_wrapper(n)
+  'circle', 'circleAA', 'fill_circle', 'fill_triangle',
+  'fill_poly', 'poly' } do
+  make_wrapper(n)
 end
