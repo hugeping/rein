@@ -1,6 +1,5 @@
 -- https://github.com/true-grue/libzvuk/blob/main/libzvuk.ipynb
 -- Adopted by Peter Kosyh, original code by Peter Sovietov
-
 if unpack then
 	table.unpack = unpack
 end
@@ -118,7 +117,10 @@ function sfx.envelope(t, deltas, levels, level_0, func)
 	level_0 = level_0 or 0
 	func = func or sfx.mix
 	local t_0 = 0
-	for dt, level in table.zip(deltas, levels) do
+	local n = (#deltas < #levels) and #deltas or #levels
+	local dt, level
+	for i = 1, n do
+		dt, level = deltas[i], levels[i]
 		if t <= t_0 + dt then
 			return func(level_0, level, (t - t_0) / dt)
 		end
