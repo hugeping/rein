@@ -107,8 +107,13 @@ E-3 .. | ... .. | C-5 35
 ... .. | ... .. | C-5 30
 ... .. | ... .. | D-5 25
 G-3 .. | ... .. | C-5 20
+... .. | ... .. | C-5 30
+... .. | ... .. | D-5 25
 ]]
-	sfx.play_song(voices, pans, sfx.parse_song(song))
+	local song = sfx.parse_song(song)
+	for i = 1, 3 do
+		sfx.play_song(voices, pans, song)
+	end
 end
 
 mixer.setvol(0.4)
