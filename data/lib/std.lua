@@ -7,9 +7,14 @@ if not table.unpack then
 	table.unpack = unpack
 end
 
+function string.empty(str)
+	local r = str:find("^[ \t]*$")
+	return not not r
+end
+
 function string.strip(str)
 	if not str then return str end
-	str = str:gsub("^[ \t]+",""):gsub("[ \t]+$","")
+	str = str:gsub("^[ \t\n]+",""):gsub("[ \t\n]+$","")
 	return str
 end
 

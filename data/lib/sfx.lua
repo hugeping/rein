@@ -74,6 +74,7 @@ end
 
 function sfx.parse_song(text)
 	local ret = {}
+	text = text:strip()
 	for row in text:lines() do
 		table.insert(ret, sfx.parse_row(row:strip()))
 	end

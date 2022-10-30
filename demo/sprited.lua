@@ -271,6 +271,10 @@ function grid:save(fname, sel)
 	if s.sel_x1 and sel then
 		x1, y1, x2, y2 = s:getsel()
 	end
+	if sel then
+		fname = string.format("%s-%d-%d-%d-%d.spr", fname:gsub("%.spr$", ""), x1, y1, x2, y2)
+		dprint(fname)
+	end
 	local f, e = io.open(fname, "wb")
 	if not f then
 		return f, e
