@@ -205,10 +205,8 @@ audio_read(uint8_t *stream, int len)
 	SDL_LockAudioDevice(audiodev);
 	used = audiobuff.size - audiobuff.free;
 	toread = (len>=used)?used:len;
-	if (toread < len) {
-		memset(stream, 0, (len - toread));
-		stream += (len - toread);
-	}
+	if (toread < len)
+		memset(stream + toread, 0, (len - toread));
 	audiobuff.free += toread;
 	pos = audiobuff.head;
 	rc = toread;
