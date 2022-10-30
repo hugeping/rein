@@ -200,6 +200,7 @@ function mixer.stop()
 	if mixer.thr then
 		mixer.clireq 'quit'
 	end
+	core.stop(mixer.co)
 end
 
 function mixer.init(core)
@@ -215,6 +216,6 @@ function mixer.init(core)
 		print("Audio: coroutine mode")
 	end
 	mixer.thr = t
-	core.go(mixer.coroutine)
+	mixer.co = core.go(mixer.coroutine)
 end
 return mixer

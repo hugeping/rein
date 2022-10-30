@@ -20,7 +20,7 @@ end
 function core.stop(fn)
 	for k, f in ipairs(core.fn) do
 		if f == fn then
-			table.remove(core.fn[k])
+			table.remove(core.fn, k)
 			return true
 		end
 	end
