@@ -71,8 +71,7 @@ function mixer.write_audio(t)
 		end
 		local rc = sys.audio(b, b.head, len)
 		b.used = b.used - rc
-		b.head = ((b.head + rc) % b.size)
-		b.head = (b.head == 0) and 1 or b.head
+		b.head = ((b.head + rc - 1) % b.size) + 1
 	until b.used == 0 or rc == 0
 end
 
