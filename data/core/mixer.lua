@@ -44,8 +44,8 @@ function mixer.fill()
 				end
 			end
 		end
-		if n == 0 then -- no data
-			break
+		if n == 0 and i == 1 then -- nothing this iter
+			return
 		end
 		b[pos] = ll * mixer.vol -- / n
 		pos = (pos % b.size) + 1
