@@ -111,7 +111,9 @@ G-3 .. | ... .. | C-5 20
 	sfx.play_song(voices, pans, sfx.parse_song(song))
 end
 
+mixer.setvol(0.4)
 mixer.add(tune)
+--mixer.add(beep3)
 
 local s = gfx.new
 [[

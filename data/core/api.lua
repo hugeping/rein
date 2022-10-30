@@ -195,7 +195,7 @@ function env_ro.gfx.new(x, y)
 	end
 	if type(x) == 'string' then
 		if x:find("\n") then
-			return spr.new({ lines = function() return core.lines(x) end }, y)
+			return spr.new({ lines = function() return x:lines() end }, y)
 		end
 		if x:find("%.[sS][pP][rR]$") then
 			return spr.new(x, y)
@@ -351,7 +351,7 @@ end
 
 function env_ro.sprite_data(fname)
 	if fname:find("\n") then
-		return spr.new({ lines = function() return core.lines(fname) end }, true)
+		return spr.new({ lines = function() return fname:lines() end }, true)
 	end
 	return spr.new(fname)
 end

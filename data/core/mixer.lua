@@ -5,6 +5,7 @@ local CHANNELS = 8
 local DELAY = 1/30
 
 local mixer = {
+	vol = 0.5;
 	req = { };
 	ack = { };
 	chans = { };
@@ -46,11 +47,11 @@ function mixer.fill()
 		if n == 0 then -- no data
 			break
 		end
-		b[pos] = ll / n
+		b[pos] = ll * mixer.vol -- / n
 		pos = (pos % b.size) + 1
 		b.used = b.used + 1
 		if b.channels == 2 then
-			b[pos] = rr / n
+			b[pos] = rr * mixer.vol -- / n
 			pos = (pos % b.size) + 1
 			b.used = b.used + 1
 		end
@@ -122,6 +123,9 @@ function mixer.thread()
 		if r == 'quit' then
 			mixer.answer()
 			break
+		elseif r == 'volume' then
+			mixer.vol = v
+			mixer.answer(true)
 		elseif r == 'add' then
 			mixer.answer(mixer.req_add(v))
 		end
@@ -188,6 +192,10 @@ function mixer.add(fn)
 	return mixer.clireq('add', fn)
 end
 
+function mixer.setvol(vol)
+	return mixer.clireq("volume", vol)
+end
+
 function mixer.stop()
 	if mixer.thr then
 		mixer.clireq 'quit'
@@ -209,5 +217,4 @@ function mixer.init(core)
 	mixer.thr = t
 	core.go(mixer.coroutine)
 end
-
 return mixer
