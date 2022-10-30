@@ -49,25 +49,3 @@ function string.lines(text)
 	end
 	return next_line
 end
-
-table.zip = function(...)
-	local a = {...}
-	local n = false
-	local i = 1
-	for _, v in ipairs(a) do
-		if not n or #v < n then
-			n = #v
-		end
-	end
-	return function()
-		local ret = { }
-		if i > n then
-			return
-		end
-		for _, v in ipairs(a) do
-			table.insert(ret, v[i])
-		end
-		i = i + 1
-		return table.unpack(ret)
-	end
-end
