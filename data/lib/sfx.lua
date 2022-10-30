@@ -4,8 +4,7 @@
 if unpack then
 	table.unpack = unpack
 end
-
-local str = require "str"
+require "std"
 local sfx = {
 }
 
@@ -118,9 +117,7 @@ function sfx.envelope(t, deltas, levels, level_0, func)
 	level_0 = level_0 or 0
 	func = func or sfx.mix
 	local t_0 = 0
-	local n = (#deltas < #levels) and #deltas or #levels
-	for i = 1, n do
-		local dt, level = deltas[i], levels[i]
+	for dt, level in table.zip(deltas, levels) do
 		if t <= t_0 + dt then
 			return func(level_0, level, (t - t_0) / dt)
 		end
@@ -307,15 +304,12 @@ end
 
 function sfx.play_song(voices, pans, tracks, tick)
 	for _, row in ipairs(tracks) do
-		local n = (#voices < #row) and #voices or #row
-		for i = 1, n do
-			voices[i]:update(table.unpack(row[i]))
+		for voice, ro in table.zip(voices, row) do
+			voice:update(table.unpack(ro))
 		end
 		for i = 1, sfx.sec(tick or 1/8) do
 			local left, right = 0, 0
-			n = (#voices < #pans) and #voices or #pans
-			for k = 1, n do
-				local voice, pan = voices[k], pans[k]
+			for voice, pan in table.zip(voices, pans) do
 				local l, r = sfx.set_stereo(voice:next(), pan)
 				left = left + l
 				right = right + r
