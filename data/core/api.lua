@@ -179,6 +179,8 @@ function env_ro.gfx.win(w, h) -- create new win or change
 	if nscr then
 		if w < 192 then
 			env_ro.font = font.new(DATADIR..'/fonts/pico8.fnt')
+		else
+			env_ro.font = font.new(DATADIR..'/fonts/8x8.fnt')
 		end
 		env_ro.screen = nscr
 		conf.w, conf.h = nscr:size()
