@@ -117,9 +117,8 @@ function sfx.envelope(t, deltas, levels, level_0, func)
 	level_0 = level_0 or 0
 	func = func or sfx.mix
 	local t_0 = 0
-	local n = (#deltas < #levels) and #deltas or #levels
 	local dt, level
-	for i = 1, n do
+	for i = 1, #deltas do
 		dt, level = deltas[i], levels[i]
 		if t <= t_0 + dt then
 			return func(level_0, level, (t - t_0) / dt)
@@ -306,14 +305,17 @@ function sfx.LFSR(bits, taps)
 end
 
 function sfx.play_song(voices, pans, tracks, tick)
+	local left, right, l, r, voice, pan, ro
 	for _, row in ipairs(tracks) do
-		for voice, ro in table.zip(voices, row) do
+		for i = 1, #voices do
+			voice, ro = voices[i], row[i]
 			voice:update(table.unpack(ro))
 		end
 		for i = 1, sfx.sec(tick or 1/8) do
-			local left, right = 0, 0
-			for voice, pan in table.zip(voices, pans) do
-				local l, r = sfx.set_stereo(voice:next(), pan)
+			left, right = 0, 0
+			for k = 1, #voices do
+				voice, pan = voices[k], pans[k]
+				l, r = sfx.set_stereo(voice:next(), pan)
 				left = left + l
 				right = right + r
 			end
