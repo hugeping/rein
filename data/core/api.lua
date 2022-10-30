@@ -232,10 +232,19 @@ function env_ro.gfx.font(fname, ...)
   return gfx.font(fname)
 end
 
+local framedrop
 function env_ro.gfx.flip(fps, interrupt)
-  core.render(true)
+  if not framedrop then -- drop every 2nd frame if needed
+    core.render(true)
+  end
   local cur_time = sys.time()
-  env_ro.sys.sleep((fps or conf.fps) - (cur_time - last_flip), interrupt)
+  local delta = (fps or conf.fps) - (cur_time - last_flip)
+  if delta < 0 and not framedrop then
+    framedrop = true
+  else
+    framedrop = false
+  end
+  env_ro.sys.sleep(delta, interrupt)
   last_flip = sys.time()
   table.insert(flips, last_flip)
   if #flips > 50 then
