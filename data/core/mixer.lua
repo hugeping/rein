@@ -76,7 +76,7 @@ function mixer.write_audio(t)
   until b.used == 0 or rc == 0
 end
 
-function mixer.req_add(fn)
+function mixer.req_new(fn)
   local f, e = coroutine.create(fn)
   if not f then
     error(e)
@@ -99,7 +99,7 @@ function mixer.getreq()
     return table.unpack(r)
   else
     local r, v = thread:read(DELAY)
-    if r == 'add' then
+    if r == 'new' then
       v = dump.new(v) -- function
     end
     return r, v
@@ -124,10 +124,11 @@ function mixer.thread()
       mixer.answer()
       break
     elseif r == 'volume' then
-      mixer.vol = v
-      mixer.answer(true)
-    elseif r == 'add' then
-      mixer.answer(mixer.req_add(v))
+      local oval = mixer.vol
+      mixer.vol = v or oval
+      mixer.answer(oval)
+    elseif r == 'new' then
+      mixer.answer(mixer.req_new(v))
     end
     mixer.fill()
     mixer.write_audio(t)
@@ -185,14 +186,14 @@ function mixer.clireq(...)
   end
 end
 
-function mixer.add(fn)
+function mixer.new(fn)
   if type(fn) ~= 'function' then
     error("Wrong argument to mixer.add()", 2)
   end
-  return mixer.clireq('add', fn)
+  return mixer.clireq('new', fn)
 end
 
-function mixer.setvol(vol)
+function mixer.volume(vol)
   return mixer.clireq("volume", vol)
 end
 

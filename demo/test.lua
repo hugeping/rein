@@ -143,9 +143,9 @@ D-4 45 | ... ..
   end
 end
 
-mixer.setvol(0.4)
-mixer.add(tune)
---mixer.add(beep3)
+mixer.volume(0.4)
+mixer.new(tune)
+--mixer.new(beep3)
 
 local s = gfx.new
 [[
