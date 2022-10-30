@@ -205,6 +205,10 @@ audio_read(uint8_t *stream, int len)
 	SDL_LockAudioDevice(audiodev);
 	used = audiobuff.size - audiobuff.free;
 	toread = (len>=used)?used:len;
+	if (toread < len) {
+		memset(stream, 0, (len - toread));
+		stream += (len - toread);
+	}
 	audiobuff.free += toread;
 	pos = audiobuff.head;
 	rc = toread;
@@ -218,9 +222,7 @@ audio_read(uint8_t *stream, int len)
 static void
 audio_cb(void *userdata, uint8_t *stream, int len)
 {
-	unsigned int readed = audio_read(stream, len);
-	if (readed < len)
-		memset(stream + readed, 0, len - readed);
+	audio_read(stream, len);
 }
 
 void
