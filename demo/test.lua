@@ -59,11 +59,59 @@ beep3 = function()
 	local SR = 44100
 
 	for t = 0, SR * 4, 1 do
-		coroutine.yield(0.3 * sfx.sin(t, 2) * sfx.dsf(t, 450, 0.120, 1, 0.1 + 0.7 * abs(sfx.sin(t, 0.2))))
+		coroutine.yield(0.3 * sfx.sin(t, 2) * sfx.dsf(sfx.hz(t, 450), 0.120, 0.1 + 0.7 * abs(sfx.sin(t, 0.2))))
 	end
 end
 
-mixer.add(beep3)
+
+function tune()
+	local sfx = require "sfx"
+	local voices = {
+		sfx.SquareVoice(),
+		sfx.SawVoice(),
+		sfx.SquareVoice(),
+	}
+	local pans = { -1, 0, 1 };
+	local song = [[
+C-3 80 | E-4 FF | C-5 50
+... .. | ... .. | D-5 45
+... .. | ... .. | C-5 40
+E-3 .. | ... .. | D-5 35
+... .. | ... .. | C-5 30
+... .. | ... .. | D-5 25
+G-3 .. | D-4 A0 | C-5 20
+... .. | ... .. | D-5 15
+... .. | ... .. | C-5 10
+C-3 .. | C-4 FF | D-5 50
+... .. | ... .. | C-5 45
+... .. | ... .. | D-5 40
+E-3 .. | G-3 FF | C-5 35
+... .. | ... .. | D-5 30
+... .. | ... .. | C-5 25
+G-3 .. | ... .. | D-5 20
+... .. | ... .. | C-5 15
+... .. | ... .. | D-5 10
+C-3 .. | A-3 A0 | C-5 50
+... .. | ... .. | D-5 45
+... .. | ... .. | C-5 40
+E-3 .. | ... .. | D-5 35
+... .. | ... .. | C-5 30
+... .. | ... .. | D-5 25
+G-3 .. | ... .. | C-5 20
+... .. | ... .. | D-5 15
+... .. | ... .. | C-5 10
+C-3 .. | C-4 FF | D-5 50
+... .. | ... .. | C-5 45
+... .. | ... .. | D-5 40
+E-3 .. | ... .. | C-5 35
+... .. | ... .. | C-5 30
+... .. | ... .. | D-5 25
+G-3 .. | ... .. | C-5 20
+]]
+	sfx.play_song(voices, pans, sfx.parse_song(song))
+end
+
+mixer.add(tune)
 
 local s = gfx.new
 [[
