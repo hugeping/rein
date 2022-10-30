@@ -1,16 +1,7 @@
 local api = require "api"
-local str = require "str"
+require "std"
 local env
 local fps = 1/20 -- fallback, low fps
-
-math.round = function(num, n)
-	local m = 10 ^ (n or 0)
-	return math.floor(num * m + 0.5) / m
-end
-
-if not table.unpack then
-	table.unpack = unpack
-end
 
 local core = {
 	fn = {};
