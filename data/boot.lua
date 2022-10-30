@@ -39,19 +39,21 @@ logo:blend(screen, 4, 6)
 local frames = 0
 
 printf(40, 4, 0, [[REIN Version:%s
-
 (c)2022 Peter Kosyh
-https://hugeping.ru]], VERSION)
+https://hugeping.ru
 
-printf(8, 44, 0,
-	[[Usage:
+Peter Sovietov
+(Sound system)]], VERSION)
+
+printf(8, 64, 0,
+  [[Usage:
     rein <lua file>]])
 
 gfx.border(7)
 
 while true do
-	frames = frames + 1
-	local fl = math.floor(frames / 25)%2
-	gfx.border(fl == 1 and 7 or 12)
-	gfx.flip(1/30)
+  frames = frames + 1
+  local fl = math.floor(frames / 25)%2
+  gfx.border(fl == 1 and 7 or 12)
+  gfx.flip(1/30)
 end
