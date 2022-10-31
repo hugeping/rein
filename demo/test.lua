@@ -147,8 +147,9 @@ D-4 45 | ... ..
   end
 end
 
-mixer.volume(0.4)
-mixer.new(tune)
+mixer.volume(0.5)
+local snd = mixer.new(tune)
+--snd:stop()
 --mixer.new(beep3)
 
 local s = gfx.new
