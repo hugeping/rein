@@ -108,9 +108,8 @@ thread_poll(lua_State *L)
 		return luaL_error(L, "No peer on thread poll");
 	}
 	lua_pushboolean(L, !!other->write);
-	lua_pushboolean(L, !!other->read);
 	MutexUnlock(chan->m);
-	return 2;
+	return 1;
 }
 
 static int
