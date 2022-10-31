@@ -36,8 +36,6 @@ for i=1, 128 do
   })
 end
 
-local fps = 0
-local start = sys.time()
 local frames = 0
 local txt = ''
 
@@ -51,18 +49,6 @@ local function showkeys()
   end
   return t
 end
-
--- no upvalues!
-beep3 = function()
-  local abs = math.abs
-  local sfx = require "sfx"
-  local SR = 44100
-
-  for t = 0, SR * 4, 1 do
-    coroutine.yield(0.3 * sfx.sin(t, 2) * sfx.dsf(sfx.hz(t, 450), 0.120, 0.1 + 0.7 * abs(sfx.sin(t, 0.2))))
-  end
-end
-
 
 function tune(nr)
   local sfx = require "sfx"
@@ -148,31 +134,41 @@ D-4 45 | ... ..
 end
 
 mixer.volume(0.5)
-local snd = mixer.new(tune)
---snd:stop()
---mixer.new(beep3)
+mixer.new(tune)
 
 local s = gfx.new
 [[
--------78-----e-
------------
---8888888--
--8-------8-
--8-78-78-8-
--8-------8-
--8---e---8-
--8---e---8-
--8-e---e-8-
--8--eee--8-
--8-------8-
---8888888--
------------
+--------8
+-------8
+------8-
+-----8--
+----8---
+---8----
+--8-----
+-8------
+8-------
 ]];
+
+function draw_text(txt, xx, yy, scale, col)
+  local s = font:text(txt, 7)
+  local w, h = s:size()
+  local r, g, b, a
+  for y=0,h-1 do
+    for x=0,w-1 do
+      r, g, b, a = s:val(x, y)
+      if a > 128 then
+        screen:fill(xx + x*scale, yy + y*scale, scale, scale, col)
+      end
+    end
+  end
+end
+
+local fps = 0
+
 while true do
-  local cur = sys.time()
-  fps = math.floor(frames / (cur - start))
   screen:clear(0)
-  screen:fill_circle(100, 100, 30, s)
+  draw_text("REIN", 70, 100, 4, s)
+  printf(108, 140, 1, VERSION)
   screen:offset(math.floor(math.sin(frames * 0.1)*6), math.floor(math.cos(frames * 0.1)*6))
   spr[math.floor(frames/10)%2+1]:blend(screen, 240, 0)
 
@@ -187,7 +183,7 @@ while true do
     txt = ''
   end
 
-  printf(0, 0, 15, "FPS:%d\nМышь:%d,%d %s\nKeys:%s\nInp:%s",
+  printf(0, 0, 15, "FPS:%d\nMouse:%d,%d %s\nKeys:%s\nInp:%s",
     fps, mx, my, mb.left and 'left' or '',
     showkeys(), txt..'\1')
 
@@ -199,6 +195,6 @@ while true do
       stars[k].x = math.random(w)
     end
   end
-  gfx.flip(1/50)
+  fps = gfx.flip(1/50)
   frames = frames + 1
 end
