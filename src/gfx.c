@@ -1761,13 +1761,13 @@ pixels_clip(lua_State *L)
 	int x1, y1, x2, y2;
 	struct lua_pixels *src;
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
-	if (lua_isnil(L, 2)) {
-		lua_pushinteger(L, src->img.clip_x1);
-		lua_pushinteger(L, src->img.clip_y1);
-		lua_pushinteger(L, src->img.clip_x2);
-		lua_pushinteger(L, src->img.clip_y2);
+
+	lua_pushinteger(L, src->img.clip_x1);
+	lua_pushinteger(L, src->img.clip_y1);
+	lua_pushinteger(L, src->img.clip_x2);
+	lua_pushinteger(L, src->img.clip_y2);
+	if (lua_isnil(L, 2))
 		return 4;
-	}
 	x1 = luaL_checkinteger(L, 2);
 	y1 = luaL_checkinteger(L, 3);
 	x2 = luaL_checkinteger(L, 4);
@@ -1777,7 +1777,7 @@ pixels_clip(lua_State *L)
 	if (y2 < 0)
 		y2 = src->img.h - y2;
 	img_clip(&src->img, x1, y1, x2, y2);
-	return 0;
+	return 4;
 }
 
 static int
@@ -1795,15 +1795,14 @@ pixels_offset(lua_State *L)
 	int x, y;
 	struct lua_pixels *src;
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
-	if (lua_isnil(L, 2)) {
-		lua_pushinteger(L, src->img.xoff);
-		lua_pushinteger(L, src->img.yoff);
+	lua_pushinteger(L, src->img.xoff);
+	lua_pushinteger(L, src->img.yoff);
+	if (lua_isnil(L, 2))
 		return 2;
-	}
 	x = luaL_checkinteger(L, 2);
 	y = luaL_checkinteger(L, 3);
 	img_offset(&src->img, x, y);
-	return 0;
+	return 2;
 }
 
 static int
