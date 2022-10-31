@@ -64,7 +64,7 @@ beep3 = function()
 end
 
 
-function tune()
+function tune(nr)
   local sfx = require "sfx"
   local voices = {
     sfx.SquareVoice(),
@@ -138,8 +138,12 @@ G-3 .. | ... ..
 D-4 45 | ... ..
 ]]
   local song = sfx.parse_song(song)
-  while true do
+  nr = nr or -1
+  while nr ~= 0 do
     sfx.play_song(voices, pans, song)
+    if nr ~= -1 then
+      nr = nr - 1
+    end
   end
 end
 
