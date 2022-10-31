@@ -1,4 +1,5 @@
 local dump = require "dump"
+require "std"
 local THREADED = true
 local CHUNK = 8192
 local CHANNELS = 8
@@ -26,12 +27,14 @@ function mixer.fill()
     local ll, rr = 0, 0
     local n = 0
     for k = 1, CHANNELS do
-      local fn = mixer.chans[k]
+      local m = mixer.chans[k]
+      local fn = m.fn
       if fn then
-        local st, l, r = coroutine.resume(fn)
+        local st, l, r = coroutine.resume(fn, not m.run and table.unpack(m.args))
+        m.run = true
         r = r or l
         if not st or not l then
-          mixer.chans[k] = false -- stop it
+          mixer.chans[k].fn = false -- stop it
           if not st then
             error(l..'\n'..debug.traceback(fn))
           end
@@ -76,14 +79,14 @@ function mixer.write_audio(t)
   until b.used == 0 or rc == 0
 end
 
-function mixer.req_new(fn)
+function mixer.req_new(fn, a)
   local f, e = coroutine.create(fn)
   if not f then
     error(e)
   end
   for i = 1, CHANNELS do
-    if not mixer.chans[i] then
-      mixer.chans[i] = f
+    if not mixer.chans[i].fn then
+      mixer.chans[i] = { fn = f, time = sys.time(), args = a }
       return i
     end
   end
@@ -98,11 +101,11 @@ function mixer.getreq()
     mixer.req = false
     return table.unpack(r)
   else
-    local r, v = thread:read(DELAY)
+    local r, v, a = thread:read(DELAY)
     if r == 'new' then
       v = dump.new(v) -- function
     end
-    return r, v
+    return r, v, a
   end
 end
 
@@ -117,9 +120,12 @@ end
 
 function mixer.thread()
   print "mixer start"
+  for i = 1, CHANNELS do
+    mixer.chans[i] = { }
+  end
   while true do
-    local r, v
-    r, v = mixer.getreq()
+    local r, v, a
+    r, v, a = mixer.getreq()
     if r == 'quit' then
       mixer.answer()
       break
@@ -128,7 +134,7 @@ function mixer.thread()
       mixer.vol = v or oval
       mixer.answer(oval)
     elseif r == 'new' then
-      mixer.answer(mixer.req_new(v))
+      mixer.answer(mixer.req_new(v, a))
     end
     mixer.fill()
     mixer.write_audio(t)
@@ -186,11 +192,11 @@ function mixer.clireq(...)
   end
 end
 
-function mixer.new(fn)
+function mixer.new(fn, ...)
   if type(fn) ~= 'function' then
     error("Wrong argument to mixer.add()", 2)
   end
-  return mixer.clireq('new', fn)
+  return mixer.clireq('new', fn, {...})
 end
 
 function mixer.volume(vol)
