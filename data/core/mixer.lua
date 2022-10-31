@@ -30,8 +30,9 @@ function mixer.fill()
       local m = mixer.chans[k]
       local fn = m.fn
       if fn then
-        local st, l, r = coroutine.resume(fn, not m.run and table.unpack(m.args))
-        m.run = true
+        local st, l, r = coroutine.resume(fn,
+          (not m.run or m.send) and table.unpack(m.args))
+        m.run, m.send = true, false
         r = r or l
         if not st or not l then
           mixer.chans[k].fn = false -- stop it
@@ -62,7 +63,7 @@ function mixer.fill()
   b.tail = pos
 end
 
-function mixer.write_audio(t)
+function mixer.write_audio()
   local rc
   local b = mixer.buff
   if b.used == 0 then
@@ -79,6 +80,26 @@ function mixer.write_audio(t)
   until b.used == 0 or rc == 0
 end
 
+function mixer.req_send(a)
+  local m = mixer.chans[a.channel]
+  if not m or not m.fn or a.id ~= m.id then
+    return false
+  end
+  m.args = a
+  m.send = true
+  return true
+end
+
+function mixer.req_stop(a)
+  local m = mixer.chans[a.channel]
+  if not m or not m.fn or a.id ~= m.id then
+    return false
+  end
+  m.fn = false
+  return true
+end
+
+local req_id = 0
 function mixer.req_new(fn, a)
   local f, e = coroutine.create(fn)
   if not f then
@@ -86,8 +107,10 @@ function mixer.req_new(fn, a)
   end
   for i = 1, CHANNELS do
     if not mixer.chans[i].fn then
-      mixer.chans[i] = { fn = f, time = sys.time(), args = a }
-      return i
+      req_id = (req_id % 65535) + 1
+      mixer.chans[i] = { fn = f, time = sys.time(),
+        args = a, id = req_id }
+      return i, req_id
     end
   end
 end
@@ -123,26 +146,32 @@ function mixer.thread()
   for i = 1, CHANNELS do
     mixer.chans[i] = { }
   end
+  local r, v, a
   while true do
-    local r, v, a
     r, v, a = mixer.getreq()
-    if r == 'quit' then
+    if r == 'quit' then -- stop thread
       mixer.answer()
       break
-    elseif r == 'volume' then
+    elseif r == 'volume' then -- set/get master volume
       local oval = mixer.vol
       mixer.vol = v or oval
       mixer.answer(oval)
-    elseif r == 'new' then
+    elseif r == 'new' then -- new generator
       mixer.answer(mixer.req_new(v, a))
+    elseif r == 'send' then -- send to generator
+      if not mixer.req_send(v) then
+        mixer.answer(false, "Invalid argument")
+      end
+    elseif r == 'stop' then -- stop generator
+      mixer.answer(mixer.req_stop(v))
     end
-    mixer.fill()
-    mixer.write_audio(t)
+    mixer.fill() -- fill buffer/send and rcv
+    mixer.write_audio() -- write to audio!
   end
   print "mixer finish"
 end
 
---------------------------------------- Client code
+----------------------------- Client side -------------------------------
 
 function mixer.audio(t)
   local idx = 1
@@ -188,15 +217,35 @@ function mixer.clireq(...)
       table.insert(r, v)
     end
     mixer.thr:write(table.unpack(r))
-    return(mixer.thr:read())
+    return mixer.thr:read()
   end
+end
+
+local sound = {
+}
+sound.__index = sound
+
+function sound:send(...)
+  return mixer.clireq("send",
+    { channel = self.channel, id = self.id, ...})
+end
+
+function sound:stop(...)
+  return mixer.clireq("stop",
+    { channel = self.channel, id = self.id })
 end
 
 function mixer.new(fn, ...)
   if type(fn) ~= 'function' then
     error("Wrong argument to mixer.add()", 2)
   end
-  return mixer.clireq('new', fn, {...})
+  local ch, id = mixer.clireq('new', fn, {...})
+  local snd = {
+    channel = ch;
+    id = id;
+  }
+  setmetatable(snd, sound)
+  return snd
 end
 
 function mixer.volume(vol)
