@@ -955,7 +955,7 @@ function run()
       if r == 'keydown' or r == 'mousedown' then
         help_mode = false
       end
-      gfx.print(HELP)
+      gfx.print(HELP, 0, 0, 0, true) -- warp words
       gfx.print("Here is the status line.", 0, h - 16, 0)
       screen:clear(0, h - 8, w, h - 8, 1)
       title:show()
