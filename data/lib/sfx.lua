@@ -372,6 +372,24 @@ function SnareVoice:next()
   return y * a * 0.6 * self.vol
 end
 
+local EmptyVoice = {
+}
+EmptyVoice.__index = EmptyVoice
+
+function sfx.EmptyVoice()
+  local s = {
+  }
+  setmetatable(s, EmptyVoice)
+  return s
+end
+
+function EmptyVoice:next()
+  return 0
+end
+
+function EmptyVoice:update()
+end
+
 function sfx.play_song(voices, pans, tracks, tick)
   local left, right, l, r, voice, pan, ro
   for _, row in ipairs(tracks) do
