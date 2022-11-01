@@ -33,7 +33,7 @@ CFILES= \
 	src/gfx.c \
 	src/system.c \
 	src/gfx_font.c \
-	src/stb_truetype.c \
+	src/schrift.c \
 	src/tinymt32.c
 
 OFILES  := $(patsubst %.c, %.o, $(CFILES))

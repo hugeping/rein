@@ -1,70 +1,41 @@
+/*
+ * Copyright 2021 Peter Kosyh <p.kosyh at gmail.com>
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation files
+ * (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge,
+ * publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
+/* binding to libschrift library by Peter Kosyh */
+/* see LICENSE file for libschrift license */
+
 #include "external.h"
-#include "stb_truetype.h"
 #include "gfx.h"
-
-#define MAX_GLYPHSET 256
-
-typedef struct {
-	img_t *image;
-	stbtt_bakedchar glyphs[256];
-} glyphset_t;
+#include "utf.h"
+#include "schrift.h"
 
 struct _font_t {
+	SFT sft;
 	void *data;
-	stbtt_fontinfo stbfont;
-	glyphset_t *sets[MAX_GLYPHSET];
 	float size;
 	int height;
 };
-
-static glyphset_t*
-load_glyphset(font_t *font, int idx)
-{
-	unsigned char col[4] = { 255, 255, 255, 255 };
-	int w = 128, h = 128, i;
-	float s;
-	int ascent, descent, linegap;
-	int res;
-	unsigned char c;
-	glyphset_t *set = calloc(1, sizeof(glyphset_t));
-retry:
-	set->image = img_new(w, h);
-	s = stbtt_ScaleForMappingEmToPixels(&font->stbfont, 1) /
-		stbtt_ScaleForPixelHeight(&font->stbfont, 1);
-	res = stbtt_BakeFontBitmap(font->data, 0,
-				   font->size * s,
-				   (void*)set->image->ptr,
-				   w, h, idx * 256, 256, set->glyphs);
-	if (res < 0) {
-		w *= 2;
-		h *= 2;
-		img_free(set->image);
-		goto retry;
-	}
-	stbtt_GetFontVMetrics(&font->stbfont, &ascent, &descent, &linegap);
-	s = stbtt_ScaleForMappingEmToPixels(&font->stbfont, font->size);
-	int scaled_ascent = ascent * s + 0.5;
-	for (i = 0; i < 256; i++) {
-		set->glyphs[i].yoff += scaled_ascent;
-		set->glyphs[i].xadvance = ceil(set->glyphs[i].xadvance);
-	}
-	for (i = w * h - 1; i >= 0; i--) {
-		c = *(set->image->ptr + i);
-		col[3] = c;
-		memcpy(set->image->ptr + i * 4, col, 4);
-	}
-	return set;
-}
-
-static glyphset_t*
-get_glyphset(font_t *font, int codepoint)
-{
-	int idx = (codepoint >> 8) % MAX_GLYPHSET;
-	if (!font->sets[idx]) {
-		font->sets[idx] = load_glyphset(font, idx);
-	}
-	return font->sets[idx];
-}
 
 int
 font_height(font_t *font)
@@ -73,37 +44,47 @@ font_height(font_t *font)
 }
 
 int
+sft_floor(double v)
+{
+	return (v<0)?ceil(v):floor(v);
+}
+
+int
 font_width(font_t *font, const char *text)
 {
 	int x = 0;
+	struct SFT_GMetrics metrics;
+	SFT_Glyph glyph, oglyph = 0;
+	SFT_Kerning kern;
 	const char *p = text;
-	unsigned codepoint, ocp = 0;
-	int xend = 0, kern = 0;
-	float s = stbtt_ScaleForMappingEmToPixels(&font->stbfont, font->size);
+	unsigned codepoint;
+	int xend = 0;
 	while (*p) {
 		p = utf8_to_codepoint(p, &codepoint);
-		glyphset_t *set = get_glyphset(font, codepoint);
-		stbtt_bakedchar *g = &set->glyphs[codepoint & 0xff];
-		if (ocp)
-			kern = stbtt_GetCodepointKernAdvance(&font->stbfont, ocp, codepoint);
-		ocp = codepoint;
-		x += g->xadvance + ceil(kern * s);
-		xend = g->xoff + g->x1 - g->x0;
-		if (xend > g->xadvance)
-			xend -= g->xadvance;
-		else
-			xend = 0;
+		sft_lookup(&font->sft, codepoint, &glyph);
+		kern.xShift = 0;
+		if (oglyph)
+			sft_kerning(&font->sft, oglyph, glyph,  &kern);
+		oglyph = glyph;
+		sft_gmetrics(&font->sft, glyph, &metrics);
+		x += sft_floor(kern.xShift);
+		if (x < 0)
+			x = 0;
+		if (x + sft_floor(metrics.leftSideBearing) < 0)
+			x += -sft_floor(metrics.leftSideBearing);
+		xend = x + sft_floor(metrics.leftSideBearing) +
+			((metrics.minWidth > metrics.advanceWidth)?metrics.minWidth:round(metrics.advanceWidth));
+		x += round(metrics.advanceWidth);
 	}
-	return x + xend;
+	return xend;
 }
 
 font_t*
 font_load(const char *filename, float size)
 {
-	int ok;
-	int ascent = 0, descent = 0, linegap = 0;
-	float scale;
 	font_t *font = NULL;
+	struct SFT_LMetrics metrics;
+
 	FILE *fp = NULL;
 	long fsize;
 	font = malloc(sizeof(font_t));
@@ -127,16 +108,18 @@ font_load(const char *filename, float size)
 	if (fread(font->data, 1, fsize, fp) != fsize)
 		goto err;
 	fclose(fp); fp = NULL;
-	ok = stbtt_InitFont(&font->stbfont, font->data, 0);
-	if (!ok)
+
+	font->size = size;
+	font->sft.xScale = size;
+	font->sft.yScale = size;
+	font->sft.font = sft_loadmem(font->data, fsize);
+	font->sft.flags = SFT_DOWNWARD_Y;
+	if (!font->sft.font)
 		goto err;
-	stbtt_GetFontVMetrics(&font->stbfont, &ascent, &descent, &linegap);
-	scale = stbtt_ScaleForMappingEmToPixels(&font->stbfont, size);
-	font->height = (ascent - descent + linegap) * scale + 0.5;
+	sft_lmetrics(&font->sft, &metrics);
+	font->height = metrics.ascender - metrics.descender + metrics.lineGap;
 	return font;
 err:
-	if (fp)
-		fclose(fp);
 	if (font && font->data)
 		free(font->data);
 	free(font);
@@ -146,27 +129,57 @@ err:
 int
 font_render(font_t *font, const char *text, img_t *img)
 {
-	int x = 0, kern = 0;
-	unsigned codepoint, ocp = 0;
-	glyphset_t *set;
-	stbtt_bakedchar *g;
-	float s = stbtt_ScaleForMappingEmToPixels(&font->stbfont, font->size);
-	const char *p;
-	p = text;
+	int x = 0, y, xx, i, pos, yoff, xoff;
+	static char pixels[256*256];
+	SFT_Image g = {
+		.width  = 256,
+		.height = 256,
+		.pixels = pixels,
+	};
+	SFT_Glyph glyph, oglyph = 0;
+	struct SFT_LMetrics lm;
+	struct SFT_GMetrics metrics;
+	SFT_Kerning kern;
+	const char *p = text;
+	unsigned codepoint;
+	sft_lmetrics(&font->sft, &lm);
 	while (*p) {
 		p = utf8_to_codepoint(p, &codepoint);
-		set = get_glyphset(font, codepoint);
-		g = &set->glyphs[codepoint & 0xff];
-		if (ocp)
-			kern = stbtt_GetCodepointKernAdvance(&font->stbfont, ocp, codepoint);
-		ocp = codepoint;
-		x += ceil(s * kern);
-		img_pixels_blend(set->image,
-			g->x0, g->y0,
-			g->x1 - g->x0, g->y1 - g->y0,
-			img,
-			x + g->xoff, g->yoff, PXL_BLEND_BLEND);
-		x += g->xadvance;
+		sft_lookup(&font->sft, codepoint, &glyph);
+		kern.xShift = 0;
+		if (oglyph)
+			sft_kerning(&font->sft, oglyph, glyph,  &kern);
+		oglyph = glyph;
+		x += sft_floor(kern.xShift);
+		if (x < 0)
+			x = 0;
+		sft_gmetrics(&font->sft, glyph, &metrics);
+		g.width = metrics.minWidth;
+		g.height = metrics.minHeight;
+		sft_render(&font->sft, glyph, g);
+		i = 0;
+		yoff = floor(lm.ascender + metrics.yOffset);
+		xoff = sft_floor(metrics.leftSideBearing);
+		if (x + xoff < 0)
+			x += -xoff;
+		for (y = 0; y < g.height; y++) {
+			if (yoff + y >= img->h)
+				break;
+			pos = ((y + yoff)* img->w + x + xoff) * 4;
+			for (xx = 0; xx < g.width; xx++) {
+				if (xx + x + xoff>= img->w) {
+					i += g.width - xx;
+					break;
+				}
+				if (pixels[i]) {
+					pos += 3;
+					img->ptr[pos++] = pixels[i];
+				} else
+					pos += 4;
+				i ++;
+			}
+		}
+		x += round(metrics.advanceWidth);
 	}
 	return 0;
 }
@@ -174,19 +187,12 @@ font_render(font_t *font, const char *text, img_t *img)
 void
 font_free(font_t *font)
 {
-	int i;
-	for (i = 0; i < MAX_GLYPHSET; i++) {
-		glyphset_t *set = font->sets[i];
-		if (!set)
-			continue;
-		img_free(set->image);
-		free(set);
-	}
+	sft_freefont(font->sft.font);
 	free(font->data);
 	free(font);
 }
 
-static const char *info = "stb_truetype";
+static const char *info = "libschrift";
 const char *
 font_renderer()
 {

@@ -1,5 +1,4 @@
 #include "external.h"
-#include "stb_truetype.h"
 #include "stb_image.h"
 #include "stb_image_resize.h"
 #include "platform.h"
