@@ -709,10 +709,6 @@ img_pixels_blend(img_t *src, int x, int y, int w, int h,
 	if (!h)
 		h = src->h;
 
-	if (x < 0 || x + w > src->w ||
-		y < 0 || y + h > src->h)
-		return 0;
-
 	if (xx < dst->clip_x1) {
 		w += xx - dst->clip_x1;
 		x -= xx - dst->clip_x1;
