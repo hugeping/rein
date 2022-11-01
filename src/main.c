@@ -1,6 +1,5 @@
 #include "external.h"
 #include "platform.h"
-#include "gfx.h" /* to get font_renderer */
 
 #ifndef VERSION
 #define VERSION "unknown"
@@ -10,10 +9,12 @@ extern int luaopen_bit(lua_State *L);
 extern int luaopen_system(lua_State *L);
 extern int luaopen_thread(lua_State *L);
 extern int luaopen_gfx(lua_State *L);
+extern int luaopen_utf(lua_State *L);
 
 static const luaL_Reg lua_libs[] = {
-	{ "sys",    luaopen_system },
-	{ "gfx",  luaopen_gfx },
+	{ "sys", luaopen_system },
+	{ "utf", luaopen_utf },
+	{ "gfx", luaopen_gfx },
 	{ "bit", luaopen_bit },
 	{ "thread", luaopen_thread },
 	{ NULL, NULL }
