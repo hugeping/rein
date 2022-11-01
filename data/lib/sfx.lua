@@ -80,8 +80,8 @@ function sfx.parse_song(text)
   return ret
 end
 
-function sfx.sin(t, freq)
-  return math.sin(TWO_PI_BY_SR * freq * t)
+function sfx.sin(freq)
+  return math.sin(freq)
 end
 
 function sfx.dsf(freq, mod_factor, width)
@@ -107,10 +107,10 @@ end
 function sfx.lfsr(state, bits, taps)
   local x = 0
   for _, t in ipairs(taps) do
-    x = bit.bxor(x, bit.bshr(state, t))
+    x = bit.bxor(x, bit.rshift(state, t))
   end
-  return bit.bor(bit.bshr(state, 1),
-           (bit.bshl(bit.band(bit.bnot(x), 1), bits - 1)))
+  return bit.bor(bit.rshift(state, 1),
+           (bit.lshift(bit.band(bit.bnot(x), 1), bits - 1)))
 end
 
 function sfx.envelope(t, deltas, levels, level_0, func)
@@ -146,42 +146,28 @@ function sfx.set_stereo(x, pan)
   return x * ((1 - pan)^0.5), x * (pan^0.5)
 end
 
-local phasor = {}
-phasor.__index = phasor
+local Phasor = {}
+Phasor.__index = Phasor
+function sfx.Phasor()
+  local s = {
+    phase = 0;
+  }
+  setmetatable(s, Phasor)
+  return s
+end
 
-function phasor:reset()
+function Phasor:reset()
   self.phase = 0
 end
 
-function phasor:next(freq)
+function Phasor:next(freq)
   local p = self.phase
   self.phase = (self.phase + (2 * PI / SR) * freq) % (4 * PI)
   return p
 end
 
-function sfx.Phasor()
-  local s = {
-    phase = 0;
-  }
-  setmetatable(s, phasor)
-  return s
-end
-
-local envelop = {}
-envelop.__index = envelop
-
-function envelop:reset()
-  self.t = 0
-  self.level_0 = self.val
-end
-
-function envelop:next()
-  if self.t < self.size then
-    self.val = sfx.envelope(self.t, self.deltas, self.levels, self.level_0)
-    self.t = self.t + 1 / SR
-  end
-  return self.val
-end
+local Env = {}
+Env.__index = Env
 
 function sfx.Env(deltas, levels)
   local size = 0
@@ -196,17 +182,25 @@ function sfx.Env(deltas, levels)
     val = 0;
     level_0 = 0;
   }
-  setmetatable(s, envelop)
+  setmetatable(s, Env)
   return s
 end
-local delay = {}
-delay.__index = delay
 
-function delay:next(x)
-  local y
-  y, self.pos = sfx.delay(self.buf, self.pos, x, self.level, self.fb)
-  return y
+function Env:reset()
+  self.t = 0
+  self.level_0 = self.val
 end
+
+function Env:next()
+  if self.t < self.size then
+    self.val = sfx.envelope(self.t, self.deltas, self.levels, self.level_0)
+    self.t = self.t + 1 / SR
+  end
+  return self.val
+end
+
+local Delay = {}
+Delay.__index = Delay
 
 function sfx.Delay(size, level, fb)
   fb = fb or 0.5
@@ -219,8 +213,14 @@ function sfx.Delay(size, level, fb)
   for i = 1, sfx.sec(size) do
     s.buf[i] = 0
   end
-  setmetatable(s, delay)
+  setmetatable(s, Delay)
   return s
+end
+
+function Delay:next(x)
+  local y
+  y, self.pos = sfx.delay(self.buf, self.pos, x, self.level, self.fb)
+  return y
 end
 
 local function update(self, freq, vol)
@@ -233,15 +233,11 @@ local function update(self, freq, vol)
   end
 end
 
-local squarev = {
+local SquareVoice = {
   update = update;
 }
-squarev.__index = squarev
 
-function squarev:next()
-  local a = sfx.square(self.ph1:next(self.freq) + 2 * math.sin(self.ph2:next(4)))
-  return self.vol * a * self.env:next()
-end
+SquareVoice.__index = SquareVoice
 
 function sfx.SquareVoice()
   local s = {
@@ -251,20 +247,19 @@ function sfx.SquareVoice()
     vol = 0;
     env = sfx.Env({0.01, 0.5}, {1, 0});
   }
-  setmetatable(s, squarev)
+  setmetatable(s, SquareVoice)
   return s
 end
 
-local sawv = {
+function SquareVoice:next()
+  local a = sfx.square(self.ph1:next(self.freq) + 2 * math.sin(self.ph2:next(4)))
+  return self.vol * a * self.env:next()
+end
+
+local SawVoice = {
   update = update;
 }
-sawv.__index = sawv
-
-function sawv:next()
-  local mod = 0.2 + math.abs(1 + math.sin(self.ph2:next(1))) * 0.3
-  local a = sfx.saw(self.ph1:next(self.freq) + 2 * math.sin(self.ph3:next(4)), mod)
-  return self.dly:next(self.vol * a * self.env:next())
-end
+SawVoice.__index = SawVoice
 
 function sfx.SawVoice()
   local s = {
@@ -276,22 +271,18 @@ function sfx.SawVoice()
     vol = 0;
     env = sfx.Env({0.01, 0.1}, {1, 0.5})
   }
-  setmetatable(s, sawv)
+  setmetatable(s, SawVoice)
   return s
 end
 
-local lfsr = {}
-lfsr.__index = lfsr
-
-function lfsr:next(freq)
-  local y = bit.bans(self.state, 1)
-  self.phase = self.phase + 2 * freq * (1 / SR)
-  if self.phase > 1 then
-    self.phase = self.phase - 1
-    self.state = sfx.lfsr(self.state, self.bits, self.taps)
-  end
-  return 2 * y - 1
+function SawVoice:next()
+  local mod = 0.2 + math.abs(1 + math.sin(self.ph2:next(1))) * 0.3
+  local a = sfx.saw(self.ph1:next(self.freq) + 2 * math.sin(self.ph3:next(4)), mod)
+  return self.dly:next(self.vol * a * self.env:next())
 end
+
+local LFSR = {}
+LFSR.__index = LFSR
 
 function sfx.LFSR(bits, taps)
   local s = {
@@ -300,8 +291,85 @@ function sfx.LFSR(bits, taps)
     state = 1;
     phase = 0;
   }
-  setmetatable(s, lfsr)
+  setmetatable(s, LFSR)
   return s
+end
+
+function LFSR:next(freq)
+  local y = bit.band(self.state, 1)
+  self.phase = self.phase + 2 * freq * (1 / SR)
+  if self.phase > 1 then
+    self.phase = self.phase - 1
+    self.state = sfx.lfsr(self.state, self.bits, self.taps)
+  end
+  return 2 * y - 1
+end
+
+local BDVoice = {}
+BDVoice.__index = BDVoice
+
+function sfx.BDVoice()
+  local s = {
+    ph1 = sfx.Phasor();
+    ph2 = sfx.Phasor();
+    e1 = sfx.Env({0.001, 0.01, 0.2}, {400, 20, 0});
+    env = sfx.Env({0.001, 0.15}, {1, 0});
+    e3 = sfx.Env({0.001, 0.25}, {120, 0});
+    vol = 0;
+  }
+  setmetatable(s, BDVoice)
+  return s
+end
+
+function BDVoice:update(freq, vol)
+  if freq then
+    self.env:reset()
+    self.e1:reset()
+    self.e3:reset()
+  end
+  if vol then
+    self.vol = vol / 255
+  end
+end
+
+function BDVoice:next()
+  local y = math.sin(self.ph2:next(self.e3:next())) * 1.5 + sfx.dsf(self.ph1:next(self.e1:next()), 4, 0.5)
+  return y * self.env:next() * 0.3 * self.vol
+end
+
+local SnareVoice = {}
+SnareVoice.__index = SnareVoice
+
+function sfx.SnareVoice()
+  local s = {
+    ph1 = sfx.Phasor();
+    ph2 = sfx.Phasor();
+    n1 = sfx.LFSR(26, {0, 5, 10, 13, 15, 20, 27});
+    env = sfx.Env({0.001, 0.15}, {1, 0});
+    e2 = sfx.Env({0.001, 0.1}, {5000, 3000});
+    e4 = sfx.Env({0.001, 0.15}, {200, 100});
+    vol = 0;
+  }
+  setmetatable(s, SnareVoice)
+  return s
+end
+
+function SnareVoice:update(freq, vol)
+  if freq then
+    self.env:reset()
+    self.e2:reset()
+    self.e4:reset()
+  end
+  if vol then
+    self.vol = vol / 255
+  end
+end
+
+function SnareVoice:next()
+  local a = self.env:next()
+  local y = math.sin(self.ph1:next(self.e4:next())) * a * 0.75
+  y = y + self.n1:next(self.e2:next()) * math.sin(self.ph2:next(7500)) * a
+  return y * a * 0.6 * self.vol
 end
 
 function sfx.play_song(voices, pans, tracks, tick)
