@@ -19,8 +19,7 @@ local s3 = gfx.new(4, 4)
 
 
 local function fill_cell(pixels, alpha)
-  pixels:clear(0)
-  pixels:fill(1, 1, 3, 3, {48, 140, 32, alpha})
+  pixels:clear(1, 1, 3, 3, {48, 140, 32, alpha})
 end
 
 local function check_coord(i, j)
@@ -198,4 +197,3 @@ while true do
   if i == 8 then i = 0 end
   t = t + 1
 end
-
