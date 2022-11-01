@@ -169,8 +169,8 @@ function title:show()
   self.w = w
   self.h = h
   screen:fill(0, grid.h - 8, grid.w, grid.h - 8, { 0, 0, 0, 96 })
-  print(info, self.x+1, self.y+1, 0)
-  print(info, self.x, self.y, 15)
+  gfx.print(info, self.x+1, self.y+1, 0)
+  gfx.print(info, self.x, self.y, 15)
 end
 
 function title:click(x, y, mb, click)
@@ -273,7 +273,7 @@ function grid:save(fname, sel)
   end
   if sel then
     fname = string.format("%s-%d-%d-%d-%d.spr", fname:gsub("%.spr$", ""), x1, y1, x2, y2)
-    dprint(fname)
+    print(fname)
   end
   local f, e = io.open(fname, "wb")
   if not f then
@@ -288,7 +288,7 @@ function grid:save(fname, sel)
     end
   end
   f:write(string.format("%s\n", p))
-  dprint(p)
+  print(p)
   for y=y1,y2 do
     local l = s.pixels[y] or {}
     local r = ''
@@ -297,7 +297,7 @@ function grid:save(fname, sel)
       r = r .. colmap[c]
     end
     f:write(string.format("%s\n", r))
-    dprint(r)
+    print(r)
   end
   f:write("\n")
   f:close()
@@ -861,7 +861,7 @@ function proc_inp(r, e, a, b, c, d)
     elseif string.byte(e) >= string.byte('0')
       and string.byte(e) <= string.byte('9') then
       if input.keydown'ctrl' then
-        dprint("Bookmark added: ", e)
+        print("Bookmark added: ", e)
         bookmarks[e] = { x = grid.xoff, y = grid.yoff }
       elseif bookmarks[e] then
         grid.xoff, grid.yoff = bookmarks[e].x, bookmarks[e].y
@@ -955,8 +955,8 @@ function run()
       if r == 'keydown' or r == 'mousedown' then
         help_mode = false
       end
-      print(HELP)
-      print("Here is the status line.", 0, h - 16, 0)
+      gfx.print(HELP)
+      gfx.print("Here is the status line.", 0, h - 16, 0)
       screen:clear(0, h - 8, w, h - 8, 1)
       title:show()
     else

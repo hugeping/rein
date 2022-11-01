@@ -63,6 +63,7 @@ local env = {
   tonumber = tonumber,
   tostring = tostring,
   coroutine = coroutine,
+  print = print,
   DATADIR = DATADIR,
   SCALE = SCALE,
   VERSION = VERSION,
@@ -204,8 +205,8 @@ function env_ro.gfx.new(x, y)
   return gfx.new(x, y)
 end
 
-function env_ro.printf(x, y, col, fmt, ...)
-  return env.print(string.format(fmt, ...), x, y, col)
+function env_ro.gfx.printf(x, y, col, fmt, ...)
+  return env.gfx.print(string.format(fmt, ...), x, y, col)
 end
 
 
@@ -288,18 +289,9 @@ function env.sys.sleep(to, interrupt)
   until interrupt
 end
 
-function env.dprint(...)
-  local t = ''
-  for _, v in ipairs({...}) do
-    if t ~= '' then t = t .. ' ' end
-    t = t .. tostring(v)
-  end
-  sys.log(t)
-end
-
 function env_ro.error(text)
   env.screen:clear(conf.bg)
-  env.print(text, 0, 0, conf.fg, true)
+  env.gfx.print(text, 0, 0, conf.fg, true)
   core.err_msg = text
   if not core.running() then
     return
@@ -307,7 +299,7 @@ function env_ro.error(text)
   coroutine.yield()
 end
 
-function env_ro.print(text, x, y, col, scroll)
+function env_ro.gfx.print(text, x, y, col, scroll)
   text = tostring(text)
   if not env.screen then
     sys.log(text)

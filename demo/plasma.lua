@@ -148,6 +148,6 @@ while true do
   end
 
   screen:clear(0,256-8,256,256-8,7)
-  printf(0, 256-8, 1, "Демо:%d FPS:%d", demo_nr, fps)
+  gfx.printf(0, 256-8, 1, "Демо:%d FPS:%d", demo_nr, fps)
   fps = gfx.flip(0)
 end

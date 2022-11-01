@@ -169,7 +169,7 @@ local fps = 0
 while true do
   screen:clear(0)
   draw_text("REIN", 70, 100, 4, s)
-  printf(108, 140, 1, VERSION)
+  gfx.printf(108, 140, 1, VERSION)
   screen:offset(math.floor(math.sin(frames * 0.1)*6), math.floor(math.cos(frames * 0.1)*6))
   spr[math.floor(frames/10)%2+1]:blend(screen, 240, 0)
 
@@ -184,7 +184,7 @@ while true do
     txt = ''
   end
 
-  printf(0, 0, 15, "FPS:%d\nMouse:%d,%d %s\nKeys:%s\nInp:%s",
+  gfx.printf(0, 0, 15, "FPS:%d\nMouse:%d,%d %s\nKeys:%s\nInp:%s",
     fps, mx, my, mb.left and 'left' or '',
     showkeys(), txt..'\1')
 

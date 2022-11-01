@@ -118,7 +118,7 @@ while true do
       end
     end
   else
-    print("[LMB]   - set cell\n[RBM]   - unset cell\n[Space] - start evolution\n[Enter] - evolution step\n[C]     - clear field\n[R]     - random field", 1, 1, 7)
+    gfx.print("[LMB]   - set cell\n[RBM]   - unset cell\n[Space] - start evolution\n[Enter] - evolution step\n[C]     - clear field\n[R]     - random field", 1, 1, 7)
   end
   local mx, my, mb = input.mouse()
   local a, b = sys.input()
@@ -187,11 +187,11 @@ while true do
     end
   end
   screen:clear(0, 256-8, 256, 256-8, 7)
-  printf(0, 256-8, 0, "Gen: %d | Pop: %d", generation, population)
+  gfx.printf(0, 256-8, 0, "Gen: %d | Pop: %d", generation, population)
   if help then
-    print("[Esc]Quit", 256-8*9-1, 256-8, 0)
+    gfx.print("[Esc]Quit", 256-8*9-1, 256-8, 0)
   else
-    print("[H]elp", 256-8*6-1, 256-8, 0)
+    gfx.print("[H]elp", 256-8*6-1, 256-8, 0)
   end
   gfx.flip(1/60)
   i = i + 1
