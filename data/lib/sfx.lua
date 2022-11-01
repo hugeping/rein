@@ -1,8 +1,5 @@
 -- https://github.com/true-grue/libzvuk/blob/main/libzvuk.ipynb
 -- Adopted by Peter Kosyh, original code by Peter Sovietov
-if unpack then
-  table.unpack = unpack
-end
 require "std"
 local sfx = {
 }
