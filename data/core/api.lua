@@ -400,6 +400,7 @@ function api.event(e, v, a, b, c)
   if e == 'quit' then
     api.running = false
     input.fifo  = {}
+    mixer.stop()
   end
 
   if e == 'mousemotion' then
@@ -451,7 +452,6 @@ function api.event(e, v, a, b, c)
 end
 
 function api.done()
-  mixer.stop()
 end
 
 return api
