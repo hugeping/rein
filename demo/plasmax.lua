@@ -179,7 +179,7 @@ while true do
   local r, v = sys.input()
 
   if r == 'quit' then
-    dprint "quitting..." -- nothing to do, will exit on next cycle
+    print "quitting..." -- nothing to do, will exit on next cycle
     for i=1, THREADS do
       thr[i]:write 'quit'
     end
@@ -193,6 +193,6 @@ while true do
   end
 
   screen:clear(0,w-8,w,h-8,7)
-  printf(0, h-8, 1, "Демо:%d FPS:%d", 1, fps)
+  gfx.printf(0, h-8, 1, "Демо:%d FPS:%d", 1, fps)
   fps = gfx.flip(0)
 end

@@ -38,14 +38,14 @@ logo:blend(screen, 4, 6)
 
 local frames = 0
 
-printf(40, 4, 0, [[REIN Version:%s
+gfx.printf(40, 4, 0, [[REIN Version:%s
 (c)2022 Peter Kosyh
 https://hugeping.ru
 
 Peter Sovietov
 (Sound system)]], VERSION)
 
-printf(8, 64, 0,
+gfx.printf(8, 64, 0,
   [[Usage:
     rein <lua file>]])
 

@@ -10,6 +10,9 @@ rnd = math.random
 inp = sys.input
 mouse = input.mouse
 keydown = input.keydown
+dprint = print
+print = gfx.print
+printf = gfx.printf
 
 local function make_wrapper(name)
   _G[name] = function(...)
@@ -19,6 +22,6 @@ end
 
 for _, n in ipairs { 'clear', 'pixel', 'fill', 'line', 'lineAA',
   'circle', 'circleAA', 'fill_circle', 'fill_triangle',
-  'fill_poly', 'poly' } do
+  'fill_poly', 'poly', 'polyAA', 'fill_rect', 'rect', 'rectAA' } do
   make_wrapper(n)
 end

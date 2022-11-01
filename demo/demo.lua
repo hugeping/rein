@@ -54,7 +54,7 @@ while true do
 
   screen:buff(buf)
   screen:clear(0,256-8,256,256-8,7)
-  printf(0, 256-8, 1, "Демо:%d FPS:%d", current, fps)
+  gfx.printf(0, 256-8, 1, "Демо:%d FPS:%d", current, fps)
 
   fps = gfx.flip(1/50)
 end
