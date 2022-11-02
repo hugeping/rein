@@ -104,9 +104,9 @@ while true do
   if not help then
     for x = 1, 64 do
       for y = 1, 62 do
-        fill_cell(c, math.abs(math.sin(t/15+x*y)/2*48+211))
         if world[y][x] == 1 then
-          c:blend(screen, x*4-4, y*4-4)
+          screen:fill(x*4-4, y*4 - 4, 3, 3,
+            {48, 140, 32, math.abs(math.sin(t/15+x*y)/2*48+211)})
         elseif shadow1[y][x] == 1 then
           s1:blend(screen, x*4-4, y*4-4)
         elseif shadow2[y][x] == 1 then
