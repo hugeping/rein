@@ -699,8 +699,10 @@ img_pixels_blend(img_t *src, int x, int y, int w, int h,
 	unsigned char *ptr1, *ptr2;
 	int cy, cx, srcw, dstw;
 
-	x += src->xoff;
-	y += src->xoff;
+	if (x < 0 || x + w > src->w ||
+		y < 0 || y + h > src->h)
+		return 0;
+
 	xx += dst->xoff;
 	yy += dst->yoff;
 
@@ -710,8 +712,8 @@ img_pixels_blend(img_t *src, int x, int y, int w, int h,
 		h = src->h;
 
 	if (xx < dst->clip_x1) {
-		w += xx - dst->clip_x1;
-		x -= xx - dst->clip_x1;
+		w -= (dst->clip_x1 - xx);
+		x += (dst->clip_x1 - xx);
 		xx = dst->clip_x1;
 	}
 
@@ -719,8 +721,8 @@ img_pixels_blend(img_t *src, int x, int y, int w, int h,
 		return 0;
 
 	if (yy < dst->clip_y1) {
-		h += yy - dst->clip_y1;
-		y -= yy - dst->clip_y1;
+		h -= (dst->clip_y1 - yy);
+		y += (dst->clip_y1 - yy);
 		yy = dst->clip_y1;
 	}
 
@@ -738,12 +740,12 @@ img_pixels_blend(img_t *src, int x, int y, int w, int h,
 
 	ptr1 = src->ptr;
 	ptr2 = dst->ptr;
-	ptr1 += (y * src->w + x) << 2;
-	ptr2 += (yy * dst->w + xx) << 2;
+	ptr1 += (y * src->w + x) * 4;
+	ptr2 += (yy * dst->w + xx) * 4;
 	srcw = src->w * 4; dstw = dst->w * 4;
 	for (cy = 0; cy < h; cy ++) {
 		if (mode == PXL_BLEND_COPY)
-			memcpy(ptr2, ptr1, w << 2);
+			memcpy(ptr2, ptr1, w * 4);
 		else {
 			unsigned char *p2 = ptr2;
 			unsigned char *p1 = ptr1;
