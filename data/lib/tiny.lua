@@ -10,6 +10,7 @@ rnd = math.random
 inp = sys.input
 mouse = input.mouse
 keydown = input.keydown
+keypress = input.keypress
 dprint = print
 print = gfx.print
 printf = gfx.printf
