@@ -770,12 +770,12 @@ function grid:show()
       end
     end
   end
-  if s.grid < 128 then
+  if s.grid < 128 and grid_mode then
     screen:rect(s.x, s.y, s.x + s.w, s.y + s.h, 0)
     for x=1,s.grid do
 
-      local colx = (((s.xoff + x - 1)%8 == 0) and grid_mode and 2) or 0
-      local coly = (((s.yoff + x - 1)%8 == 0) and grid_mode and 2) or 0
+      local colx = (((s.xoff + x - 1)%8 == 0) and 2) or 0
+      local coly = (((s.yoff + x - 1)%8 == 0) and 2) or 0
 
       screen:line(s.x+(x-1)*dx, s.y, (x-1)*dx, s.y + s.h,
         colx)
