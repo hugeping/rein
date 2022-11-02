@@ -273,6 +273,15 @@ function env_ro.input.keydown(name)
   return input.kbd[name]
 end
 
+function env_ro.input.keypress(name) -- single press
+  local r = input.kbd[name]
+  if not r or r == 1 then
+    return false
+  end
+  input.kbd[name] = 1
+  return true
+end
+
 function env.sys.sleep(to, interrupt)
   local start = sys.time()
   repeat
