@@ -1149,7 +1149,7 @@ local fill_c1 = gfx.new [[
 0101]]
 
 local fill_c6 = gfx.new [[
--0----1
+------1------
 1010
 0101
 1010
@@ -1168,14 +1168,13 @@ local fill_1d = gfx.new [[
 0101
 1010
 0101]]
-
 function sky()
 --fillp(0b1010010110100101)
 	if sun>55 then
 		local sl=64*(((sun-55)/55)^2)
 		fill_rect(0,0,128,sl,1)
-		fill_rect(0,sl-16,128,sl-8,fill_c1)
-		fill_rect(0,sl-8,128,sl,fill_c6)
+		fill_rect(0,sl-16,128,sl-8, fill_1d)
+		fill_rect(0,sl-8,128,sl, {0x29, 0x7D, 0xBF, 0XFF})
 		stars(sl-24)
 	end
 	fill_circle(64,sun,12,fill_0a)
@@ -1283,11 +1282,17 @@ function opts(x,y)
 	y=y+9
 	print("🅾️Z OK",x+24,y,(flr(tm/5)%2==0)and 7 or 15)
 end
-
+function print_bord(t, x, y, a, b)
+	print(t, x-1, y, b)
+	print(t, x+1, y, b)
+	print(t, x, y-1, b)
+	print(t, x, y+1, b)
+	print(t, x, y, a)
+end
 
 function help(x,y)
-	print("YOUR BROTHER IS A POLAR",x+16,y,1)
-	print("EXPLORER. HE GOT IN TROUBLE!",x+8,y+8,1)
+	print_bord("YOUR BROTHER IS A POLAR",x+16,y,1, 6)
+	print_bord("EXPLORER. HE GOT IN TROUBLE!",x+8,y+8,1, 6)
 --	fillp(0b1010010110100101)
 	y=y+1
 	x=x+3
