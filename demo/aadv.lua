@@ -265,19 +265,20 @@ function engine()
 	local on = false
 	local v, i = 0, 32
 	while true do
-		v = on and sfx.saw(sfx.hz(i, 20), 0.5)*0.5 or 0
+		req = coroutine.yield(v)
+		if req == 'on' then
+			on = 64
+			i = 32
+			v = 'ack'
+		else
+			v = on and sfx.saw(sfx.hz(i, 20), 0.5)*0.5 or 0
+		end
 		if on then
 			on = on - 1
 			i = i + 1
 		end
 		if on == 0 then
 			on = false
-		end
-		req = coroutine.yield(v)
-		if req == 'on' then
-			on = 64
-			i = 32
-			coroutine.yield() -- ack
 		end
 	end
 end

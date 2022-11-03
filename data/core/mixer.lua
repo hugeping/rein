@@ -23,14 +23,6 @@ function mixer.fill()
   local size = #mixer.buff
   local b = mixer.buff
   local pos = b.tail
-  for k = 1, CHANNELS do -- make requests
-    local m = mixer.chans[k]
-    local fn = m.fn
-    if m.send then
-      mixer.answer(coroutine.resume(fn, table.unpack(m.args)))
-      m.send = false
-    end
-  end
   for i = 1, b.size-b.used, b.channels do -- fill bufer
     local ll, rr = 0, 0
     local n = 0
@@ -149,6 +141,17 @@ function mixer.answer(...)
   end
 end
 
+function mixer.reqs()
+  for k = 1, CHANNELS do -- make requests
+    local m = mixer.chans[k]
+    local fn = m.fn
+    if m.send then
+      mixer.answer(coroutine.resume(fn, table.unpack(m.args)))
+      m.send = false
+    end
+  end
+end
+
 function mixer.thread()
   print "mixer start"
   for i = 1, CHANNELS do
@@ -173,6 +176,7 @@ function mixer.thread()
     elseif r == 'stop' then -- stop generator
       mixer.answer(mixer.req_stop(v))
     end
+    mixer.reqs()
     mixer.fill() -- fill buffer/send and rcv
     mixer.write_audio() -- write to audio!
   end
