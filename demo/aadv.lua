@@ -1,6 +1,6 @@
 require "tiny"
 require "std"
-
+border(0)
 function cos(a)
 	return math.cos(a*math.pi*2)
 end
