@@ -280,7 +280,7 @@ local flipsx = {}
 local flipsy = {}
 local flipsxy = {}
 function spr(nr, x, y, w, h, flipx, flipy)
-	if nr == 0 then return end
+	if nr == 0 or not nr then return end
 	nr = sprmap(nr)
 	w = w or 1
 	h = h or 1
