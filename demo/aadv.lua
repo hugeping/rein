@@ -1330,13 +1330,20 @@ function print_bord(t, x, y, a, b)
 	print(t, x, y, a)
 end
 
+local fill_10x = gfx.new [[
+01
+1010
+0101
+1010
+0101]]
+
 function help(x,y)
 	print_bord("YOUR BROTHER IS A POLAR",x+16,y,1, 6)
 	print_bord("EXPLORER. HE GOT IN TROUBLE!",x+8,y+8,1, 6)
 --	fillp(0b1010010110100101)
 	y=y+1
 	x=x+3
-	fill_rect(x+24,y+16,x+95,y+32,fill_10)
+	fill_rect(x+24,y+16,x+95,y+32,fill_10x)
 	for i=0,8 do
 		local c=0
 		if (i==1) then c=211 end
