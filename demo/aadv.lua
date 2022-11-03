@@ -258,10 +258,21 @@ function sget(x, y)
 	end
 	return 1
 end
-
-function sfx()
+local border_nr = false
+function sfx(nr)
+	if nr == 1 or nr == 2 then
+		border_nr = 1
+	end
 end
-
+function update_border()
+	if not border_nr then return end
+	border(flr(rnd(16)))
+	border_nr = border_nr + 1
+	if border_nr > 4 then
+		border_nr = false
+		border(0)
+	end
+end
 function music()
 end
 
@@ -269,7 +280,7 @@ local flipsx = {}
 local flipsy = {}
 local flipsxy = {}
 function spr(nr, x, y, w, h, flipx, flipy)
-	if nr == 0 then return end
+	if nr == 0 or not nr then return end
 	nr = sprmap(nr)
 	w = w or 1
 	h = h or 1
@@ -489,7 +500,7 @@ function plu(p)
 					p.t=1
 				end
 			end
-			-- sfx(0)
+			sfx(0)
 		end
 		if p.t>0 then p.t=p.t-0.01 end
 		local c=mm(flr(p.x/8),flr(p.y/8))
@@ -501,7 +512,7 @@ function plu(p)
 			else
 				p.y=p.y+2
 				p.sink=1
-				-- sfx(4)
+				sfx(4)
 			end
 			planes=planes-1
 			p.stp=true
@@ -755,6 +766,13 @@ end
 exp={}
 smks={}
 
+local fill_10 = gfx.new [[
+-1
+1010
+0101
+1010
+0101]]
+
 function smkd(v)
 	local x=tos(v.x)
 	if x<-16 or x>132 then
@@ -762,7 +780,7 @@ function smkd(v)
 	end
 	-- TODO pattern
 	if v.r>2 then
-		circle(x-4,v.y,v.r-1,0)
+		fill_circle(x-4,v.y,v.r-1,fill_10)
 	end
 end
 
@@ -1142,7 +1160,7 @@ local fill_c1 = gfx.new [[
 0101]]
 
 local fill_c6 = gfx.new [[
--0----1
+------1------
 1010
 0101
 1010
@@ -1161,14 +1179,13 @@ local fill_1d = gfx.new [[
 0101
 1010
 0101]]
-
 function sky()
 --fillp(0b1010010110100101)
 	if sun>55 then
 		local sl=64*(((sun-55)/55)^2)
 		fill_rect(0,0,128,sl,1)
-		fill_rect(0,sl-16,128,sl-8,fill_c1)
-		fill_rect(0,sl-8,128,sl,fill_c6)
+		fill_rect(0,sl-16,128,sl-8, fill_1d)
+		fill_rect(0,sl-8,128,sl, {0x29, 0x7D, 0xBF, 0XFF})
 		stars(sl-24)
 	end
 	fill_circle(64,sun,12,fill_0a)
@@ -1276,17 +1293,17 @@ function opts(x,y)
 	y=y+9
 	print("🅾️Z OK",x+24,y,(flr(tm/5)%2==0)and 7 or 15)
 end
-
-local fill_10 = gfx.new [[
-01
-1010
-0101
-1010
-0101]]
+function print_bord(t, x, y, a, b)
+	print(t, x-1, y, b)
+	print(t, x+1, y, b)
+	print(t, x, y-1, b)
+	print(t, x, y+1, b)
+	print(t, x, y, a)
+end
 
 function help(x,y)
-	print("YOUR BROTHER IS A POLAR",x+16,y,1)
-	print("EXPLORER. HE GOT IN TROUBLE!",x+8,y+8,1)
+	print_bord("YOUR BROTHER IS A POLAR",x+16,y,1, 6)
+	print_bord("EXPLORER. HE GOT IN TROUBLE!",x+8,y+8,1, 6)
 --	fillp(0b1010010110100101)
 	y=y+1
 	x=x+3
@@ -1308,7 +1325,7 @@ function help(x,y)
 	line(27,y+15,27,y+15+24, 6)
 	line(100,y+15,100,y+15+24, 6)
 	if flr(tm/15)%2==1 then
-		print("sos!",x+64,y+17,6)
+		print("SOS!",x+64,y+17,6)
 	end
 	x=x-3
 	print("JUST TAKE HIM HOME!⌂",x+22,y+43,2)
@@ -1384,6 +1401,7 @@ end
 init()
 
 while true do
+	update_border()
 	update()
 	draw()
 	flip(1/30)
