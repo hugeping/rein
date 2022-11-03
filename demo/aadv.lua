@@ -259,7 +259,20 @@ function sget(x, y)
 	return 1
 end
 local border_nr = false
+
+function engine()
+	local sfx = require "sfx"
+	local n = sfx.LFSR(26, {0, 5, 10});
+	for i=1, 256 do
+		coroutine.yield(n:next(sfx.hz(i, 440)))
+	end
+end
+
 function sfx(nr)
+	if nr == 0 then
+		mixer.new(engine)
+		return
+	end
 	if nr == 1 or nr == 2 then
 		border_nr = 1
 	end
