@@ -263,22 +263,17 @@ local border_nr = false
 function engine()
 	local sfx = require "sfx"
 	local on = false
-	local v, i = 0, 32
+	local v, i = 0, 256
 	while true do
 		req = coroutine.yield(v)
 		if req == 'on' then
-			on = 64
-			i = 32
+			i = 0
 			v = 'ack'
 		else
-			v = on and sfx.saw(sfx.hz(i, 20), 0.5)*0.5 or 0
+			v = i < 256 and sfx.saw(sfx.hz(i, 300), 0.3)*0.5 or 0
 		end
-		if on then
-			on = on - 1
+		if i < 256 then
 			i = i + 1
-		end
-		if on == 0 then
-			on = false
 		end
 	end
 end
