@@ -67,6 +67,7 @@ local env = {
   DATADIR = DATADIR,
   SCALE = SCALE,
   VERSION = VERSION,
+  collectgarbage = collectgarbage,
 }
 
 env._G = env

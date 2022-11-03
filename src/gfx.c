@@ -141,6 +141,18 @@ struct lua_pixels {
 	img_t img;
 };
 
+static int
+checkcolorpat(lua_State *L, int idx, color_t *col, struct lua_pixels **pat)
+{
+	*pat = NULL;
+	if (lua_isuserdata(L, idx)) {
+		*pat = (struct lua_pixels*)luaL_checkudata(L, idx, "pixels metatable");
+		memset(col, 0, sizeof(*col));
+		return 1;
+	}
+	return checkcolor(L, idx, col);
+}
+
 static __inline void
 blend(unsigned char *s, unsigned char *d)
 {
@@ -544,11 +556,7 @@ pixels_fill(lua_State *L)
 		h = luaL_optnumber(L, 5, 0);
 		col_idx = 6;
 	}
-	if (lua_isuserdata(L, col_idx)) {
-		pat = (struct lua_pixels*)luaL_checkudata(L, col_idx, "pixels metatable");
-		memset(&col, 0, sizeof(col));
-	} else
-		checkcolor(L, col_idx, &col);
+	checkcolorpat(L, col_idx, &col, &pat);
 
 	_fill(&src->img, x, y, w, h, &col,
 		col.a == 255 ? PXL_BLEND_COPY:PXL_BLEND_BLEND,
@@ -569,11 +577,7 @@ pixels_fill_rect(lua_State *L)
 	x2 = luaL_checknumber(L, 4);
 	y2 = luaL_checknumber(L, 5);
 
-	if (lua_isuserdata(L, 6)) {
-		pat = (struct lua_pixels*)luaL_checkudata(L, 6, "pixels metatable");
-		memset(&col, 0, sizeof(col));
-	} else
-		checkcolor(L, 6, &col);
+	checkcolorpat(L, 6, &col, &pat);
 
 	w = abs(x2 - x1) + 1;
 	h = abs(y2 - y1) + 1;
@@ -1496,11 +1500,8 @@ pixels_triangle(lua_State *L)
 		XOR_SWAP(y1, y2)
 	}
 	#undef XOR_SWAP
-	if (lua_isuserdata(L, 8)) {
-		pat = (struct lua_pixels*)luaL_checkudata(L, 8, "pixels metatable");
-		memset(&col, 0, sizeof(col));
-	} else
-		checkcolor(L, 8, &col);
+	checkcolorpat(L, 8, &col, &pat);
+
 	triangle(&src->img, x0, y0, x1, y1, x2, y2,
 		&col, pat?&pat->img:NULL);
 	return 0;
@@ -1546,11 +1547,7 @@ pixels_fill_circle(lua_State *L)
 	xc = luaL_optnumber(L, 2, 0);
 	yc = luaL_optnumber(L, 3, 0);
 	rr = luaL_optnumber(L, 4, 0);
-	if (lua_isuserdata(L, 5)) {
-		pat = (struct lua_pixels*)luaL_checkudata(L, 5, "pixels metatable");
-		memset(&col, 0, sizeof(col));
-	} else
-		checkcolor(L, 5, &col);
+	checkcolorpat(L, 5, &col, &pat);
 	fill_circle(&src->img, xc, yc, rr,
 		&col, pat?&pat->img:NULL);
 	return 0;
@@ -1569,11 +1566,8 @@ pixels_fill_poly(lua_State *L)
 	nr = lua_rawlen(L, 2);
 	if (nr < 6)
 		return 0;
-	if (lua_isuserdata(L, 3)) {
-		pat = (struct lua_pixels*)luaL_checkudata(L, 3, "pixels metatable");
-		memset(col, 0, sizeof(col));
-	} else {
-		checkcolor(L, 3, &color);
+	checkcolorpat(L, 3, &color, &pat);
+	if (!pat) {
 		col[0] = color.r;
 		col[1] = color.g;
 		col[2] = color.b;

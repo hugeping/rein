@@ -755,6 +755,13 @@ end
 exp={}
 smks={}
 
+local fill_10 = gfx.new [[
+-1
+1010
+0101
+1010
+0101]]
+
 function smkd(v)
 	local x=tos(v.x)
 	if x<-16 or x>132 then
@@ -762,7 +769,7 @@ function smkd(v)
 	end
 	-- TODO pattern
 	if v.r>2 then
-		circle(x-4,v.y,v.r-1,0)
+		fill_circle(x-4,v.y,v.r-1,fill_10)
 	end
 end
 
@@ -1277,12 +1284,6 @@ function opts(x,y)
 	print("🅾️Z OK",x+24,y,(flr(tm/5)%2==0)and 7 or 15)
 end
 
-local fill_10 = gfx.new [[
-01
-1010
-0101
-1010
-0101]]
 
 function help(x,y)
 	print("YOUR BROTHER IS A POLAR",x+16,y,1)
