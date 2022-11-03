@@ -1259,7 +1259,7 @@ function opts(x,y)
 	if not invert then
 		print("⬆️⬇️⬅️➡️ TURNING",x,y)
 	else
-		print("⬇️⬆️⬅️➡️ TUNRING",x,y)
+		print("⬇️⬆️⬅️➡️ TURNING",x,y)
 	end
 	y=y+8
 	print("🅾️Z/❎X THROTTLE UP/DOWN",x,y)
