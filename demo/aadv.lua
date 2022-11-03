@@ -1032,7 +1032,7 @@ function update()
 	end
 	if title then
 		if options then
-			if btn(4) then
+			if btnp(4) then
 				start()
 				options=not options
 			elseif btnp(0) then
