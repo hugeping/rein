@@ -1203,7 +1203,7 @@ function hud()
 		spr(244,128-9*i,8)
 	end
 	if plane.crash and plane.smoke and not plane.stp then
-		print("X-PRESS FAST!",32,60+rnd(2)-1,flr(tm/2)%2==1 and 8 or 1)
+		print("Z/X-PRESS FAST!",32,60+rnd(2)-1,flr(tm/2)%2==1 and 8 or 1)
 	end
 end
 
