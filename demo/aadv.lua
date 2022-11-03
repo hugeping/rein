@@ -262,15 +262,31 @@ local border_nr = false
 
 function engine()
 	local sfx = require "sfx"
-	local n = sfx.LFSR(26, {0, 5, 10});
-	for i=1, 256 do
-		coroutine.yield(n:next(sfx.hz(i, 440)))
+	local on = false
+	local v = 0, i
+	while true do
+		v = on and sfx.lfsr(sfx.hz(i, 40), 26, {1, 3, 7, 12}) or 0
+		if on then
+			on = on - 1
+			i = i + 1
+		end
+		if on == 0 then
+			on = false
+		end
+		req = coroutine.yield(v)
+		if req == 'on' then
+			on = 512
+			i = 128
+			coroutine.yield() -- ack
+		end
 	end
 end
 
+local eng = mixer.new(engine)
+
 function sfx(nr)
 	if nr == 0 then
-		mixer.new(engine)
+		eng:send 'on'
 		return
 	end
 	if nr == 1 or nr == 2 then
