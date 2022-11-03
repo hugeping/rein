@@ -14,6 +14,19 @@ keypress = input.keypress
 dprint = print
 print = gfx.print
 printf = gfx.printf
+add = table.insert
+del = table.remove
+cos = math.cos
+sin = math.sin
+
+all = function(t)
+	local n = #t
+	local i = 0
+	return function()
+		i = i + 1
+		return t[i]
+	end
+end
 
 local function make_wrapper(name)
   _G[name] = function(...)
