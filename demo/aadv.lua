@@ -258,10 +258,21 @@ function sget(x, y)
 	end
 	return 1
 end
-
-function sfx()
+local border_nr = false
+function sfx(nr)
+	if nr == 1 or nr == 2 then
+		border_nr = 1
+	end
 end
-
+function update_border()
+	if not border_nr then return end
+	border(flr(rnd(16)))
+	border_nr = border_nr + 1
+	if border_nr > 4 then
+		border_nr = false
+		border(0)
+	end
+end
 function music()
 end
 
@@ -489,7 +500,7 @@ function plu(p)
 					p.t=1
 				end
 			end
-			-- sfx(0)
+			sfx(0)
 		end
 		if p.t>0 then p.t=p.t-0.01 end
 		local c=mm(flr(p.x/8),flr(p.y/8))
@@ -501,7 +512,7 @@ function plu(p)
 			else
 				p.y=p.y+2
 				p.sink=1
-				-- sfx(4)
+				sfx(4)
 			end
 			planes=planes-1
 			p.stp=true
@@ -1390,6 +1401,7 @@ end
 init()
 
 while true do
+	update_border()
 	update()
 	draw()
 	flip(1/30)
