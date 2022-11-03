@@ -128,6 +128,54 @@ key_name(int sym)
 }
 
 static char*
+gamepad_key(int code)
+{
+	static char dst[16];
+	const char *key;
+	switch(code) {
+	case SDL_CONTROLLER_BUTTON_DPAD_UP:
+		key = "up";
+		break;
+	case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+		key = "down";
+		break;
+	case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+		key = "left";
+		break;
+	case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+		key = "right";
+		break;
+	case SDL_CONTROLLER_BUTTON_A:
+		key = "z";
+		break;
+	case SDL_CONTROLLER_BUTTON_B:
+		key = "x";
+		break;
+	case SDL_CONTROLLER_BUTTON_X:
+		key = "c";
+		break;
+	case SDL_CONTROLLER_BUTTON_Y:
+		key = "space";
+		break;
+	case SDL_CONTROLLER_BUTTON_START:
+		key = "escape";
+		break;
+	case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+		key = "left shift";
+		break;
+	case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+		key = "right shift";
+		break;
+	default:
+		key = "unknown";
+		break;
+	}
+	strncpy(dst, key, sizeof(dst));
+	dst[sizeof(dst)-1] = 0;
+	return dst;
+}
+
+static char*
 button_name(int button)
 {
 	static char nam[16];
@@ -229,6 +277,41 @@ MouseHide(int off)
 	SDL_ShowCursor(!off?SDL_ENABLE:SDL_DISABLE);
 }
 
+static SDL_GameController *gamepad = NULL;
+
+static void
+gamepad_init(void)
+{
+	int i;
+	if (SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER) < 0) {
+		fprintf(stderr, "Couldn't initialize GameController subsystem: %s\n", SDL_GetError());
+		return;
+	}
+	for (i = 0; i < SDL_NumJoysticks(); ++i) {
+		if (SDL_IsGameController(i)) {
+			gamepad = SDL_GameControllerOpen(i);
+			if (gamepad) {
+				fprintf(stderr, "Found gamepad: %s\n",
+					SDL_GameControllerName(gamepad));
+				break;
+			} else {
+				fprintf(stderr, "Could not open gamepad %i: %s\n",
+					i, SDL_GetError());
+			}
+		}
+	}
+}
+
+void
+gamepad_done(void)
+{
+	if(gamepad)
+		SDL_GameControllerClose(gamepad);
+	if(SDL_WasInit(SDL_INIT_GAMECONTROLLER))
+		SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
+}
+
+
 int
 PlatformInit(void)
 {
@@ -262,6 +345,7 @@ PlatformInit(void)
 		fprintf(stderr, "No audio: %s\n", SDL_GetError());
 	}
 	SDL_PauseAudioDevice(audiodev, 0);
+	gamepad_init();
 	return 0;
 }
 
@@ -270,6 +354,7 @@ static SDL_Surface *winbuff = NULL;
 void
 PlatformDone(void)
 {
+	gamepad_done();
 	SDL_PauseAudioDevice(audiodev, 1);
 	if (audiodev)
 		SDL_CloseAudioDevice(audiodev);
@@ -470,6 +555,14 @@ top:
 			SDL_FlushEvent(SDL_KEYUP);
 		}
 		goto top;
+	case SDL_CONTROLLERBUTTONDOWN:
+		lua_pushstring(L, "keydown");
+		lua_pushstring(L, gamepad_key(e.cbutton.button));
+		break;
+	case SDL_CONTROLLERBUTTONUP:
+		lua_pushstring(L, "keyup");
+		lua_pushstring(L, gamepad_key(e.cbutton.button));
+		break;
 	case SDL_KEYDOWN:
 		lua_pushstring(L, "keydown");
 		lua_pushstring(L, key_name(e.key.keysym.scancode));
