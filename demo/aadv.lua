@@ -902,6 +902,7 @@ function start()
 	e_anch,w_anch=false,false
 	tricky=false
 	sun=24
+	sund=0.1
 	sx,sy=plane.x,64
 	rsx,rsy=sx,64
 
@@ -1123,7 +1124,7 @@ function update()
 		ending=false
 		return
 	end
-	if (tm%5==0 and sun<164 and not title) then sun=sun+0.1 end
+	if (tm%5==0 and sun<256 and not title) then sun=sun+sund end
 	tm=tm+1
 	for v in all(clds) do
 		cldm(v)
@@ -1206,6 +1207,9 @@ local fill_1d = gfx.new [[
 0101]]
 function sky()
 --fillp(0b1010010110100101)
+	if sun > 230 or sun < 0 then
+		sund=-sund
+	end
 	if sun>55 then
 		local sl=64*(((sun-55)/55)^2)
 		fill_rect(0,0,128,sl,1)
