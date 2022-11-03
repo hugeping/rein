@@ -23,7 +23,15 @@ function mixer.fill()
   local size = #mixer.buff
   local b = mixer.buff
   local pos = b.tail
-  for i = 1, b.size-b.used, b.channels do
+  for k = 1, CHANNELS do -- make requests
+    local m = mixer.chans[k]
+    local fn = m.fn
+    if m.send then
+      mixer.answer(coroutine.resume(fn, table.unpack(m.args)))
+      m.send = false
+    end
+  end
+  for i = 1, b.size-b.used, b.channels do -- fill bufer
     local ll, rr = 0, 0
     local n = 0
     for k = 1, CHANNELS do
@@ -31,8 +39,8 @@ function mixer.fill()
       local fn = m.fn
       if fn then
         local st, l, r = coroutine.resume(fn,
-          (not m.run or m.send) and table.unpack(m.args))
-        m.run, m.send = true, false
+          (not m.run) and table.unpack(m.args))
+        m.run = true
         r = r or l
         if not st or not l then
           mixer.chans[k].fn = false -- stop it
