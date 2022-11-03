@@ -1314,7 +1314,7 @@ function help(x,y)
 	line(27,y+15,27,y+15+24, 6)
 	line(100,y+15,100,y+15+24, 6)
 	if flr(tm/15)%2==1 then
-		print("sos!",x+64,y+17,6)
+		print("SOS!",x+64,y+17,6)
 	end
 	x=x-3
 	print("JUST TAKE HIM HOME!⌂",x+22,y+43,2)
