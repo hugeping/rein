@@ -132,7 +132,8 @@ input.mouse() вернёт x, y и mb таблицу состояния кноп
 local x, y, mb = input.mouse()
 if mb.left then...
 
-input.keydown(клавиша) -- вернёт true если клавиша нажата.
+- input.keydown(клавиша) -- вернёт true если клавиша нажата.
+- input.keypress(клавиша) -- как keydown, но сработает один раз (до следующего нажатия).
 
 # thread
 
