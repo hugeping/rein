@@ -20,12 +20,12 @@ cos = math.cos
 sin = math.sin
 
 all = function(t)
-	local n = #t
-	local i = 0
-	return function()
-		i = i + 1
-		return t[i]
-	end
+  local n = #t
+  local i = 0
+  return function()
+    i = i + 1
+    return t[i]
+  end
 end
 
 local function make_wrapper(name)
