@@ -179,8 +179,9 @@ function title:click(x, y, mb, click)
   end
   local s = self
   x = x - s.x
-  local w = font:size(string.format("x%02d", grid.grid))
-  if x >= w then
+  local w = font:size(string.format("x%-3d", grid.grid))
+  local namew = font:size(string.format("%s ", SPRITE))
+  if x >= s.w - namew then
     if mb.left then
       grid:save(SPRITE)
     elseif mb.right then
@@ -189,7 +190,7 @@ function title:click(x, y, mb, click)
       grid.pixels = {}
       grid.dirty = false
     end
-  else
+  elseif x < w then
     if not grid:zoom(-1) then
       grid:zoom(0)
     end
