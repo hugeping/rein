@@ -1822,7 +1822,7 @@ pixels_free(lua_State *L)
 static const luaL_Reg pixels_mt[] = {
 	{ "val", pixels_value },
 	{ "clip", pixels_clip },
-	{ "npclip", pixels_noclip },
+	{ "noclip", pixels_noclip },
 	{ "offset", pixels_offset },
 	{ "nooffset", pixels_nooffset },
 	{ "pixel", pixels_pixel },

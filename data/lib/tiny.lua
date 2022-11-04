@@ -36,6 +36,7 @@ end
 
 for _, n in ipairs { 'clear', 'pixel', 'fill', 'line', 'lineAA',
   'circle', 'circleAA', 'fill_circle', 'fill_triangle',
-  'fill_poly', 'poly', 'polyAA', 'fill_rect', 'rect', 'rectAA' } do
+  'fill_poly', 'poly', 'polyAA', 'fill_rect', 'rect', 'rectAA',
+  'clip', 'noclip', 'offset', 'nooffset' } do
   make_wrapper(n)
 end
