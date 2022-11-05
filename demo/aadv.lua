@@ -798,7 +798,7 @@ function smkd(v)
 	end
 	-- TODO pattern
 	if v.r>2 then
-		fill_circle(x-4,v.y,v.r-1,fill_50)
+		circle(x-4,v.y,v.r-1,fill_50)
 	end
 end
 
