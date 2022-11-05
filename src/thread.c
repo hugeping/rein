@@ -168,7 +168,7 @@ thread_write(lua_State *L)
 retry:
 	if (thr->err) {
 		MutexUnlock(chan->m);
-		return luaL_error(L, "No peer on parent thread write: %s", thr->err);
+		return luaL_error(L, "No peer on thread write: %s", thr->err);
 	}
 
 	if (!other->L || other->write) {

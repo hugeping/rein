@@ -142,15 +142,20 @@ struct lua_pixels {
 };
 
 static int
-checkcolorpat(lua_State *L, int idx, color_t *col, struct lua_pixels **pat)
+checkcolorpat(lua_State *L, int idx, color_t *col, img_t **pat)
 {
+	struct lua_pixels *pxl;
 	*pat = NULL;
 	if (lua_isuserdata(L, idx)) {
-		*pat = (struct lua_pixels*)luaL_checkudata(L, idx, "pixels metatable");
+		pxl = (struct lua_pixels*)luaL_checkudata(L, idx, "pixels metatable");
 		memset(col, 0, sizeof(*col));
+		*pat = &pxl->img;
 		return 1;
 	}
-	return checkcolor(L, idx, col);
+	if (!checkcolor(L, idx, col)) {
+		return luaL_error(L, "No color argument.");
+	}
+	return 1;
 }
 
 static __inline void
@@ -543,7 +548,8 @@ static int
 pixels_fill(lua_State *L)
 {
 	int x = 0, y = 0, w = 0, h = 0, col_idx = -1;
-	struct lua_pixels *src, *pat = NULL;
+	struct lua_pixels *src;
+	img_t *pat;
 	color_t col;
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 
@@ -559,8 +565,7 @@ pixels_fill(lua_State *L)
 	checkcolorpat(L, col_idx, &col, &pat);
 
 	_fill(&src->img, x, y, w, h, &col,
-		col.a == 255 ? PXL_BLEND_COPY:PXL_BLEND_BLEND,
-		pat?&pat->img:NULL);
+		col.a == 255 ? PXL_BLEND_COPY:PXL_BLEND_BLEND, pat);
 	return 0;
 }
 
@@ -568,7 +573,8 @@ static int
 pixels_fill_rect(lua_State *L)
 {
 	int x1, y1, x2, y2, xmin, ymin, w, h;
-	struct lua_pixels *src, *pat = NULL;
+	struct lua_pixels *src;
+	img_t *pat;
 	color_t col;
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 
@@ -585,8 +591,7 @@ pixels_fill_rect(lua_State *L)
 	ymin = (y1<y2)?y1:y2;
 
 	_fill(&src->img, xmin, ymin, w, h, &col,
-		col.a == 255 ? PXL_BLEND_COPY:PXL_BLEND_BLEND,
-		pat?&pat->img:NULL);
+		col.a == 255 ? PXL_BLEND_COPY:PXL_BLEND_BLEND, pat);
 	return 0;
 }
 
@@ -814,7 +819,7 @@ pixels_blend(lua_State *L)
 }
 
 static __inline void
-line0(img_t *hdr, int x1, int y1, int dx, int dy, int xd, unsigned char *col)
+line0(img_t *hdr, int x1, int y1, int dx, int dy, int xd, unsigned char *col, img_t *pat)
 {
 	int dy2 = dy * 2;
 	int dyx2 = dy2 - dx * 2;
@@ -853,13 +858,13 @@ line0(img_t *hdr, int x1, int y1, int dx, int dy, int xd, unsigned char *col)
 		if (x1 >= hdr->clip_x2 || x1 < hdr->clip_x1)
 			break;
 		ptr += lx;
-		pixel(col, ptr);
+		pat?pixel_textured(pat, ptr, x1, y1):pixel(col, ptr);
 	}
 	return;
 }
 
 static __inline void
-line1(img_t *hdr, int x1, int y1, int dx, int dy, int xd, unsigned char *col)
+line1(img_t *hdr, int x1, int y1, int dx, int dy, int xd, unsigned char *col, img_t *pat)
 {
 	int dx2 = dx * 2;
 	int dxy2 = dx2 - dy * 2;
@@ -899,13 +904,13 @@ line1(img_t *hdr, int x1, int y1, int dx, int dy, int xd, unsigned char *col)
 		if (y1 >= hdr->clip_y2)
 			break;
 		ptr += ly;
-		pixel(col, ptr);
+		pat?pixel_textured(pat, ptr, x1, y1):pixel(col, ptr);
 	}
 	return;
 }
 
 static void
-line(img_t *src, int x1, int y1, int x2, int y2, color_t *color)
+line(img_t *src, int x1, int y1, int x2, int y2, color_t *color, img_t *pat)
 {
 	int dx, dy, tmp;
 	unsigned char col[4] = { color->r, color->g, color->b, color->a };
@@ -938,16 +943,16 @@ line(img_t *src, int x1, int y1, int x2, int y2, color_t *color)
 	dy = y2 - y1;
 	if (dx > 0) {
 		if (dx > dy) {
-			line0(src, x1, y1, dx, dy, 1, col);
+			line0(src, x1, y1, dx, dy, 1, col, pat);
 		} else {
-			line1(src, x1, y1, dx, dy, 1, col);
+			line1(src, x1, y1, dx, dy, 1, col, pat);
 		}
 	} else {
 		dx = -dx;
 		if (dx > dy) {
-			line0(src, x1, y1, dx, dy, -1, col);
+			line0(src, x1, y1, dx, dy, -1, col, pat);
 		} else {
-			line1(src, x1, y1, dx, dy, -1, col);
+			line1(src, x1, y1, dx, dy, -1, col, pat);
 		}
 	}
 }
@@ -958,13 +963,14 @@ pixels_line(lua_State *L)
 	int x1 = 0, y1 = 0, x2 = 0, y2 = 0;
 	color_t col;
 	struct lua_pixels *src;
+	img_t *pat;
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	x1 = luaL_optnumber(L, 2, 0);
 	y1 = luaL_optnumber(L, 3, 0);
 	x2 = luaL_optnumber(L, 4, 0);
 	y2 = luaL_optnumber(L, 5, 0);
-	checkcolor(L, 6, &col);
-	line(&src->img, x1, y1, x2, y2, &col);
+	checkcolorpat(L, 6, &col, &pat);
+	line(&src->img, x1, y1, x2, y2, &col, pat);
 	return 0;
 }
 
@@ -1239,7 +1245,7 @@ fill_circle(img_t *src, int xc, int yc, int radius, color_t *color, img_t *pat)
 }
 
 static void
-circle(img_t *src, int xc, int yc, int rr, color_t *color)
+circle(img_t *src, int xc, int yc, int rr, color_t *color, img_t *pat)
 {
 	int x = -rr, y = 0, err = 2 - 2 * rr;
 	unsigned char col[4] = { color->r, color->g, color->b, color->a };
@@ -1269,11 +1275,17 @@ circle(img_t *src, int xc, int yc, int rr, color_t *color)
 		do {
 			int xmy = (x - y * w) * 4;
 			int yax = (y + x * w) * 4;
-			pixel(col, ptr - xmy);
-			pixel(col, ptr - yax);
-			pixel(col, ptr + xmy);
-			pixel(col, ptr + yax);
-
+			if (!pat) {
+				pixel(col, ptr - xmy);
+				pixel(col, ptr - yax);
+				pixel(col, ptr + xmy);
+				pixel(col, ptr + yax);
+			} else {
+				pixel_textured(pat, ptr - xmy, xc - x, yc + y);
+				pixel_textured(pat, ptr - yax, xc - y, yc - x);
+				pixel_textured(pat, ptr + xmy, xc + x, yc - y);
+				pixel_textured(pat, ptr + yax, xc + y, yc + x);
+			}
 			rr = err;
 			if (rr <= y)
 				err += ++y * 2 + 1;
@@ -1288,16 +1300,16 @@ circle(img_t *src, int xc, int yc, int rr, color_t *color)
 		int yax = (y + x * w) * 4;
 		if (((xc - x - x1) | (x2 - xc + x - 1) |
 		    (yc + y - y1) | (y2 - yc - y - 1)) >= 0)
-			pixel(col, ptr - xmy);
+			pat?pixel_textured(pat, ptr - xmy, xc - x, yc + y):pixel(col, ptr - xmy);
 		if (((xc - y - x1) | (x2 - xc + y - 1) |
 		     (yc - x - y1) | (y2 - yc + x - 1)) >= 0)
-			pixel(col, ptr - yax);
+			pat?pixel_textured(pat, ptr - yax, xc - y, yc - x):pixel(col, ptr - yax);
 		if (((xc + x - x1) | (x2 - xc - x - 1) |
 		     (yc - y - y1) | (y2 - yc + y - 1)) >= 0)
-			pixel(col, ptr + xmy);
+			pat?pixel_textured(pat, ptr + xmy, xc + x, yc - y):pixel(col, ptr + xmy);
 		if (((xc + y - x1) | (x2 - xc - y - 1) |
 		      (yc + x - y1) | (y2 - yc - x - 1)) >= 0)
-			pixel(col, ptr + yax);
+			pat?pixel_textured(pat, ptr + yax, xc + y, yc + x):pixel(col, ptr + yax);
 		rr = err;
 		if (rr <= y)
 			err += ++y * 2 + 1;
@@ -1485,7 +1497,8 @@ static int
 pixels_triangle(lua_State *L)
 {
 	int x0 = 0, y0 = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
-	struct lua_pixels *src, *pat = NULL;
+	struct lua_pixels *src;
+	img_t *pat;
 	color_t col;
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	x0 = luaL_optnumber(L, 2, 0);
@@ -1503,7 +1516,7 @@ pixels_triangle(lua_State *L)
 	checkcolorpat(L, 8, &col, &pat);
 
 	triangle(&src->img, x0, y0, x1, y1, x2, y2,
-		&col, pat?&pat->img:NULL);
+		&col, pat);
 	return 0;
 }
 
@@ -1513,12 +1526,13 @@ pixels_circle(lua_State *L)
 	int xc = 0, yc = 0, rr = 0;
 	color_t col;
 	struct lua_pixels *src;
+	img_t *pat;
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	xc = luaL_optnumber(L, 2, 0);
 	yc = luaL_optnumber(L, 3, 0);
 	rr = luaL_optnumber(L, 4, 0);
-	checkcolor(L, 5, &col);
-	circle(&src->img, xc, yc, rr, &col);
+	checkcolorpat(L, 5, &col, &pat);
+	circle(&src->img, xc, yc, rr, &col, pat);
 	return 0;
 }
 
@@ -1542,14 +1556,15 @@ pixels_fill_circle(lua_State *L)
 {
 	int xc = 0, yc = 0, rr = 0;
 	color_t col;
-	struct lua_pixels *src, *pat = NULL;
+	struct lua_pixels *src;
+	img_t *pat;
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	xc = luaL_optnumber(L, 2, 0);
 	yc = luaL_optnumber(L, 3, 0);
 	rr = luaL_optnumber(L, 4, 0);
 	checkcolorpat(L, 5, &col, &pat);
 	fill_circle(&src->img, xc, yc, rr,
-		&col, pat?&pat->img:NULL);
+		&col, pat);
 	return 0;
 }
 
@@ -1557,8 +1572,9 @@ static int
 pixels_fill_poly(lua_State *L)
 {
 	int nr, i;
-	struct lua_pixels *src, *pat = NULL;
+	struct lua_pixels *src;
 	struct lua_point *v;
+	img_t *pat;
 	unsigned char col[4];
 	color_t color;
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
@@ -1590,7 +1606,7 @@ pixels_fill_poly(lua_State *L)
 		lua_pop(L, 1);
 	}
 	lua_pop(L, 1);
-	fill_poly(&src->img, v, nr, col, pat?&pat->img:NULL);
+	fill_poly(&src->img, v, nr, col, pat);
 	free(v);
 	return 0;
 }
@@ -1599,6 +1615,7 @@ static int
 _pixels_poly(lua_State *L, int aa)
 {
 	int nr, i, x0, y0, x1, y1, x2, y2;
+	img_t *pat;
 	struct lua_pixels *src;
 	color_t color;
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
@@ -1606,7 +1623,7 @@ _pixels_poly(lua_State *L, int aa)
 	nr = lua_rawlen(L, 2);
 	if (nr < 6)
 		return 0;
-	checkcolor(L, 3, &color);
+	checkcolorpat(L, 3, &color, &pat);
 	nr /= 2;
 	lua_pushvalue(L, 2);
 	for (i = 0; i < nr; i++) {
@@ -1622,11 +1639,11 @@ _pixels_poly(lua_State *L, int aa)
 			y0 = y2;
 		} else {
 			(aa)?lineAA(&src->img, x1, y1, x2, y2, &color):
-				line(&src->img, x1, y1, x2, y2, &color);
+				line(&src->img, x1, y1, x2, y2, &color, pat);
 		}
 		if (i == nr - 1) {
 			(aa)?lineAA(&src->img, x2, y2, x0, y0, &color):
-				line(&src->img, x2, y2, x0, y0, &color);
+				line(&src->img, x2, y2, x0, y0, &color, pat);
 		}
 		x1 = x2;
 		y1 = y2;
@@ -1639,21 +1656,22 @@ _pixels_poly(lua_State *L, int aa)
 static int
 _pixels_rect(lua_State *L, int aa)
 {
+	img_t *pat;
 	struct lua_pixels *src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	color_t color;
 	int x1 = luaL_checknumber(L, 2);
 	int y1 = luaL_checknumber(L, 3);
 	int x2 = luaL_checknumber(L, 4);
 	int y2 = luaL_checknumber(L, 5);
-	checkcolor(L, 6, &color);
+	checkcolorpat(L, 6, &color, &pat);
 	(aa)?lineAA(&src->img, x1, y1, x2, y1, &color):
-		line(&src->img, x1, y1, x2, y1, &color);
+		line(&src->img, x1, y1, x2, y1, &color, pat);
 	(aa)?lineAA(&src->img, x2, y1, x2, y2, &color):
-		line(&src->img, x2, y1, x2, y2, &color);
+		line(&src->img, x2, y1, x2, y2, &color, pat);
 	(aa)?lineAA(&src->img, x1, y2, x2, y2, &color):
-		line(&src->img, x1, y2, x2, y2, &color);
+		line(&src->img, x1, y2, x2, y2, &color, pat);
 	(aa)?lineAA(&src->img, x1, y1, x1, y2, &color):
-		line(&src->img, x1, y1, x1, y2, &color);
+		line(&src->img, x1, y1, x1, y2, &color, pat);
 	return 0;
 }
 
