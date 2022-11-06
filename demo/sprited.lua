@@ -1,9 +1,11 @@
+require "std"
 w, h = screen:size()
 sys.hidemouse()
 local floor = math.floor
 local ceil = math.ceil
 local spr = {}
 local pan_mode
+local map_mode=false
 
 local SPRITE = ARGS[2] or 'sprite.spr'
 local COLORS = 16
@@ -18,9 +20,19 @@ pal = {
   ch = 8;
   w = 8*2;
   h = (HCOLORS + 4)*8;
+  base = 0; -- tiles base
   color = 0;
   lev = -1;
 }
+
+function pal:mode()
+  local s = self
+  if map_mode then
+    s.h = (16 + 4)*8;
+  else
+    s.h = (HCOLORS+4)*8;
+  end
+end
 
 function pal:select(x, y, c)
   x = self.x + x * 8
@@ -44,20 +56,35 @@ function pal:show()
   local h = s.ch
   local x, y = self.x, self.y
   screen:clear(x-1, y-1, s.w+2, s.h+2, 5)
-  for y=0, HCOLORS-1 do
-    screen:clear(x, y*h, w, h, y)
-    screen:clear(x+w, y*h, w, h, y+HCOLORS)
-  end
-  local n = s.color
-  local c = n + (HCOLORS-1)
-  if c >= COLORS then c = c - COLORS end
-  if n >= HCOLORS then
-    x = x + w
-    n = n - HCOLORS
-  end
-  y = n
-  screen:rect(x, y*h, x+w-1, y*h +h -1, c)
   local py = HCOLORS
+  if map_mode then
+    local fx, fy
+    for y=0, 15 do
+      screen:clear(x, y*h, w*2, h, {0, 0, 0, 255})
+      grid:drawspr((s.base + y)%256, x, y*h)
+      grid:drawspr((s.base + y + 16)%256, x+w, y*h)
+    end
+    if s.color >= s.base and s.color < s.base + 32 then
+      fx, fy = math.floor((s.color - s.base) / 16), (s.color - s.base) % 16
+      screen:rect(x + fx*8, y + fy*8,
+        x + fx*8 + w - 1, y + fy*8 + h - 1, 7)
+    end
+    py = 16
+  else
+    for y=0, HCOLORS-1 do
+      screen:clear(x, y*h, w, h, y)
+      screen:clear(x+w, y*h, w, h, y+HCOLORS)
+    end
+    local n = s.color
+    local c = n + (HCOLORS-1)
+    if c >= COLORS then c = c - COLORS end
+    if n >= HCOLORS then
+      x = x + w
+      n = n - HCOLORS
+    end
+    y = n
+    screen:rect(x, y*h, x+w-1, y*h +h -1, c)
+  end
   if hand_mode then
     self:select(0, py, 7)
   end
@@ -100,32 +127,62 @@ function pal:pos2col(x, y)
   return x, y
 end
 
+function pal:mousewheel(e, x, y)
+  if not map_mode then
+    return
+  end
+  self.base = self.base - e
+  if self.base < 0 then self.base = 0 end
+  if (self.base+32) > 255 then self.base = 256-32 end
+  return true
+end
+
+function pal:showcolor()
+  if not map_mode then
+    return
+  end
+  local n = self.color or 0
+  if n >= self.base and n <= self.base + 31 then
+    return
+  end
+  self.base = math.floor(n / 32)*32
+  return
+end
+
 function pal:click(x, y, mb, click)
   local x, y = self:pos2col(x, y)
   local c
-  if y < HCOLORS then
-    c = x*HCOLORS + y
+  local py = HCOLORS
+  if map_mode then
+    py = 16
+  end
+  if y < py then
+    if map_mode then
+      c = self.base + x*16 + y
+    else
+      c = x*HCOLORS + y
+    end
     self.color = c
-  elseif y == HCOLORS and x == 0 and click then -- hand mode
+  elseif y == py and x == 0 and click then -- hand mode
     hand_mode = not hand_mode
-  elseif y == HCOLORS and x == 1 and click then -- grid mode
+  elseif y == py and x == 1 and click then -- grid mode
     grid_mode = not grid_mode
-  elseif y == HCOLORS+1 and x == 0 and click then
+  elseif y == py+1 and x == 0 and click then
     sel_mode = not sel_mode
     if not sel_mode then
       grid.sel_x1 = false
     end
     draw_mode = false
     hand_mode = false
-  elseif y == HCOLORS+1 and x == 1 and click then
+  elseif y == py+1 and x == 1 and click then
     hl_mode = not hl_mode
-  elseif y == HCOLORS+2 and x == 0 and click then
+  elseif y == py+2 and x == 0 and click then
     draw_mode = draw_mode ~= 'line' and 'line' or false
-  elseif y == HCOLORS+2 and x == 1 and click then
+  elseif y == py+2 and x == 1 and click then
     draw_mode = draw_mode ~= 'box' and 'box' or false
-  elseif y == HCOLORS+3 and x == 0 and click then
+  elseif y == py+3 and x == 0 and click then
     draw_mode = draw_mode ~= 'circle' and 'circle' or false
-  elseif y == HCOLORS+3 and x == 1 and click then
+  elseif y == py+3 and x == 1 and click then
     draw_mode = draw_mode ~= 'fill' and 'fill' or false
   end
 
@@ -153,6 +210,10 @@ title = {
   lev = -1;
 }
 
+function fname(f)
+  return map_mode and f:gsub("spr$", "map") or f
+end
+
 function title:show()
   local dirty = ' '
   if grid.dirty then
@@ -164,7 +225,7 @@ function title:show()
     x, y = x2 - x1 + 1, y2 - y1 + 1
   end
   local info = string.format("x%-3d %3d:%-3d %s%s",
-    grid.grid, x-1, y-1, SPRITE, dirty)
+    grid.grid, x-1, y-1, fname(SPRITE), dirty)
   local w, h = font:size(info)
   self.w = w
   self.h = h
@@ -180,12 +241,20 @@ function title:click(x, y, mb, click)
   local s = self
   x = x - s.x
   local w = font:size(string.format("x%-3d", grid.grid))
-  local namew = font:size(string.format("%s ", SPRITE))
+  local namew = font:size(string.format("%s ", fname(SPRITE)))
   if x >= s.w - namew then
     if mb.left then
-      grid:save(SPRITE)
+      if map_mode then
+        grid:savemap(fname(SPRITE))
+      else
+        grid:save(fname(SPRITE))
+      end
     elseif mb.right then
-      grid:save(SPRITE, true)
+      if map_mode then
+        grid:savemap(fname(SPRITE))
+      else
+        grid:save(fname(SPRITE), true)
+      end
     elseif mb.middle then
       grid.pixels = {}
       grid.dirty = false
@@ -199,6 +268,35 @@ function title:click(x, y, mb, click)
 end
 
 local obj = { pal, grid, title }
+
+function grid:spr2pos(nr)
+  local y = math.floor(nr / 16)*8
+  local x = (nr % 16)*8
+  return x, y
+end
+
+function grid:drawspr(nr, x, y, scale)
+      local fx, fy = self:spr2pos(nr)
+      grid:draw(fx, fy, 8, 8, x, y, scale)
+end
+
+function grid:draw(fx, fy, w, h, x, y, scale)
+  local s = self
+  local pixels = map_mode and s.backpixels or s.pixels
+  local spr = gfx.new(w, h)
+  for yy=1, h do
+    local r = pixels[fy+yy] or {}
+    for xx=1, w do
+      local c = r[fx+xx] or -1
+      if c ~= -1 then
+        spr:val(xx-1, yy-1, c)
+      else
+        spr:val(xx-1, yy-1, pixels[yy] and pixels[yy][xx] or 0) -- 0 sprite
+      end
+    end
+  end
+  spr:stretch(screen, x, y, w*(scale or 1), h*(scale or 1))
+end
 
 function grid:pan(dx, dy)
   self.xoff = self.xoff + dx
@@ -482,6 +580,76 @@ function grid:cut(copy)
   return true
 end
 
+function grid:savemap(fname)
+  local s = self
+  local f = io.open(fname, "wb")
+  if not f then return false end
+  print(fname)
+  local w, h = 0, 0
+  for y=1,s.max_grid do
+    if s.map[y] then h = y end
+    if s.map[y] then
+      for x=1,s.max_grid do
+        if s.map[y][x] and x > w then w = x end
+      end
+    end
+  end
+  for y=1, h do
+    s.map[y] = s.map[y] or {}
+    local r=''
+    for x=1, w do
+      r = r ..string.format("%02x", s.map[y][x] or 0 )
+    end
+    print(r)
+    f:write(r..'\n')
+  end
+  f:close()
+  s.dirty = false
+  return true
+end
+
+function grid:loadmap(fname)
+  local f = io.open(fname, "rb")
+  if not f then return false end
+  local map = {}
+  local y = 0
+  for l in f:lines() do
+    y = y + 1
+    map[y] = {}
+    for x = 1, l:len(), 2 do
+      map[y][(x-1)/2+1] = tonumber(l:sub(x, x+1), 16)
+    end
+  end
+  f:close()
+  return map
+end
+
+function grid:mode()
+  local s = self
+  s.history = {}
+  s.clipboard = {}
+  s.dirty, s.backdirty = s.backdirty, s.dirty
+  s.xoff, s.xoffback = s.xoffback or 0, s.xoff
+  s.yoff, s.yoffback = s.yoffback or 0, s.yoff
+  s.grid, s.gridback = s.gridback or 16, s.grid
+  if map_mode then
+    s.backpixels = s.pixels
+    if not s.map then -- try load
+      s.map = s:loadmap(fname(SPRITE)) or {}
+    end
+    s.pixels = s.map
+    s.bookmarks, s.backbookmarks = s.backbookmarks or {}, s.bookmarks or {}
+  else
+    s.map, s.pixels = s.pixels, s.backpixels
+    s.bookmarks, s.backbookmarks = s.backbookmarks or {}, s.bookmarks or {}
+  end
+end
+
+function grid:mousewheel(e)
+  self:zoom(-e)
+  return true
+end
+
 function grid:click(x, y, mb, click)
   local s = self
   if pan_mode then
@@ -514,6 +682,7 @@ function grid:click(x, y, mb, click)
   end
   if mb.middle then
     pal.color = s:get(x, y)
+    pal:showcolor()
     if pal.color == -1 then
       pal.color = 0
     end
@@ -760,7 +929,11 @@ function grid:show()
           spr.X:blend(screen, s.x+(x-1)*dx + Xd, s.y+(y-1)*dx + Xd)
         end
       else
-        screen:clear(s.x+(x-1)*dx, s.y+(y-1)*dx, dx, dx, c)
+        if map_mode then
+          s:drawspr(c, s.x+(x-1)*dx, s.y+(y-1)*dx, dx/8)
+        else
+          screen:clear(s.x+(x-1)*dx, s.y+(y-1)*dx, dx, dx, c)
+        end
       end
       if hl_mode and  mx == s.xoff + x and my == s.yoff + y then
         c = (c or -1)+ HCOLORS
@@ -822,12 +995,9 @@ function switch_ui()
     title.x = 0
   end
 end
-local bookmarks = {}
+
+grid.bookmarks = {}
 function proc_inp(r, e, a, b, c, d)
-  if r == 'mousewheel' then
-    r = 'text'
-    e = (e == -1) and '-' or '+'
-  end
   if r == 'text' then
     if e == '+' then
       grid:zoom(1)
@@ -843,8 +1013,15 @@ function proc_inp(r, e, a, b, c, d)
       help_mode = not help_mode
     elseif e == 'tab' then
       switch_ui()
+    elseif e == 'm' then
+      map_mode = not map_mode
+      for _, v in ipairs(obj) do
+        if v.mode then
+          v:mode()
+        end
+      end
     elseif e == 'f2' then
-      grid:save(SPRITE)
+      grid:save(fname(SPRITE))
     elseif e == 'z' then
       grid:undo()
     elseif e == 'c' and input.keydown'ctrl' then
@@ -854,7 +1031,7 @@ function proc_inp(r, e, a, b, c, d)
     elseif e == 'v' and input.keydown'ctrl' then
       grid:paste()
     elseif e == 's' and input.keydown'ctrl' then
-      grid:save(SPRITE)
+      grid:save(fname(SPRITE))
     elseif e == 'h' then
       grid:fliph()
     elseif e == 'v' then
@@ -863,9 +1040,9 @@ function proc_inp(r, e, a, b, c, d)
       and string.byte(e) <= string.byte('9') then
       if input.keydown'ctrl' then
         print("Bookmark added: ", e)
-        bookmarks[e] = { x = grid.xoff, y = grid.yoff }
-      elseif bookmarks[e] then
-        grid.xoff, grid.yoff = bookmarks[e].x, bookmarks[e].y
+        grid.bookmarks[e] = { x = grid.xoff, y = grid.yoff }
+      elseif grid.bookmarks[e] then
+        grid.xoff, grid.yoff = grid.bookmarks[e].x, grid.bookmarks[e].y
       end
     end
   elseif r == 'mouseup' then
@@ -962,13 +1139,17 @@ function run()
       title:show()
     else
       proc_inp(r, v, a, b)
-      if (mb.left or mb.right or mb.middle) then
-        for _, v in ipairs(obj) do
+      if (mb.left or mb.right or mb.middle or r == 'mousewheel') then
+        for _, o in ipairs(obj) do
           local mx, my, mb = input.mouse()
-          if mx >= v.x and my >= v.y and
-            mx < v.x + v.w and
-            my < v.y + v.h then
-            if v:click(mx, my, mb, r == 'mousedown') then
+          if mx >= o.x and my >= o.y and
+            mx < o.x + o.w and
+            my < o.y + o.h then
+            if r == 'mousewheel' then
+              if o.mousewheel and o:mousewheel(v, mx, my) then
+                break
+              end
+            elseif o:click(mx, my, mb, r == 'mousedown') then
               break
             end
           end
