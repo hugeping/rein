@@ -1426,6 +1426,8 @@ init()
 while true do
 	update_border()
 	update()
-	draw()
+	if not gfx.framedrop() then
+		draw()
+	end
 	flip(1/30)
 end
