@@ -1,4 +1,7 @@
 require "std"
+
+local tcol = { 0, 64, 48, 255 }
+
 w, h = screen:size()
 sys.hidemouse()
 local floor = math.floor
@@ -219,13 +222,25 @@ function title:show()
   if grid.dirty then
     dirty = '*'
   end
-  local x, y = grid:pos2cell(input.mouse())
+  local mx, my = input.mouse()
+  local x, y = grid:pos2cell(mx, my)
   if grid:getsel() then
     local x1, y1, x2, y2 = grid:getsel()
     x, y = x2 - x1 + 1, y2 - y1 + 1
   end
-  local info = string.format("x%-3d %3d:%-3d %s%s",
-    grid.grid, x-1, y-1, fname(SPRITE), dirty)
+
+  local info
+
+  if map_mode and mx >= pal.x and my >= pal.y and
+    mx < pal.x + pal.w and my < pal.y + 16*8 then
+    mx, my = pal:pos2col(mx, my)
+    info = string.format("x%-3d spr:%-3d %s%s",
+    grid.grid, pal.base + my + mx*16, fname(SPRITE), dirty)
+  else
+    info = string.format("x%-3d %3d:%-3d %s%s",
+      grid.grid, x-1, y-1, fname(SPRITE), dirty)
+  end
+
   local w, h = font:size(info)
   self.w = w
   self.h = h
@@ -291,7 +306,8 @@ function grid:draw(fx, fy, w, h, x, y, scale)
       if c ~= -1 then
         spr:val(xx-1, yy-1, c)
       else
-        spr:val(xx-1, yy-1, pixels[yy] and pixels[yy][xx] or 0) -- 0 sprite
+        local v = pixels[yy] and pixels[yy][xx] or -1
+        spr:val(xx-1, yy-1, v == -1 and tcol or v) -- 0 sprite
       end
     end
   end
@@ -924,7 +940,7 @@ function grid:show()
     for x=1,s.grid do
       local c = s.pixels[y+s.yoff] and s.pixels[y+s.yoff][x+s.xoff]
       if not c or c == -1 then
-        screen:clear(s.x+(x-1)*dx, s.y+(y-1)*dx, dx, dx, { 0, 64, 48, 255})
+        screen:clear(s.x+(x-1)*dx, s.y+(y-1)*dx, dx, dx, tcol)
         if s.grid < 128 then
           spr.X:blend(screen, s.x+(x-1)*dx + Xd, s.y+(y-1)*dx + Xd)
         end
@@ -982,6 +998,7 @@ function grid:show()
 end
 
 local d, e = gfx.new(SPRITE, true) -- true - load data
+
 if d then
   grid.pixels = d
 end
