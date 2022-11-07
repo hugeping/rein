@@ -414,6 +414,91 @@ gfx_pixels_new(lua_State *L)
 	return 1;
 }
 
+static void
+img_pixels_stretch(img_t *src, img_t *dst, int xoff, int yoff, int ww, int hh)
+{
+	int w, h, xx, yy, dx, dy, xdisp, wdisp;
+	unsigned char *ptr, *p;
+	unsigned char *optr = NULL;
+	ptr = src->ptr;
+
+	xoff += dst->xoff;
+	yoff += dst->yoff;
+
+	if (ww < 0)
+		ww = dst->w;
+
+	if (hh < 0)
+		hh = dst->h;
+
+	if (xoff + ww <= dst->clip_x1 || yoff + hh <= dst->clip_y1 ||
+		xoff >= dst->clip_x2 || yoff >= dst->clip_y2) {
+		return;
+	}
+
+	w = src->w;
+	h = src->h;
+
+	p = dst->ptr + (yoff*dst->w + xoff)*4;
+
+	dy = 0;
+
+	xdisp = 0;
+	wdisp = ww;
+	if (xoff < dst->clip_x1) {
+		xdisp = dst->clip_x1 - xoff;
+		wdisp -= xdisp;;
+		xdisp *= 4;
+	}
+
+	if (xoff + ww > dst->clip_x2)
+		wdisp -= xoff + ww - dst->clip_x2;
+
+	for (yy = yoff; yy < hh + yoff; yy++) {
+		unsigned char *ptrl = ptr;
+
+		if (yy >= dst->clip_y2)
+			break;
+		if (yy < dst->clip_y1) {
+			if (optr)
+				p += dst->w * 4;
+			else {
+				optr = p;
+				p = optr + dst->w * 4;
+			}
+			goto skip;
+		}
+
+		dx = 0;
+		if (optr) {
+			memcpy(p + xdisp, optr + xdisp, wdisp * 4);
+			p += dst->w * 4;
+		} else {
+			optr = p;
+			for (xx = xoff; xx < xoff + ww; xx++) {
+				if (xx >= dst->clip_x2)
+					break;
+				if (xx >= dst->clip_x1)
+					memcpy(p, ptrl, 4);
+				p += 4;
+				dx += w;
+				while (dx >= ww) {
+					dx -= ww;
+					ptrl += 4;
+				}
+			}
+			p = optr + dst->w * 4;
+		}
+skip:
+		dy += h;
+		while (dy >= hh) {
+			dy -= hh;
+			ptr += (w << 2);
+			optr = NULL;
+		}
+	}
+}
+
 static img_t*
 img_scale(img_t *src, float xscale, float yscale, int smooth)
 {
@@ -423,8 +508,11 @@ img_scale(img_t *src, float xscale, float yscale, int smooth)
 	ret = img_new(w, h);
 	if (!ret)
 		return NULL;
-	stbir_resize_uint8(src->ptr, src->w, src->h, 0,
-		ret->ptr, w, h, 0, 4);
+	if (!smooth)
+		img_pixels_stretch(src, ret, 0, 0, w, h);
+	else
+		stbir_resize_uint8(src->ptr, src->w, src->h, 0,
+			ret->ptr, w, h, 0, 4);
 	return ret;
 }
 
@@ -616,90 +704,6 @@ pixels_clear(lua_State *L)
 	return 0;
 }
 
-static void
-img_pixels_stretch(img_t *src, img_t *dst, int xoff, int yoff, int ww, int hh)
-{
-	int w, h, xx, yy, dx, dy, xdisp, wdisp;
-	unsigned char *ptr, *p;
-	unsigned char *optr = NULL;
-	ptr = src->ptr;
-
-	xoff += dst->xoff;
-	yoff += dst->yoff;
-
-	if (ww < 0)
-		ww = dst->w;
-
-	if (hh < 0)
-		hh = dst->h;
-
-	if (xoff + ww <= dst->clip_x1 || yoff + hh <= dst->clip_y1 ||
-		xoff >= dst->clip_x2 || yoff >= dst->clip_y2) {
-		return;
-	}
-
-	w = src->w;
-	h = src->h;
-
-	p = dst->ptr + (yoff*dst->w + xoff)*4;
-
-	dy = 0;
-
-	xdisp = 0;
-	wdisp = ww;
-	if (xoff < dst->clip_x1) {
-		xdisp = dst->clip_x1 - xoff;
-		wdisp -= xdisp;;
-		xdisp *= 4;
-	}
-
-	if (xoff + ww > dst->clip_x2)
-		wdisp -= xoff + ww - dst->clip_x2;
-
-	for (yy = yoff; yy < hh + yoff; yy++) {
-		unsigned char *ptrl = ptr;
-
-		if (yy >= dst->clip_y2)
-			break;
-		if (yy < dst->clip_y1) {
-			if (optr)
-				p += dst->w * 4;
-			else {
-				optr = p;
-				p = optr + dst->w * 4;
-			}
-			goto skip;
-		}
-
-		dx = 0;
-		if (optr) {
-			memcpy(p + xdisp, optr + xdisp, wdisp * 4);
-			p += dst->w * 4;
-		} else {
-			optr = p;
-			for (xx = xoff; xx < xoff + ww; xx++) {
-				if (xx >= dst->clip_x2)
-					break;
-				if (xx >= dst->clip_x1)
-					memcpy(p, ptrl, 4);
-				p += 4;
-				dx += w;
-				while (dx >= ww) {
-					dx -= ww;
-					ptrl += 4;
-				}
-			}
-			p = optr + dst->w * 4;
-		}
-skip:
-		dy += h;
-		while (dy >= hh) {
-			dy -= hh;
-			ptr += (w << 2);
-			optr = NULL;
-		}
-	}
-}
 
 int
 img_pixels_blend(img_t *src, int x, int y, int w, int h,
