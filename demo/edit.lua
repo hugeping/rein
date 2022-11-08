@@ -137,6 +137,7 @@ function buff:cut(copy)
     y1, y2 = y2, y1
     x1, x2 = x2, x1
   end
+  if y1 == y2 and x1 > x2 then x1, x2 = x2, x1 end
   if not copy then
     s:history('cut', x1, y1, x2, y2)
   end
@@ -354,6 +355,10 @@ function buff:select(on)
   end
 end
 
+function buff:delete()
+-- todo
+end
+
 function buff:backspace()
   local s = self
   s:unselect()
@@ -462,8 +467,12 @@ function buff:keydown(k)
     end
   elseif (k == 'u' or k == 'z') and input.keydown 'ctrl' then
     s:undo()
-  elseif k == 'x' and input.keydown 'ctrl' then
-    s:cut()
+  elseif k == 'x' and input.keydown 'ctrl' or k == 'delete' then
+    if k == 'delete' and not s:selected() then
+      s:delete()
+    else
+      s:cut()
+    end
   elseif k == 'c' and input.keydown 'ctrl' then
     s:cut(true)
   elseif k == 'v' and input.keydown 'ctrl' then
