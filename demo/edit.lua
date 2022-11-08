@@ -1,4 +1,4 @@
---gfx.win(640, 480)
+gfx.win(384, 384)
 --local sfont = gfx.font('demo/iosevka.ttf',12)
 local idle_mode
 local inp_mode
@@ -461,6 +461,7 @@ function buff:keydown(k)
   elseif k == 'f5' then
     s:write()
     mixer.init()
+    gfx.win(256, 256)
     local f, e = sys.exec(FILE)
     if not f then
       idle_mode = sys.go(function() error(e) end)
@@ -564,6 +565,7 @@ while true do
       screen:nooffset()
       screen:noclip()
       sys.input(true) -- clear input
+      gfx.win(W, H)
       idle_mode = false
       break
     end
