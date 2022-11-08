@@ -223,7 +223,7 @@ function env_ro.gfx.bg(col)
 end
 
 function env_ro.gfx.border(col)
-  conf.brd = { gfx.pal(col or conf.bg) }
+  conf.brd = { gfx.pal(col or conf.brd) }
   gfx.win():clear(conf.brd)
 end
 
