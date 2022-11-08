@@ -48,6 +48,7 @@ function buff.new(fname, x, y, w, h)
   local f = fname and io.open(fname, "rb")
   if f then
     for l in f:lines() do
+      l = l:gsub("\t", "  ")
       table.insert(b.text, utf.chars(l))
     end
     f:close()
