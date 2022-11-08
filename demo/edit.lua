@@ -24,7 +24,8 @@ function glyph(t, col)
 end
 
 function buff.new(fname)
-  local b = { text = {}, cur = { x = 1, y = 1 }, line = 1, col = 1, fname = fname }
+  local b = { text = {}, cur = { x = 1, y = 1 },
+    line = 1, col = 1, fname = fname, hist = {} }
   local f = io.open(fname, "rb")
   if f then
     for l in f:lines() do
@@ -60,7 +61,7 @@ function buff:cursor()
   end
   local s = self
   local px, py = (s.cur.x - s.col), (s.cur.y - s.line)
-  py = py * s.sph  
+  py = py * s.sph
   px = px * s.spw
   for y=py, py + s.sph-1 do
     for x=px, px + s.spw-1 do
@@ -128,11 +129,37 @@ end
 function buff:input(t)
   local s = self
   local c = utf.chars(t)
+  s:history()
   for _, v in ipairs(c) do
     table.insert(s.text[s.cur.y], s.cur.x, v)
   end
   s.cur.x = s.cur.x + utf.len(t)
   s:scroll()
+end
+
+function buff:history(newln)
+  local s = self
+  local l = {}
+  for _, v in ipairs(s.text[s.cur.y]) do
+    table.insert(l, v)
+  end
+  table.insert(s.hist,
+    { nr = s.cur.y, line = l, x = s.cur.x, newline = newln })
+  if #s.hist > 1024 then
+    table.remove(s.hist, 1)
+  end
+end
+
+function buff:undo()
+  local s = self
+  if #s.hist == 0 then return end
+  local h = table.remove(s.hist, #s.hist)
+  s.text[h.nr] = h.line
+  if h.newline then
+    table.remove(s.text, h.nr + 1)
+  end
+  s.cur.x = h.x
+  s.cur.y = h.nr
 end
 
 function buff:keydown(k)
@@ -159,6 +186,7 @@ function buff:keydown(k)
     s.line = s.cur.y
   elseif k == 'return' then
     local l = s.text[s.cur.y]
+    s:history(true)
     table.insert(s.text, s.cur.y + 1, {})
     for k=s.cur.x, #l do
       table.insert(s.text[s.cur.y+1], table.remove(l, s.cur.x))
@@ -167,12 +195,15 @@ function buff:keydown(k)
     s.cur.x = 1
   elseif k == 'backspace' then
     if s.cur.x > 1 then
+      s:history()
       table.remove(s.text[s.cur.y], s.cur.x - 1)
       s.cur.x = s.cur.x - 1
     elseif s.cur.y > 1 then
+      s:history()
       local l = table.remove(s.text, s.cur.y)
       s.cur.y = s.cur.y - 1
       s.cur.x = #s.text[s.cur.y] + 1
+      s:history()
       for _, v in ipairs(l) do
         table.insert(s.text[s.cur.y], v)
       end
@@ -181,6 +212,8 @@ function buff:keydown(k)
     s:input("  ")
   elseif k == 'f2' or (k == 's' and input.keydown'ctrl') then
     s:write()
+  elseif k == 'u' and input.keydown 'ctrl' then
+    s:undo()
   end
   s:scroll()
 end
