@@ -231,7 +231,7 @@ function env_ro.gfx.font(fname, ...)
   if type(fname) == 'string' and fname:find("%.[fF][nN][tT]$") then
     return font.new(fname, ...)
   end
-  return gfx.font(fname)
+  return gfx.font(fname, ...)
 end
 
 local framedrop
