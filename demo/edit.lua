@@ -62,6 +62,32 @@ function buff.new(fname, x, y, w, h)
   return b
 end
 
+function buff:export(tag, fname)
+  local s = self
+  local insect
+  local f = io.open(fname, "wb")
+  if not f then
+    return false
+  end
+  for _, l in ipairs(s.text) do
+    local str = table.concat(l, '')
+    if insect then
+      local eof = str:find("]]")
+      str = str:gsub("]]$", "")
+      if not eof or str ~= "" then
+        f:write(str.."\n")
+      end
+      if eof then
+        break
+      end
+    elseif str:find("local "..tag.."[ =]") then
+      insect = true
+    end
+  end
+  f:close()
+  return true
+end
+
 function buff:write()
   local s = self
   if type(s.fname) ~= 'string' then
@@ -546,6 +572,9 @@ function buff:keydown(k)
     s:input("  ")
   elseif k == 'f2' or (k == 's' and input.keydown'ctrl') then
     s:write()
+  elseif k == 'f7' then
+    s:export ('__map__', 'data.map')
+    s:export ('__spr__', 'data.spr')
   elseif k == 'f5' then
     s:write()
     mixer.init()
