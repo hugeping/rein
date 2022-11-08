@@ -15,7 +15,7 @@ function core.go(fn, env)
     f, e = loadfile(fn, "t", env)
     if not f then
       core.err(e)
-      return
+      return f, e
     end
   else
     f = fn
