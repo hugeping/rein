@@ -329,7 +329,7 @@ function buff:keydown(k)
     s:input("  ")
   elseif k == 'f2' or (k == 's' and input.keydown'ctrl') then
     s:write()
-  elseif k == 'u' and input.keydown 'ctrl' then
+  elseif (k == 'u' or k == 'z') and input.keydown 'ctrl' then
     s:undo()
   elseif k == 'x' and input.keydown 'ctrl' then
     s:cut()
