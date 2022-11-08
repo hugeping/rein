@@ -563,6 +563,7 @@ while true do
       mixer.stop()
       screen:nooffset()
       screen:noclip()
+      sys.input(true) -- clear input
       idle_mode = false
       break
     end
