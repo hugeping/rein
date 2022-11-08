@@ -368,14 +368,17 @@ function env_ro.sprite_data(fname)
   return spr.new(fname)
 end
 
-function env_ro.sys.go(fn, sandbox)
-  local newenv
-  if sandbox then
-    rawset(sandbox, '__index', sandbox)
-    newenv = {}
-    setmetatable(newenv, sandbox)
-  end
-  return core.go(fn, newenv or env)
+function env_ro.sys.go(fn)
+  return core.go(fn, env)
+end
+
+function env_ro.sys.exec(fn, ...)
+  local newenv = {
+    ARGS = { fn, ... }
+  }
+  rawset(env, '__index', env)
+  setmetatable(newenv, env)
+  return core.go(fn, newenv)
 end
 
 function env_ro.sys.stop(fn)
