@@ -205,14 +205,14 @@ function buff:input(t)
   s:scroll()
 end
 
-function buff:history(newln)
+function buff:history(op)
   local s = self
   local l = {}
   for _, v in ipairs(s.text[s.cur.y]) do
     table.insert(l, v)
   end
   table.insert(s.hist,
-    { nr = s.cur.y, line = l, x = s.cur.x, newline = newln })
+    { nr = s.cur.y, line = l, x = s.cur.x, op = op })
   if #s.hist > 1024 then
     table.remove(s.hist, 1)
   end
@@ -224,7 +224,7 @@ function buff:undo()
   if #s.hist == 0 then return end
   local h = table.remove(s.hist, #s.hist)
   s.text[h.nr] = h.line
-  if h.newline then
+  if h.op == 'newline' then
     table.remove(s.text, h.nr + 1)
   end
   s.cur.x = h.x
@@ -249,7 +249,6 @@ function buff:select(on)
     s.sel.endx, s.sel.endy = s.cur.x, s.cur.y
   end
 end
-
 
 function buff:getind(nr)
   local s = self
@@ -300,7 +299,7 @@ function buff:keydown(k)
       ind2 = s:getind(s.cur.y+1)
       ind = ind > ind2 and ind or ind2
     end
-    s:history(true)
+    s:history('newline')
     table.insert(s.text, s.cur.y + 1, {})
     for i=1,ind do
       table.insert(s.text[s.cur.y + 1], 1, ' ')
