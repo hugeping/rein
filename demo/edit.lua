@@ -64,9 +64,19 @@ function buff:write()
   if not f then
     return
   end
-  for _, l in ipairs(s.text) do
+  local eof = #s.text
+  for k=#s.text,1,-1 do
+    if #s.text[k] ~= 0 then
+      eof = k
+      break
+    end
+  end
+  for k, l in ipairs(s.text) do
     l = table.concat(l, ''):gsub("[ \t]+$", "") -- strip
     f:write(l.."\n")
+    if k == eof then
+      break
+    end
   end
   f:close()
   s.dirty = false
