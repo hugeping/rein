@@ -106,23 +106,10 @@ end
 
 function buff:paste()
   local s = self
-  local l = s.text[s.cur.y]
-  local oy = s.cur.y
-  for i, c in ipairs(s.clipboard or {}) do
+  for _, c in ipairs(s.clipboard or {}) do
     s:input(table.concat(c, ''))
     s:newline()
---[[    if i == 1 then
-      for k, sym in ipairs(c) do
-        table.insert(l, s.cur.x + k - 1, sym)
-      end
-      s.cur.x = s.cur.x + #c
-    else
-      table.insert(s.text, s.cur.y + i - 1, clone(c))
-      oy = oy + 1
-    end
-]]--
   end
---  s.cur.y = oy
 end
 
 function buff:cut(copy)
