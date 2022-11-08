@@ -1,4 +1,6 @@
--- gfx.win(384, 384)
+--gfx.win(640, 480)
+--local sfont = gfx.font('demo/iosevka.ttf',12)
+local sfont = font
 local W, H = screen:size()
 local conf = {
   fg = 0,
@@ -29,24 +31,24 @@ function glyph(t, col)
   if glyph_cache[key] then
     return glyph_cache[key]
   end
-  glyph_cache[key] = font:text(t, col)
+  glyph_cache[key] = sfont:text(t, col)
   return glyph_cache[key]
 end
 
-function buff.new(fname)
+function buff.new(fname, x, y, w, h)
   local b = { text = { }, cur = { x = 1, y = 1 },
     line = 1, col = 1, fname = fname, hist = {},
-    sel = { } }
-  local f = io.open(fname, "rb")
+    sel = { }, x = x or 0, y = y or 0, w = w or W, h = h or H }
+  local f = fname and io.open(fname, "rb")
   if f then
     for l in f:lines() do
       table.insert(b.text, utf.chars(l))
     end
     f:close()
   end
-  b.spw, b.sph = font:size(" ")
-  b.lines = math.floor(H / b.sph) - 1 -- status line
-  b.columns = math.floor(W / b.spw)
+  b.spw, b.sph = sfont:size(" ")
+  b.lines = math.floor(b.h / b.sph) - 1 -- status line
+  b.columns = math.floor(b.w / b.spw)
   setmetatable(b, buff)
   return b
 end
@@ -67,20 +69,18 @@ function buff:write()
 end
 
 function buff:cursor()
+  local s = self
   if math.floor(sys.time()*4) % 2 == 1 then
     return
   end
-  local s = self
-  local px, py = (s.cur.x - s.col), (s.cur.y - s.line)
-  py = py * s.sph
-  px = px * s.spw
+  local px, py = (s.cur.x - s.col)*s.spw, (s.cur.y - s.line)*s.sph
   for y=py, py + s.sph-1 do
     for x=px, px + s.spw-1 do
-      local r, g, b = screen:val(x, y)
+      local r, g, b = screen:val(s.x + x, s.y + y)
       r = bit.bxor(r, 255)
       g = bit.bxor(g, 255)
       b = bit.bxor(b, 255)
-      screen:val(x, y, {r, g, b, 255})
+      screen:val(s.x + x, s.y + y, {r, g, b, 255})
     end
   end
 end
@@ -90,13 +90,23 @@ function buff:status()
   local info = string.format("%s%s %2d:%-2d",
     s.dirty and '*' or '', s.fname, s.cur.x, s.cur.y)
   screen:fill_rect(0, H - s.sph, W, H, conf.status)
-  gfx.print(info, 0, H - s.sph, conf.fg)
+  sfont:text(info, conf.fg):blend(screen, 0, H - s.sph)
 end
 
 function buff:selected()
   local s = self
-  return s.sel.x and s.sel.endx and
+  local is = s.sel.x and s.sel.endx and
     (s.sel.x ~= s.sel.endx or s.sel.y ~= s.sel.endy)
+  if not is then
+    return false
+  end
+  local x1, x2 = s.sel.x, s.sel.endx
+  if x1 > x2 then x1, x2 = s.sel.endx, s.sel.x end
+  local t = ''
+  for x=x1, x2-1 do
+    t = t .. s.text[s.sel.y][x]
+  end
+  return t
 end
 
 function buff:unselect()
@@ -185,31 +195,41 @@ function buff:hlight(nr, py)
   if nr < y1 or nr > y2 then return end
   if nr > y1 and nr < y2 then -- full line
     local len = #s.text[nr]
-    screen:fill_rect(0, py, len*s.spw-1, py + s.sph - 1, conf.hl)
+    screen:offset(-(s.col-1)*s.spw, 0)
+    screen:fill_rect(s.x, py, s.x + len*s.spw-1,
+      py + s.sph - 1, conf.hl)
+    screen:nooffset()
     return
   end
   if nr == y1 then
     if y2 ~= nr then x2 = #s.text[nr] + 1 end
-    screen:fill_rect((x1-1)*s.spw, py, (x2-1)*s.spw, py + s.sph - 1, conf.hl)
+    screen:offset(-(s.col-1)*s.spw, 0)
+    screen:fill_rect(s.x + (x1-1)*s.spw, py,
+      s.x + (x2-1)*s.spw, py + s.sph - 1, conf.hl)
+    screen:nooffset()
     return
   end
   if nr == y2 then
     if y1 ~= nr then x1 = 1 end
-    screen:fill_rect((x1-1)*s.spw, py, (x2-1)*s.spw, py + s.sph - 1, conf.hl)
+    screen:offset(-(s.col-1)*s.spw, 0)
+    screen:fill_rect(s.x + (x1-1)*s.spw, py,
+      s.x + (x2-1)*s.spw, py + s.sph - 1, conf.hl)
+    screen:nooffset()
     return
   end
 end
 
 function buff:show()
   local s = self
-  screen:clear(conf.bg)
+  screen:clear(s.x, s.y, s.w, s.h, conf.bg)
+  screen:clip(s.x, s.y, s.x + s.w, s.y + s.h)
   local l, words
-  local px, py = 0, 0
+  local px, py = s.x, s.y
   for nr=s.line, s.line + s.lines - 1 do
     l = s.text[nr] or {}
     px = 0
     s:hlight(nr, py)
-    for i=b.col,#l do
+    for i=s.col,#l do
       if px > W then
         break
       end
@@ -220,7 +240,10 @@ function buff:show()
     end
     py = py + s.sph
   end
-  s:status()
+  screen:noclip()
+  if s.status then
+    s:status()
+  end
   s:cursor()
 end
 
@@ -231,13 +254,11 @@ function buff:scroll()
   if s.cur.y < 1 then s.cur.y = 1 end
   if s.cur.y > #s.text then
     s.cur.y = #s.text
-    if #s.text[s.cur.y] == 0 then
-      return
+    if #s.text[s.cur.y] ~= 0 then
+      s.cur.y = s.cur.y + 1
+      s.cur.x = 1
+      s.text[s.cur.y] = {}
     end
-    s.cur.y = s.cur.y + 1
-    s.cur.x = 1
-    s.text[s.cur.y] = {}
-    return
   end
   if s.cur.x > #s.text[s.cur.y] then s.cur.x = #s.text[s.cur.y] + 1 end
   if s.cur.y >= s.line and s.cur.y <= s.line + s.lines - 1
@@ -367,6 +388,14 @@ function buff:newline()
   end
   s.cur.y = s.cur.y + 1
   s.cur.x = ind + 1
+  s:unselect()
+end
+
+function buff:jump(nr)
+  local s = self
+  s.cur.y = nr
+  s:unselect()
+  s:scroll()
 end
 
 function buff:getind(nr)
@@ -402,11 +431,11 @@ function buff:keydown(k)
     s.cur.x = 1
   elseif k == 'end' or k == 'keypad 1' then
     s.cur.x = #s.text[s.cur.y] + 1
-  elseif k == 'page down' or k == 'keypad 3' then
+  elseif k == 'pagedown' or k == 'keypad 3' then
     s.cur.y = s.cur.y + s.lines
     s:scroll()
     s.line = s.cur.y
-  elseif k == 'page up' or k == 'keypad 9' then
+  elseif k == 'pageup' or k == 'keypad 9' then
     s.cur.y = s.cur.y - s.lines
     s:scroll()
     s.line = s.cur.y
@@ -426,25 +455,94 @@ function buff:keydown(k)
     s:cut(true)
   elseif k == 'v' and input.keydown 'ctrl' then
     s:paste()
+  elseif (k == 'f' and input.keydown 'ctrl') or k == 'f7' then
+    inp_mode = not inp_mode
+    if inp_mode then
+      local t =  s:selected()
+      if t then
+        inp_mode = false
+        s:search(t)
+      else
+        inp_mode = 'search'
+      end
+    end
+  elseif k == 'l' and input.keydown 'ctrl' then
+    inp_mode = not inp_mode
+    if inp_mode then
+      inp_mode = 'goto'
+    end
   end
   s:scroll()
   s:select()
 end
 
-b = buff.new(FILE)
+function buff:search(t)
+  local s = self
+  for y = s.cur.y, #s.text do
+    local l = table.concat(s.text[y], '')
+    local start = 0
+    if y == s.cur.y then
+      local chars = s.text[y]
+      for i=1,s.cur.x+1 do
+        start = start + (chars[i] or ' '):len()
+      end
+    end
+    if l:find(t, start, true) then
+      local b, e = l:find(t, start, true)
+      local pos = 1
+      for i=1,#s.text[y] do
+        if pos == b then
+          s.cur.x = pos
+        end
+        if pos == e then
+          s.sel.endx = pos + 1
+          break
+        end
+        pos = pos + s.text[y][i]:len()
+      end
+      s.cur.y = y
+      s.sel.x = s.cur.x
+      s.sel.y = y
+      s.sel.endy = y
+      s:scroll()
+      return true
+    end
+  end
+  return false
+end
+
+local b = buff.new(FILE)
+local inp = buff.new(false, 0, H - b.sph, W, b.sph)
+inp.status = false
+inp.lines = 1
+
+function inp:newline()
+  local s = self
+  if inp_mode == 'search' then
+    b:search(table.concat(s.text[1] or {}, ''))
+  elseif inp_mode == 'goto' then
+    b:jump(tonumber(table.concat(s.text[1] or {}, '')) or 1)
+  end
+  s.text = {}
+  inp_mode = false
+end
+
+function get_buff()
+  return inp_mode and inp or b
+end
 
 while true do
   local r, v = sys.input()
   if r == 'keydown' then
-    b:keydown(v)
+    get_buff():keydown(v)
   elseif r == 'keyup' then
-    b:keyup(v)
+    get_buff():keyup(v)
   elseif r == 'text' then
-    b:unselect()
-    b:input(v)
+    get_buff():unselect()
+    get_buff():input(v)
   end
   if not gfx.framedrop() then
-    b:show()
+    get_buff():show()
   end
   gfx.flip(1/20, true)
 end
