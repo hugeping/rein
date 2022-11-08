@@ -538,6 +538,18 @@ function buff:keyup(k)
   end
 end
 
+function buff:exec(prog, ...)
+  mixer.init()
+  gfx.win(256, 256)
+  screen:clear(conf.bg)
+  local f, e = sys.exec(prog, ...)
+  if not f then
+    idle_mode = sys.go(function() error(e) end)
+  else
+    idle_mode = f
+  end
+end
+
 function buff:keydown(k)
   local s = self
   if k:find 'shift' then
@@ -575,17 +587,11 @@ function buff:keydown(k)
   elseif k == 'f7' then
     s:export ('__map__', 'data.map')
     s:export ('__spr__', 'data.spr')
+    local sprited = ARGS[1]:gsub("[/\\][^/\\]+$", "").."/sprited.lua"
+    s:exec(sprited, 'data.spr')
   elseif k == 'f5' then
     s:write()
-    mixer.init()
-    gfx.win(256, 256)
-    screen:clear(conf.bg)
-    local f, e = sys.exec(FILE)
-    if not f then
-      idle_mode = sys.go(function() error(e) end)
-    else
-      idle_mode = f
-    end
+    s:exec(FILE)
   elseif (k == 'u' or k == 'z') and input.keydown 'ctrl' then
     s:undo()
   elseif k == 'x' and input.keydown 'ctrl' or k == 'delete' then
