@@ -7,6 +7,7 @@ local W, H = screen:size()
 local conf = {
   fg = 0,
   bg = 16,
+  brd = { 0xde, 0xde, 0xde },
   hl = { 0, 0, 128, 64 },
   status = { 0, 0, 0, 64 },
   keyword = 8,
@@ -14,6 +15,7 @@ local conf = {
   delim = 4,
   syntax = false,
 }
+gfx.border(conf.brd)
 
 local FILE = ARGS[2] or 'main.lua'
 
@@ -647,6 +649,7 @@ mixer.stop()
 while true do
   while idle_mode do
     if input.keypress("c") and input.keydown("ctrl") then
+      gfx.border(conf.brd)
       sys.stop(idle_mode)
       mixer.stop()
       screen:nooffset()
