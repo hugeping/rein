@@ -85,6 +85,41 @@ function buff:status()
   gfx.print(info, 0, H - s.sph, conf.fg)
 end
 
+function buff:cut()
+  local s = self
+  local x1, y1 = s.sel.x, s.sel.y
+  local x2, y2 = s.sel.endx, s.sel.endy
+  if not x1 or not x2 or y1 == y2 and x1 == x2 then return end
+  if y1 > y2 then
+    y1, y2 = y2, y1
+    x1, x2 = x2, x1
+  end
+
+  local yy = y1
+
+  for y=y1, y2 do
+    if y ~= y1 and y ~= y2 then -- full line
+      s.text[yy] = {}
+    elseif y == y1 then
+      for x=x1, y == y2 and x2-1 or #s.text[yy] do
+        table.remove(s.text[yy], x1)
+      end
+    elseif y == y2 then
+      local xx = y==y1 and x1 or 1
+      for x = xx, x2-1 do
+        table.remove(s.text[yy], xx)
+      end
+    end
+    if #s.text[yy] == 0 then
+      table.remove(s.text, yy)
+    else
+      yy = yy + 1
+    end
+  end
+  s.cur.x, s.cur.y = x1, y1
+  s.sel.x, s.sel.endx = false, false
+end
+
 function buff:hlight(nr, py)
   local s = self
   local x1, y1 = s.sel.x, s.sel.y
@@ -259,9 +294,12 @@ function buff:keydown(k)
     s.line = s.cur.y
   elseif k == 'return' then
     local l = s.text[s.cur.y]
-    local ind = s:getind(s.cur.y)
-    local ind2 = s:getind(s.cur.y+1)
-    ind = ind > ind2 and ind or ind2
+    local ind, ind2 = 0, 0
+    if s.cur.x > 1 then
+      ind = s:getind(s.cur.y)
+      ind2 = s:getind(s.cur.y+1)
+      ind = ind > ind2 and ind or ind2
+    end
     s:history(true)
     table.insert(s.text, s.cur.y + 1, {})
     for i=1,ind do
@@ -293,6 +331,8 @@ function buff:keydown(k)
     s:write()
   elseif k == 'u' and input.keydown 'ctrl' then
     s:undo()
+  elseif k == 'x' and input.keydown 'ctrl' then
+    s:cut()
   end
   s:scroll()
   s:select()
