@@ -3,6 +3,8 @@ local W, H = screen:size()
 local conf = {
   fg = 0,
   bg = 16,
+  hl = { 0, 0, 128, 64 },
+  status = { 0, 0, 0, 64 },
 }
 
 local FILE = ARGS[2] or 'main.lua'
@@ -77,9 +79,10 @@ end
 
 function buff:status()
   local s = self
-  local info = string.format("%s %2d:%-2d", s.fname, s.cur.x, s.cur.y)
-  screen:fill_rect(0, H - s.sph, W, H, { 0, 0, 0, 64 })
-  gfx.print(info, 0, H - s.sph, 0)
+  local info = string.format("%s%s %2d:%-2d",
+    s.dirty and '*' or '', s.fname, s.cur.x, s.cur.y)
+  screen:fill_rect(0, H - s.sph, W, H, conf.status)
+  gfx.print(info, 0, H - s.sph, conf.fg)
 end
 
 function buff:hlight(nr, py)
@@ -95,17 +98,17 @@ function buff:hlight(nr, py)
   if nr < y1 or nr > y2 then return end
   if nr > y1 and nr < y2 then -- full line
     local len = #s.text[nr]
-    screen:fill_rect(0, py, len*s.spw-1, py + s.sph - 1, { 0, 0, 0, 64})
+    screen:fill_rect(0, py, len*s.spw-1, py + s.sph - 1, conf.hl)
     return
   end
   if nr == y1 then
     if y2 ~= nr then x2 = #s.text[nr] + 1 end
-    screen:fill_rect((x1-1)*s.spw, py, (x2-1)*s.spw, py + s.sph - 1, { 0, 0, 0, 64})
+    screen:fill_rect((x1-1)*s.spw, py, (x2-1)*s.spw, py + s.sph - 1, conf.hl)
     return
   end
   if nr == y2 then
     if y1 ~= nr then x1 = 1 end
-    screen:fill_rect((x1-1)*s.spw, py, (x2-1)*s.spw, py + s.sph - 1, { 0, 0, 0, 64})
+    screen:fill_rect((x1-1)*s.spw, py, (x2-1)*s.spw, py + s.sph - 1, conf.hl)
     return
   end
 end
@@ -178,6 +181,7 @@ function buff:history(newln)
   if #s.hist > 1024 then
     table.remove(s.hist, 1)
   end
+  s.dirty = true
 end
 
 function buff:undo()
@@ -190,6 +194,7 @@ function buff:undo()
   end
   s.cur.x = h.x
   s.cur.y = h.nr
+  s.dirty = #s.hist ~= 0
 end
 
 function buff:select(on)
