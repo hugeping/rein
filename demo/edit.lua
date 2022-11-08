@@ -55,6 +55,9 @@ end
 
 function buff:write()
   local s = self
+  if type(s.fname) ~= 'string' then
+    return
+  end
   local f = io.open(s.fname, "wb")
   if not f then
     return
@@ -234,6 +237,7 @@ function buff:show()
         break
       end
       local g = glyph(l[i])
+      if not g then g = glyph("?") end
       local w, _ = g:size()
       g:blend(screen, px, py)
       px = px + w
