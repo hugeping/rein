@@ -15,6 +15,14 @@ buff.__index = buff
 
 local glyph_cache = {}
 
+local function clone(t)
+  local l = {}
+  for _, v in ipairs(t) do
+    table.insert(l, v)
+  end
+  return l
+end
+
 function glyph(t, col)
   col = col or conf.fg
   local key = string.format("%s-%s", t, col)
@@ -26,7 +34,7 @@ function glyph(t, col)
 end
 
 function buff.new(fname)
-  local b = { text = {}, cur = { x = 1, y = 1 },
+  local b = { text = { }, cur = { x = 1, y = 1 },
     line = 1, col = 1, fname = fname, hist = {},
     sel = { } }
   local f = io.open(fname, "rb")
@@ -85,39 +93,95 @@ function buff:status()
   gfx.print(info, 0, H - s.sph, conf.fg)
 end
 
-function buff:cut()
+function buff:selected()
+  local s = self
+  return s.sel.x and s.sel.endx and
+    (s.sel.x ~= s.sel.endx or s.sel.y ~= s.sel.endy)
+end
+
+function buff:unselect()
+  local s = self
+  s.sel.x, s.sel.endx, s.sel.start = false, false, false
+end
+
+function buff:paste()
+  local s = self
+  local l = s.text[s.cur.y]
+  local oy = s.cur.y
+  for i, c in ipairs(s.clipboard or {}) do
+    s:input(table.concat(c, ''))
+    s:newline()
+--[[    if i == 1 then
+      for k, sym in ipairs(c) do
+        table.insert(l, s.cur.x + k - 1, sym)
+      end
+      s.cur.x = s.cur.x + #c
+    else
+      table.insert(s.text, s.cur.y + i - 1, clone(c))
+      oy = oy + 1
+    end
+]]--
+  end
+--  s.cur.y = oy
+end
+
+function buff:cut(copy)
   local s = self
   local x1, y1 = s.sel.x, s.sel.y
   local x2, y2 = s.sel.endx, s.sel.endy
+
+  s.clipboard = {}
+
   if not x1 or not x2 or y1 == y2 and x1 == x2 then return end
   if y1 > y2 then
     y1, y2 = y2, y1
     x1, x2 = x2, x1
   end
-
+  if not copy then
+    s:history('cut', x1, y1, x2, y2)
+  end
   local yy = y1
 
   for y=y1, y2 do
     if y ~= y1 and y ~= y2 then -- full line
-      s.text[yy] = {}
+      table.insert(s.clipboard, s.text[yy])
+      if not copy then
+        s.text[yy] = {}
+      end
     elseif y == y1 then
+      local crow = {}
+      table.insert(s.clipboard, crow)
       for x=x1, y == y2 and x2-1 or #s.text[yy] do
-        table.remove(s.text[yy], x1)
+        table.insert(crow, s.text[yy][x])
+      end
+      if not copy then
+        for x=x1, y == y2 and x2-1 or #s.text[yy] do
+          table.remove(s.text[yy], x1)
+        end
       end
     elseif y == y2 then
-      local xx = y==y1 and x1 or 1
+      local crow = {}
+      table.insert(s.clipboard, crow)
+      local xx = y == y1 and x1 or 1
       for x = xx, x2-1 do
-        table.remove(s.text[yy], xx)
+        table.insert(crow, s.text[yy][x])
+      end
+      if not copy then
+        for x = xx, x2-1 do
+          table.remove(s.text[yy], xx)
+        end
       end
     end
-    if #s.text[yy] == 0 then
+    if #s.text[yy] == 0 and not copy then
       table.remove(s.text, yy)
     else
       yy = yy + 1
     end
   end
-  s.cur.x, s.cur.y = x1, y1
-  s.sel.x, s.sel.endx = false, false
+  if not copy then
+    s.cur.x, s.cur.y = x1, y1
+    s:unselect()
+  end
 end
 
 function buff:hlight(nr, py)
@@ -125,6 +189,7 @@ function buff:hlight(nr, py)
   local x1, y1 = s.sel.x, s.sel.y
   local x2, y2 = s.sel.endx, s.sel.endy
   if not x1 or not x2 then return end
+  if not s.text[nr] then return end
   if y1 == y2 and x1 == x2 then return end
   if y1 > y2 then
     y1, y2 = y2, y1
@@ -174,6 +239,7 @@ end
 
 function buff:scroll()
   local s = self
+  if #s.text == 0 then s.text[1] = {} end
   if s.cur.x < 1 then s.cur.x = 1 end
   if s.cur.y < 1 then s.cur.y = 1 end
   if s.cur.y > #s.text then s.cur.y = #s.text end
@@ -205,14 +271,23 @@ function buff:input(t)
   s:scroll()
 end
 
-function buff:history(op)
+function buff:history(op, a, b, c, d)
   local s = self
-  local l = {}
-  for _, v in ipairs(s.text[s.cur.y]) do
-    table.insert(l, v)
+  local h = { op = op, x = s.cur.x, y = s.cur.y }
+  if op == 'cut' then
+    h.op = 'cut'
+    h.nr = b
+    h.endn = d
+    h.edita = a > 1
+    h.editb = c <= #s.text[b]
+    for y=b,d do
+      table.insert(h, clone(s.text[y]))
+    end
+  else
+    h.nr = s.cur.y
+    h.line = clone(s.text[s.cur.y])
   end
-  table.insert(s.hist,
-    { nr = s.cur.y, line = l, x = s.cur.x, op = op })
+  table.insert(s.hist, h)
   if #s.hist > 1024 then
     table.remove(s.hist, 1)
   end
@@ -223,12 +298,20 @@ function buff:undo()
   local s = self
   if #s.hist == 0 then return end
   local h = table.remove(s.hist, #s.hist)
-  s.text[h.nr] = h.line
-  if h.op == 'newline' then
-    table.remove(s.text, h.nr + 1)
+  if h.op == 'cut' then
+    for k, l in ipairs(h) do
+      if k == 1 and h.edita then table.remove(s.text, h.nr)
+      elseif k == #h and h.editb then table.remove(s.text, h.nr + k - 1) end
+      table.insert(s.text, h.nr + k - 1, l)
+    end
+  else
+    s.text[h.nr] = h.line
+    if h.op == 'newline' then
+      table.remove(s.text, h.nr + 1)
+    end
   end
   s.cur.x = h.x
-  s.cur.y = h.nr
+  s.cur.y = h.y
   s.dirty = #s.hist ~= 0
 end
 
@@ -248,6 +331,46 @@ function buff:select(on)
   if s.sel.start then
     s.sel.endx, s.sel.endy = s.cur.x, s.cur.y
   end
+end
+
+function buff:backspace()
+  local s = self
+  s:unselect()
+  if s.cur.x > 1 then
+    s:history()
+    table.remove(s.text[s.cur.y], s.cur.x - 1)
+    s.cur.x = s.cur.x - 1
+  elseif s.cur.y > 1 then
+    s:history()
+    local l = table.remove(s.text, s.cur.y)
+    s.cur.y = s.cur.y - 1
+    s.cur.x = #s.text[s.cur.y] + 1
+    s:history()
+    for _, v in ipairs(l) do
+      table.insert(s.text[s.cur.y], v)
+    end
+  end
+end
+
+function buff:newline()
+  local s = self
+  local l = s.text[s.cur.y]
+  local ind, ind2 = 0, 0
+  if s.cur.x > 1 then
+    ind = s:getind(s.cur.y)
+    ind2 = s:getind(s.cur.y+1)
+    ind = ind > ind2 and ind or ind2
+  end
+  s:history('newline')
+  table.insert(s.text, s.cur.y + 1, {})
+  for i=1,ind do
+    table.insert(s.text[s.cur.y + 1], 1, ' ')
+  end
+  for k=s.cur.x, #l do
+    table.insert(s.text[s.cur.y+1], table.remove(l, s.cur.x))
+  end
+  s.cur.y = s.cur.y + 1
+  s.cur.x = ind + 1
 end
 
 function buff:getind(nr)
@@ -292,38 +415,9 @@ function buff:keydown(k)
     s:scroll()
     s.line = s.cur.y
   elseif k == 'return' then
-    local l = s.text[s.cur.y]
-    local ind, ind2 = 0, 0
-    if s.cur.x > 1 then
-      ind = s:getind(s.cur.y)
-      ind2 = s:getind(s.cur.y+1)
-      ind = ind > ind2 and ind or ind2
-    end
-    s:history('newline')
-    table.insert(s.text, s.cur.y + 1, {})
-    for i=1,ind do
-      table.insert(s.text[s.cur.y + 1], 1, ' ')
-    end
-    for k=s.cur.x, #l do
-      table.insert(s.text[s.cur.y+1], table.remove(l, s.cur.x))
-    end
-    s.cur.y = s.cur.y + 1
-    s.cur.x = ind + 1
+    s:newline()
   elseif k == 'backspace' then
-    if s.cur.x > 1 then
-      s:history()
-      table.remove(s.text[s.cur.y], s.cur.x - 1)
-      s.cur.x = s.cur.x - 1
-    elseif s.cur.y > 1 then
-      s:history()
-      local l = table.remove(s.text, s.cur.y)
-      s.cur.y = s.cur.y - 1
-      s.cur.x = #s.text[s.cur.y] + 1
-      s:history()
-      for _, v in ipairs(l) do
-        table.insert(s.text[s.cur.y], v)
-      end
-    end
+    s:backspace()
   elseif k == 'tab' then
     s:input("  ")
   elseif k == 'f2' or (k == 's' and input.keydown'ctrl') then
@@ -332,6 +426,10 @@ function buff:keydown(k)
     s:undo()
   elseif k == 'x' and input.keydown 'ctrl' then
     s:cut()
+  elseif k == 'c' and input.keydown 'ctrl' then
+    s:cut(true)
+  elseif k == 'v' and input.keydown 'ctrl' then
+    s:paste()
   end
   s:scroll()
   s:select()
