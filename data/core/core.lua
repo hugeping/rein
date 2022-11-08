@@ -9,8 +9,21 @@ local core = {
   view_y = 0;
 }
 
-function core.go(fn)
-  local f, e = coroutine.create(fn)
+function core.go(fn, env)
+  local f, e
+  if type(fn) == 'string' then
+    f, e = loadfile(fn, "t", env)
+    if not f then
+      core.err(e)
+      return
+    end
+  else
+    f = fn
+  end
+  if setfenv and env then
+    setfenv(f, env)
+  end
+  f, e = coroutine.create(f)
   if f then
     table.insert(core.fn, f)
   end
@@ -73,20 +86,7 @@ function core.init()
   else
     env.ARGS[1] = DATADIR..'/boot.lua'
   end
-  f, e = loadfile(env.ARGS[1], "t", env)
-  if not f then
-    core.err(e)
-    return
-  end
-
-  if not f then
-    core.err("No lua file")
-    return
-  end
-  if setfenv then
-    setfenv(f, env)
-  end
-  table.insert(core.fn, coroutine.create(f))
+  core.go(env.ARGS[1], env)
   -- sys.window_mode 'fullscreen'
   -- sys.window_mode 'normal'
 end
@@ -153,10 +153,9 @@ function core.run()
   end
 
   -- core.render()
-  if not core.err() then
+  if true then -- not core.err() then
     local i = 1
-    local n = #core.fn
-    while i <= n do
+    while core.fn[i] do
       local fn = core.fn[i]
       if coroutine.status(fn) ~= 'dead' then
         local r, e = coroutine.resume(fn)
@@ -168,7 +167,6 @@ function core.run()
         i = i + 1
       else
         table.remove(core.fn, i)
-        n = n - 1
       end
     end
   end
