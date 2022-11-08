@@ -9,6 +9,10 @@ local conf = {
   bg = 16,
   hl = { 0, 0, 128, 64 },
   status = { 0, 0, 0, 64 },
+  keyword = 8,
+  bracket = 3,
+  delim = 4,
+  syntax = false,
 }
 
 local FILE = ARGS[2] or 'main.lua'
@@ -133,7 +137,7 @@ function buff:paste()
   local s = self
   for _, c in ipairs(s.clipboard or {}) do
     s:input(table.concat(c, ''))
-    s:newline()
+    s:newline(false)
   end
 end
 
@@ -235,21 +239,90 @@ function buff:hlight(nr, py)
   end
 end
 
+local kwd = {
+  ["and"] = conf.keyword,
+  ["in"] = conf.keyword,
+  ["or"] = conf.keyword,
+  ["repeat"] = conf.keyword,
+  ["until"] = conf.keyword,
+  ["for"] = conf.keyword,
+  ["if"] = conf.keyword,
+  ["do"] = conf.keyword,
+  ["end"] = conf.keyword,
+  ["while"] = conf.keyword,
+  ["true"] = conf.keyword,
+  ["false"] = conf.keyword,
+  ["return"] = conf.keyword,
+  ["then"] = conf.keyword,
+  ["else"] = conf.keyword,
+  ["elseif"] = conf.keyword,
+  ["local"] = conf.keyword,
+  ["function"] = conf.keyword,
+  ["break"] = conf.keyword,
+}
+
+local delim = {
+  [" "] = conf.delim,
+  [","] = conf.delim,
+  [";"] = conf.delim,
+  ["("] = conf.bracket,
+  [")"] = conf.bracket,
+  ["{"] = conf.bracket,
+  ["}"] = conf.bracket,
+  ["["] = conf.bracket,
+  ["]"] = conf.bracket,
+}
+
+function buff:colorize(l)
+  if not conf.syntax then
+    return {}
+  end
+  local pre = ' '
+  local start
+  local key
+  local cols = {}
+  for k, c in ipairs(l) do
+    if delim[c] then
+      cols[k] = (c == " " and 0) or delim[c]
+    end
+    if start then
+      if not l[k+1] or delim[c] then
+        key = key .. (delim[c] and '' or c)
+        if kwd[key] then
+          for i=start,k do
+            cols[i] = kwd[key]
+          end
+        end
+        start = false
+      else
+        key = key .. c
+      end
+    elseif delim[pre] and not delim[c] then
+      key = c
+      start = k
+    end
+    pre = c
+  end
+  return cols
+end
+
 function buff:show()
   local s = self
   screen:clear(s.x, s.y, s.w, s.h, conf.bg)
   screen:clip(s.x, s.y, s.x + s.w, s.y + s.h)
   local l, words
   local px, py = s.x, s.y
+  local cols
   for nr=s.line, s.line + s.lines - 1 do
     l = s.text[nr] or {}
+    cols = s:colorize(l)
     px = 0
     s:hlight(nr, py)
     for i=s.col,#l do
       if px > W then
         break
       end
-      local g = glyph(l[i])
+      local g = glyph(l[i], cols[i])
       if not g then g = glyph("?") end
       local w, _ = g:size()
       g:blend(screen, px, py)
@@ -300,8 +373,8 @@ function buff:input(t)
   s:history()
   for _, v in ipairs(c) do
     table.insert(s.text[s.cur.y], s.cur.x, v)
+    s.cur.x = s.cur.x + 1
   end
-  s.cur.x = s.cur.x + utf.len(t)
   s:scroll()
 end
 
@@ -390,11 +463,11 @@ function buff:backspace()
   end
 end
 
-function buff:newline()
+function buff:newline(indent)
   local s = self
   local l = s.text[s.cur.y]
   local ind, ind2 = 0, 0
-  if s.cur.x > 1 then
+  if s.cur.x > 1 and indent ~= false then
     ind = s:getind(s.cur.y)
     ind2 = s:getind(s.cur.y+1)
     ind = ind > ind2 and ind or ind2
