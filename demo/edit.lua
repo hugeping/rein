@@ -229,7 +229,16 @@ function buff:scroll()
   if #s.text == 0 then s.text[1] = {} end
   if s.cur.x < 1 then s.cur.x = 1 end
   if s.cur.y < 1 then s.cur.y = 1 end
-  if s.cur.y > #s.text then s.cur.y = #s.text end
+  if s.cur.y > #s.text then
+    s.cur.y = #s.text
+    if #s.text[s.cur.y] == 0 then
+      return
+    end
+    s.cur.y = s.cur.y + 1
+    s.cur.x = 1
+    s.text[s.cur.y] = {}
+    return
+  end
   if s.cur.x > #s.text[s.cur.y] then s.cur.x = #s.text[s.cur.y] + 1 end
   if s.cur.y >= s.line and s.cur.y <= s.line + s.lines - 1
     and s.cur.x >= s.col and s.cur.x < s.columns then
@@ -434,6 +443,8 @@ while true do
     b:unselect()
     b:input(v)
   end
-  b:show()
+  if not gfx.framedrop() then
+    b:show()
+  end
   gfx.flip(1/20, true)
 end
