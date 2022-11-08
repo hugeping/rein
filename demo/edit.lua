@@ -447,6 +447,10 @@ function buff:keydown(k)
     s:input("  ")
   elseif k == 'f2' or (k == 's' and input.keydown'ctrl') then
     s:write()
+  elseif k == 'f5' then
+    s:write()
+    mixer.init()
+    idle_mode = sys.go(FILE, _G)
   elseif (k == 'u' or k == 'z') and input.keydown 'ctrl' then
     s:undo()
   elseif k == 'x' and input.keydown 'ctrl' then
@@ -530,8 +534,20 @@ end
 function get_buff()
   return inp_mode and inp or b
 end
+mixer.stop()
 
 while true do
+  while idle_mode do
+    if input.keypress("c") and input.keydown("ctrl") then
+      sys.stop(idle_mode)
+      mixer.stop()
+      screen:nooffset()
+      screen:noclip()
+      idle_mode = false
+      break
+    end
+    coroutine.yield()
+  end
   local r, v = sys.input()
   if r == 'keydown' then
     get_buff():keydown(v)

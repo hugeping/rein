@@ -267,11 +267,12 @@ end
 function mixer.stop()
   if mixer.thr then
     mixer.clireq 'quit'
+    mixer.thr = false
   end
   core.stop(mixer.co)
 end
 
-function mixer.init(core)
+function mixer.init()
   local t, r
   if THREADED then
     t, e = thread.start(function()
