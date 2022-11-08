@@ -203,7 +203,9 @@ function mixer.coroutine()
     mixer.thread()
   else
     while true do
-      mixer.thr:poll() -- force show peer end error msg
+      if mixer.running then
+        mixer.thr:poll() -- force show peer end error msg
+      end
       coroutine.yield()
     end
   end
@@ -265,15 +267,18 @@ function mixer.volume(vol)
 end
 
 function mixer.stop()
+  if not mixer.running then return end
+  mixer.running = false
   if mixer.thr then
     mixer.clireq 'quit'
-    mixer.thr = false
   end
   core.stop(mixer.co)
 end
 
 function mixer.init()
   local t, r
+  if mixer.running then return end
+  mixer.running = true
   if THREADED then
     t, e = thread.start(function()
       local mixer = require "mixer"
