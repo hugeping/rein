@@ -522,9 +522,11 @@ function buff:keydown(k)
     s.cur.x = s.cur.x + 1
   elseif k == 'left' then
     s.cur.x = s.cur.x - 1
-  elseif k == 'home' or k == 'keypad 7' then
+  elseif k == 'home' or k == 'keypad 7' or
+    (k == 'a' and input.keydown 'ctrl') then
     s.cur.x = 1
-  elseif k == 'end' or k == 'keypad 1' then
+  elseif k == 'end' or k == 'keypad 1' or
+    (k == 'e' and input.keydown 'ctrl') then
     s.cur.x = #s.text[s.cur.y] + 1
   elseif k == 'pagedown' or k == 'keypad 3' then
     s.cur.y = s.cur.y + s.lines
@@ -546,6 +548,7 @@ function buff:keydown(k)
     s:write()
     mixer.init()
     gfx.win(256, 256)
+    screen:clear(conf.bg)
     local f, e = sys.exec(FILE)
     if not f then
       idle_mode = sys.go(function() error(e) end)
@@ -664,8 +667,10 @@ while true do
     get_buff():unselect()
     get_buff():input(v)
   end
-  if not gfx.framedrop() then
-    get_buff():show()
+  if not idle_mode then
+    if not gfx.framedrop() then
+      get_buff():show()
+    end
+    gfx.flip(1/20, true)
   end
-  gfx.flip(1/20, true)
 end
