@@ -431,6 +431,7 @@ while true do
   elseif r == 'keyup' then
     b:keyup(v)
   elseif r == 'text' then
+    b:unselect()
     b:input(v)
   end
   b:show()
