@@ -25,7 +25,8 @@ end
 
 function buff.new(fname)
   local b = { text = {}, cur = { x = 1, y = 1 },
-    line = 1, col = 1, fname = fname, hist = {} }
+    line = 1, col = 1, fname = fname, hist = {},
+    sel = { } }
   local f = io.open(fname, "rb")
   if f then
     for l in f:lines() do
@@ -81,6 +82,34 @@ function buff:status()
   gfx.print(info, 0, H - s.sph, 0)
 end
 
+function buff:hlight(nr, py)
+  local s = self
+  local x1, y1 = s.sel.x, s.sel.y
+  local x2, y2 = s.sel.endx, s.sel.endy
+  if not x1 or not x2 then return end
+  if y1 == y2 and x1 == x2 then return end
+  if y1 > y2 then
+    y1, y2 = y2, y1
+    x1, x2 = x2, x1
+  end
+  if nr < y1 or nr > y2 then return end
+  if nr > y1 and nr < y2 then -- full line
+    local len = #s.text[nr]
+    screen:fill_rect(0, py, len*s.spw-1, py + s.sph - 1, { 0, 0, 0, 64})
+    return
+  end
+  if nr == y1 then
+    if y2 ~= nr then x2 = #s.text[nr] + 1 end
+    screen:fill_rect((x1-1)*s.spw, py, (x2-1)*s.spw, py + s.sph - 1, { 0, 0, 0, 64})
+    return
+  end
+  if nr == y2 then
+    if y1 ~= nr then x1 = 1 end
+    screen:fill_rect((x1-1)*s.spw, py, (x2-1)*s.spw, py + s.sph - 1, { 0, 0, 0, 64})
+    return
+  end
+end
+
 function buff:show()
   local s = self
   screen:clear(conf.bg)
@@ -89,6 +118,7 @@ function buff:show()
   for nr=s.line, s.line + s.lines - 1 do
     l = s.text[nr] or {}
     px = 0
+    s:hlight(nr, py)
     for i=b.col,#l do
       if px > W then
         break
@@ -162,9 +192,47 @@ function buff:undo()
   s.cur.y = h.nr
 end
 
+function buff:select(on)
+  local s = self
+  if on == true then
+    if not s.sel.start then
+      s.sel.x, s.sel.y = s.cur.x, s.cur.y
+    end
+    s.sel.endx, s.sel.endy = s.cur.x, s.cur.y
+    s.sel.start = true
+    return
+  elseif on == false then
+    s.sel.start = false
+    return
+  end
+  if s.sel.start then
+    s.sel.endx, s.sel.endy = s.cur.x, s.cur.y
+  end
+end
+
+
+function buff:getind(nr)
+  local s = self
+  local l = s.text[nr] or {}
+  local ind = 0
+  for i=1, #l do
+    if l[i] == ' ' then ind = ind + 1 else break end
+  end
+  return ind
+end
+
+function buff:keyup(k)
+  local s = self
+  if k:find 'shift' then
+    s:select(false)
+  end
+end
+
 function buff:keydown(k)
   local s = self
-  if k == 'up' then
+  if k:find 'shift' then
+    s:select(true)
+  elseif k == 'up' then
     s.cur.y = s.cur.y - 1
   elseif k == 'down' then
     s.cur.y = s.cur.y + 1
@@ -186,13 +254,19 @@ function buff:keydown(k)
     s.line = s.cur.y
   elseif k == 'return' then
     local l = s.text[s.cur.y]
+    local ind = s:getind(s.cur.y)
+    local ind2 = s:getind(s.cur.y+1)
+    ind = ind > ind2 and ind or ind2
     s:history(true)
     table.insert(s.text, s.cur.y + 1, {})
+    for i=1,ind do
+      table.insert(s.text[s.cur.y + 1], 1, ' ')
+    end
     for k=s.cur.x, #l do
       table.insert(s.text[s.cur.y+1], table.remove(l, s.cur.x))
     end
     s.cur.y = s.cur.y + 1
-    s.cur.x = 1
+    s.cur.x = ind + 1
   elseif k == 'backspace' then
     if s.cur.x > 1 then
       s:history()
@@ -216,6 +290,7 @@ function buff:keydown(k)
     s:undo()
   end
   s:scroll()
+  s:select()
 end
 
 b = buff.new(FILE)
@@ -224,6 +299,8 @@ while true do
   local r, v = sys.input()
   if r == 'keydown' then
     b:keydown(v)
+  elseif r == 'keyup' then
+    b:keyup(v)
   elseif r == 'text' then
     b:input(v)
   end
