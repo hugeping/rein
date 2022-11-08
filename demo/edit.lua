@@ -1,5 +1,7 @@
 --gfx.win(640, 480)
 --local sfont = gfx.font('demo/iosevka.ttf',12)
+local idle_mode
+local inp_mode
 local sfont = font
 local W, H = screen:size()
 local conf = {
