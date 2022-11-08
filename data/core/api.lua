@@ -43,7 +43,7 @@ local conf = {
   fg = { 0, 0, 0 };
   bg = 16;
   brd = { 0xde, 0xde, 0xde };
-  font = "fonts/8x8.fnt",
+  font = "fonts/8x8os2.fnt",
 }
 
 local env = {
