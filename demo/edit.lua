@@ -454,7 +454,12 @@ function buff:keydown(k)
   elseif k == 'f5' then
     s:write()
     mixer.init()
-    idle_mode = sys.exec(FILE)
+    local f, e = sys.exec(FILE)
+    if not f then
+      idle_mode = sys.go(function() error(e) end)
+    else
+      idle_mode = f
+    end
   elseif (k == 'u' or k == 'z') and input.keydown 'ctrl' then
     s:undo()
   elseif k == 'x' and input.keydown 'ctrl' then
