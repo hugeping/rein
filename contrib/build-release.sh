@@ -63,7 +63,7 @@ strip rein
 ## Windows version
 
 CFLAGS="-Isrc/instead -Iexternal/windows/include -Iexternal/windows/include/SDL2"
-LDFLAGS="-Lexternal/windows/lib -lSDL2.dll -lSDL2main -lm -lluajit"
+LDFLAGS="-Lexternal/windows/lib -lSDL2.dll -lSDL2main -lm -lluajit -lws2_32 -lwsock32"
 
 i686-w64-mingw32-windres -i contrib/resources.rc -o resources.o || exit 1
 
