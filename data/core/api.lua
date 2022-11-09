@@ -287,7 +287,8 @@ end
 
 function env.sys.dirname(f)
   if not f:find("[/\\]") then
-    f = f:gsub("^([A-Z]:).*$", "%1") -- win?
+    local ff = f:gsub("^([A-Z]:).*$", "%1") -- win?
+    if ff == f then return './' end
     return f
   end
   f = f:gsub("[/\\][^/\\]+$", "")
