@@ -657,6 +657,11 @@ function buff:keydown(k)
     s:cut(true)
   elseif k == 'v' and input.keydown 'ctrl' then
     s:paste()
+  elseif k== 'f4' then
+    inp_mode = not inp_mode
+    if inp_mode then
+      inp_mode = 'open'
+    end
   elseif (k == 'f' and input.keydown 'ctrl') or k == 'f7' then
     inp_mode = not inp_mode
     if inp_mode then
@@ -724,6 +729,9 @@ function inp:newline()
     b:search(table.concat(s.text[1] or {}, ''))
   elseif inp_mode == 'goto' then
     b:jump(tonumber(table.concat(s.text[1] or {}, '')) or 1)
+  elseif inp_mode == 'open' then
+    FILE = table.concat(s.text[1] or {}, '')
+    b = buff.new(FILE == '' and 'main.lua' or FILE)
   end
   s.text = {}
   inp_mode = false
@@ -746,6 +754,7 @@ shift+cursor - select
 ctrl-x       - cut&copy selection
 ctrl-c       - copy selection
 ctrl-v       - paste selection
+F4           - open another file (no save!)
 F5           - run!
 F8           - run sprite editor
 ESC          - exit from running prog
