@@ -17,11 +17,11 @@ function tcp:write(data)
   end
   local i = 1
   local len = data:len()
-  local rc
+  local rc, e
   while len > 0 do
-    rc = self.sock:send(data, i, len)
-    if rc < 0 then
-      return false
+    rc, e = self.sock:send(data, i, len)
+    if not rc then
+      return false, e
     end
     len = len - rc
     i = i + rc
@@ -59,6 +59,13 @@ function tcp:recv(len)
     return false
   end
   return self.sock:recv(len)
+end
+
+function tcp:send(...)
+  if not self.sock then
+    return false
+  end
+  return self.sock:send(...)
 end
 
 function tcp:lines(wait)
