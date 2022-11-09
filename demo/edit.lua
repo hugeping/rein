@@ -3,6 +3,7 @@ gfx.win(384, 384)
 local idle_mode
 local idle_prog
 local inp_mode
+local help_mode
 local sfont = font
 local W, H = screen:size()
 local conf = {
@@ -642,6 +643,8 @@ function buff:keydown(k)
     s:write()
     s:exec(FILE)
     idle_mode = 'run'
+  elseif k == 'f1' then
+    help_mode = not help_mode
   elseif (k == 'u' or k == 'z') and input.keydown 'ctrl' then
     s:undo()
   elseif k == 'x' and input.keydown 'ctrl' or k == 'delete' then
@@ -730,6 +733,23 @@ function get_buff()
   return inp_mode and inp or b
 end
 mixer.stop()
+local HELP = [[Keys:
+F2,ctrl-s    - save
+ctrl-l       - jump to line
+home,ctrl-a  - line begin
+end,ctrl-e   - line end
+pageup       - scroll up
+pagedown     - scroll down
+F7,ctrl-f    - search
+cursor keys  - move
+shift+cursor - select
+ctrl-x       - cut&copy selection
+ctrl-c       - copy selection
+ctrl-v       - paste selection
+F5           - run!
+F7           - run sprite editor
+ESC          - exit from running prog
+]]
 
 while true do
   while idle_prog do
@@ -746,6 +766,15 @@ while true do
         b:import('__map__', 'data.map')
       end
       idle_prog, idle_mode = false, false
+      break
+    end
+    coroutine.yield()
+  end
+  while help_mode do
+    screen:clear(conf.bg)
+    gfx.print(HELP, 0, 0, conf.fg, true)
+    if sys.input() == 'keydown' then
+      help_mode = false
       break
     end
     coroutine.yield()
