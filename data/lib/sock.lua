@@ -12,6 +12,9 @@ function sock.dial(addr, port)
 end
 
 function tcp:write(data)
+  if not self.sock then
+    return false
+  end
   local i = 1
   local len = data:len()
   local rc
@@ -27,7 +30,17 @@ function tcp:write(data)
   return true
 end
 
+function tcp:close()
+  if self.sock then
+    self.sock:close()
+    self.sock = false
+  end
+end
+
 function tcp:poll()
+  if not self.sock then
+    return false
+  end
   local i = 1
   local len = self.data:len()
   local ret
@@ -42,6 +55,9 @@ function tcp:poll()
 end
 
 function tcp:recv(len)
+  if not self.sock then
+    return false
+  end
   return self.sock:recv(len)
 end
 

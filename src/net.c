@@ -36,6 +36,7 @@ sock_free(lua_State *L)
 {
 	struct lua_sock *usock = luaL_checkudata(L, 1, "socket metatable");
 	Shutdown(usock->fd);
+	usock->fd = -1;
 	return 0;
 }
 
@@ -71,7 +72,6 @@ sock_recv(lua_State *L)
 		return 0;
 	while (len) {
 		rc = Recv(usock->fd, ptr, len);
-		printf("%d\n", rc);
 		if (rc <= 0)
 			break;
 		ptr += rc;
@@ -86,6 +86,7 @@ sock_recv(lua_State *L)
 static const luaL_Reg socket_mt[] = {
 	{ "send", sock_send },
 	{ "recv", sock_recv },
+	{ "close", sock_free },
 	{ "__gc", sock_free },
 	{ NULL, NULL }
 };
