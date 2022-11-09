@@ -55,6 +55,11 @@ sock_send(lua_State *L)
 	} else
 		len = sz;
 	rc = Send(usock->fd, data + idx - 1, len);
+	if (rc < 0) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, strerror(errno));
+		return 2;
+	}
 	lua_pushinteger(L, rc);
 	return 1;
 }
@@ -63,7 +68,7 @@ static int
 sock_recv(lua_State *L)
 {
 	struct lua_sock *usock = luaL_checkudata(L, 1, "socket metatable");
-	int len, rc;
+	int len, rc = 0;
 	int written = 0;
 	char *ptr, *buf;
 	len = luaL_checkinteger(L, 2);
@@ -77,6 +82,12 @@ sock_recv(lua_State *L)
 		ptr += rc;
 		len -= rc;
 		written += rc;
+	}
+	if (rc < 0 && !written) {
+		free(buf);
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, strerror(errno));
+		return 2;
 	}
 	lua_pushlstring(L, buf, written);
 	free(buf);
