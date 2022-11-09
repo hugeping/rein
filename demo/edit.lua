@@ -13,7 +13,9 @@ local conf = {
   hl = { 0, 0, 128, 64 },
   status = { 0, 0, 0, 64 },
   keyword = 8,
+  string = 14,
   number = 12,
+  comment = 6,
   bracket = 3,
   delim = 4,
   syntax = true,
@@ -348,6 +350,8 @@ local delim = {
   ["}"] = conf.bracket,
   ["["] = conf.bracket,
   ["]"] = conf.bracket,
+  ["'"] = conf.delim,
+  ['"'] = conf.delim,
 }
 
 function buff:colorize(l)
@@ -358,8 +362,38 @@ function buff:colorize(l)
   local start
   local key
   local cols = {}
+  local beg
+  local k, c = 1, 0
+  while k<=#l do -- strings
+    while l[k] == '\\' do
+      if beg then
+        cols[k] = conf.string
+        cols[k+1] = conf.string
+      end
+      k = k + 2
+    end
+    c = l[k]
+    if not c then break end
+    if not beg then
+      if c == '-' and l[k+1] == '-' then
+        for i=k, #l do cols[i] = conf.comment end
+        break
+      end
+      if c == '"' or c == "'" then
+        beg = c
+        cols[k] = conf.string
+      end
+    else
+      cols[k] = conf.string
+      if c == beg then
+        beg = false
+      end
+    end
+    k = k + 1
+  end
   for k, c in ipairs(l) do
-    if delim[pre] and not delim[c] then
+    if delim[pre] and not delim[c] and
+        not cols[k] then
       key = ''
       start = k
     end
@@ -375,7 +409,7 @@ function buff:colorize(l)
         key = key .. c
       end
     end
-    if delim[c] then
+    if not cols[k] and delim[c] then
       cols[k] = (c == " " and 0) or delim[c]
     end
     pre = c
@@ -743,7 +777,9 @@ end
 function get_buff()
   return inp_mode and inp or b
 end
+
 mixer.stop()
+
 local HELP = [[Keys:
 F2,ctrl-s    - save
 ctrl-l       - jump to line
