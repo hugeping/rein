@@ -191,6 +191,49 @@ function env_ro.gfx.win(w, h) -- create new win or change
   return oscr
 end
 
+local flipsx, flipsy, flipsxy = {}, {}
+
+function env_ro.gfx.spr(data, nr, x, y, w, h, flipx, flipy)
+  local flips
+  local W, H = data:size()
+  local nsp = math.floor(W/8)
+  if nr == 0 or not nr then return end
+  w = w or 1
+  h = h or 1
+  local fx = nr % nsp
+  local fy = math.floor(nr / nsp)
+  local flips
+  if flipx and not flipy then
+    flips = flipsx
+  elseif not flipx and flipy then
+    flips = flipsy
+  elseif flipx and flipy then
+    flips = flipsxy
+  end
+
+  if not flips then
+    data:blend(fx * 8, fy * 8, w * 8, h * 8, env.screen, x, y)
+    return
+  end
+  flips[data] = flips[data] or {}
+  flips = flips[data]
+
+  if flips[nr] then
+    flips[nr]:blend(env.screen, x, y)
+    return
+  end
+  flips[nr] = gfx.new(w*8, h*8)
+  data:blend(fx * 8, fy * 8, w * 8, h * 8, flips[nr], 0, 0)
+  if flipx then
+    flips[nr] = flips[nr]:flip(true, false)
+  end
+  if flipy then
+    flips[nr] = flips[nr]:flip(false, true)
+  end
+  flips[nr]:blend(env.screen, x, y)
+  return
+end
+
 function env_ro.gfx.loadmap(fname)
   fname = fname:strip():gsub("\r", "")
   local f, e
