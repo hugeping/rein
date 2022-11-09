@@ -1,5 +1,5 @@
 require "std"
-
+local DELAY = 1/30
 local sock = {}
 sock.__index = sock
 
@@ -27,8 +27,11 @@ function tcp:write(data)
     end
     len = len - rc
     i = i + rc
-    sys.sleep(1/10)
---    coroutine.yield()
+    if sys.incoroutine then
+      coroutine.yield()
+    else
+      sys.sleep(DELAY)
+    end
   end
   return true
 end
@@ -74,8 +77,11 @@ end
 function tcp:lines(wait)
   while wait and not self.data:find("\n") do
     self:poll()
-    sys.sleep(1/10)
---    coroutine.yield()
+    if sys.incoroutine then
+      coroutine.yield()
+    else
+      sys.sleep(DELAY)
+    end
   end
   local str = self.data
   local s = str:gsub("^(.*\n)[^\n]*$", "%1")
