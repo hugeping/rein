@@ -285,6 +285,15 @@ function env_ro.input.keypress(name) -- single press
   return true
 end
 
+function env.sys.dirname(f)
+  if not f:find("[/\\]") then
+    f = f:gsub("^([A-Z]:).*$", "%1") -- win?
+    return f
+  end
+  f = f:gsub("[/\\][^/\\]+$", "")
+  return f
+end
+
 function env.sys.sleep(to, interrupt)
   local start = sys.time()
   repeat
