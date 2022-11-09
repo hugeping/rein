@@ -197,7 +197,6 @@ function env_ro.gfx.spr(data, nr, x, y, w, h, flipx, flipy)
   local flips
   local W, H = data:size()
   local nsp = math.floor(W/8)
-  if nr == 0 or not nr then return end
   w = w or 1
   h = h or 1
   local fx = nr % nsp
