@@ -163,7 +163,7 @@ function win:newline()
     self:write("%s:%s\n", NICK, inp)
   else
     thr:write('send', inp)
-    self:write("%s\n", m)
+    self:write("%s\n", inp)
   end
   self.inp = ''
 end
