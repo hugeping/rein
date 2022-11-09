@@ -73,10 +73,10 @@ function win:scroll()
 end
 
 local buf = win.new()
-local NICK = ARGS[4] or 'peter_irc'
+local NICK = ARGS[4] or string.format("rein%d", math.random(1000))
 local HOST = ARGS[2] or 'irc.oftc.net'
 local PORT = ARGS[3] or 6667
-print(HOST, PORT)
+
 local thr = thread.start(function()
   local sock = require "sock"
   local nick, host, port = thread:read()
