@@ -1,7 +1,12 @@
 #ifdef _WIN32
+ #include <winsock2.h>
+ #include <ws2tcpip.h>
+ #include <windows.h>
  #include <windows.h>
 #else
  #include <unistd.h>
+ #include <arpa/inet.h>
+ #include <netdb.h>
 #endif
 #ifdef __linux__
  #include <sys/wait.h>
@@ -27,3 +32,4 @@
 #include "emscripten.h"
 #include "emscripten/html5.h"
 #endif
+#include <sys/fcntl.h>

@@ -317,11 +317,17 @@ PlatformInit(void)
 {
 	SDL_AudioSpec spec;
 #ifdef _WIN32
+	WSADATA wsaData;
+
 	int (*SetProcessDPIAware)();
 	user32_lib = LoadLibrary("user32.dll");
 	SetProcessDPIAware = (void*) GetProcAddress(user32_lib, "SetProcessDPIAware");
 	if (SetProcessDPIAware)
 		SetProcessDPIAware();
+
+	if (WSAStartup(MAKEWORD(1,1), &wsaData) != 0) {
+		fprintf(stderr, "Couldn't initialize Winsock 1.1\n");
+	}
 #endif
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO))
 		return -1;
@@ -803,4 +809,71 @@ Thread(int (*fn) (void *), void *data)
 	if (!thread)
 		return -1;
 	return han_open(&threads, thread);
+}
+
+int
+Dial(const char *addr, int port)
+{
+	int fd;
+	struct hostent *he;
+	struct sockaddr_in sock_addr;
+	memset(&sock_addr, 0, sizeof(sock_addr));
+	sock_addr.sin_addr.s_addr = inet_addr(addr);
+	if (sock_addr.sin_addr.s_addr == -1) {
+		he = gethostbyname(addr);
+		if (!he)
+			return -1;
+		memcpy(&sock_addr.sin_addr, he->h_addr_list, he->h_length);
+	}
+	fd = socket(AF_INET, SOCK_STREAM, 0);
+	if (fd < 0)
+		return -1;
+	sock_addr.sin_family = AF_INET;
+	sock_addr.sin_port = htons(port);
+	if (connect(fd, (struct sockaddr *)&sock_addr,
+		sizeof(sock_addr)) < 0) {
+		close(fd);
+		return -1;
+	}
+#if defined(O_NONBLOCK)
+	fcntl(fd, F_SETFL, O_NONBLOCK);
+#elif defined(WIN32)
+	{
+		unsigned long mode = 1;
+		ioctlsocket(fd, FIONBIO, &mode);
+	}
+#endif
+#ifdef TCP_NODELAY
+	{
+		int yes = 1;
+		setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char*)&yes, sizeof(yes));
+	}
+#endif
+	return fd;
+}
+
+int
+Send(int fd, const void *data, int size)
+{
+	int rc;
+	rc = send(fd, (const char *)data, (size_t)size, 0);
+	if (rc < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+		return 0;
+	return rc;
+}
+
+int
+Recv(int fd, void *data, int size)
+{
+	int rc;
+	rc = recv(fd, data, size, 0);
+	if (rc < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+		return 0;
+	return rc;
+}
+
+void
+Shutdown(int fd)
+{
+	close(fd);
 }

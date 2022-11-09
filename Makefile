@@ -34,6 +34,7 @@ CFILES= \
 	src/stb_truetype.c \
 	src/system.c \
 	src/gfx_font.c \
+	src/net.c \
 	src/tinymt32.c
 
 OFILES  := $(patsubst %.c, %.o, $(CFILES))

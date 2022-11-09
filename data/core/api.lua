@@ -154,6 +154,7 @@ local env_ro = {
     audio = sys.audio,
   };
   thread = thread,
+  net = net,
   mixer = mixer,
   input = {},
 }
