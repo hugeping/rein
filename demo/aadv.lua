@@ -193,20 +193,7 @@ local function btn(n)
   return keydown(btnmap[n] or 'space')
 end
 
-function loadmap(str)
-  local map = {}
-  local y = 0
-  str = str:strip()
-  for l in str:lines() do
-    y = y + 1
-    map[y] = {}
-    for x = 1, 256, 2 do
-      map[y][(x-1)/2+1] = tonumber(l:sub(x, x+1), 16)
-    end
-  end
-  return map
-end
-local map = loadmap(__map__)
+local map = gfx.loadmap(__map__)
 
 --[==[
 local gff = [[

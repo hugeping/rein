@@ -338,6 +338,7 @@ local kwd = {
 
 local delim = {
   [" "] = conf.delim,
+  ["."] = conf.delim,
   [","] = conf.delim,
   [";"] = conf.delim,
   ["("] = conf.bracket,

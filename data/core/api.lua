@@ -191,6 +191,28 @@ function env_ro.gfx.win(w, h) -- create new win or change
   return oscr
 end
 
+function env_ro.gfx.loadmap(fname)
+  fname = fname:strip():gsub("\r", "")
+  local f, e
+  if fname:find("\n") then
+    f = { lines = function() return fname:lines() end, close = function() end }
+  else
+    f, e = io.open(fname, "rb")
+  end
+  if not f then return false, e end
+  local map = {}
+  local y = 0
+  for l in f:lines() do
+    y = y + 1
+    map[y] = {}
+    for x = 1, l:len(), 2 do
+      map[y][(x-1)/2+1] = tonumber(l:sub(x, x+1), 16)
+    end
+  end
+  f:close()
+  return map
+end
+
 function env_ro.gfx.new(x, y)
   if type(x) == 'number' and type(y) == 'number' then
     return gfx.new(x, y)

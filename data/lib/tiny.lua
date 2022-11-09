@@ -18,6 +18,7 @@ add = table.insert
 del = table.remove
 cos = math.cos
 sin = math.sin
+loadmap = gfx.loadmap
 
 all = function(t)
   local n = #t
