@@ -95,15 +95,13 @@ local thr = thread.start(function()
      if r == 'quit' then
        break
      elseif r == 'send' then
-       print("write: ", v)
-       print(s:write(v..'\r\n'))
+       s:write(v..'\r\n')
      end
      if not s:poll() then
        thread:write(false, "Error reading from socket!")
        break
      end
      for l in s:lines() do
-       print(l)
        thread:write(true, l)
      end
   end
@@ -125,9 +123,27 @@ end
 
 buf:show() gfx.flip()
 
-
 function win:input(t)
   self.inp = (self.inp or '') .. t
+end
+
+function win:newline()
+    local inp = self.inp or ''
+    inp = inp:strip()
+    if inp:startswith(":j ") then
+      self.channel = inp:sub(4):strip()
+      local m = "JOIN "..self.channel
+      thr:write('send', m)
+      self:write("%s\n", m)
+    elseif self.channel then
+      local m = "PRIVMSG "..self.channel.." :"..inp
+      thr:write('send', m)
+      self:write("%s\n", m)
+    else
+      thr:write('send', inp)
+      self:write("%s\n", m)
+    end
+    self.inp = ''
 end
 
 function win:backspace()
@@ -136,6 +152,31 @@ function win:backspace()
   self.inp = input:sub(1, s)
 end
 
+function irc_rep(v)
+  print(v)
+  local user, cmd, par, s, txt
+  if v:empty() then return end
+  if v:sub(1, 1) == ':' then
+    s = v:find(" ")
+    user = v:sub(2, s - 1):gsub("^([^!]+)!.*$", "%1")
+    v = v:sub(s + 1)
+  end
+  s = v:find(" ")
+  cmd = v:sub(1, s - 1):strip()
+  par = v:sub(s+1)
+  s = par:find(":") or #par + 1
+  txt = s and par:sub(s+1):strip()
+  par = par:sub(1, s-1):strip()
+  if cmd == 'PING' then
+    thr:write('send', 'PONG '..txt)
+    return
+  elseif cmd == 'PONG' then
+    return
+  elseif cmd == 'PRIVMSG' then
+    return string.format("%s:%s", user, txt)
+  end
+  return string.format("%s", txt) --%s(%s):%s", cmd, par, txt)
+end
 
 while r do
   local e, v = sys.input()
@@ -149,12 +190,14 @@ while r do
     buf:backspace()
   elseif e == 'keydown' and
     v == 'return' then
-    thr:write('send', buf.inp or '')
-    buf.inp = ''
+    buf:newline()
   end
   if thr:poll() then
     e, v = thr:read()
-    buf:write(v..'\n')
+    v = irc_rep(v)
+    if v then
+      buf:write("%s\n", v)
+    end
     if not e then
       break
     end

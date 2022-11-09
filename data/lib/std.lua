@@ -41,7 +41,7 @@ function string.lines(text)
     state[3] = line_n + 1
     local b, e = text:find("\n", begin, true)
     if b then
-      state[2] = e+1
+      state[2] = b == #text and -1 or e+1
       return text:sub(begin, e-1), line_n
     else
       state[2] = -1
