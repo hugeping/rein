@@ -375,7 +375,7 @@ function buff:colorize(l)
     c = l[k]
     if not c then break end
     if not beg then
-      if c == '-' and l[k+1] == '-' then
+      if c == '-' and l[k+1] == '-' and #l < 128 then
         for i=k, #l do cols[i] = conf.comment end
         break
       end
@@ -400,7 +400,7 @@ function buff:colorize(l)
     if start then
       if not l[k+1] or delim[c] then
         key = key .. (delim[c] and '' or c)
-        local col = kwd[key] or (tonumber(key) and conf.number)
+        local col = kwd[key] or (tonumber(key) and key:len()<12 and conf.number)
         if col then
           for i=start,k do cols[i] = col end
         end
@@ -413,6 +413,9 @@ function buff:colorize(l)
       cols[k] = (c == " " and 0) or delim[c]
     end
     pre = c
+  end
+  if not cols[1] and l[1] ~= ' ' then -- hack for multiline
+    return {}
   end
   return cols
 end
