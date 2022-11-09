@@ -66,10 +66,22 @@ function win:show()
   end
 end
 
-function win:scroll()
+function win:scroll(delta)
   local s = self
-  s.line = #s.text - s.lines
-  if s.line < 1 then s.line = 1 end
+  if delta then
+    s.line = s.line + delta
+    if s.line > #s.text - s.lines then
+      s.line = #s.text - s.lines
+    end
+    if s.line < 1 then s.line = 1 end
+    if #s.text - s.line >= s.lines then
+      return
+    end
+  end
+  if #s.text - s.line <= s.lines + 2 then
+    s.line = #s.text - s.lines
+    if s.line < 1 then s.line = 1 end
+  end
 end
 
 local buf = win.new()
@@ -208,6 +220,12 @@ while r do
   elseif e == 'keydown' and
     v == 'v' and input.keydown 'ctrl' then
     buf:input(sys.clipboard())
+  elseif e == 'keydown' and
+    (v == 'pageup' or v == 'keypad 9') then
+    buf:scroll(-buf.lines)
+  elseif e == 'keydown' and
+    (v == 'pagedown' or v == 'keypad 3') then
+    buf:scroll(buf.lines)
   end
   if thr:poll() then
     e, v = thr:read()
