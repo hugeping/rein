@@ -108,10 +108,11 @@ local thr = thread.start(function()
   print("thread finished")
 end)
 
-thr:write(NICK, HOST, PORT)
 buf:write("Connecting to %s:%d...",
   HOST, PORT)
 buf:show() gfx.flip()
+
+thr:write(NICK, HOST, PORT)
 
 local r = thr:read()
 
@@ -130,15 +131,25 @@ end
 function win:newline()
     local inp = self.inp or ''
     inp = inp:strip()
-    if inp:startswith(":j ") then
+
+    if inp:startswith(":s") then
       self.channel = inp:sub(4):strip()
-      local m = "JOIN "..self.channel
+      self:write("Default channel: %s\n", self.channel)
+      self.channel = self.channel ~= '' and self.channel or false
+    elseif inp:startswith(":j ") then
+      local c = inp:sub(4):strip()
+      local m = "JOIN "..c
+      thr:write('send', m)
+      self:write("%s\n", m)
+    elseif inp:startswith(":l ") then
+      local c = inp:sub(4):strip()
+      local m = "PART "..c.." :bye!"
       thr:write('send', m)
       self:write("%s\n", m)
     elseif self.channel then
       local m = "PRIVMSG "..self.channel.." :"..inp
       thr:write('send', m)
-      self:write("%s\n", m)
+      self:write("%s:%s\n", NICK, inp)
     else
       thr:write('send', inp)
       self:write("%s\n", m)
@@ -173,7 +184,11 @@ function irc_rep(v)
   elseif cmd == 'PONG' then
     return
   elseif cmd == 'PRIVMSG' then
-    return string.format("%s:%s", user, txt)
+    if buf.channel == par then
+      return string.format("%s:%s", user, txt)
+    else
+      return string.format("%s@%s:%s", par, user, txt)
+    end
   end
   return string.format("%s", txt) --%s(%s):%s", cmd, par, txt)
 end
