@@ -633,7 +633,7 @@ function buff:keydown(k)
     s:input("  ")
   elseif k == 'f2' or (k == 's' and input.keydown'ctrl') then
     s:write()
-  elseif k == 'f7' then
+  elseif k == 'f8' then
     s:export ('__map__', 'data.map')
     s:export ('__spr__', 'data.spr')
     local sprited = sys.dirname(ARGS[1]).."/sprited.lua"
@@ -747,7 +747,7 @@ ctrl-x       - cut&copy selection
 ctrl-c       - copy selection
 ctrl-v       - paste selection
 F5           - run!
-F7           - run sprite editor
+F8           - run sprite editor
 ESC          - exit from running prog
 ]]
 
