@@ -78,7 +78,7 @@ function win:scroll(delta)
       return
     end
   end
-  if #s.text - s.line <= s.lines + 2 then
+  if #s.text - s.line <= s.lines + 16 then
     s.line = #s.text - s.lines
     if s.line < 1 then s.line = 1 end
   end
