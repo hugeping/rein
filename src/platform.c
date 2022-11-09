@@ -823,7 +823,7 @@ Dial(const char *addr, int port)
 		he = gethostbyname(addr);
 		if (!he)
 			return -1;
-		memcpy(&sock_addr.sin_addr, he->h_addr_list, he->h_length);
+		memcpy(&sock_addr.sin_addr, he->h_addr, he->h_length);
 	}
 	fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (fd < 0)
