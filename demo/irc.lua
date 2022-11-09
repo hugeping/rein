@@ -205,6 +205,9 @@ while r do
   elseif e == 'keydown' and
     v == 'return' then
     buf:newline()
+  elseif e == 'keydown' and
+    v == 'v' and input.keydown 'ctrl' then
+    buf:input(sys.clipboard())
   end
   if thr:poll() then
     e, v = thr:read()

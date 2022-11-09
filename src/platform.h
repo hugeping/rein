@@ -48,4 +48,6 @@ extern int Send(int fd, const void *data, int size);
 extern int Recv(int fd, void *data, int size);
 extern void Shutdown(int fd);
 
+extern char *Clipboard(const char *text);
+
 #endif

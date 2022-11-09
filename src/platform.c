@@ -878,3 +878,21 @@ Shutdown(int fd)
 {
 	close(fd);
 }
+
+char *
+Clipboard(const char *text)
+{
+    char *c, *p;
+	if (!text) { /* get */
+		if (!SDL_HasClipboardText())
+			return NULL;
+		c = SDL_GetClipboardText();
+		if (!c)
+			return NULL;
+		p = strdup(c);
+		SDL_free(c);
+		return p;
+	}
+	SDL_SetClipboardText(text);
+	return NULL;
+}

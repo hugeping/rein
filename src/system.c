@@ -27,6 +27,24 @@ sys_title(lua_State *L)
 	return 0;
 }
 
+static int
+sys_clipboard(lua_State *L)
+{
+	char *p;
+	const char *text = luaL_optstring(L, 1, NULL);
+	if (!text) {
+		p = Clipboard(NULL);
+		if (p) {
+			lua_pushstring(L, p);
+			free(p);
+			return 1;
+		}
+		return 0;
+	}
+	Clipboard(text);
+	return 0;
+}
+
 static const char *window_opts[] = { "normal", "maximized", "fullscreen", 0 };
 static int
 sys_window_mode(lua_State *L)
@@ -229,6 +247,7 @@ sys_lib[] = {
 	{ "audio", sys_audio },
 	{ "newrand", sys_srandom },
 	{ "hidemouse", sys_hidemouse },
+	{ "clipboard", sys_clipboard },
 	{ NULL, NULL }
 };
 
