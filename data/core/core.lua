@@ -110,15 +110,19 @@ function core.render(force)
   local xs, ys = ww/w, hh/h
   local scale = (xs <= ys) and xs or ys
   if scale > 1.0 then
-    scale = math.floor(scale)
+    if w <= 256 and h <= 256 then
+      scale = math.floor(scale)
+    else
+      local oscale = scale
+      scale = math.floor(scale)
+      if scale + 0.5 < oscale then scale = scale + 0.5 end
+    end
   end
   local dw = w * scale
   local dh = h * scale
 
-  if w <= 256 and h <= 256 then
-    dw = math.floor(dw)
-    dh = math.floor(dh)
-  end
+  dw = math.floor(dw)
+  dh = math.floor(dh)
 
   core.view_w, core.view_h = dw, dh
   core.view_x, core.view_y = math.floor((ww - dw)/2), math.floor((hh - dh)/2)
