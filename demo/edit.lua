@@ -213,8 +213,9 @@ end
 
 function buff:paste()
   local s = self
-  for _, c in ipairs(s.clipboard or {}) do
-    s:input(table.concat(c, ''))
+  local text = sys.clipboard() or s.clipboard or ''
+  for l in text:lines() do
+    s:input(l)
     s:newline(false)
   end
 end
@@ -224,7 +225,7 @@ function buff:cut(copy)
   local x1, y1 = s.sel.x, s.sel.y
   local x2, y2 = s.sel.endx, s.sel.endy
 
-  s.clipboard = {}
+  s.clipboard = ''
 
   if not x1 or not x2 or y1 == y2 and x1 == x2 then return end
   if y1 > y2 then
@@ -239,28 +240,26 @@ function buff:cut(copy)
 
   for y=y1, y2 do
     if y ~= y1 and y ~= y2 then -- full line
-      table.insert(s.clipboard, s.text[yy])
+      s.clipboard = s.clipboard .. table.concat(s.text[yy])..'\n'
       if not copy then
         s.text[yy] = {}
       end
     elseif y == y1 then
-      local crow = {}
-      table.insert(s.clipboard, crow)
       for x=x1, y == y2 and x2-1 or #s.text[yy] do
-        table.insert(crow, s.text[yy][x])
+        s.clipboard = s.clipboard .. s.text[yy][x]
       end
+      s.clipboard = s.clipboard .. '\n'
       if not copy then
         for x=x1, y == y2 and x2-1 or #s.text[yy] do
           table.remove(s.text[yy], x1)
         end
       end
     elseif y == y2 then
-      local crow = {}
-      table.insert(s.clipboard, crow)
       local xx = y == y1 and x1 or 1
       for x = xx, x2-1 do
-        table.insert(crow, s.text[yy][x])
+        s.clipboard = s.clipboard .. s.text[yy][x]
       end
+      s.clipboard = s.clipboard .. '\n'
       if not copy then
         for x = xx, x2-1 do
           table.remove(s.text[yy], xx)
@@ -277,6 +276,7 @@ function buff:cut(copy)
     s.cur.x, s.cur.y = x1, y1
     s:unselect()
   end
+  sys.clipboard(s.clipboard)
 end
 
 function buff:hlight(nr, py)
