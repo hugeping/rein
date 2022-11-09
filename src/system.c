@@ -129,9 +129,11 @@ sys_audio(lua_State *L)
 		return 0;
 
 	idx = luaL_optnumber(L, 2, 1);
-	if (lua_isnumber(L, 3))
+	if (lua_isnumber(L, 3)) {
 		len = idx + lua_tonumber(L, 3) - 1;
-	else
+		if (len > lua_rawlen(L, 1))
+			len = lua_rawlen(L, 1);
+	} else
 		len = lua_rawlen(L, 1);
 	for (i = idx; i <= len; i++) {
 		lua_rawgeti(L, 1, i);
