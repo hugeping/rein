@@ -49,11 +49,11 @@ sock_send(lua_State *L)
 	const char *data = luaL_checklstring(L, 2, &sz);
 	idx = luaL_optnumber(L, 3, 1);
 	if (lua_isnumber(L, 4)) {
-		len = idx + lua_tonumber(L, 3) - 1;
-		if (len > sz)
-			len = sz;
+		len = lua_tonumber(L, 3);
+		if (idx - len - 1 > sz)
+			len = sz - idx + 1;
 	} else
-		len = sz;
+		len = sz - idx + 1;
 	rc = Send(usock->fd, data + idx - 1, len);
 	if (rc < 0) {
 		lua_pushboolean(L, 0);
