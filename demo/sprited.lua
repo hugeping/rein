@@ -181,12 +181,16 @@ function pal:click(x, y, mb, click)
     hl_mode = not hl_mode
   elseif y == py+2 and x == 0 and click then
     draw_mode = draw_mode ~= 'line' and 'line' or false
+    sel_mode, grid.sel_x1 = false, false
   elseif y == py+2 and x == 1 and click then
     draw_mode = draw_mode ~= 'box' and 'box' or false
+    sel_mode, grid.sel_x1 = false, false
   elseif y == py+3 and x == 0 and click then
     draw_mode = draw_mode ~= 'circle' and 'circle' or false
+    sel_mode, grid.sel_x1 = false, false
   elseif y == py+3 and x == 1 and click then
     draw_mode = draw_mode ~= 'fill' and 'fill' or false
+    sel_mode, grid.sel_x1 = false, false
   end
 
   return true
@@ -1123,6 +1127,7 @@ space  - pan (hold+mouse)
 ^0..9  - make bookmark
 0...9  - jump to bookmark
 tab    - change layout
+m      - map mode
 lmb    - put pixel
 rmb    - erase pixel
 mmb    - get color
@@ -1131,7 +1136,6 @@ lmb on [scale]    - zoom out
 lmb on [filename] - save
 rmb on [filename] - save selection
 mmb on [filename] - erase
-
 Legend:
 ^   - control
 lmb - left mouse button
