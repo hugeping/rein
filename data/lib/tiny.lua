@@ -4,7 +4,6 @@ abs = math.abs
 round = math.round
 fmt = string.format
 flip = gfx.flip
-spr = gfx.new
 border = gfx.border
 rnd = math.random
 inp = sys.input
@@ -19,6 +18,8 @@ del = table.remove
 cos = math.cos
 sin = math.sin
 loadmap = gfx.loadmap
+loadspr = gfx.new
+spr = gfx.spr
 
 all = function(t)
   local n = #t

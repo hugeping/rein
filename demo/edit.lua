@@ -76,7 +76,7 @@ function buff:lookuptag(tag)
         y2 = k
         break
       end
-    elseif str:find("^[ \t]*"..tag.."[ =]") then
+    elseif str:find("^[ \t]*local[ \t]+"..tag.."[ \t=]") then
       insect = true
       y1 = k
     end
@@ -124,7 +124,7 @@ function buff:import(tag, fname)
   for y=y1, y2 do
     table.remove(s.text, y1)
   end
-  table.insert(s.text, y1, utf.chars(string.format("%s = [[", tag)))
+  table.insert(s.text, y1, utf.chars(string.format("local %s = [[", tag)))
   for l in f:lines() do
     lines = lines + 1
     table.insert(s.text, y1 + lines, utf.chars(l))
