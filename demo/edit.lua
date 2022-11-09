@@ -76,7 +76,7 @@ function buff:lookuptag(tag)
         y2 = k
         break
       end
-    elseif str:find("local "..tag.."[ =]") then
+    elseif str:find("^[ \t]*"..tag.."[ =]") then
       insect = true
       y1 = k
     end
@@ -124,7 +124,7 @@ function buff:import(tag, fname)
   for y=y1, y2 do
     table.remove(s.text, y1)
   end
-  table.insert(s.text, y1, utf.chars(string.format("local %s = [[", tag)))
+  table.insert(s.text, y1, utf.chars(string.format("%s = [[", tag)))
   for l in f:lines() do
     lines = lines + 1
     table.insert(s.text, y1 + lines, utf.chars(l))
@@ -634,7 +634,9 @@ function buff:keydown(k)
   elseif k == 'f2' or (k == 's' and input.keydown'ctrl') then
     s:write()
   elseif k == 'f8' then
+    os.remove('data.map')
     s:export ('__map__', 'data.map')
+    os.remove('data.spr')
     s:export ('__spr__', 'data.spr')
     local sprited = sys.dirname(ARGS[1]).."/sprited.lua"
     s:exec(sprited, 'data.spr')
@@ -731,7 +733,8 @@ function inp:newline()
     b:jump(tonumber(table.concat(s.text[1] or {}, '')) or 1)
   elseif inp_mode == 'open' then
     FILE = table.concat(s.text[1] or {}, '')
-    b = buff.new(FILE == '' and 'main.lua' or FILE)
+    FILE = FILE == '' and 'main.lua' or FILE
+    b = buff.new(FILE)
   end
   s.text = {}
   inp_mode = false
