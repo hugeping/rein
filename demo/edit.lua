@@ -12,9 +12,10 @@ local conf = {
   hl = { 0, 0, 128, 64 },
   status = { 0, 0, 0, 64 },
   keyword = 8,
+  number = 12,
   bracket = 3,
   delim = 4,
-  syntax = false,
+  syntax = true,
 }
 gfx.border(conf.brd)
 
@@ -356,24 +357,24 @@ function buff:colorize(l)
   local key
   local cols = {}
   for k, c in ipairs(l) do
-    if delim[c] then
-      cols[k] = (c == " " and 0) or delim[c]
+    if delim[pre] and not delim[c] then
+      key = ''
+      start = k
     end
     if start then
       if not l[k+1] or delim[c] then
         key = key .. (delim[c] and '' or c)
-        if kwd[key] then
-          for i=start,k do
-            cols[i] = kwd[key]
-          end
+        local col = kwd[key] or (tonumber(key) and conf.number)
+        if col then
+          for i=start,k do cols[i] = col end
         end
         start = false
       else
         key = key .. c
       end
-    elseif delim[pre] and not delim[c] then
-      key = c
-      start = k
+    end
+    if delim[c] then
+      cols[k] = (c == " " and 0) or delim[c]
     end
     pre = c
   end
@@ -556,6 +557,7 @@ function buff:newline(indent)
   end
   s.cur.y = s.cur.y + 1
   s.cur.x = ind + 1
+  s.col = 1
   s:unselect()
 end
 
