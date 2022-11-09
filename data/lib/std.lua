@@ -34,6 +34,7 @@ function string.lines(text)
   local state = {text, 1, 1}
   local function next_line()
     local text, begin, line_n = state[1], state[2], state[3]
+    if text == '' then return nil end
     if begin < 0 then
       return nil
     end
