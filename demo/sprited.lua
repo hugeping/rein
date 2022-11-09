@@ -418,7 +418,6 @@ function grid:save(fname, sel)
     f:write(string.format("%s\n", r))
     print(r)
   end
-  f:write("\n")
   f:close()
   s.dirty = false
 end
