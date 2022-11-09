@@ -1,6 +1,7 @@
 gfx.win(384, 384)
 --local sfont = gfx.font('demo/iosevka.ttf',12)
 local idle_mode
+local idle_prog
 local inp_mode
 local sfont = font
 local W, H = screen:size()
@@ -62,29 +63,73 @@ function buff.new(fname, x, y, w, h)
   return b
 end
 
-function buff:export(tag, fname)
+function buff:lookuptag(tag)
   local s = self
   local insect
-  local f = io.open(fname, "wb")
-  if not f then
-    return false
-  end
-  for _, l in ipairs(s.text) do
+  local y1, y2
+  for k, l in ipairs(s.text) do
     local str = table.concat(l, '')
     if insect then
-      local eof = str:find("]]")
-      str = str:gsub("]]$", "")
-      if not eof or str ~= "" then
-        f:write(str.."\n")
-      end
-      if eof then
+      if str:find("]]") then
+        y2 = k
         break
       end
     elseif str:find("local "..tag.."[ =]") then
       insect = true
+      y1 = k
+    end
+  end
+  if not y1 or not y2 then
+    return
+  end
+  return y1, y2
+end
+
+function buff:export(tag, fname)
+  local s = self
+  local y1, y2 = s:lookuptag(tag)
+  if not y1 then
+    return false, "No data"
+  end
+  local f, e = io.open(fname, "wb")
+  local lines = 0
+  if not f then
+    return false, e
+  end
+  for y=y1, y2 do
+    local str = table.concat(s.text[y], ""):gsub("%]%]$", ""):gsub("^.[^%[]*%[%[", "")
+    if (y~=y1 and y~=y2) or not str:empty() then
+      f:write(str..'\n')
+      lines = lines + 1
     end
   end
   f:close()
+  print(string.format("%s: exported %d line(s)", fname, lines))
+  return true
+end
+
+function buff:import(tag, fname)
+  local s = self
+  local y1, y2 = s:lookuptag(tag)
+  if not y1 then
+    y1, y2 = 1, 0
+  end
+  local f, e = io.open(fname, "r")
+  local lines = 0
+  if not f then
+    return false, e
+  end
+  for y=y1, y2 do
+    table.remove(s.text, y1)
+  end
+  table.insert(s.text, y1, utf.chars(string.format("local %s = [[", tag)))
+  for l in f:lines() do
+    lines = lines + 1
+    table.insert(s.text, y1 + lines, utf.chars(l))
+  end
+  table.insert(s.text, y1 + lines + 1, utf.chars "]]")
+  f:close()
+  print(string.format("%s: imported %d line(s) at line %d", fname, lines, y1))
   return true
 end
 
@@ -544,9 +589,9 @@ function buff:exec(prog, ...)
   screen:clear(conf.bg)
   local f, e = sys.exec(prog, ...)
   if not f then
-    idle_mode = sys.go(function() error(e) end)
+    idle_prog = sys.go(function() error(e) end)
   else
-    idle_mode = f
+    idle_prog = f
   end
 end
 
@@ -587,11 +632,13 @@ function buff:keydown(k)
   elseif k == 'f7' then
     s:export ('__map__', 'data.map')
     s:export ('__spr__', 'data.spr')
-    local sprited = ARGS[1]:gsub("[/\\][^/\\]+$", "").."/sprited.lua"
+    local sprited = sys.dirname(ARGS[1]).."/sprited.lua"
     s:exec(sprited, 'data.spr')
+    idle_mode = 'spr'
   elseif k == 'f5' then
     s:write()
     s:exec(FILE)
+    idle_mode = 'run'
   elseif (k == 'u' or k == 'z') and input.keydown 'ctrl' then
     s:undo()
   elseif k == 'x' and input.keydown 'ctrl' or k == 'delete' then
@@ -682,16 +729,20 @@ end
 mixer.stop()
 
 while true do
-  while idle_mode do
-    if input.keypress("c") and input.keydown("ctrl") then
+  while idle_prog do
+    if input.keypress("escape") then
       gfx.border(conf.brd)
-      sys.stop(idle_mode)
+      sys.stop(idle_prog)
       mixer.stop()
       screen:nooffset()
       screen:noclip()
       sys.input(true) -- clear input
       gfx.win(W, H)
-      idle_mode = false
+      if idle_mode == 'spr' then
+        b:import('__spr__', 'data.spr')
+        b:import('__map__', 'data.map')
+      end
+      idle_prog, idle_mode = false, false
       break
     end
     coroutine.yield()
