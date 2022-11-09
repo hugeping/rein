@@ -867,7 +867,8 @@ Recv(int fd, void *data, int size)
 {
 	int rc;
 	rc = recv(fd, data, size, 0);
-	if (rc < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+	if (rc < 0 && (errno == EAGAIN ||
+		errno == EWOULDBLOCK || errno == ENOENT))
 		return 0;
 	return rc;
 }
