@@ -152,6 +152,7 @@ local env_ro = {
     initrnd = sys.initrnd,
     hidemouse = sys.hidemouse,
     audio = sys.audio,
+    incoroutine = true,
   };
   thread = thread,
   net = net,
