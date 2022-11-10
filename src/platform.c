@@ -564,11 +564,11 @@ top:
 	case SDL_CONTROLLERBUTTONDOWN:
 		lua_pushstring(L, "keydown");
 		lua_pushstring(L, gamepad_key(e.cbutton.button));
-		break;
+		return 2;
 	case SDL_CONTROLLERBUTTONUP:
 		lua_pushstring(L, "keyup");
 		lua_pushstring(L, gamepad_key(e.cbutton.button));
-		break;
+		return 2;
 	case SDL_KEYDOWN:
 		lua_pushstring(L, "keydown");
 		lua_pushstring(L, key_name(e.key.keysym.scancode));
