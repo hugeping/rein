@@ -300,7 +300,7 @@ function irc_rep(v)
   if cmd == "NICK" and user == NICK then
     NICK = txt
   end
-  return string.format("%s", txt) --%s(%s):%s", cmd, par, txt)
+  return string.format("%s:%s", user or cmd, txt) --%s(%s):%s", cmd, par, txt)
 end
 
 local HELP = [[
