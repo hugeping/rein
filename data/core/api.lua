@@ -43,7 +43,7 @@ local conf = {
   fg = { 0, 0, 0 };
   bg = 16;
   brd = { 0xde, 0xde, 0xde };
-  font_large = "fonts/8x10.fnt",
+  font_large = "fonts/7x10.fnt",
   font = "fonts/8x8.fnt",
   font_tiny = 'fonts/pico8.fnt',
 }
