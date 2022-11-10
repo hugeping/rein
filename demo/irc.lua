@@ -152,7 +152,7 @@ local thr = thread.start(function()
   end
   s:write(string.format("NICK %s\r\nUSER %s localhost %s :%s\r\n",
     nick, nick, host, nick))
-  local delay = 1/10
+  local delay = 1/20
   while true do
      local r, v = thread:read(delay)
      if r == 'quit' then
@@ -164,7 +164,7 @@ local thr = thread.start(function()
        thread:write(false, "Error reading from socket!")
        break
      end
-     delay = 1/10
+     delay = 1/20
      for l in s:lines() do
        thread:write(true, l)
        delay = 1/100
