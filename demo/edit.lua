@@ -1,4 +1,4 @@
-gfx.win(384, 384)
+gfx.win(378, 370)
 --local sfont = gfx.font('demo/iosevka.ttf',12)
 local idle_mode
 local idle_prog
