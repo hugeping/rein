@@ -404,6 +404,7 @@ function buff:colorize(l)
         if col then
           for i=start,k do cols[i] = col end
         end
+        if delim[c] then cols[k] = nil end
         start = false
       else
         key = key .. c
