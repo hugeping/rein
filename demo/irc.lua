@@ -143,20 +143,32 @@ end
 function win:newline()
   local inp = self.inp or ''
   inp = inp:strip()
-  if inp:startswith(":s") then
-    self.channel = inp:sub(4):strip()
+  local a = inp:split()
+  local cmd = a[1]
+  table.remove(a, 1)
+  if cmd == ':s' then
+    self.channel = a[1] or ''
     self:write("Default channel: %s\n", self.channel)
     self.channel = self.channel ~= '' and self.channel or false
-  elseif inp:startswith(":j ") then
-    local c = inp:sub(4):strip()
+  elseif cmd == ':m' and a[1] then
+    local s = inp:find(a[1], 4, true)
+    local txt = inp:sub(s+a[1]:len()+1):strip()
+    local m = "PRIVMSG "..a[1].." :"..txt
+    thr:write('send', m)
+    self:write("%s\n", m)
+  elseif cmd == ':j' and a[1] then
+    local c = a[1]
     local m = "JOIN "..c
     thr:write('send', m)
     self:write("%s\n", m)
-  elseif inp:startswith(":l ") then
-    local c = inp:sub(4):strip()
-    local m = "PART "..c.." :bye!"
-    thr:write('send', m)
-    self:write("%s\n", m)
+  elseif cmd == ':l' then
+    local c = a[1] or self.channel
+    if c then
+      if c == self.channel then self.channel = nil end
+      local m = "PART "..c.." :bye!"
+      thr:write('send', m)
+      self:write("%s\n", m)
+    end
   elseif self.channel then
     local m = "PRIVMSG "..self.channel.." :"..inp
     thr:write('send', m)
@@ -196,19 +208,46 @@ function irc_rep(v)
     return
   elseif cmd == 'PRIVMSG' then
     if buf.channel == par then
-      return string.format("%s:%s", user, txt)
+      return string.format("%s:%s\n", user, txt)
     else
-      return string.format("%s@%s:%s", par, user, txt)
+      return string.format("%s@%s:%s\n", par, user, txt)
     end
+  end
+  if cmd == "NICK" and user == NICK then
+    NICK = txt
   end
   return string.format("%s", txt) --%s(%s):%s", cmd, par, txt)
 end
 
+local HELP = [[
+:j channel      - join channel
+:m channel text - send message
+:l channel      - leave channel
+:s channel      - set default channel
+:s              - no default channel
+
+All other messages goes to server as-is.
+While in :s channel mode, all messages goes
+to that channel via PRIVMSG.
+]]
+
 while r do
+  while help_mode do
+    screen:clear(conf.bg)
+    gfx.print(HELP, 0, 0, conf.fg, true)
+    if sys.input() == 'keydown' then
+      help_mode = false
+      break
+    end
+    coroutine.yield()
+  end
   local e, v = sys.input()
   if e == 'quit' then
     thr:write("quit")
     break
+  elseif e == 'keydown' and
+    v == 'f1' then
+    help_mode = not help_mode
   elseif e == 'text' then
     buf:input(v)
   elseif e == 'keydown' and
