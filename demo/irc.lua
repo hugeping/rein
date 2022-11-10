@@ -32,7 +32,7 @@ function win:write(f, ...)
   local l = s.text[#s.text]
   for _,c in ipairs(t) do
     if c == '\n' or #l >= s.cols then
-      l = {}
+      l = { brk = c ~= '\n' }
       add(s.text, l)
     end
     if c ~= '\n' then
@@ -59,7 +59,6 @@ function win:copy()
   if x1 == 0 then
     return
   end
-  local nr = 0
   local txt = ''
   for k = y1, y2 do
     for x = 1, s.text[k] and #s.text[k] or 0 do
@@ -70,8 +69,9 @@ function win:copy()
         end
       end
     end
-    txt = txt .. '\n'
-    nr = nr + 1
+    if not s.text[k+1] or not s.text[k+1].brk then
+      txt = txt .. '\n'
+    end
   end
   txt = txt:strip()
   sys.clipboard(txt)
