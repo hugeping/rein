@@ -796,6 +796,7 @@ shift+cursor - select
 ctrl-x       - cut&copy selection
 ctrl-c       - copy selection
 ctrl-v       - paste selection
+ctrl-z       - undo
 F4           - open another file (no save!)
 F5           - run!
 F8           - run sprite editor
