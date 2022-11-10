@@ -173,7 +173,7 @@ end
 
 setmetatable(env, env_ro)
 
-function env_ro.gfx.win(w, h) -- create new win or change
+function env_ro.gfx.win(w, h, fnt) -- create new win or change
   local oscr = env_ro.screen
   if type(w) == 'userdata' then -- new screen?
     env_ro.screen = w
@@ -184,9 +184,10 @@ function env_ro.gfx.win(w, h) -- create new win or change
     nscr = gfx.new(w, h)
   end
   if nscr then
+    if fnt then fnt = font.new(DATADIRg
     if w < 192 then
       env_ro.font = font.new(DATADIR..'/'..conf.font_tiny)
-    elseif h >= 384 then
+    elseif h >= 370 then
       env_ro.font = font.new(DATADIR..'/'..conf.font_large)
     else
       env_ro.font = font.new(DATADIR..'/'..conf.font)
