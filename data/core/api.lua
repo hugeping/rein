@@ -282,7 +282,6 @@ function env_ro.gfx.printf(x, y, col, fmt, ...)
   return env.gfx.print(string.format(fmt, ...), x, y, col)
 end
 
-
 local last_flip = 0
 local flips = {}
 
@@ -310,6 +309,10 @@ local framedrop
 
 function env_ro.gfx.framedrop()
   return framedrop
+end
+
+function env_ro.gfx.render()
+  core.render(true)
 end
 
 function env_ro.gfx.flip(fps, interrupt)
