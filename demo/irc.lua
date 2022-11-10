@@ -166,7 +166,7 @@ end)
 
 buf:write("Connecting to %s:%d...",
   HOST, PORT)
-buf:show() gfx.flip()
+buf:show() gfx.render()
 
 thr:write(NICK, HOST, PORT)
 
@@ -178,7 +178,7 @@ else
   buf:write("error\n")
 end
 
-buf:show() gfx.flip()
+buf:show() gfx.render()
 
 function win:input(t)
   if t == false then self.inp = '' return end
