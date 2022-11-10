@@ -43,7 +43,8 @@ local conf = {
   fg = { 0, 0, 0 };
   bg = 16;
   brd = { 0xde, 0xde, 0xde };
-  font = "fonts/8x8os2.fnt",
+  font_large = "fonts/8x10.fnt",
+  font = "fonts/8x8.fnt",
   font_tiny = 'fonts/pico8.fnt',
 }
 
@@ -185,6 +186,8 @@ function env_ro.gfx.win(w, h) -- create new win or change
   if nscr then
     if w < 192 then
       env_ro.font = font.new(DATADIR..'/'..conf.font_tiny)
+    elseif h >= 384 then
+      env_ro.font = font.new(DATADIR..'/'..conf.font_large)
     else
       env_ro.font = font.new(DATADIR..'/'..conf.font)
     end
