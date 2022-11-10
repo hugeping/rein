@@ -184,10 +184,9 @@ function env_ro.gfx.win(w, h, fnt) -- create new win or change
     nscr = gfx.new(w, h)
   end
   if nscr then
-    if fnt then fnt = font.new(DATADIRg
     if w < 192 then
       env_ro.font = font.new(DATADIR..'/'..conf.font_tiny)
-    elseif h >= 370 then
+    elseif h >= 384 then
       env_ro.font = font.new(DATADIR..'/'..conf.font_large)
     else
       env_ro.font = font.new(DATADIR..'/'..conf.font)
