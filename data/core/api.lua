@@ -44,6 +44,7 @@ local conf = {
   bg = 16;
   brd = { 0xde, 0xde, 0xde };
   font = "fonts/8x8os2.fnt",
+  font_tiny = 'fonts/pico8.fnt',
 }
 
 local env = {
@@ -183,9 +184,9 @@ function env_ro.gfx.win(w, h) -- create new win or change
   end
   if nscr then
     if w < 192 then
-      env_ro.font = font.new(DATADIR..'/fonts/pico8.fnt')
+      env_ro.font = font.new(DATADIR..'/'..conf.font_tiny)
     else
-      env_ro.font = font.new(DATADIR..'/fonts/8x8.fnt')
+      env_ro.font = font.new(DATADIR..'/'..conf.font)
     end
     env_ro.screen = nscr
     conf.w, conf.h = nscr:size()
