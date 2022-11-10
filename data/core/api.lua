@@ -509,6 +509,16 @@ function api.event(e, v, a, b, c)
     a, b = core.abs2rel(a, b)
   end
 
+  if e == 'keydown' and v == 'return' and input.kbd.alt then
+    conf.fullscreen = not conf.fullscreen
+    if conf.fullscreen then
+      sys.window_mode 'fullscreen'
+    else
+      sys.window_mode 'normal'
+    end
+    e = nil
+  end
+
   if (e == 'quit' or e == 'text' or e == 'keydown' or e == 'keyup' or
     e == 'mousedown' or e == 'mouseup' or e == 'mousewheel' or e == 'mousemotion')
       and #input.fifo < 32 then
@@ -534,14 +544,6 @@ function api.event(e, v, a, b, c)
       input.kbd.shift = true
     end
     input.kbd[v] = true
-    if v == 'return' and input.kbd.alt then
-      conf.fullscreen = not conf.fullscreen
-      if conf.fullscreen then
-        sys.window_mode 'fullscreen'
-      else
-        sys.window_mode 'normal'
-      end
-    end
   elseif e == 'mousemotion' then
     input.mouse.x, input.mouse.y = v, a
   elseif e == 'mousedown' or e == 'mouseup' then
