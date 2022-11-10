@@ -311,12 +311,16 @@ function irc_rep(v)
 end
 
 local HELP = [[
+Arguments:
+rein irc.lua <server> <port> <nick>
+
 Commands:
 :j channel      - join channel
 :m channel text - send message
 :l channel      - leave channel
 :s channel      - set default channel
 :s              - no default channel
+/COMMAND        - send COMMAND as is
 
 Keys:
 ctrl-k          - clear input line
