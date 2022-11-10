@@ -1,4 +1,7 @@
 gfx.win(385, 380)
+
+local HISTORY_SIZE = 16384
+
 local conf = {
   bg = 16,
   fg = 0,
@@ -38,6 +41,10 @@ function win:write(f, ...)
     if c ~= '\n' then
       add(l, c)
     end
+  end
+  while #s.text > HISTORY_SIZE do
+    table.remove(s.text, 1)
+    s.line = s.line + 1
   end
   s:scroll()
 end
@@ -167,7 +174,6 @@ end)
 buf:write("Connecting to %s:%d...",
   HOST, PORT)
 buf:show() gfx.render()
-
 thr:write(NICK, HOST, PORT)
 
 local r = thr:read()
@@ -365,12 +371,15 @@ while r do
   end
   if thr:poll() then
     e, v = thr:read()
+    if not e and v then
+      buf:write("Error: %s\n", v)
+    end
     v = irc_rep(v)
     if v then
       buf:write("%s\n", v)
     end
     if not e then
-      break
+      r = false
     end
   end
   buf:show()
