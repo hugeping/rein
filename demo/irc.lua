@@ -276,6 +276,8 @@ function win:click(press, mb, x, y)
   end
 end
 
+local last_user
+local last_pfx
 function irc_rep(v)
   print(v)
   local user, cmd, par, s, txt
@@ -307,7 +309,10 @@ function irc_rep(v)
     NICK = txt
   end
   user = (user and user..':') or ''
-  return string.format("%s%s(%s)%s", user, cmd, par, txt) --%s(%s):%s", cmd, par, txt)
+  if user == last_user then user = '' else last_user = user end
+  local pfx = string.format("%s(%s)", cmd, par)
+  if pfx == last_pfx then pfx = '' else last_pfx = pfx end
+  return string.format("%s%s%s", user, pfx, txt) --%s(%s):%s", cmd, par, txt)
 end
 
 local HELP = [[
