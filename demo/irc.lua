@@ -2,6 +2,7 @@ gfx.win(385, 380)
 local conf = {
   bg = 16,
   fg = 0,
+  sel = 12,
 }
 
 local W, H = screen:size()
@@ -41,14 +42,57 @@ function win:write(f, ...)
   s:scroll()
 end
 
+function win:getsel()
+  local s = self
+  local x1, y1 = s.sel_x1 or 0, s.sel_y1 or 0
+  local x2, y2 = s.sel_x2 or 0, s.sel_y2 or 0
+  if y1 > y2 or (y1 == y2 and x1 > x2) then
+    x1, x2 = x2, x1
+    y1, y2 = y2, y1
+  end
+  return x1, y1, x2, y2
+end
+
+function win:copy()
+  local s = self
+  local x1, y1, x2, y2 = s:getsel()
+  if x1 == 0 then
+    return
+  end
+  local nr = 0
+  local txt = ''
+  for k = y1, y2 do
+    for x = 1, s.text[k] and #s.text[k] or 0 do
+      if k == y1 and x >= x1 or k == y2 and x <= x2 or
+        k > y1 and k < y2 then
+        if y1 ~= y2 or (x >= x1 and x <= x2) then
+          txt = txt .. s.text[k][x]
+        end
+      end
+    end
+    txt = txt .. '\n'
+    nr = nr + 1
+  end
+  txt = txt:strip()
+  sys.clipboard(txt)
+end
+
 function win:show()
   local s = self
   screen:clear(0, 0,
     s.cols*s.spw, s.lines*s.sph, conf.bg)
   local nr = 0
+  local x1, y1, x2, y2 = s:getsel()
   for k = s.line, #s.text do
-    gfx.print(cat(s.text[k]),
-      0, nr*s.sph, conf.fg)
+    for x = 1, #s.text[k] do
+      if k == y1 and x >= x1 or k == y2 and x <= x2 or
+        k > y1 and k < y2 then
+        if y1 ~= y2 or (x >= x1 and x <= x2) then
+          screen:clear((x-1)*s.spw, nr*s.sph, s.spw, s.sph, conf.sel)
+        end
+      end
+      gfx.print(s.text[k][x], (x-1)*s.spw, nr*s.sph, conf.fg)
+    end
     nr = nr + 1
   end
   screen:clear(0, H-s.sph,
@@ -137,6 +181,7 @@ end
 buf:show() gfx.flip()
 
 function win:input(t)
+  if t == false then self.inp = '' return end
   self.inp = (self.inp or '') .. t
 end
 
@@ -186,6 +231,39 @@ function win:backspace()
   self.inp = input:sub(1, s)
 end
 
+function win:mouse2pos(x, y)
+  local s = self
+  local sx, sy = flr(x / s.spw) + 1,
+    s.line + flr(y / s.sph)
+  return sx, sy
+end
+
+function win:motion()
+  local s = self
+  if not s.select  then
+    return
+  end
+  local x, y = input.mouse()
+  x, y = s:mouse2pos(x, y)
+  s.sel_x2, s.sel_y2 = x, y
+end
+
+function win:click(press, mb, x, y)
+  local s = self
+  x, y = s:mouse2pos(x, y)
+  if not s.text[y] then
+    return
+  end
+  s.select = press
+  if not s.text[y][x] then
+    x = #s.text[y]
+  end
+  if press then
+    s.sel_x1, s.sel_y1 = x, y
+    s.sel_x2, s.sel_y2 = x, y
+  end
+end
+
 function irc_rep(v)
   print(v)
   local user, cmd, par, s, txt
@@ -220,11 +298,20 @@ function irc_rep(v)
 end
 
 local HELP = [[
+Commands:
 :j channel      - join channel
 :m channel text - send message
 :l channel      - leave channel
 :s channel      - set default channel
 :s              - no default channel
+
+Keys:
+ctrl-k          - clear input line
+ctrl-c          - copy selection
+ctrl-v          - paste to input
+
+Mouse:
+motion+click    - selection
 
 All other messages goes to server as-is.
 While in :s channel mode, all messages goes
@@ -241,7 +328,7 @@ while r do
     end
     coroutine.yield()
   end
-  local e, v = sys.input()
+  local e, v, a, b = sys.input()
   if e == 'quit' then
     thr:write("quit")
     break
@@ -258,13 +345,23 @@ while r do
     buf:newline()
   elseif e == 'keydown' and
     v == 'v' and input.keydown 'ctrl' then
-    buf:input(sys.clipboard())
+    buf:input(sys.clipboard() or '')
+  elseif e == 'keydown' and
+    v == 'c' and input.keydown 'ctrl' then
+    buf:copy()
+  elseif e == 'keydown' and
+    v == 'k' and input.keydown 'ctrl' then
+    buf:input(false)
   elseif e == 'keydown' and
     (v == 'pageup' or v == 'keypad 9') then
     buf:scroll(-buf.lines)
   elseif e == 'keydown' and
     (v == 'pagedown' or v == 'keypad 3') then
     buf:scroll(buf.lines)
+  elseif e == 'mousedown' or e == 'mouseup' then
+    buf:click(e == 'mousedown', v, a, b)
+  elseif e == 'mousemotion' then
+    buf:motion()
   end
   if thr:poll() then
     e, v = thr:read()
