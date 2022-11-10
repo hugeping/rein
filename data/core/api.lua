@@ -189,6 +189,7 @@ function env_ro.gfx.win(w, h) -- create new win or change
     end
     env_ro.screen = nscr
     conf.w, conf.h = nscr:size()
+    env.gfx.border()
     nscr:clear(conf.bg)
   end
   return oscr
