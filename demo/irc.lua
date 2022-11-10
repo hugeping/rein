@@ -1,5 +1,4 @@
 gfx.win(385, 380)
-
 local HISTORY_SIZE = 16384
 
 local conf = {
@@ -153,8 +152,9 @@ local thr = thread.start(function()
   end
   s:write(string.format("NICK %s\r\nUSER %s localhost %s :%s\r\n",
     nick, nick, host, nick))
+  local delay = 1/10
   while true do
-     local r, v = thread:read(1/10)
+     local r, v = thread:read(delay)
      if r == 'quit' then
        break
      elseif r == 'send' then
@@ -164,8 +164,10 @@ local thr = thread.start(function()
        thread:write(false, "Error reading from socket!")
        break
      end
+     delay = 1/10
      for l in s:lines() do
        thread:write(true, l)
+       delay = 1/100
      end
   end
   print("thread finished")
@@ -220,6 +222,10 @@ function win:newline()
       thr:write('send', m)
       self:write("%s\n", m)
     end
+  elseif cmd:startswith("/") then
+    inp = inp:gsub("^[ \t]*/", "")
+    thr:write('send', inp)
+    self:write("%s\n", inp)
   elseif self.channel then
     local m = "PRIVMSG "..self.channel.." :"..inp
     thr:write('send', m)
@@ -300,7 +306,8 @@ function irc_rep(v)
   if cmd == "NICK" and user == NICK then
     NICK = txt
   end
-  return string.format("%s:%s", user or cmd, txt) --%s(%s):%s", cmd, par, txt)
+  user = (user and user..':') or ''
+  return string.format("%s%s(%s)%s", user, cmd, par, txt) --%s(%s):%s", cmd, par, txt)
 end
 
 local HELP = [[
@@ -369,7 +376,9 @@ while r do
   elseif e == 'mousemotion' then
     buf:motion()
   end
+  local delay = 1/10
   if thr:poll() then
+    delay = 0
     e, v = thr:read()
     if not e and v then
       buf:write("Error: %s\n", v)
@@ -382,6 +391,8 @@ while r do
       r = false
     end
   end
-  buf:show()
-  gfx.flip(1/20, true)
+  if e or delay == 0 then
+    buf:show()
+  end
+  gfx.flip(delay, true)
 end
