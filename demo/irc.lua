@@ -1,4 +1,4 @@
-gfx.win(378, 370)
+gfx.win(385, 380)
 local conf = {
   bg = 16,
   fg = 0,
