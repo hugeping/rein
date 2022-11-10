@@ -173,7 +173,8 @@ retry:
 
 	if (!other->L || other->write) {
 		MutexUnlock(chan->m);
-		return luaL_error(L, "No peer on thread write");
+		return other->L?luaL_error(L, "Deadlock on thread write: both writing"):
+			luaL_error(L, "No peer on thread write");
 	}
 	self->write ++;
 	if (self->L != L) /* coroutines? */
