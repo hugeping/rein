@@ -43,9 +43,9 @@ local conf = {
   fg = { 0, 0, 0 };
   bg = 16;
   brd = { 0xde, 0xde, 0xde };
-  font_large = "fonts/7x10.fnt",
-  font = "fonts/8x8.fnt",
-  font_tiny = 'fonts/pico8.fnt',
+  font_large = "7x10.fnt",
+  font = "8x8.fnt",
+  font_tiny = 'pico8.fnt',
 }
 
 local env = {
@@ -184,12 +184,19 @@ function env_ro.gfx.win(w, h, fnt) -- create new win or change
     nscr = gfx.new(w, h)
   end
   if nscr then
-    if w < 192 then
-      env_ro.font = font.new(DATADIR..'/'..conf.font_tiny)
-    elseif h >= 380 then
-      env_ro.font = font.new(DATADIR..'/'..conf.font_large)
+    if fnt then
+      fnt = font.new(fnt)
+    end
+    if not fnt then
+      if w < 192 then
+        env_ro.font = font.new(DATADIR..'/fonts/'..conf.font_tiny)
+      elseif h >= 380 then
+        env_ro.font = font.new(DATADIR..'/fonts/'..conf.font_large)
+      else
+        env_ro.font = font.new(DATADIR..'/fonts/'..conf.font)
+      end
     else
-      env_ro.font = font.new(DATADIR..'/'..conf.font)
+      env_ro.font = fnt
     end
     env_ro.screen = nscr
     conf.w, conf.h = nscr:size()
@@ -488,10 +495,10 @@ local api = { running = true }
 
 function api.init(core_mod)
   math.randomseed(os.time())
-  env_ro.font = font.new(DATADIR..'/'..conf.font)
+  env_ro.font = font.new(DATADIR..'/fonts/'..conf.font)
   core = core_mod
   if not env_ro.font then
-    return false, string.format("Can't load font %q", DATADIR..'/'..conf.font)
+    return false, string.format("Can't load font %q", DATADIR..'/fonts/'..conf.font)
   end
   mixer.init(core_mod)
   for i=0,16 do
