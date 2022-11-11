@@ -1,12 +1,13 @@
 gfx.win(385, 380)
 local HISTORY_SIZE = 16384
-gfx.border(16)
+
 local conf = {
   bg = 16,
   fg = 0,
   sel = 12,
 }
 
+gfx.border(conf.bg)
 local W, H = screen:size()
 local win = {}
 local sfont = font
