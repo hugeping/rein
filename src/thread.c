@@ -91,6 +91,7 @@ struct lua_thread {
 	struct lua_channel *chan;
 };
 
+#if 0
 static int
 thread_poll(lua_State *L)
 {
@@ -111,6 +112,7 @@ thread_poll(lua_State *L)
 	MutexUnlock(chan->m);
 	return 1;
 }
+#endif
 
 static int
 thread_read(lua_State *L)
@@ -226,7 +228,7 @@ child_stop(lua_State *L)
 static const luaL_Reg child_thread_mt[] = {
 	{ "__gc", child_stop },
 	{ "read", thread_read },
-	{ "poll", thread_poll },
+//	{ "poll", thread_poll },
 	{ "write", thread_write },
 	{ NULL, NULL }
 };
@@ -253,6 +255,7 @@ thread_err(lua_State *L)
 {
 	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
 	struct lua_channel *chan = thr->chan;
+	struct lua_peer *other = (thr->tid >= 0)?&chan->peers[1]:&chan->peers[0];
 
 	MutexLock(chan->m);
 	if (thr->err) {
@@ -260,6 +263,12 @@ thread_err(lua_State *L)
 		MutexUnlock(chan->m);
 		return 1;
 	}
+	if (!other->L) {
+		MutexUnlock(chan->m);
+		lua_pushstring(L, "No peer");
+		return 1;
+	}
+	MutexUnlock(chan->m);
 	return 0;
 }
 
@@ -432,7 +441,7 @@ static const luaL_Reg thread_mt[] = {
 	{ "wait", thread_wait },
 	{ "write", thread_write },
 	{ "read", thread_read },
-	{ "poll", thread_poll },
+//	{ "poll", thread_poll },
 	{ "err", thread_err },
 	{ "__gc", thread_stop },
 	{ NULL, NULL }
