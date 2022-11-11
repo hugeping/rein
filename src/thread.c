@@ -226,7 +226,7 @@ child_stop(lua_State *L)
 static const luaL_Reg child_thread_mt[] = {
 	{ "__gc", child_stop },
 	{ "read", thread_read },
-//	{ "poll", thread_poll },
+	{ "poll", thread_poll },
 	{ "write", thread_write },
 	{ NULL, NULL }
 };
