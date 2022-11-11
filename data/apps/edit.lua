@@ -16,6 +16,7 @@ local conf = {
   number = 12,
   comment = 6,
   bracket = 3,
+  math = 3,
   delim = 4,
   syntax = true,
 }
@@ -340,6 +341,13 @@ local kwd = {
 
 local delim = {
   [" "] = conf.delim,
+  ["/"] = conf.math,
+  ["%"] = conf.math,
+  ["+"] = conf.math,
+  ["-"] = conf.math,
+  ["*"] = conf.math,
+  ["^"] = conf.math,
+  ["#"] = conf.delim,
   ["."] = conf.delim,
   [","] = conf.delim,
   [";"] = conf.delim,
@@ -349,6 +357,8 @@ local delim = {
   ["}"] = conf.bracket,
   ["["] = conf.bracket,
   ["]"] = conf.bracket,
+  ["<"] = conf.math,
+  [">"] = conf.math,
   ["'"] = conf.delim,
   ['"'] = conf.delim,
 }
@@ -833,6 +843,6 @@ while true do
     if not gfx.framedrop() then
       get_buff():show()
     end
-    gfx.flip(1/20, true)
+    gfx.flip(1/10, true)
   end
 end
