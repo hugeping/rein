@@ -18,7 +18,7 @@ local cat = function(a) return table.concat(a,'') end
 win.__index = win
 
 function win.new()
-  local s = {}
+  local s = { cur = 1, inp = {} }
   local w, h = sfont:size(" ")
   s.lines = flr(H/h)-1
   s.cols = flr(W/w)
@@ -104,17 +104,27 @@ function win:show()
   end
   screen:clear(0, H-s.sph,
     W, s.sph, conf.bg)
-  local t = utf.chars(s.inp)
-  local off = #t - (s.cols-2)
-  if off < 1 then off = 1 end
+  local t = s.inp
+  local off = s.inpoff or 1
+  if s.cur - off >= s.cols - 1 then off = s.cur - s.cols + 1 end
+  if s.cur - off < 1 then off = s.cur end
+  s.inpoff = off
   local x, y = 0, H-s.sph
   for i=off,#t do
     gfx.print(t[i], x, y, conf.fg)
     x = x + s.spw
   end
+  x = (s.cur - off)*s.spw
 --  if flr(sys.time()*4) % 2 == 1 then
-    screen:fill_rect(x, y, x + s.spw, y + s.sph, conf.fg)
---  end
+  for yy=1,s.sph do
+    for xx=1,s.spw do
+      local r, g, b = screen:val(x + xx - 1, y + yy -1)
+      r = bit.bxor(r, 0xff)
+      g = bit.bxor(g, 0xff)
+      b = bit.bxor(b, 0xff)
+      screen:val(x + xx - 1, y + yy - 1, { r, g, b, 255 })
+    end
+  end
 end
 
 function win:scroll(delta)
@@ -197,12 +207,21 @@ end
 buf:show() gfx.render()
 
 function win:input(t)
-  if t == false then self.inp = '' return end
-  self.inp = (self.inp or '') .. t
+  if t == false then self.inp = {} self.cur = 1 return end
+  for _, v in ipairs(utf.chars(t)) do
+    table.insert(self.inp, self.cur, v)
+    self.cur = self.cur + 1
+  end
+end
+
+function win:cursor(dx)
+  self.cur = self.cur + dx
+  if self.cur < 1 then self.cur = 1 end
+  if self.cur > #self.inp then self.cur = #self.inp + 1 end
 end
 
 function win:newline()
-  local inp = self.inp or ''
+  local inp = table.concat(self.inp)
   inp = inp:strip()
   local a = inp:split()
   local cmd = a[1]
@@ -242,13 +261,13 @@ function win:newline()
     thr:write('send', inp)
     self:write("%s\n", inp)
   end
-  self.inp = ''
+  self:input(false)
 end
 
 function win:backspace()
-  local input = self.inp or ''
-  local s = #input - utf.prev(input, #input)
-  self.inp = input:sub(1, s)
+  if self.cur <= 1 then return end
+  self.cur = self.cur - 1
+  table.remove(self.inp, self.cur)
 end
 
 function win:mouse2pos(x, y)
@@ -363,32 +382,36 @@ while r do
   if e == 'quit' then
     thr:write("quit")
     break
-  elseif e == 'keydown' and
-    v == 'f1' then
-    help_mode = not help_mode
   elseif e == 'text' then
     buf:input(v)
-  elseif e == 'keydown' and
-    v == 'backspace' then
-    buf:backspace()
-  elseif e == 'keydown' and
-    v == 'return' then
-    buf:newline()
-  elseif e == 'keydown' and
-    v == 'v' and input.keydown 'ctrl' then
-    buf:input(sys.clipboard() or '')
-  elseif e == 'keydown' and
-    v == 'c' and input.keydown 'ctrl' then
-    buf:copy()
-  elseif e == 'keydown' and
-    v == 'k' and input.keydown 'ctrl' then
-    buf:input(false)
-  elseif e == 'keydown' and
-    (v == 'pageup' or v == 'keypad 9') then
-    buf:scroll(-buf.lines)
-  elseif e == 'keydown' and
-    (v == 'pagedown' or v == 'keypad 3') then
-    buf:scroll(buf.lines)
+  elseif e == 'keydown' then
+    if v == 'f1' then
+      help_mode = not help_mode
+    elseif v == 'backspace' then
+      buf:backspace()
+    elseif v == 'return' then
+      buf:newline()
+    elseif v == 'left' then
+      buf:cursor(-1)
+    elseif v == 'right' then
+      buf:cursor(1)
+    elseif v == 'home' or v == 'keypad 7' or
+      (v == 'a' and input.keydown 'ctrl') then
+      buf:cursor(-10000)
+    elseif v == 'end' or v == 'keypad 1' or
+      (v == 'e' and input.keydown 'ctrl') then
+      buf:cursor(10000)
+    elseif v == 'v' and input.keydown 'ctrl' then
+      buf:input(sys.clipboard() or '')
+    elseif v == 'c' and input.keydown 'ctrl' then
+      buf:copy()
+    elseif v == 'k' and input.keydown 'ctrl' then
+      buf:input(false)
+    elseif v == 'pageup' or v == 'keypad 9' then
+      buf:scroll(-buf.lines)
+    elseif v == 'pagedown' or v == 'keypad 3' then
+      buf:scroll(buf.lines)
+    end
   elseif e == 'mousedown' or e == 'mouseup' then
     buf:click(e == 'mousedown', v, a, b)
   elseif e == 'mousemotion' then
