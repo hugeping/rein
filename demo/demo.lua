@@ -30,7 +30,13 @@ function third(x, y, t)
   return b, b*0.7, 0
 end
 
-demo = { first, second, third }
+function fifth(x, y, t)
+  local c = math.tan(x*y*2-x/1.475-y/1.475+t*0.008) *
+    math.abs(math.sin(t*0.008)*4) % 255
+  return c/3, c/2, c
+end
+
+demo = { first, second, third, fifth }
 current = 1
 local fps = 0
 
