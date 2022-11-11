@@ -525,7 +525,8 @@ function api.event(e, v, a, b, c)
     input.fifo  = {}
     mixer.stop()
   end
-  if e == 'keydown' and v == 'f10' then
+  if e == 'keydown' and (v == 'f10'
+    or v == 'escape' and input.kbd.ctrl) then
     mixer.stop()
     core.stop()
     return true
