@@ -670,9 +670,8 @@ function buff:keydown(k)
     s:export ('__map__', 'data.map')
     os.remove('data.spr')
     s:export ('__spr__', 'data.spr')
-    local sprited = sys.dirname(ARGS[1]).."/sprited.lua"
     idle_mode = 'spr'
-    s:exec(sprited, 'data.spr')
+    s:exec("sprited", 'data.spr')
   elseif k == 'f5' then
     s:write()
     idle_mode = 'run'

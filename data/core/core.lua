@@ -13,7 +13,11 @@ local core = {
 function core.go(fn, env)
   local f, e
   if type(fn) == 'string' then
-    f, e = loadfile(fn, "t", env)
+    if fn:find("%.[lL][uU][aA]$") then
+      f, e = loadfile(fn, "t", env)
+    else
+      f, e = loadfile(DATADIR.."/apps/"..fn..'.lua', "t", env)
+    end
     if not f then
       core.err(e)
       return f, e
