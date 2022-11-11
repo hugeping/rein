@@ -318,7 +318,8 @@ function irc_rep(v)
   end
   user = (user and user..':') or ''
   if user == last_user then user = '' else last_user = user end
-  local pfx = string.format("%s(%s)", cmd, par)
+  if par ~= '' then par = "("..par..")" end
+  local pfx = string.format("%s%s", cmd, par == '' and ' ' or par)
   if pfx == last_pfx then pfx = '' else last_pfx = pfx end
   return string.format("%s%s%s", user, pfx, txt) --%s(%s):%s", cmd, par, txt)
 end

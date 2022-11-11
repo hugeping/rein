@@ -91,7 +91,6 @@ struct lua_thread {
 	struct lua_channel *chan;
 };
 
-#if 0
 static int
 thread_poll(lua_State *L)
 {
@@ -112,7 +111,7 @@ thread_poll(lua_State *L)
 	MutexUnlock(chan->m);
 	return 1;
 }
-#endif
+
 static int
 thread_read(lua_State *L)
 {
@@ -433,7 +432,7 @@ static const luaL_Reg thread_mt[] = {
 	{ "wait", thread_wait },
 	{ "write", thread_write },
 	{ "read", thread_read },
-//	{ "poll", thread_poll },
+	{ "poll", thread_poll },
 	{ "err", thread_err },
 	{ "__gc", thread_stop },
 	{ NULL, NULL }
