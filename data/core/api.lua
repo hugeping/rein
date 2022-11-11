@@ -387,8 +387,11 @@ function env.sys.sleep(to, interrupt)
 end
 
 function env_ro.error(text)
+  env.screen:noclip()
+  env.screen:nooffset()
   env.screen:clear(conf.bg)
-  env.gfx.print(text, 0, 0, conf.fg, true)
+  env.gfx.print(text or 'Error', 0, 0, conf.fg, true)
+  env.gfx.render()
   core.err_msg = text
   if not core.running() then
     return
@@ -432,7 +435,7 @@ function env_ro.gfx.print(text, x, y, col, scroll)
       local off = math.floor(y - (h - hh))
       env.screen:copy(0, off, w, h - off, env.screen, 0, 0) -- scroll
       env.screen:clear(0, h - off, w, off, conf.bg)
-      y = h - hh
+      y = y - off
     end
 
     if p then
@@ -464,7 +467,13 @@ function env_ro.sys.exec(fn, ...)
   }
   rawset(env, '__index', env)
   setmetatable(newenv, env)
-  return core.go(fn, newenv)
+  local r, e = core.go(fn, newenv)
+  if not r then
+    r, e = sys.go(function() error(e) end)
+  end
+  if not r then return false, e end
+  coroutine.yield 'suspend'
+  return true
 end
 
 function env_ro.sys.stop(fn)
@@ -503,12 +512,17 @@ function api.event(e, v, a, b, c)
     gfx.win():clear(conf.brd)
     return true
   end
+
   if e == 'quit' then
     api.running = false
     input.fifo  = {}
     mixer.stop()
   end
-
+  if e == 'keydown' and v == 'f10' then
+    mixer.stop()
+    core.stop()
+    return true
+  end
   if e == 'mousemotion' then
     v, a = core.abs2rel(v, a)
   elseif e == 'mousedown' or e == 'mouseup' then

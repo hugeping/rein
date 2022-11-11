@@ -7,6 +7,7 @@ local core = {
   fn = {};
   view_x = 0;
   view_y = 0;
+  suspended = {};
 }
 
 function core.go(fn, env)
@@ -31,6 +32,10 @@ function core.go(fn, env)
 end
 
 function core.stop(fn)
+  if not fn then
+    core.fn = {}
+    return true
+  end
   for k, f in ipairs(core.fn) do
     if f == fn then
       table.remove(core.fn, k)
@@ -49,6 +54,10 @@ end
 
 function core.err(fmt, ...)
   if not fmt then
+    if fmt == false then
+      core.err_msg = false
+      return
+    end
     return core.err_msg
   end
   local t = string.format(fmt, ...)
@@ -157,7 +166,18 @@ function core.run()
   end
 
   -- core.render()
-  if true then -- not core.err() then
+
+  if #core.fn == 0 then
+    if #core.suspended > 0 then
+      local fn = table.remove(core.suspended, #core.suspended)
+      table.insert(core.fn, fn)
+      core.err(false)
+    else
+      return false
+    end
+  end
+
+  if not core.err() then
     local i = 1
     while core.fn[i] do
       local fn = core.fn[i]
@@ -167,13 +187,18 @@ function core.run()
           e = e .. '\n'..debug.traceback(fn)
           core.err(e)
           break
+        elseif e == 'suspend' then
+          table.insert(core.suspended, fn)
+          table.remove(core.fn, i)
+        else
+          i = i + 1
         end
-        i = i + 1
       else
         table.remove(core.fn, i)
       end
     end
   end
+
   if core.render() then
     sys.sleep(fps)
   end

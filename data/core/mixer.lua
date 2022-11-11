@@ -204,7 +204,11 @@ function mixer.coroutine()
   else
     while true do
       if mixer.running then
-        mixer.thr:poll() -- force show peer end error msg
+        local e = mixer.thr:err() -- force show peer end error msg
+        if e then
+          mixer.running = false
+          error(e)
+        end
       end
       coroutine.yield()
     end

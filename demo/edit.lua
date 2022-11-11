@@ -1,7 +1,6 @@
 gfx.win(385, 380)
 --local sfont = gfx.font('demo/iosevka.ttf',12)
 local idle_mode
-local idle_prog
 local inp_mode
 local help_mode
 local sfont = font
@@ -629,12 +628,7 @@ function buff:exec(prog, ...)
   mixer.init()
   gfx.win(256, 256)
   screen:clear(conf.bg)
-  local f, e = sys.exec(prog, ...)
-  if not f then
-    idle_prog = sys.go(function() error(e) end)
-  else
-    idle_prog = f
-  end
+  sys.exec(prog, ...)
 end
 
 function buff:keydown(k)
@@ -677,12 +671,12 @@ function buff:keydown(k)
     os.remove('data.spr')
     s:export ('__spr__', 'data.spr')
     local sprited = sys.dirname(ARGS[1]).."/sprited.lua"
-    s:exec(sprited, 'data.spr')
     idle_mode = 'spr'
+    s:exec(sprited, 'data.spr')
   elseif k == 'f5' then
     s:write()
-    s:exec(FILE)
     idle_mode = 'run'
+    s:exec(FILE)
   elseif k == 'f1' then
     help_mode = not help_mode
   elseif (k == 'u' or k == 'z') and input.keydown 'ctrl' then
@@ -801,27 +795,22 @@ ctrl-z       - undo
 F4           - open another file (no save!)
 F5           - run!
 F8           - run sprite editor
-ESC          - exit from running prog
+F10          - exit from running prog
 ]]
 
 while true do
-  while idle_prog do
-    if input.keypress("escape") then
-      gfx.border(conf.brd)
-      sys.stop(idle_prog)
-      mixer.stop()
-      screen:nooffset()
-      screen:noclip()
-      sys.input(true) -- clear input
-      gfx.win(W, H)
-      if idle_mode == 'spr' then
-        b:import('__spr__', 'data.spr')
-        b:import('__map__', 'data.map')
-      end
-      idle_prog, idle_mode = false, false
-      break
+  if idle_mode then -- resume?
+    gfx.border(conf.brd)
+    mixer.stop()
+    screen:nooffset()
+    screen:noclip()
+    sys.input(true) -- clear input
+    gfx.win(W, H)
+    if idle_mode == 'spr' then
+      b:import('__spr__', 'data.spr')
+      b:import('__map__', 'data.map')
     end
-    coroutine.yield()
+    idle_mode = false
   end
   while help_mode do
     screen:clear(conf.bg)
