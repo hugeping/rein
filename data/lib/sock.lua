@@ -83,6 +83,7 @@ function tcp:lines(wait)
       sys.sleep(DELAY)
     end
   end
+  if not self.data:find("\n") then return function() end end
   local str = self.data
   local s = str:gsub("^(.*\n)[^\n]*$", "%1")
   self.data = str:sub(s:len()+1) or ''

@@ -153,20 +153,27 @@ local thr = thread.start(function()
   s:write(string.format("NICK %s\r\nUSER %s localhost %s :%s\r\n",
     nick, nick, host, nick))
   local delay = 1/20
+  local lines = {}
+  local err
   while true do
      local r, v = thread:read(delay)
      if r == 'quit' then
        break
      elseif r == 'send' then
        s:write(v..'\r\n')
+     elseif r == 'read' then
+       for _, l in ipairs(lines) do
+         thread:write(true, l)
+       end
+       lines = {}
+       thread:write(false, err)
      end
-     if not s:poll() then
-       thread:write(false, "Error reading from socket!")
-       break
+     if not err and not s:poll() then
+       err = "Error reading from socket!"
      end
      delay = 1/20
      for l in s:lines() do
-       thread:write(true, l)
+       table.insert(lines, l)
        delay = 1/100
      end
   end
@@ -283,11 +290,12 @@ function irc_rep(v)
   local user, cmd, par, s, txt
   if v:empty() then return end
   if v:sub(1, 1) == ':' then
-    s = v:find(" ")
+    s = v:find(" ") or #v + 1
     user = v:sub(2, s - 1):gsub("^([^!]+)!.*$", "%1")
     v = v:sub(s + 1)
   end
   s = v:find(" ")
+  if not s then s = #v + 1 end
   cmd = v:sub(1, s - 1):strip()
   par = v:sub(s+1)
   s = par:find(":") or #par + 1
@@ -385,22 +393,26 @@ while r do
   elseif e == 'mousemotion' then
     buf:motion()
   end
-  local delay = 1/10
-  if thr:poll() then
-    delay = 0
+  local delay = 1/20
+  thr:write('read')
+  local inp = e
+  while true do
     e, v = thr:read()
-    if not e and v then
-      buf:write("Error: %s\n", v)
+    if not e then
+      if v then -- fatal error
+        buf:write("%s\n", v)
+        thr:write("quit")
+        r = false
+      end
+      break
     end
+    delay = 0
     v = irc_rep(v)
     if v then
       buf:write("%s\n", v)
     end
-    if not e then
-      r = false
-    end
   end
-  if e or delay == 0 then
+  if inp or delay == 0 then
     buf:show()
   end
   gfx.flip(delay, true)
