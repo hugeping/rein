@@ -229,7 +229,7 @@ function win:newline()
       thr:write('send', m)
       self:write("%s\n", m)
     end
-  elseif cmd:startswith("/") then
+  elseif cmd and cmd:startswith("/") then
     inp = inp:gsub("^[ \t]*/", "")
     thr:write('send', inp)
     self:write("%s\n", inp)
