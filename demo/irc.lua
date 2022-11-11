@@ -302,8 +302,7 @@ function irc_rep(v)
   txt = s and par:sub(s+1):strip()
   par = par:sub(1, s-1):strip()
   if cmd == 'PING' then
-    thr:write('send', 'PONG '..txt)
-    return
+    return 'PONG '..txt, true
   elseif cmd == 'PONG' then
     return
   elseif cmd == 'PRIVMSG' then
@@ -397,7 +396,9 @@ while r do
   local delay = 1/20
   thr:write('read')
   local inp = e
-  while true do
+  local tosrv
+  local reply = {}
+  while true do -- get all msg
     e, v = thr:read()
     if not e then
       if v then -- fatal error
@@ -408,10 +409,16 @@ while r do
       break
     end
     delay = 0
-    v = irc_rep(v)
+    v, tosrv = irc_rep(v)
     if v then
       buf:write("%s\n", v)
+      if tosrv then
+        table.insert(reply, v)
+      end
     end
+  end
+  for _, v in ipairs(reply) do
+    thr:write('send', v)
   end
   if inp or delay == 0 then
     buf:show()
