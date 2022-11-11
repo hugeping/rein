@@ -111,9 +111,9 @@ function win:show()
     gfx.print(t[i], x, y, conf.fg)
     x = x + s.spw
   end
-  if flr(sys.time()*4) % 2 == 1 then
+--  if flr(sys.time()*4) % 2 == 1 then
     screen:fill_rect(x, y, x + s.spw, y + s.sph, conf.fg)
-  end
+--  end
 end
 
 function win:scroll(delta)
