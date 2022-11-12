@@ -1,11 +1,13 @@
-gfx.win(385, 380)
-local HISTORY_SIZE = 16384
-
 local conf = {
+  w = 385,
+  h = 380,
   bg = 16,
   fg = 0,
   sel = 12,
+  wordbreak = true,
+  history_size = 16384,
 }
+gfx.win(conf.w, conf.h)
 
 gfx.border(conf.bg)
 local W, H = screen:size()
@@ -28,21 +30,37 @@ function win.new()
   setmetatable(s, win)
   return s
 end
-
+function last_word(t)
+  for i=#t,1,-1 do
+    if t[i]:find("[ \t.,():;/%-!?]") then
+      return i + 1
+    end
+  end
+end
 function win:write(f, ...)
   local s = self
   local t = utf.chars(fmt(f, ...):gsub("\r",""))
   local l = s.text[#s.text]
+  local nl
   for _,c in ipairs(t) do
     if c == '\n' or #l >= s.cols then
-      l = { brk = c ~= '\n' }
-      add(s.text, l)
+      nl = { brk = c ~= '\n' }
+      if c ~= '\n' and conf.wordbreak then
+        local w = last_word(l)
+        if w and w > 1 then
+          for i = w, #l do
+            table.insert(nl, table.remove(l, w))
+          end
+        end
+      end
+      add(s.text, nl)
+      l = nl
     end
     if c ~= '\n' then
       add(l, c)
     end
   end
-  while #s.text > HISTORY_SIZE do
+  while #s.text > conf.history_size do
     table.remove(s.text, 1)
     s.line = s.line + 1
   end
@@ -364,7 +382,8 @@ function irc_rep(v)
   if par ~= '' then par = "("..par..")" end
   local pfx = string.format("%s%s", cmd, par == '' and ' ' or par)
   if pfx == last_pfx then pfx = '' else last_pfx = pfx end
-  return string.format("%s%s%s", user, pfx, txt) --%s(%s):%s", cmd, par, txt)
+  return string.format("%s%s%s%s", user, pfx,
+    (user..pfx):empty() and '' or ' ', txt) --%s(%s):%s", cmd, par, txt)
 end
 
 local HELP = [==[
