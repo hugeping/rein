@@ -124,7 +124,11 @@ function mixer.getreq()
     mixer.req = false
     return table.unpack(r)
   else
-    local r, v, a = thread:read(DELAY)
+    local rd, _ = thread:poll(DELAY)
+    local r, v, a
+    if rd then
+      r, v, a = thread:read()
+    end
     if r == 'new' then
       v = dump.new(v) -- function
     end
