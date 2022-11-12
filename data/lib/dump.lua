@@ -1,4 +1,8 @@
 -- idea taken from the torch7 project
+local dumper = {
+  UPVALS = false
+}
+
 local dump = {
   UPVALS = false
 }
@@ -28,7 +32,7 @@ function dump:lines(text)
   return next_line
 end
 
-function dump.new(ob)
+function dumper.new(ob)
   local data = {
     objs = { id = 1; };
     refs = { };
@@ -254,4 +258,28 @@ function dump:dump_fn(fn)
   local dumped = string.dump(fn)
   self:write(dumped)
 end
-return dump
+
+function dumper.save(fname, t)
+  local f
+  local r, e = dumper.new(t)
+  if not r then error(e, 2) end
+  f, e = io.open(fname, "wb")
+  if not f then return false, e end
+  f:write(r)
+  f:flush()
+  f:close()
+  return true
+end
+
+function dumper.load(fname)
+  local r
+  local f, e = io.open(fname, "rb")
+  if not f then return false, e end
+  r, e = f:read("*all")
+  if not r then f:close() return false, e end
+  r, e = dumper.new(r)
+  if not r and e then return false, e end
+  return r
+end
+
+return dumper

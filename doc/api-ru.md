@@ -182,6 +182,11 @@ utf.new("текст")
 
 Пока в работе. Внутри использует не проброшенную system.audio(буфер).
 
+# dump
+
+dump.save(файл, таблица) -- сохранить данные таблицы в файл
+dump.load(файл) -- загрузить таблицу из файла
+
 # Остальное
 
 table, math, string, pairs, ipairs, io, tonumber, tostring, coroutine -- проброшены "как есть".
