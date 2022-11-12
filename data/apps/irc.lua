@@ -409,8 +409,13 @@ while r do
       help_mode = not help_mode
     elseif v == 'backspace' then
       buf:backspace()
-    elseif v == 'return' then
-      buf:newline()
+    elseif v == 'return' or v == 'keypad enter' then
+      local lines = table.concat(buf.inp)
+      buf:input(false)
+      for l in lines:lines() do
+        buf:input(l)
+        buf:newline()
+      end
     elseif v == 'left' then
       buf:cursor(-1)
     elseif v == 'right' then
