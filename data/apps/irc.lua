@@ -167,7 +167,12 @@ local thr = thread.start(function()
   local lines = {}
   local err
   while true do
-     local r, v = thread:read(delay)
+     local r, v = thread:poll(delay)
+     if r then
+       r, v = thread:read()
+     elseif v then -- read new msg
+       r = 'read'
+     end
      if r == 'quit' then
        break
      elseif r == 'send' then
@@ -418,7 +423,6 @@ while r do
     buf:motion()
   end
   local delay = 1/20
-  thr:write('read')
   local inp = e
   local tosrv
   local reply = {}
