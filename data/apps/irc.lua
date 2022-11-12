@@ -146,9 +146,14 @@ function win:scroll(delta)
 end
 
 local buf = win.new()
+local JOIN = ARGS[5]
 local NICK = ARGS[4] or string.format("rein%d", math.random(1000))
 local HOST = ARGS[2] or 'irc.oftc.net'
 local PORT = ARGS[3] or 6667
+
+if #ARGS == 1 then
+  JOIN="#instead" -- ;)
+end
 
 local thr = thread.start(function()
   local sock = require "sock"
@@ -348,9 +353,12 @@ function irc_rep(v)
   return string.format("%s%s%s", user, pfx, txt) --%s(%s):%s", cmd, par, txt)
 end
 
-local HELP = [[
+local HELP = [==[
 Arguments:
-rein irc.lua <server> <port> <nick>
+rein irc.lua <server> [<port> [<nick> [<channel]]]
+
+W/o args:
+Connect to irc.oftc.net 6667 rein<random> #instead
 
 Commands:
 :j channel      - join channel
@@ -371,7 +379,14 @@ motion+click    - selection
 All other messages goes to server as-is.
 While in :s channel mode, all messages goes
 to that channel via PRIVMSG.
-]]
+]==]
+
+if JOIN then
+  buf:input("/JOIN "..JOIN)
+  buf:newline()
+  buf:input(":s "..JOIN)
+  buf:newline()
+end
 
 while r do
   while help_mode do
