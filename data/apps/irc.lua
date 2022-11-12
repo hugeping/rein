@@ -127,6 +127,12 @@ function win:show()
   end
 end
 
+function win:tail()
+  local s = self
+  s.line = #s.text - s.lines
+  if s.line < 1 then s.line = 1 end
+end
+
 function win:scroll(delta)
   local s = self
   if delta then
@@ -272,6 +278,7 @@ function win:newline()
     self:write("%s\n", inp)
   end
   self:input(false)
+  self:tail()
 end
 
 function win:backspace()
@@ -372,6 +379,9 @@ Keys:
 ctrl-k          - clear input line
 ctrl-c          - copy selection
 ctrl-v          - paste to input
+ctrl-k          - clear input line
+ctrl-a/home     - begin of input
+ctrl-e/end      - end of input
 
 Mouse:
 motion+click    - selection
