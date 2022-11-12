@@ -560,9 +560,10 @@ while r do
     delay = 0
     v, tosrv = irc_rep(v)
     if v then
-      buf:write("%s\n", v)
       if tosrv then
         add(reply, v)
+      else
+        buf:write("%s\n", v)
       end
     end
   end
