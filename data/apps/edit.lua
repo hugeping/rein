@@ -680,7 +680,7 @@ function buff:keydown(k)
     s.cur.y = s.cur.y - s.lines
     s:scroll()
     s.line = s.cur.y
-  elseif k == 'return' then
+  elseif k == 'return' or k == 'keypad enter' then
     s:newline()
   elseif k == 'backspace' then
     s:backspace()

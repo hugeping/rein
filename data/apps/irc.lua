@@ -287,6 +287,13 @@ function win:backspace()
   table.remove(self.inp, self.cur)
 end
 
+function win:delete()
+  if self.cur > #self.inp then
+    return
+  end
+  table.remove(self.inp, self.cur)
+end
+
 function win:mouse2pos(x, y)
   local s = self
   local sx, sy = flr(x / s.spw) + 1,
@@ -419,6 +426,8 @@ while r do
       help_mode = not help_mode
     elseif v == 'backspace' then
       buf:backspace()
+    elseif v == 'delete' or v == 'keypad .' then
+      buf:delete()
     elseif v == 'return' or v == 'keypad enter' then
       local lines = table.concat(buf.inp)
       buf:input(false)
