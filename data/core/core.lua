@@ -8,6 +8,7 @@ local core = {
   view_x = 0;
   view_y = 0;
   suspended = {};
+  scale = false;
 }
 
 function core.go(fn, env)
@@ -85,7 +86,12 @@ function core.init()
   local f, e, optarg
   for k=2,#ARGS do
     local v = ARGS[k]
-    if v:find("-", 1, true) == 1 then
+    if v:startswith("-")then
+      if v == '-s' then
+        core.scale = true
+      else
+        print("Unknown parameter: "..v)
+      end
       -- todo options
     else -- file to run
       optarg = k
@@ -128,7 +134,7 @@ function core.render(force)
     else
       local oscale = scale
       scale = math.floor(scale)
-      if scale + 0.5 < oscale then scale = scale + 0.5 end
+      if core.scale and scale + 0.5 < oscale then scale = scale + 0.5 end
     end
   end
   local dw = w * scale

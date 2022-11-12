@@ -508,6 +508,18 @@ function api.init(core_mod)
   return env
 end
 
+local event_filter = {
+  quit = true,
+--  resized = true,
+  text = true,
+  keydown = true,
+  keyup = true,
+  mousedown = true,
+  mouseup = true,
+  mousewheel = true,
+  mousemotion = true,
+}
+
 function api.event(e, v, a, b, c)
   if not api.running then
     return false
@@ -515,23 +527,16 @@ function api.event(e, v, a, b, c)
   if not e then
     return true
   end
-  if e == 'resized' or e == 'exposed' then
-    gfx.win():clear(conf.brd)
-    return true
-  end
-
   if e == 'quit' then
     api.running = false
     input.fifo  = {}
     mixer.stop()
-  end
-  if e == 'keydown' and (v == 'f10'
+  elseif e == 'keydown' and (v == 'f10'
     or v == 'escape' and input.kbd.ctrl) then
     mixer.stop()
     core.stop()
     return true
-  end
-  if e == 'mousemotion' then
+  elseif e == 'mousemotion' then
     v, a = core.abs2rel(v, a)
   elseif e == 'mousedown' or e == 'mouseup' then
     a, b = core.abs2rel(a, b)
@@ -547,11 +552,14 @@ function api.event(e, v, a, b, c)
     e = nil
   end
 
-  if (e == 'quit' or e == 'text' or e == 'keydown' or e == 'keyup' or
-    e == 'mousedown' or e == 'mouseup' or e == 'mousewheel' or e == 'mousemotion')
-      and #input.fifo < 32 then
+  if event_filter[e] and #input.fifo < 32 then
     local ev = { nam = e, args = { v, a, b, c } }
     table.insert(input.fifo, ev)
+  end
+
+  if e == 'resized' or e == 'exposed' then
+    gfx.win():clear(conf.brd)
+    return true
   end
 
   if e == 'keyup' then
