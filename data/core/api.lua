@@ -483,6 +483,18 @@ function env_ro.sys.exec(fn, ...)
   return true
 end
 
+function env_ro.sys.appdir(app)
+  if type(app) ~= 'string' then
+    return false, "Invalid argument"
+  end
+  local h = os.getenv('HOME') or os.getenv('home')
+  local path = h and string.format("%s/.rein", h) or (DATADIR..'/save')
+  if sys.mkdir(path) and sys.mkdir(path .."/"..app) then
+    return path .. "/".. app
+  end
+  core.err("Can not create savedir: "..path("/")..app)
+end
+
 function env_ro.sys.stop(fn)
   return core.stop(fn)
 end
