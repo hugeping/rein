@@ -565,7 +565,20 @@ function buff:select(on)
 end
 
 function buff:delete()
--- todo
+  local s = self
+  if s.cur.x <= #s.text[s.cur.y] then
+    s:history()
+    table.remove(s.text[s.cur.y], s.cur.x)
+  elseif s.cur.x > #s.text[s.cur.y] and s.text[s.cur.y+1] then
+    s:history()
+    s.cur.y = s.cur.y + 1
+    s:history()
+    local l = table.remove(s.text, s.cur.y)
+    s.cur.y = s.cur.y - 1
+    for _, v in ipairs(l) do
+      table.insert(s.text[s.cur.y], v)
+    end
+  end
 end
 
 function buff:backspace()
@@ -690,6 +703,8 @@ function buff:keydown(k)
     help_mode = not help_mode
   elseif (k == 'u' or k == 'z') and input.keydown 'ctrl' then
     s:undo()
+  elseif k == 'keypad .' then
+    s:delete()
   elseif k == 'x' and input.keydown 'ctrl' or k == 'delete' then
     if k == 'delete' and not s:selected() then
       s:delete()
