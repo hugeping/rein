@@ -423,8 +423,10 @@ while r do
       local lines = table.concat(buf.inp)
       buf:input(false)
       for l in lines:lines() do
-        buf:input(l)
-        buf:newline()
+        if not l:empty() then
+          buf:input(l)
+          buf:newline()
+        end
       end
     elseif v == 'left' then
       buf:cursor(-1)
