@@ -6,7 +6,9 @@ local conf = {
   sel = 12,
   wordbreak = true,
   history_size = 16384,
+  dict_size = 1024,
 }
+
 gfx.win(conf.w, conf.h)
 
 gfx.border(conf.bg)
@@ -16,6 +18,7 @@ local sfont = font
 local flr, ceil = math.floor, math.ceil
 local fmt = string.format
 local add = table.insert
+local del = table.remove
 local cat = function(a) return table.concat(a,'') end
 win.__index = win
 
@@ -26,10 +29,12 @@ function win.new()
   s.cols = flr(W/w)
   s.line = 1
   s.text = {{}}
+  s.dict = {}
   s.spw, s.sph = w, h
   setmetatable(s, win)
   return s
 end
+
 function last_word(t)
   for i=#t,1,-1 do
     if t[i]:find("[ \t.,():;/%-!?]") then
@@ -37,9 +42,61 @@ function last_word(t)
     end
   end
 end
+
+function win:fill_dict(t)
+  local dict = self.dict
+  dict.__hash__ = dict.__hash__ or {}
+  for l in t:lines() do
+    for _, w in ipairs(l:split(" \t.,:?!@#$*()_/~-")) do
+      if not dict.__hash__[w] then
+        add(dict, w)
+        dict.__hash__[w] = true
+      end
+      if #dict > conf.dict_size then
+        dict.__hash__[del(dict, 1)] = nil
+      end
+    end
+  end
+end
+
+function win:compl(t)
+  local a = t:split()
+  local w = a[#a] -- last word
+  if not w then return t end
+  local compl = {}
+  for _, d in ipairs(self.dict) do
+    if d:startswith(w) then
+      add(compl, d)
+    end
+  end
+  if #compl == 0 then return t end
+  local max = utf.chars(compl[1])
+  local u
+  local nr = #max
+  for _, v in ipairs(compl) do
+    for i=1, nr do
+      u = utf.chars(v)
+      if max[i] ~= u[i] then
+        nr = i - 1
+        break
+      end
+    end
+  end
+  w = ''
+  for i=1, nr do w = w .. max[i] end
+  if not t:find(" ") then
+    return w
+  end
+  t = t:gsub("[ \t][^ \t]+$", "")
+  t = t .. ' '.. w
+  return t
+end
+
 function win:write(f, ...)
   local s = self
-  local t = utf.chars(fmt(f, ...):gsub("\r",""))
+  local txt = fmt(f, ...):gsub("\r","")
+  self:fill_dict(txt)
+  local t = utf.chars(txt)
   local l = s.text[#s.text]
   local nl
   for _,c in ipairs(t) do
@@ -49,7 +106,7 @@ function win:write(f, ...)
         local w = last_word(l)
         if w and w > 1 then
           for i = w, #l do
-            table.insert(nl, table.remove(l, w))
+            add(nl, del(l, w))
           end
         end
       end
@@ -61,7 +118,7 @@ function win:write(f, ...)
     end
   end
   while #s.text > conf.history_size do
-    table.remove(s.text, 1)
+    del(s.text, 1)
     s.line = s.line + 1
   end
   s:scroll()
@@ -243,7 +300,7 @@ buf:show() gfx.render()
 function win:input(t)
   if t == false then self.inp = {} self.cur = 1 return end
   for _, v in ipairs(utf.chars(t)) do
-    table.insert(self.inp, self.cur, v)
+    add(self.inp, self.cur, v)
     self.cur = self.cur + 1
   end
 end
@@ -255,11 +312,11 @@ function win:cursor(dx)
 end
 
 function win:newline()
-  local inp = table.concat(self.inp)
+  local inp = cat(self.inp)
   inp = inp:strip()
   local a = inp:split()
   local cmd = a[1]
-  table.remove(a, 1)
+  del(a, 1)
   if cmd == ':s' then
     self.channel = a[1] or ''
     self:write("Default channel: %s\n", self.channel)
@@ -302,14 +359,14 @@ end
 function win:backspace()
   if self.cur <= 1 then return end
   self.cur = self.cur - 1
-  table.remove(self.inp, self.cur)
+  del(self.inp, self.cur)
 end
 
 function win:delete()
   if self.cur > #self.inp then
     return
   end
-  table.remove(self.inp, self.cur)
+  del(self.inp, self.cur)
 end
 
 function win:mouse2pos(x, y)
@@ -448,7 +505,7 @@ while r do
     elseif v == 'delete' or v == 'keypad .' then
       buf:delete()
     elseif v == 'return' or v == 'keypad enter' then
-      local lines = table.concat(buf.inp)
+      local lines = cat(buf.inp)
       buf:input(false)
       for l in lines:lines() do
         if not l:empty() then
@@ -476,6 +533,10 @@ while r do
       buf:scroll(-buf.lines)
     elseif v == 'pagedown' or v == 'keypad 3' then
       buf:scroll(buf.lines)
+    elseif v == 'tab' then
+      local t = buf:compl(cat(buf.inp))
+      buf:input(false)
+      buf:input(t)
     end
   elseif e == 'mousedown' or e == 'mouseup' then
     buf:click(e == 'mousedown', v, a, b)
@@ -501,7 +562,7 @@ while r do
     if v then
       buf:write("%s\n", v)
       if tosrv then
-        table.insert(reply, v)
+        add(reply, v)
       end
     end
   end
