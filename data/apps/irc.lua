@@ -233,7 +233,7 @@ local HOST = ARGS[2] or 'irc.oftc.net'
 local PORT = ARGS[3] or 6667
 
 if #ARGS == 1 then
-  JOIN="#instead" -- ;)
+  JOIN="#rein" -- ;)
 end
 
 local thr = thread.start(function()
