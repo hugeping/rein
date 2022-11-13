@@ -326,7 +326,7 @@ function win:newline()
     local txt = inp:sub(s+a[1]:len()+1):strip()
     local m = "PRIVMSG "..a[1].." :"..txt
     thr:write('send', m)
-    self:write("%s\n", m)
+    self:write("%s\n\n", m)
   elseif cmd == ':j' and a[1] then
     local c = a[1]
     local m = "JOIN "..c
@@ -343,14 +343,14 @@ function win:newline()
   elseif cmd and cmd:startswith("/") then
     inp = inp:gsub("^[ \t]*/", "")
     thr:write('send', inp)
-    self:write("%s\n", inp)
+    self:write("%s\n\n", inp)
   elseif self.channel then
     local m = "PRIVMSG "..self.channel.." :"..inp
     thr:write('send', m)
-    self:write("%s:%s\n", NICK, inp)
+    self:write("%s:%s\n\n", NICK, inp)
   else
     thr:write('send', inp)
-    self:write("%s\n", inp)
+    self:write("%s\n\n", inp)
   end
   self:input(false)
   self:tail()
