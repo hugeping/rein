@@ -25,3 +25,8 @@ See ./make.sh if any problems.
 # Doc
 
 [doc/api-ru.md](doc/api-ru.md)
+
+# Contacts
+
+- Join the irc channel #rein on irc.oftc.net;
+- TODO.
