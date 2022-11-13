@@ -29,4 +29,4 @@ See ./make.sh if any problems.
 # Contacts
 
 - Join the irc channel #rein on irc.oftc.net;
-- TODO.
+- Run: rein irc
