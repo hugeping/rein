@@ -200,6 +200,8 @@ function core.run()
         elseif e == 'suspend' then
           table.insert(core.suspended, fn)
           table.remove(core.fn, i)
+        elseif e == 'stop' then
+          table.remove(core.fn, i)
         else
           i = i + 1
         end
