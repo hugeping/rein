@@ -812,29 +812,34 @@ Thread(int (*fn) (void *), void *data)
 }
 
 int
-Dial(const char *addr, int port)
+Dial(const char *host, const char *port)
 {
 	int fd;
-	struct hostent *he;
-	struct sockaddr_in sock_addr;
-	memset(&sock_addr, 0, sizeof(sock_addr));
-	sock_addr.sin_addr.s_addr = inet_addr(addr);
-	if (sock_addr.sin_addr.s_addr == -1) {
-		he = gethostbyname(addr);
-		if (!he)
-			return -1;
-		memcpy(&sock_addr.sin_addr, he->h_addr, he->h_length);
-	}
-	fd = socket(AF_INET, SOCK_STREAM, 0);
-	if (fd < 0)
+	struct addrinfo hints;
+	struct addrinfo *res, *r;
+	memset(&hints, 0, sizeof hints);
+#ifdef AI_ADDRCONFIG
+	hints.ai_flags = AI_ADDRCONFIG;
+	hints.ai_family = AF_UNSPEC;
+#else
+	hints.ai_family = AF_INET;
+#endif
+	hints.ai_socktype = SOCK_STREAM;
+
+	if (getaddrinfo(host, port, &hints, &res))
 		return -1;
-	sock_addr.sin_family = AF_INET;
-	sock_addr.sin_port = htons(port);
-	if (connect(fd, (struct sockaddr *)&sock_addr,
-		sizeof(sock_addr)) < 0) {
+
+	for (r = res; r; r = r->ai_next) {
+		if ((fd = socket(r->ai_family, r->ai_socktype, r->ai_protocol)) < 0)
+			continue;
+		if (!connect(fd, r->ai_addr, r->ai_addrlen))
+			break;
 		close(fd);
-		return -1;
 	}
+
+	freeaddrinfo(res);
+	if (!r)
+		return -1;
 #if defined(O_NONBLOCK)
 	fcntl(fd, F_SETFL, O_NONBLOCK);
 #elif defined(WIN32)

@@ -11,7 +11,14 @@ net_dial(lua_State *L)
 	struct lua_sock *usock;
 	int fd;
 	const char *addr = luaL_checkstring(L, 1);
-	int port = luaL_checkinteger(L, 2);
+	const char *port = luaL_optstring(L, 2, NULL);
+	char port_num[16];
+
+	if (!port) {
+		fd = luaL_checkinteger(L, 2);
+		snprintf(port_num, sizeof(port_num), "%d", fd);
+		port = port_num;
+	}
 	fd = Dial(addr, port);
 	if (fd < 0) {
 		lua_pushboolean(L, 0);

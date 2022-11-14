@@ -43,7 +43,7 @@ extern int SemWait(int sid, int ms);
 extern int SemPost(int sid);
 
 extern void MouseHide(int hide);
-extern int Dial(const char *addr, int port);
+extern int Dial(const char *host, const char *port);
 extern int Send(int fd, const void *data, int size);
 extern int Recv(int fd, void *data, int size);
 extern void Shutdown(int fd);
