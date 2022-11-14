@@ -468,6 +468,10 @@ function env_ro.sys.go(fn)
   return core.go(fn, env)
 end
 
+function env_ro.sys.suspend(...)
+  return coroutine.yield 'suspend'
+end
+
 function env_ro.sys.exec(fn, ...)
   local newenv = {
     ARGS = { fn, ... }
@@ -479,7 +483,6 @@ function env_ro.sys.exec(fn, ...)
     r, e = sys.go(function() error(e) end)
   end
   if not r then return false, e end
-  coroutine.yield 'suspend'
   return true
 end
 
@@ -496,6 +499,9 @@ function env_ro.sys.appdir(app)
 end
 
 function env_ro.sys.stop(fn)
+  if not fn then
+    return coroutine.yield 'stop'
+  end
   return core.stop(fn)
 end
 

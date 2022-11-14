@@ -656,6 +656,7 @@ function buff:exec(prog, ...)
   gfx.win(256, 256)
   screen:clear(conf.bg)
   sys.exec(prog, ...)
+  sys.suspend()
 end
 
 function writefile(fname, data)
