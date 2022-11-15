@@ -11,6 +11,44 @@ local core = {
   scale = false;
 }
 
+function core.getopt(args, ops)
+  local optarg = #args + 1
+  local ret = {}
+  for k, v in pairs(ops) do
+    if type(v) ~= 'boolean' then
+      ret[k] = ops[k]
+    end
+  end
+  local i = 1
+  while i < #args do
+    i = i + 1
+    local v = args[i]
+    if not v:startswith('-') or v:len() == 1 then
+      optarg = i
+      break
+    end
+    if v == "--" then
+      optarg = i + 1
+      break
+    end
+    local o = ops[v:sub(2)]
+    if o == nil then
+      print("Unknown option: "..v)
+    elseif o ~= true then
+      if i == #args then
+        print("No argument: "..v)
+        break
+      end
+      i = i + 1
+      ret[v:sub(2)] = args[i]
+    else
+      ret[v:sub(2)] = o
+    end
+  end
+  if optarg > #args then optarg = false end
+  return ret, optarg
+end
+
 function core.go(fn, env)
   local f, e
   if type(fn) == 'string' then
@@ -83,21 +121,12 @@ function core.init()
     os.exit(1)
   end
   env.ARGS = {}
-  local f, e, optarg
-  for k=2,#ARGS do
-    local v = ARGS[k]
-    if v:startswith("-")then
-      if v == '-s' then
-        core.scale = true
-      else
-        print("Unknown parameter: "..v)
-      end
-      -- todo options
-    else -- file to run
-      optarg = k
-      break
-    end
-  end
+  local f, e, optarg, opts
+  local opts, optarg = core.getopt(ARGS, {
+    s = true,
+  })
+  core.scale = opts.s
+
   if optarg then
     for i=optarg,#ARGS do
       table.insert(env.ARGS, ARGS[i])
@@ -105,6 +134,7 @@ function core.init()
   else
     env.ARGS[1] = DATADIR..'/boot.lua'
   end
+
   core.go(env.ARGS[1], env)
   -- sys.window_mode 'fullscreen'
   -- sys.window_mode 'normal'
