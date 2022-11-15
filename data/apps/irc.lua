@@ -226,19 +226,28 @@ function win:scroll(delta)
   end
 end
 
-local buf = win.new()
-local JOIN = ARGS[5]
-local NICK = ARGS[4] or string.format("rein%d", math.random(1000))
-local HOST = ARGS[2] or 'irc.oftc.net'
-local PORT = ARGS[3] or 6667
+local ops, optarg = sys.getopt(ARGS, {
+  n = string.format("rein%d", math.random(1000)), --nick
+  p = 6667,
+  j = false,
+  k = false,
+  h = 'irc.oftc.net',
+})
 
 if #ARGS == 1 then
-  JOIN="#rein" -- ;)
+  ops.j = "#rein" -- ;)
 end
+
+local buf = win.new()
+local JOIN = ops.j
+local NICK = ops.n
+local HOST = ARGS[optarg] or ops.h
+local PORT = ops.p
+local PASS = ops.k
 
 local thr = thread.start(function()
   local sock = require "sock"
-  local nick, host, port = thread:read()
+  local nick, host, port, pass = thread:read()
   local s,e = sock.dial(host, port)
   print("thread: connect", s, e)
   if not s then
@@ -246,6 +255,10 @@ local thr = thread.start(function()
     return
   else
     thread:write(true)
+  end
+  if pass then
+    s:write(string.format("PASS %s\r\n",
+      pass))
   end
   s:write(string.format("NICK %s\r\nUSER %s localhost %s :%s\r\n",
     nick, nick, host, nick))
@@ -285,7 +298,7 @@ end)
 buf:write("Connecting to %s:%d...",
   HOST, PORT)
 buf:show() gfx.render()
-thr:write(NICK, HOST, PORT)
+thr:write(NICK, HOST, PORT, PASS)
 
 local r = thr:read()
 
@@ -444,11 +457,18 @@ function irc_rep(v)
 end
 
 local HELP = [==[
-Arguments:
-rein irc.lua <server> [<port> [<nick> [<channel]]]
+Usage:
+  rein irc [options] [server]
+
+Options:
+  -h <host>
+  -p <port>
+  -n <nick>
+  -j <channel>
+  -k <password>
 
 W/o args:
-Connect to irc.oftc.net 6667 rein<random> #instead
+Connect to irc.oftc.net:6667 rein<random> #rein
 
 Commands:
 :j channel      - join channel

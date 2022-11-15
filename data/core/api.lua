@@ -345,6 +345,10 @@ function env_ro.input.mouse()
   return input.mouse.x or 0, input.mouse.y or 0, input.mouse.btn
 end
 
+function env_ro.sys.getopt(...)
+  return core.getopt(...)
+end
+
 function env_ro.sys.input(reset)
   if #input.fifo == 0 then
     return
