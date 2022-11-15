@@ -606,6 +606,7 @@ end
 
 function buff:newline(indent)
   local s = self
+  s.text[s.cur.y] = s.text[s.cur.y] or {}
   local l = s.text[s.cur.y]
   local ind, ind2 = 0, 0
   if s.cur.x > 1 and indent ~= false then
