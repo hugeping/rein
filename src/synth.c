@@ -156,7 +156,7 @@ synth_stop(lua_State *L)
 	if (chan == -1) {
 		for (i = 0; i < CHANNELS_MAX; i ++) {
 			chan_free(&channels[i]);
-			chan_init(&channels[i]);
+			chan_set(&channels[i], 0, 0, 0);
 		}
 		return 0;
 	}
