@@ -199,9 +199,12 @@ double noise_next(struct noise_state *s, double freq) {
     return 2 * (s->state & 1) - 1;
 }
 
-void chan_init(struct chan_state *c) {
-    chan_set(c, 0, 0, 0);
-    c->stack_size = 0;
+void mix_init(struct chan_state *channels, int num_channels) {
+    for (int i = 0; i < num_channels; i++) {
+        struct chan_state *c = &channels[i];
+        chan_set(c, 0, 0, 0);
+        c->stack_size = 0;
+    }
 }
 
 void chan_set(struct chan_state *c, int is_on, double vol, double pan) {
@@ -245,17 +248,17 @@ static void chan_process(struct box_state *stack, int stack_size, double *l, dou
     }
 }
 
-void chan_mix(struct chan_state *channels, int num_channels, double vol, double *samples, int num_samples) {
+void mix_process(struct chan_state *channels, int num_channels, double vol, double *samples, int num_samples) {
     for (; num_samples; num_samples--, samples += 2) {
         double left = 0, right = 0;
         for (int i = 0; i < num_channels; i++) {
-            struct chan_state *chan = &channels[i];
-            if (chan->is_on) {
+            struct chan_state *c = &channels[i];
+            if (c->is_on) {
                 double l = 0, r = 0;
-                chan_process(chan->stack, chan->stack_size, &l, &r);
-                double pan = (chan->pan + 1) * 0.5;
-                left += chan->vol * l * (1 - pan);
-                right += chan->vol * r * pan;
+                chan_process(c->stack, c->stack_size, &l, &r);
+                double pan = (c->pan + 1) * 0.5;
+                left += c->vol * l * (1 - pan);
+                right += c->vol * r * pan;
             }
         }
         samples[0] = vol * left;
