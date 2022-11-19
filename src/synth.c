@@ -28,9 +28,9 @@ synth_change(lua_State *L)
 	const int elem = luaL_optinteger(L, 5, 0);
 	struct box_state *box;
 	if (chan < 0 || chan >= CHANNELS_MAX)
-		return -1;
+		return luaL_error(L, "Wrong channel number");
 	if (nr >= channels[chan].stack_size)
-		return -1;
+		return luaL_error(L, "Wrong stack position");
 	box = &channels[chan].stack[nr];
 	box->change(box->state, param, elem, val);
 	return 0;
