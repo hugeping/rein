@@ -120,11 +120,11 @@ struct chan_state {
     int stack_size;
 };
 
-void chan_init(struct chan_state *c);
+void mix_init(struct chan_state *channels, int num_channels);
 void chan_set(struct chan_state *c, int is_on, double vol, double pan);
 void chan_free(struct chan_state *c);
 struct box_state *chan_push(struct chan_state *c, struct box_proto *proto);
-void chan_mix(struct chan_state *channels, int num_channels, double vol, double *samples, int num_samples);
+void mix_process(struct chan_state *channels, int num_channels, double vol, double *samples, int num_samples);
 
 enum {
     ZVON_NOTE_ON,

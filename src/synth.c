@@ -137,7 +137,7 @@ synth_mix(lua_State *L)
 	written = samples;
 	while (samples > 0) {
 		nr = (samples > SAMPLES_NR)?SAMPLES_NR:samples;
-		chan_mix(channels, CHANNELS_MAX, vol, floats, nr);
+		mix_process(channels, CHANNELS_MAX, vol, floats, nr);
 		for (i = 0; i < nr*2; i ++)
 			buf[i] = (signed short)(floats[i] * 32768.0);
 		AudioWrite(buf, nr * 4);
@@ -191,8 +191,7 @@ int
 luaopen_synth(lua_State *L)
 {
 	int i;
-	for (i = 0; i < CHANNELS_MAX; i++)
-		chan_init(&channels[i]);
+	mix_init(channels, CHANNELS_MAX);
 	luaL_newlib(L, synth_lib);
 	for (i = 0; constants[i].name; i++) {
 		lua_pushstring(L, constants[i].name);
