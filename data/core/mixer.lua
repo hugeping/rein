@@ -11,7 +11,7 @@ local mixer = {
   ack = { };
   chans = { };
   buff = {
-    channels = 2,
+    channels = 1,
     head = 1,
     tail = 1,
     size = CHUNK,
@@ -64,19 +64,19 @@ function mixer.fill()
 end
 
 function mixer.write_audio()
-  local rc
   local b = mixer.buff
+  local rc = b.used > 1024 and 1024 or b.used
   if b.used == 0 then
     return
   end
   repeat
-    local len = b.size - b.head + 1
-    if len > b.used then
-      len = b.used
+    rc = synth.mix(rc)
+    for i = 1, rc do
+      synth.change(0, 0, -1, b[b.head], 1)
+      b.head = (b.head % b.size) + 1
+      b.used = b.used - 1
+      if b.used == 0 then break end
     end
-    local rc = sys.audio(b, b.head, len)
-    b.used = b.used - rc
-    b.head = ((b.head + rc - 1) % b.size) + 1
   until b.used == 0 or rc == 0
 end
 
@@ -158,6 +158,8 @@ end
 
 function mixer.thread()
   print "mixer start"
+  synth.push(0, 'custom')
+  synth.set(0, true, 1)
   for i = 1, CHANNELS do
     mixer.chans[i] = { }
   end
@@ -277,6 +279,7 @@ end
 function mixer.stop()
   if not mixer.running then return end
   mixer.running = false
+  synth.stop()
   if mixer.thr then
     mixer.clireq 'quit'
   end

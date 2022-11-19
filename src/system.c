@@ -126,61 +126,6 @@ sys_log(lua_State *L)
 }
 
 static int
-sys_audio(lua_State *L)
-{
-	int len, i, idx;
-	int pos = 0;
-	int channels = 1;
-	short sample;
-	unsigned int rc, written = 0;
-	float f;
-#define SND_BUF_SIZE 4096
-	static signed short buf[SND_BUF_SIZE];
-	if (!lua_istable(L, 1))
-		return 0;
-
-	lua_getfield(L, 1, "channels");
-	channels = luaL_optinteger(L, -1, 1);
-	lua_pop(L, 1);
-
-	if (channels > 2 || channels < 1)
-		return 0;
-
-	idx = luaL_optnumber(L, 2, 1);
-	if (lua_isnumber(L, 3)) {
-		len = idx + lua_tonumber(L, 3) - 1;
-		if (len > lua_rawlen(L, 1))
-			len = lua_rawlen(L, 1);
-	} else
-		len = lua_rawlen(L, 1);
-	for (i = idx; i <= len; i++) {
-		lua_rawgeti(L, 1, i);
-		f = luaL_checknumber(L, -1);
-		lua_pop(L, 1);
-		sample = (short)((float)f * 16384.0);
-		buf[pos++] = sample;
-		if (channels == 1)
-			buf[pos++] = sample;
-		if (pos >= SND_BUF_SIZE) {
-			rc = AudioWrite(buf, pos * 2);
-			written += rc;
-			pos = 0;
-			if (rc < SND_BUF_SIZE)
-				break;
-		}
-	}
-	if (pos > 0) {
-		rc = AudioWrite(buf, pos * 2);
-		written += rc;
-	}
-	if (channels == 1)
-		written /= 2;
-	lua_pushinteger(L, written / 2);
-	return 1;
-#undef SND_BUF_SIZE
-}
-
-static int
 sys_srandom(lua_State *L)
 {
 	int seed;
@@ -244,7 +189,6 @@ sys_lib[] = {
 	{ "sleep", sys_sleep },
 	{ "input", sys_input },
 	{ "log", sys_log },
-	{ "audio", sys_audio },
 	{ "newrand", sys_srandom },
 	{ "hidemouse", sys_hidemouse },
 	{ "clipboard", sys_clipboard },
@@ -279,7 +223,6 @@ static const luaL_Reg
 sys_thread_lib[] = {
 	{ "time", sys_time },
 	{ "sleep", sys_sleep },
-	{ "audio", sys_audio },
 	{ "newrand", sys_srandom },
 	{ NULL, NULL }
 };
