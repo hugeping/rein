@@ -24,19 +24,16 @@ custom_synth_init(struct custom_synth_state *s)
 	s->free = s->size = CUSTOM_BUF;
 }
 
-double
+void
 custom_synth_change(struct custom_synth_state *s, int param, double elem, double val)
 {
 	unsigned int pos = s->tail;
-	if (param == -1)
-		return floor(s->size / 2);
 	if (!s->free)
-		return 0;
+		return;
 	s->data[pos++ % s->size] = val;
 	s->data[pos++ % s->size] = elem;
 	s->tail = pos % s->size;
 	s->free -= 2;
-	return 0;
 }
 
 void
@@ -69,7 +66,7 @@ synth_change(lua_State *L)
 	const int chan = luaL_checkinteger(L, 1);
 	const int nr = luaL_checkinteger(L, 2);
 	const int param = luaL_checkinteger(L, 3);
-	const double val = luaL_optnumber(L, 4, 0);
+	const double val = luaL_checknumber(L, 4);
 	const double elem = luaL_optnumber(L, 5, 0);
 	struct box_state *box;
 	if (chan < 0 || chan >= CHANNELS_MAX)
@@ -77,9 +74,8 @@ synth_change(lua_State *L)
 	if (nr >= channels[chan].stack_size)
 		return luaL_error(L, "Wrong stack position");
 	box = &channels[chan].stack[nr];
-	lua_pushnumber(L,
-		box->proto->change(box->state, param, elem, val));
-	return 1;
+	box->proto->change(box->state, param, elem, val);
+	return 0;
 }
 
 static int

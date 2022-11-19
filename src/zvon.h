@@ -89,7 +89,7 @@ struct noise_state {
 void noise_init(struct noise_state *s, int bits, int *taps, int taps_size);
 double noise_next(struct noise_state *s, double freq);
 
-typedef double (*box_change_func)(void *state, int param, double val1, double val2);
+typedef void (*box_change_func)(void *state, int param, double val1, double val2);
 typedef double (*box_next_func)(void *state, double l);
 typedef void (*box_next_stereo_func)(void *state, double *l, double *r);
 typedef void (*box_init_func)(void *state);
