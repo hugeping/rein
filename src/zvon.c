@@ -212,30 +212,37 @@ void chan_set(struct chan_state *c, int is_on, double vol, double pan) {
 
 void chan_free(struct chan_state *c) {
     for (int i = 0; i < c->stack_size; i++) {
+        if (c->stack[i].proto->deinit) {
+            c->stack[i].proto->deinit(&c->stack[i].state);
+        }
         free(c->stack[i].state);
     }
     c->stack_size = 0;
 }
 
-void chan_push(struct chan_state *c, struct box_def *def) {
+struct box_state *chan_push(struct chan_state *c, struct box_proto *proto) {
     if (c->stack_size < MAX_BOXES) {
         struct box_state *box = &c->stack[c->stack_size];
-        box->change = def->change;
-        box->next = def->next;
-        box->state = calloc(1, def->state_size);
+        box->proto = proto;
+        box->state = calloc(1, proto->state_size);
         if (box->state) {
-            def->init(box->state);
+            proto->init(box->state);
             c->stack_size++;
+            return box->state;
         }
     }
+    return NULL;
 }
 
-static double chan_process(struct box_state *stack, int stack_size) {
-    double y = 0;
+static void chan_process(struct box_state *stack, int stack_size, double *l, double *r) {
     for (int i = 0; i < stack_size; i++) {
-        y = stack[i].next(stack[i].state, y);
+        if (stack[i].proto->next_stereo) {
+            stack[i].proto->next_stereo(stack[i].state, l, r);
+        } else {
+            *l = stack[i].proto->next(stack[i].state, *l);
+            *r = *l;
+        }
     }
-    return y;
 }
 
 void chan_mix(struct chan_state *channels, int num_channels, double vol, double *samples, int num_samples) {
@@ -244,10 +251,11 @@ void chan_mix(struct chan_state *channels, int num_channels, double vol, double 
         for (int i = 0; i < num_channels; i++) {
             struct chan_state *chan = &channels[i];
             if (chan->is_on) {
-                double y = chan_process(chan->stack, chan->stack_size);
+                double l = 0, r = 0;
+                chan_process(chan->stack, chan->stack_size, &l, &r);
                 double pan = (chan->pan + 1) * 0.5;
-                left += y * pan;
-                right += y * (1 - pan);
+                left += chan->vol * l * (1 - pan);
+                right += chan->vol * r * pan;
             }
         }
         samples[0] = vol * left;
