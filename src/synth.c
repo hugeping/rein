@@ -12,7 +12,7 @@ static struct {
 	const char *name;
 	struct box_def *def;
 } boxes[] = {
-	{ "saw", &test_box },
+	{ "test", &test_box },
 	{ NULL, NULL },
 };
 
