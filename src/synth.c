@@ -106,6 +106,25 @@ synth_mix(lua_State *L)
 	return 1;
 }
 
+static int
+synth_stop(lua_State *L)
+{
+	int i;
+	const int chan = luaL_optinteger(L, 1, -1);
+	if (chan == -1) {
+		for (i = 0; i < CHANNELS_MAX; i ++) {
+			chan_free(&channels[i]);
+			chan_init(&channels[i]);
+		}
+		return 0;
+	}
+	if (chan < 0 || chan >= CHANNELS_MAX)
+		return luaL_error(L, "Wrong channel number");
+	chan_free(&channels[chan]);
+	chan_init(&channels[chan]);
+	return 0;
+}
+
 static const luaL_Reg
 synth_lib[] = {
 	{ "push", synth_push },
@@ -113,6 +132,7 @@ synth_lib[] = {
 	{ "set", synth_set },
 	{ "change", synth_change },
 	{ "mix", synth_mix },
+	{ "stop", synth_stop },
 	{ NULL, NULL }
 };
 
