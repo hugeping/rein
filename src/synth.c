@@ -17,14 +17,14 @@ struct custom_synth_state {
 	unsigned int free;
 };
 
-void
+static void
 custom_synth_init(struct custom_synth_state *s)
 {
 	s->head = s->tail = 0;
 	s->free = s->size = CUSTOM_BUF;
 }
 
-void
+static void
 custom_synth_change(struct custom_synth_state *s, int param, double elem, double val)
 {
 	unsigned int pos = s->tail;
@@ -36,7 +36,7 @@ custom_synth_change(struct custom_synth_state *s, int param, double elem, double
 	s->free -= 2;
 }
 
-void
+static void
 custom_synth_next(struct custom_synth_state *s, double *l, double *r)
 {
 	if (!(s->size - s->free))
@@ -47,7 +47,7 @@ custom_synth_next(struct custom_synth_state *s, double *l, double *r)
 	s->free += 2;
 }
 
-struct box_proto custom_box = {
+static struct box_proto custom_box = {
 	.name = "custom_stereo",
 	.change = (box_change_func) custom_synth_change,
 	.next_stereo = (box_next_stereo_func) custom_synth_next,
@@ -56,7 +56,49 @@ struct box_proto custom_box = {
 	.deinit = NULL
 };
 
-static struct box_proto *boxes[] = { &test_box, &custom_box, NULL };
+struct samples_synth_state {
+	int stereo;
+	double *data;
+	unsigned int head;
+	unsigned int size;
+};
+
+static void
+samples_synth_init(struct samples_synth_state *s)
+{
+	s->head = 0;
+}
+
+static void
+samples_synth_deinit(struct samples_synth_state *s)
+{
+	free(s->data);
+}
+
+static void
+samples_synth_change(struct samples_synth_state *s, int param, double elem, double val)
+{
+	s->head = 0;
+}
+
+static double
+samples_synth_next(struct samples_synth_state *s, double x)
+{
+	if (s->head >= s->size)
+		return x;
+	return s->data[s->head++];
+}
+
+static struct box_proto samples_box = {
+	.name = "samples",
+	.change = (box_change_func) samples_synth_change,
+	.next = (box_next_func) samples_synth_next,
+	.state_size = sizeof(struct samples_synth_state),
+	.init = (box_init_func) samples_synth_init,
+	.deinit = (box_deinit_func) samples_synth_deinit,
+};
+
+static struct box_proto *boxes[] = { &test_box, &custom_box, &samples_box, NULL };
 
 static struct chan_state channels[CHANNELS_MAX];
 
@@ -167,6 +209,36 @@ synth_stop(lua_State *L)
 	return 0;
 }
 
+static int
+synth_samples(lua_State *L)
+{
+	int stereo, len, chan, i;
+	double f;
+	struct samples_synth_state *box;
+	chan = luaL_checkinteger(L, 1);
+	if (chan < 0 || chan >= CHANNELS_MAX)
+		return luaL_error(L, "Wrong channel number");
+	if (!lua_istable(L, 2))
+		return 0;
+	lua_getfield(L, 2, "stereo");
+	stereo = lua_toboolean(L, -1);
+	lua_pop(L, 1);
+
+	len = lua_rawlen(L, 2);
+	chan_free(&channels[chan]);
+	box = (struct samples_synth_state*)chan_push(&channels[chan], &samples_box);
+	box->data = (double *)calloc(len, sizeof(double));
+	box->size = len;
+	box->stereo = stereo;
+	for (i = 1; i <= len; i++) {
+		lua_rawgeti(L, 2, i);
+		f = luaL_checknumber(L, -1);
+		lua_pop(L, 1);
+		box->data[i-1] = f;
+	}
+	return 0;
+}
+
 static const luaL_Reg
 synth_lib[] = {
 	{ "push", synth_push },
@@ -175,6 +247,7 @@ synth_lib[] = {
 	{ "change", synth_change },
 	{ "mix", synth_mix },
 	{ "stop", synth_stop },
+	{ "samples", synth_samples },
 	{ NULL, NULL }
 };
 
@@ -182,8 +255,8 @@ static struct {
 	const char *name;
 	int val;
 } constants[] = {
-	{ "NOTE_ON", ZVON_NOTE_ON },
-	{ "NOTE_OFF", ZVON_NOTE_OFF },
+	{ "NOTE_ON", ZV_NOTE_ON },
+	{ "NOTE_OFF", ZV_NOTE_OFF },
 	{ NULL, },
 };
 

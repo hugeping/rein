@@ -3,7 +3,7 @@
 #ifndef ZVON_H
 #define ZVON_H
 
-double midi_note(int m);
+double midi_freq(int m);
 int sec(double t);
 double limit(double x, double low, double high);
 double lerp(double a, double b, double x);
@@ -83,7 +83,7 @@ struct noise_state {
     int taps[MAX_TAPS];
     int taps_size;
     unsigned int state;
-    double phase;    
+    double phase;
 };
 
 void noise_init(struct noise_state *s, int bits, int *taps, int taps_size);
@@ -123,12 +123,12 @@ struct chan_state {
 void mix_init(struct chan_state *channels, int num_channels);
 void chan_set(struct chan_state *c, int is_on, double vol, double pan);
 void chan_free(struct chan_state *c);
-struct box_state *chan_push(struct chan_state *c, struct box_proto *proto);
+void *chan_push(struct chan_state *c, struct box_proto *proto);
 void mix_process(struct chan_state *channels, int num_channels, double vol, double *samples, int num_samples);
 
 enum {
-    ZVON_NOTE_ON,
-    ZVON_NOTE_OFF
+    ZV_NOTE_ON,
+    ZV_NOTE_OFF
 };
 
 #endif
