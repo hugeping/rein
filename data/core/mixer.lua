@@ -68,7 +68,7 @@ function mixer.write_audio()
   if b.used == 0 then
     return
   end
-  local size = synth.change(0, 0, -1)
+  local size = 1024 -- custom_stereo maximum capacity
   local rc = (b.used / b.channels) > size and size or (b.used / b.channels)
   repeat
     rc = synth.mix(rc)
