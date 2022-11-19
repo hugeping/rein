@@ -89,6 +89,15 @@ samples_synth_next(struct samples_synth_state *s, double x)
 	return s->data[s->head++];
 }
 
+static void
+samples_synth_stereo_next(struct samples_synth_state *s, double *l, double *r)
+{
+	if (s->head >= s->size)
+		return;
+	*l = s->data[s->head++];
+	*r = s->data[s->head++];
+}
+
 static struct box_proto samples_box = {
 	.name = "samples",
 	.change = (box_change_func) samples_synth_change,
@@ -98,7 +107,16 @@ static struct box_proto samples_box = {
 	.deinit = (box_deinit_func) samples_synth_deinit,
 };
 
-static struct box_proto *boxes[] = { &test_box, &custom_box, &samples_box, NULL };
+static struct box_proto samples_stereo_box = {
+	.name = "samples-stereo",
+	.change = (box_change_func) samples_synth_change,
+	.next_stereo = (box_next_stereo_func) samples_synth_stereo_next,
+	.state_size = sizeof(struct samples_synth_state),
+	.init = (box_init_func) samples_synth_init,
+	.deinit = (box_deinit_func) samples_synth_deinit,
+};
+
+static struct box_proto *boxes[] = { &test_box, &custom_box, NULL };
 
 static struct chan_state channels[CHANNELS_MAX];
 
@@ -226,8 +244,11 @@ synth_samples(lua_State *L)
 
 	len = lua_rawlen(L, 2);
 	chan_free(&channels[chan]);
-	box = (struct samples_synth_state*)chan_push(&channels[chan], &samples_box);
+	box = (struct samples_synth_state*)chan_push(&channels[chan],
+		(stereo)?&samples_stereo_box:&samples_box);
 	box->data = (double *)calloc(len, sizeof(double));
+	if (stereo)
+		len &= ~1;
 	box->size = len;
 	box->stereo = stereo;
 	for (i = 1; i <= len; i++) {
