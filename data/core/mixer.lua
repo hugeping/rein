@@ -11,7 +11,7 @@ local mixer = {
   ack = { };
   chans = { };
   buff = {
-    channels = 1,
+    channels = 2,
     head = 1,
     tail = 1,
     size = CHUNK,
@@ -65,16 +65,17 @@ end
 
 function mixer.write_audio()
   local b = mixer.buff
-  local rc = b.used > 1024 and 1024 or b.used
   if b.used == 0 then
     return
   end
+  local size = synth.change(0, 0, -1)
+  local rc = (b.used / b.channels) > size and size or (b.used / b.channels)
   repeat
     rc = synth.mix(rc)
     for i = 1, rc do
-      synth.change(0, 0, -1, b[b.head], 1)
-      b.head = (b.head % b.size) + 1
-      b.used = b.used - 1
+      synth.change(0, 0, 0, b[b.head], b[b.head+1])
+      b.head = ((b.head + 1) % b.size) + 1
+      b.used = b.used - 2
       if b.used == 0 then break end
     end
   until b.used == 0 or rc == 0
@@ -158,7 +159,7 @@ end
 
 function mixer.thread()
   print "mixer start"
-  synth.push(0, 'custom')
+  synth.push(0, 'custom_stereo')
   synth.set(0, true, 1)
   for i = 1, CHANNELS do
     mixer.chans[i] = { }

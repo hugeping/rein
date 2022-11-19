@@ -6,9 +6,9 @@
 
 #define CHANNELS_MAX 32
 
-extern struct box_def test_box;
+extern struct box_proto test_box;
 
-#define CUSTOM_BUF 1024
+#define CUSTOM_BUF (1024*2)
 struct custom_synth_state {
 	double data[CUSTOM_BUF];
 	unsigned int head;
@@ -24,44 +24,42 @@ custom_synth_init(struct custom_synth_state *s)
 	s->free = s->size = CUSTOM_BUF;
 }
 
-void
-custom_synth_change(struct custom_synth_state *s, int param, int elem, double val)
+double
+custom_synth_change(struct custom_synth_state *s, int param, double elem, double val)
 {
 	unsigned int pos = s->tail;
+	if (param == -1)
+		return floor(s->size / 2);
 	if (!s->free)
-		return;
+		return 0;
 	s->data[pos++ % s->size] = val;
+	s->data[pos++ % s->size] = elem;
 	s->tail = pos % s->size;
-	s->free --;
+	s->free -= 2;
+	return 0;
 }
 
-double
-custom_synth_next(struct custom_synth_state *s, double x)
+void
+custom_synth_next(struct custom_synth_state *s, double *l, double *r)
 {
-	double v;
 	if (!(s->size - s->free))
-		return x;
-	v = s->data[s->head ++ % s->size];
+		return;
+	*l = s->data[s->head ++ % s->size];
+	*r = s->data[s->head ++ % s->size];
 	s->head %= s->size;
-	s->free ++;
-	return v;
+	s->free += 2;
 }
 
-struct box_def custom_box = {
+struct box_proto custom_box = {
+	.name = "custom_stereo",
 	.change = (box_change_func) custom_synth_change,
-	.next = (box_next_func) custom_synth_next,
+	.next_stereo = (box_next_stereo_func) custom_synth_next,
 	.state_size = sizeof(struct custom_synth_state),
-	.init = (box_init_func) custom_synth_init
+	.init = (box_init_func) custom_synth_init,
+	.deinit = NULL
 };
 
-static struct {
-	const char *name;
-	struct box_def *def;
-} boxes[] = {
-	{ "test", &test_box },
-	{ "custom", &custom_box },
-	{ NULL, NULL },
-};
+static struct box_proto *boxes[] = { &test_box, &custom_box, NULL };
 
 static struct chan_state channels[CHANNELS_MAX];
 
@@ -71,16 +69,17 @@ synth_change(lua_State *L)
 	const int chan = luaL_checkinteger(L, 1);
 	const int nr = luaL_checkinteger(L, 2);
 	const int param = luaL_checkinteger(L, 3);
-	const double val = luaL_checknumber(L, 4);
-	const int elem = luaL_optinteger(L, 5, 0);
+	const double val = luaL_optnumber(L, 4, 0);
+	const double elem = luaL_optnumber(L, 5, 0);
 	struct box_state *box;
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
 	if (nr >= channels[chan].stack_size)
 		return luaL_error(L, "Wrong stack position");
 	box = &channels[chan].stack[nr];
-	box->change(box->state, param, elem, val);
-	return 0;
+	lua_pushnumber(L,
+		box->proto->change(box->state, param, elem, val));
+	return 1;
 }
 
 static int
@@ -95,10 +94,10 @@ synth_push(lua_State *L)
 	chan_state = &channels[chan];
 	if (chan_state->stack_size >= MAX_BOXES)
 		return luaL_error(L, "Maximum boxes reached");
-	while (boxes[i].name && strcmp(boxes[i].name, box)) i++;
-	if (!boxes[i].name)
+	while (boxes[i] && strcmp(boxes[i]->name, box)) i++;
+	if (!boxes[i])
 		return luaL_error(L, "Unknown box name");
-	chan_push(&channels[chan], boxes[i].def);
+	chan_push(&channels[chan], boxes[i]);
 	return 0;
 }
 
