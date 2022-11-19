@@ -163,7 +163,7 @@ synth_stop(lua_State *L)
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
 	chan_free(&channels[chan]);
-	chan_init(&channels[chan]);
+	chan_set(&channels[chan], 0, 0, 0);
 	return 0;
 }
 
