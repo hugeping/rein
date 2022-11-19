@@ -35,6 +35,9 @@ CFILES= \
 	src/system.c \
 	src/gfx_font.c \
 	src/net.c \
+	src/zvon.c \
+	src/zvon_boxes.c \
+	src/synth.c \
 	src/tinymt32.c
 
 OFILES  := $(patsubst %.c, %.o, $(CFILES))

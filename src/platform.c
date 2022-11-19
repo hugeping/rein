@@ -235,6 +235,11 @@ AudioWrite(void *data, unsigned int size)
 	if (!audiodev)
 		return size;
 	SDL_LockAudioDevice(audiodev);
+	if (!data) { /* get avail space */
+		rc = audiobuff.free;
+		SDL_UnlockAudioDevice(audiodev);
+		return rc;
+	}
 	towrite = (size >= audiobuff.free)?audiobuff.free:size;
 	pos = audiobuff.tail;
 	audiobuff.free -= towrite;
