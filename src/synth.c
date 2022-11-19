@@ -76,7 +76,7 @@ synth_set(lua_State *L)
 	if (lua_isboolean(L, 2))
 		chan_state->is_on = lua_toboolean(L, 2);
 	chan_state->vol = luaL_optnumber(L, 3, chan_state->vol);
-	chan_state->pan = luaL_optnumber(L, 3, chan_state->pan);
+	chan_state->pan = luaL_optnumber(L, 4, chan_state->pan);
 	return 0;
 }
 
