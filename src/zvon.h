@@ -128,8 +128,7 @@ void mix_process(struct chan_state *channels, int num_channels, double vol, doub
 
 enum {
     ZVON_NOTE_ON,
-    ZVON_NOTE_OFF,
-    ZVON_VOLUME
+    ZVON_NOTE_OFF
 };
 
 #endif
