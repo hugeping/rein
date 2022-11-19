@@ -8,11 +8,58 @@
 
 extern struct box_def test_box;
 
+#define CUSTOM_BUF 1024
+struct custom_synth_state {
+	double data[CUSTOM_BUF];
+	unsigned int head;
+	unsigned int tail;
+	unsigned int size;
+	unsigned int free;
+};
+
+void
+custom_synth_init(struct custom_synth_state *s)
+{
+	s->head = s->tail = 0;
+	s->free = s->size = CUSTOM_BUF;
+}
+
+void
+custom_synth_change(struct custom_synth_state *s, int param, int elem, double val)
+{
+	unsigned int pos = s->tail;
+	if (!s->free)
+		return;
+	s->data[pos++ % s->size] = val;
+	s->tail = pos % s->size;
+	s->free --;
+}
+
+double
+custom_synth_next(struct custom_synth_state *s, double x)
+{
+	double v;
+	if (!(s->size - s->free))
+		return x;
+	v = s->data[s->head ++ % s->size];
+	s->head %= s->size;
+	s->free ++;
+	return v;
+}
+
+struct box_def custom_box = {
+	.change = (box_change_func) custom_synth_change,
+	.next = (box_next_func) custom_synth_next,
+	.state_size = sizeof(struct custom_synth_state),
+	.init = (box_init_func) custom_synth_init
+};
+
 static struct {
 	const char *name;
 	struct box_def *def;
 } boxes[] = {
 	{ "test", &test_box },
+	{ "custom", &custom_box },
 	{ NULL, NULL },
 };
 
@@ -97,7 +144,7 @@ synth_mix(lua_State *L)
 		nr = (samples > SAMPLES_NR)?SAMPLES_NR:samples;
 		chan_mix(channels, CHANNELS_MAX, vol, floats, nr);
 		for (i = 0; i < nr*2; i ++)
-			buf[i] = (signed short)(floats[i] * 16384.0);
+			buf[i] = (signed short)(floats[i] * 32768.0);
 		AudioWrite(buf, nr * 4);
 		samples -= nr;
 	}
