@@ -178,6 +178,15 @@ synth_lib[] = {
 	{ NULL, NULL }
 };
 
+static struct {
+	const char *name;
+	int val;
+} constants[] = {
+	{ "NOTE_ON", ZVON_NOTE_ON },
+	{ "NOTE_OFF", ZVON_NOTE_OFF },
+	{ NULL, },
+};
+
 int
 luaopen_synth(lua_State *L)
 {
@@ -185,5 +194,10 @@ luaopen_synth(lua_State *L)
 	for (i = 0; i < CHANNELS_MAX; i++)
 		chan_init(&channels[i]);
 	luaL_newlib(L, synth_lib);
+	for (i = 0; constants[i].name; i++) {
+		lua_pushstring(L, constants[i].name);
+		lua_pushinteger(L, constants[i].val);
+		lua_rawset(L, -3);
+	}
 	return 1;
 }
