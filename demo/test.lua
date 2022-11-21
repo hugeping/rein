@@ -136,7 +136,7 @@ C-3 80 | ... .. | D#4 .. | ... ..
 end
 
 mixer.volume(0.5)
-mixer.new(tune)
+-- mixer.new(tune)
 
 local s = gfx.new
 [[

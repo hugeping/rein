@@ -3,8 +3,10 @@
 #ifndef ZVON_H
 #define ZVON_H
 
-double midi_freq(int m);
+#include "zvon_platform.h"
+
 int sec(double t);
+double midi_freq(int m);
 double limit(double x, double low, double high);
 double lerp(double a, double b, double x);
 double hertz(double t, double freq);
@@ -26,38 +28,37 @@ double phasor_next(struct phasor_state *s, double freq);
 struct env_state {
     int *deltas;
     double *levels;
-    int env_size;
+    size_t env_size;
     int is_end;
     int is_loop;
     int is_full_reset;
-    int sustain_pos;
+    size_t sustain_pos;
     double level_0;
     double level;
     int t;
     double level_at_pos;
     int t_at_pos;
-    int pos;
+    size_t pos;
 };
 
 typedef double (*env_func)(double a, double b, double x);
 
-void env_init(struct env_state *s, int *deltas, double level_0, double *levels, int size);
+void env_init(struct env_state *s, int env_size, int *deltas, double *levels, double level_0);
+void env_set(struct env_state *s, int pos, int delta, double level);
 void env_reset(struct env_state *s);
 double env_next_head(struct env_state *s, env_func func);
 double env_next(struct env_state *s);
 double seq_next(struct env_state *s);
 
-#define MAX_DELAY_SIZE 65536
-
 struct delay_state {
-    double buf[MAX_DELAY_SIZE];
+    double *buf;
     size_t buf_size;
     double level;
     double fb;
-    int pos;
+    size_t pos;
 };
 
-void delay_init(struct delay_state *s, int size, double level, double fb);
+void delay_init(struct delay_state *s, double *buf, size_t buf_size, double level, double fb);
 double delay_next(struct delay_state *s, double x);
 
 struct filter_state {
@@ -89,46 +90,42 @@ struct noise_state {
 void noise_init(struct noise_state *s, int bits, int *taps, int taps_size);
 double noise_next(struct noise_state *s, double freq);
 
-typedef void (*box_change_func)(void *state, int param, double val1, double val2);
-typedef double (*box_next_func)(void *state, double l);
-typedef void (*box_next_stereo_func)(void *state, double *l, double *r);
-typedef void (*box_init_func)(void *state);
-typedef void (*box_deinit_func)(void *state);
+typedef void (*sfx_change_func)(void *state, int param, double val1, double val2);
+typedef double (*sfx_mono_func)(void *state, double l);
+typedef void (*sfx_stereo_func)(void *state, double *l, double *r);
+typedef void (*sfx_init_func)(void *state);
+typedef void (*sfx_free_func)(void *state);
 
-struct box_state {
-    struct box_proto *proto;
+struct sfx_box {
+    struct sfx_proto *proto;
     void *state;
 };
 
-struct box_proto {
+struct sfx_proto {
     char *name;
-    box_change_func change;
-    box_next_func next;
-    box_next_stereo_func next_stereo;
-    box_init_func init;
-    box_deinit_func deinit;
+    sfx_change_func change;
+    sfx_mono_func mono;
+    sfx_stereo_func stereo;
+    sfx_init_func init;
+    sfx_free_func free;
     size_t state_size;
 };
 
-#define MAX_BOXES 8
+#define MAX_SFX_BOXES 8
 
 struct chan_state {
     int is_on;
     double vol;
     double pan;
-    struct box_state stack[MAX_BOXES];
+    struct sfx_box stack[MAX_SFX_BOXES];
     int stack_size;
 };
 
-void mix_init(struct chan_state *channels, int num_channels);
 void chan_set(struct chan_state *c, int is_on, double vol, double pan);
 void chan_free(struct chan_state *c);
-void *chan_push(struct chan_state *c, struct box_proto *proto);
-void mix_process(struct chan_state *channels, int num_channels, double vol, double *samples, int num_samples);
+void *chan_push(struct chan_state *c, struct sfx_proto *proto);
 
-enum {
-    ZV_NOTE_ON,
-    ZV_NOTE_OFF
-};
+void mix_init(struct chan_state *channels, int num_channels);
+void mix_process(struct chan_state *channels, int num_channels, double vol, float *samples, int num_samples);
 
 #endif

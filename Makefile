@@ -36,7 +36,7 @@ CFILES= \
 	src/gfx_font.c \
 	src/net.c \
 	src/zvon.c \
-	src/zvon_boxes.c \
+	src/zvon_sfx.c \
 	src/synth.c \
 	src/tinymt32.c
 

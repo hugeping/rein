@@ -387,22 +387,20 @@ end
 function EmptyVoice:update()
 end
 
-function sfx.play_song(voices, pans, tracks, tick)
+function sfx.play_song(chans, pans, tracks, tick, nr)
   local left, right, l, r, voice, pan, ro
   for _, row in ipairs(tracks) do
-    for i = 1, #voices do
-      voice, ro = voices[i], row[i]
-      voice:update(table.unpack(ro))
-    end
-    for i = 1, sfx.sec(tick or 1/8) do
-      left, right = 0, 0
-      for k = 1, #voices do
-        voice, pan = voices[k], pans[k]
-        l, r = sfx.set_stereo(voice:next(), pan)
-        left = left + l
-        right = right + r
+    for i, c in ipairs(chans) do
+      local freq, vol = row[i][1], row[i][2]
+      if freq then
+        synth.change(c, 0, synth.NOTE_ON, freq, 1.0)
       end
-      coroutine.yield(left, right)
+      if vol then
+        synth.set(c, true, 0.5)
+      end
+    end
+    for i = 1, tick do 
+      coroutine.yield()
     end
   end
 end

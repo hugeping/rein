@@ -160,6 +160,7 @@ local env_ro = {
   thread = thread,
   net = net,
   mixer = mixer,
+  synth = synth,
   input = {},
 }
 
