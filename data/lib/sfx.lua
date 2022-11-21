@@ -392,7 +392,8 @@ function sfx.play_song_once(chans, pans, tracks, temp)
     for i, c in ipairs(chans) do
       local freq, vol = row[i][1], row[i][2]
       if freq then
-        synth.change(c, 0, synth.NOTE_ON, freq, 1.0)
+        synth.change(c, 0, synth.NOTE_ON, freq)
+        synth.change(c, 0, synth.VOLUME, 1)
       end
       if vol then
         synth.set(c, true, vol/255, pans[i])

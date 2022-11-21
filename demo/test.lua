@@ -51,7 +51,7 @@ local function showkeys()
 end
 
 function tune()
-  local voices = {'test_square', 'test_square', 'test_square','test_square'}
+  local voices = {'empty', 'empty', 'test_square','test_saw'}
   local pan = { 0, 0, -0.75, 0.75 }
   local song = [[
 C-3 A0 | ... .. | C-4 .. | C-3 64

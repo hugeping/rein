@@ -90,7 +90,7 @@ struct noise_state {
 void noise_init(struct noise_state *s, int bits, int *taps, int taps_size);
 double noise_next(struct noise_state *s, double freq);
 
-typedef void (*sfx_change_func)(void *state, int param, double val1, double val2);
+typedef void (*sfx_change_func)(void *state, int param, float val, float *user);
 typedef double (*sfx_mono_func)(void *state, double l);
 typedef void (*sfx_stereo_func)(void *state, double *l, double *r);
 typedef void (*sfx_init_func)(void *state);

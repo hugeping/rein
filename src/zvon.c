@@ -147,6 +147,9 @@ double seq_next(struct env_state *s) {
 void delay_init(struct delay_state *s, double *buf, size_t buf_size, double level, double fb) {
     s->buf = buf;
     s->buf_size = buf_size;
+    for (size_t i = 0; i < buf_size; i++) {
+        s->buf[i] = 0;
+    }
     s->level = level;
     s->fb = fb;
     s->pos = 0;
