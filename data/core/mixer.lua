@@ -64,6 +64,12 @@ function mixer.req_play(voices, pans, song, temp, nr)
 end
 
 function mixer.free_channels(chans)
+  if not chans then
+    for i=1, mixer.chans.size do
+      mixer.chans[i] = false
+    end
+    return
+  end
   for _, c in ipairs(chans) do
     mixer.chans[c] = false
   end
@@ -142,7 +148,9 @@ function mixer.thread()
     mixer.change()
     mixer.proc(mixer.tick) -- write to audio!
   end
+  mixer.free_channels()
   synth.stop()
+  mixer.fn = {}
   print "mixer finish"
 end
 
