@@ -24,15 +24,18 @@ custom_synth_init(struct custom_synth_state *s)
 }
 
 static void
-custom_synth_change(struct custom_synth_state *s, int param, double elem, double val)
+custom_synth_change(struct custom_synth_state *s, int param, float size, float *data)
 {
+	int i;
 	unsigned int pos = s->tail;
 	if (!s->free)
 		return;
-	s->data[pos++ % s->size] = val;
-	s->data[pos++ % s->size] = elem;
-	s->tail = pos % s->size;
-	s->free -= 2;
+	for (i = 0; i < size && s->free; i ++) {
+		s->data[pos++ % s->size] = data[i++];
+		s->data[pos++ % s->size] = data[i++];
+		s->tail = pos % s->size;
+		s->free -= 2;
+	}
 }
 
 static void
@@ -54,6 +57,31 @@ static struct sfx_proto custom_box = {
 	.init = (sfx_init_func) custom_synth_init,
 };
 
+static double
+empty_mono(struct custom_synth_state *s, double x)
+{
+	return 0.0;
+}
+
+static void
+empty_change(void *s, int param, float val, float *data)
+{
+}
+
+static void
+empty_init(void *s)
+{
+}
+
+static struct sfx_proto empty_box = {
+	.name = "empty",
+	.init = (sfx_init_func) empty_init,
+	.change = (sfx_change_func) empty_change,
+	.mono = (sfx_mono_func) empty_mono,
+	.state_size = 0,
+};
+
+
 struct samples_synth_state {
 	int stereo;
 	double *data;
@@ -74,7 +102,7 @@ samples_synth_free(struct samples_synth_state *s)
 }
 
 static void
-samples_synth_change(struct samples_synth_state *s, int param, double elem, double val)
+samples_synth_change(struct samples_synth_state *s, int param, float val, float *data)
 {
 	s->head = 0;
 }
@@ -114,25 +142,41 @@ static struct sfx_proto samples_stereo_box = {
 	.free = (sfx_free_func) samples_synth_free,
 };
 
-static struct sfx_proto *boxes[] = { &custom_box, &test_square_proto, NULL };
+static struct sfx_proto *boxes[] = { &empty_box, &custom_box, &test_square_box, &test_saw_box, NULL };
 
 static struct chan_state channels[CHANNELS_MAX];
 
 static int
 synth_change(lua_State *L)
 {
+	int len = 0, i;
+	float f;
+	float floats[64];
 	const int chan = luaL_checkinteger(L, 1);
 	const int nr = luaL_checkinteger(L, 2);
 	const int param = luaL_checkinteger(L, 3);
-	const double val1 = luaL_checknumber(L, 4);
-	const double val2 = luaL_optnumber(L, 5, 0);
+	double val;
 	struct sfx_box *box;
+	if (lua_istable(L, 4)) {
+		len = lua_rawlen(L, 4);
+		if (len > 64)
+			return luaL_error(L, "To much table");
+		for (i = 0; i < len; i++) {
+			lua_rawgeti(L, 4, i);
+			f = luaL_checknumber(L, -1);
+			lua_pop(L, 1);
+			floats[i] = f;
+		}
+		val = len;
+	} else {
+		val = luaL_checknumber(L, 4);
+	}
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
 	if (nr >= channels[chan].stack_size)
 		return luaL_error(L, "Wrong stack position");
 	box = &channels[chan].stack[nr];
-	box->proto->change(box->state, param, val1, val2);
+	box->proto->change(box->state, param, val, (len == 0)?NULL:floats);
 	return 0;
 }
 
@@ -277,6 +321,7 @@ static struct {
 } constants[] = {
 	{ "NOTE_ON", ZV_NOTE_ON },
 	{ "NOTE_OFF", ZV_NOTE_OFF },
+	{ "VOLUME", ZV_VOLUME },
 	{ NULL, },
 };
 
