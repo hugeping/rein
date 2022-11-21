@@ -3,10 +3,9 @@
 
 #include "zvon.h"
 #include "zvon_platform.h"
+#include "zvon_sfx.h"
 
 #define CHANNELS_MAX 32
-
-extern struct box_proto test_box;
 
 #define CUSTOM_BUF (1024*2)
 struct custom_synth_state {
@@ -47,13 +46,12 @@ custom_synth_next(struct custom_synth_state *s, double *l, double *r)
 	s->free += 2;
 }
 
-static struct box_proto custom_box = {
+static struct sfx_proto custom_box = {
 	.name = "custom_stereo",
-	.change = (box_change_func) custom_synth_change,
-	.next_stereo = (box_next_stereo_func) custom_synth_next,
+	.change = (sfx_change_func) custom_synth_change,
+	.stereo = (sfx_stereo_func) custom_synth_next,
 	.state_size = sizeof(struct custom_synth_state),
-	.init = (box_init_func) custom_synth_init,
-	.deinit = NULL
+	.init = (sfx_init_func) custom_synth_init,
 };
 
 struct samples_synth_state {
@@ -70,7 +68,7 @@ samples_synth_init(struct samples_synth_state *s)
 }
 
 static void
-samples_synth_deinit(struct samples_synth_state *s)
+samples_synth_free(struct samples_synth_state *s)
 {
 	free(s->data);
 }
@@ -98,25 +96,25 @@ samples_synth_stereo_next(struct samples_synth_state *s, double *l, double *r)
 	*r = s->data[s->head++];
 }
 
-static struct box_proto samples_box = {
+static struct sfx_proto samples_box = {
 	.name = "samples",
-	.change = (box_change_func) samples_synth_change,
-	.next = (box_next_func) samples_synth_next,
+	.change = (sfx_change_func) samples_synth_change,
+	.mono = (sfx_mono_func) samples_synth_next,
 	.state_size = sizeof(struct samples_synth_state),
-	.init = (box_init_func) samples_synth_init,
-	.deinit = (box_deinit_func) samples_synth_deinit,
+	.init = (sfx_init_func) samples_synth_init,
+	.free = (sfx_free_func) samples_synth_free,
 };
 
-static struct box_proto samples_stereo_box = {
+static struct sfx_proto samples_stereo_box = {
 	.name = "samples-stereo",
-	.change = (box_change_func) samples_synth_change,
-	.next_stereo = (box_next_stereo_func) samples_synth_stereo_next,
+	.change = (sfx_change_func) samples_synth_change,
+	.stereo = (sfx_stereo_func) samples_synth_stereo_next,
 	.state_size = sizeof(struct samples_synth_state),
-	.init = (box_init_func) samples_synth_init,
-	.deinit = (box_deinit_func) samples_synth_deinit,
+	.init = (sfx_init_func) samples_synth_init,
+	.free = (sfx_free_func) samples_synth_free,
 };
 
-static struct box_proto *boxes[] = { &test_box, &custom_box, NULL };
+static struct sfx_proto *boxes[] = { &custom_box, &test_square_proto, NULL };
 
 static struct chan_state channels[CHANNELS_MAX];
 
@@ -126,15 +124,15 @@ synth_change(lua_State *L)
 	const int chan = luaL_checkinteger(L, 1);
 	const int nr = luaL_checkinteger(L, 2);
 	const int param = luaL_checkinteger(L, 3);
-	const double val = luaL_checknumber(L, 4);
-	const double elem = luaL_optnumber(L, 5, 0);
-	struct box_state *box;
+	const double val1 = luaL_checknumber(L, 4);
+	const double val2 = luaL_optnumber(L, 5, 0);
+	struct sfx_box *box;
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
 	if (nr >= channels[chan].stack_size)
 		return luaL_error(L, "Wrong stack position");
 	box = &channels[chan].stack[nr];
-	box->proto->change(box->state, param, elem, val);
+	box->proto->change(box->state, param, val1, val2);
 	return 0;
 }
 
@@ -148,13 +146,14 @@ synth_push(lua_State *L)
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
 	chan_state = &channels[chan];
-	if (chan_state->stack_size >= MAX_BOXES)
+	if (chan_state->stack_size >= MAX_SFX_BOXES)
 		return luaL_error(L, "Maximum boxes reached");
 	while (boxes[i] && strcmp(boxes[i]->name, box)) i++;
 	if (!boxes[i])
 		return luaL_error(L, "Unknown box name");
 	chan_push(&channels[chan], boxes[i]);
-	return 0;
+	lua_pushinteger(L, chan_state->stack_size - 1);
+	return 1;
 }
 
 static int
@@ -189,7 +188,7 @@ synth_mix(lua_State *L)
 	const double vol = luaL_optnumber(L, 2, 1.0f);
 	unsigned int free = AudioWrite(NULL, 0);
 	#define SAMPLES_NR 128
-	double floats[SAMPLES_NR*2];
+	float floats[SAMPLES_NR*2];
 	signed short buf[SAMPLES_NR*2];
 	int nr, written, i;
 	if (samples > free / 4) /* stereo * sizeof(short) */

@@ -1,119 +1,110 @@
 local dump = require "dump"
+local sfx = require "sfx"
 require "std"
 local THREADED = true
-local CHUNK = 8192
-local CHANNELS = 8
-local DELAY = 1/30
 
 local mixer = {
   vol = 0.5;
   req = { };
   ack = { };
   chans = { };
-  buff = {
-    channels = 2,
-    head = 1,
-    tail = 1,
-    size = CHUNK,
-    used = 0
-  };
+  freq = 1/100;
+  hz = 44100;
 }
+mixer.tick = mixer.hz * mixer.freq
 
-function mixer.fill()
-  local size = #mixer.buff
-  local b = mixer.buff
-  local pos = b.tail
-  for i = 1, b.size-b.used, b.channels do -- fill bufer
-    local ll, rr = 0, 0
-    local n = 0
-    for k = 1, CHANNELS do
-      local m = mixer.chans[k]
-      local fn = m.fn
-      if fn then
-        local st, l, r = coroutine.resume(fn,
-          (not m.run) and table.unpack(m.args))
-        m.run = true
-        r = r or l
-        if not st or not l then
-          mixer.chans[k].fn = false -- stop it
-          if not st then
-            error(l..'\n'..debug.traceback(fn))
-          end
-        else
-          n = n + 1
-          ll = ll + l
-          if b.channels == 2 then
-            rr = rr + r
-          end
-        end
-      end
-    end
-    if n == 0 and i == 1 then -- nothing this iter
-      return
-    end
-    b[pos] = ll * mixer.vol -- / n
-    pos = (pos % b.size) + 1
-    b.used = b.used + 1
-    if b.channels == 2 then
-      b[pos] = rr * mixer.vol -- / n
-      pos = (pos % b.size) + 1
-      b.used = b.used + 1
-    end
-  end
-  b.tail = pos
+local test = coroutine.create(function()
+local song = [[
+C-3 A0 | ... .. | C-4 .. | C-3 64
+... .. | ... .. | G-3 45 | ... ..
+C-3 80 | ... .. | C-4 .. | ... ..
+... .. | ... .. | C-4 45 | ... ..
+... .. | C-3 80 | D-4 .. | ... ..
+... .. | ... .. | C-4 45 | ... ..
+... .. | ... .. | D-4 .. | ... ..
+... .. | C-3 80 | D-4 45 | ... ..
+C-3 A0 | ... .. | D#4 .. | ... ..
+... .. | C-3 80 | D-4 45 | ... ..
+C-3 80 | ... .. | D#4 .. | ... ..
+... .. | ... .. | D#4 45 | ... ..
+... .. | C-3 80 | F-4 .. | ... ..
+... .. | ... .. | D#4 45 | ... ..
+... .. | ... .. | G-4 .. | ... ..
+... .. | C-3 80 | F-4 45 | ... ..
+C-3 A0 | ... .. | C-4 .. | ... ..
+... .. | ... .. | G-4 45 | ... ..
+C-3 80 | ... .. | C-4 .. | ... ..
+... .. | ... .. | C-4 45 | ... ..
+... .. | C-3 80 | D-4 .. | ... ..
+... .. | ... .. | C-4 45 | ... ..
+... .. | ... .. | D-4 .. | ... ..
+... .. | C-3 80 | D-4 45 | ... ..
+C-3 A0 | ... .. | D#4 .. | D-3 64
+... .. | C-3 80 | D-4 45 | ... ..
+C-3 80 | ... .. | D#4 .. | ... ..
+... .. | ... .. | D#4 45 | ... ..
+... .. | C-3 80 | D-4 .. | D#3 64
+... .. | ... .. | D#4 45 | ... ..
+C-3 A0 | ... .. | G-3 .. | ... ..
+... .. | C-3 80 | D-4 45 | ... ..
+C-3 A0 | ... .. | C-4 .. | G#2 64
+... .. | ... .. | G-3 45 | ... ..
+C-3 80 | ... .. | C-4 .. | ... ..
+... .. | ... .. | C-4 45 | ... ..
+... .. | C-3 80 | D-4 .. | ... ..
+... .. | ... .. | C-4 45 | ... ..
+... .. | ... .. | D-4 .. | ... ..
+... .. | C-3 80 | D-4 45 | ... ..
+C-3 A0 | ... .. | D#4 .. | ... ..
+... .. | C-3 80 | D-4 45 | ... ..
+C-3 80 | ... .. | D#4 .. | ... ..
+... .. | ... .. | D#4 45 | ... ..
+... .. | C-3 80 | F-4 .. | ... ..
+... .. | ... .. | D#4 45 | ... ..
+... .. | ... .. | G-4 .. | ... ..
+... .. | C-3 80 | F-4 45 | ... ..
+C-3 a0 | ... .. | C-4 .. | ... ..
+... .. | ... .. | G-4 45 | ... ..
+C-3 80 | ... .. | C-4 .. | ... ..
+... .. | ... .. | C-4 45 | ... ..
+... .. | C-3 80 | D-4 .. | ... ..
+... .. | ... .. | C-4 45 | ... ..
+C-3 A0 | ... .. | D-4 .. | ... ..
+... .. | C-3 80 | D-4 45 | ... ..
+C-3 a0 | ... .. | D#4 .. | ... ..
+... .. | C-3 80 | D-4 45 | ... ..
+C-3 80 | ... .. | D#4 .. | ... ..
+... .. | ... .. | D#4 45 | ... ..
+... .. | C-3 80 | D-4 .. | ... ..
+... .. | ... .. | D#4 45 | ... ..
+... .. | ... .. | G-3 .. | ... ..
+... .. | ... .. | D-4 45 | ... ..
+]]
+  synth.push(1, "test_square")
+  synth.push(2, "test_square")
+  synth.push(3, "test_square")
+  synth.push(4, "test_square")
+  synth.set(1, true, 1)
+  synth.set(2, true, 1)
+  synth.set(3, true, 1)
+  synth.set(4, true, 1)
+  local song = sfx.parse_song(song)
+  sfx.play_song({1, 2, 3, 4 }, { 0, 0, -0.75, 0.75 }, song, 16)
+end)
+
+function mixer.change()
+-- TODO
+--  local r, e = coroutine.resume(test)
+--  if not r then print(e) end
 end
 
-function mixer.write_audio()
-  local b = mixer.buff
-  if b.used == 0 then
-    return
-  end
-  local size = 1024 -- custom_stereo maximum capacity
-  local rc = (b.used / b.channels) > size and size or (b.used / b.channels)
+function mixer.proc(tick)
+  local rc
   repeat
-    rc = synth.mix(rc)
-    for i = 1, rc do
-      synth.change(0, 0, 0, b[b.head], b[b.head+1])
-      b.head = ((b.head + 1) % b.size) + 1
-      b.used = b.used - 2
-      if b.used == 0 then break end
-    end
-  until b.used == 0 or rc == 0
-end
-
-function mixer.req_send(a)
-  local m = mixer.chans[a.channel]
-  if not m or not m.fn or a.id ~= m.id then
-    return false
-  end
-  m.args = a
-  m.send = true
-  return true
-end
-
-function mixer.req_stop(a)
-  local m = mixer.chans[a.channel]
-  if not m or not m.fn or a.id ~= m.id then
-    return false
-  end
-  m.fn = false
-  return true
-end
-
-local req_id = 0
-function mixer.req_new(fn, a)
-  local f, e = coroutine.create(fn)
-  if not f then
-    error(e)
-  end
-  for i = 1, CHANNELS do
-    if not mixer.chans[i].fn then
-      req_id = (req_id % 65535) + 1
-      mixer.chans[i] = { fn = f, time = sys.time(),
-        args = a, id = req_id }
-      return i, req_id
-    end
-  end
+    rc = synth.mix(tick, mixer.vol)
+    if rc == 0 then sys.sleep(mixer.freq*2) end
+    tick = tick - rc
+  until tick == 0
 end
 
 function mixer.getreq()
@@ -125,15 +116,10 @@ function mixer.getreq()
     mixer.req = false
     return table.unpack(r)
   else
-    local rd, _ = thread:poll(DELAY)
-    local r, v, a
+    local rd, _ = thread:poll(0)
     if rd then
-      r, v, a = thread:read()
+      return thread:read()
     end
-    if r == 'new' then
-      v = dump.new(v) -- function
-    end
-    return r, v, a
   end
 end
 
@@ -146,24 +132,8 @@ function mixer.answer(...)
   end
 end
 
-function mixer.reqs()
-  for k = 1, CHANNELS do -- make requests
-    local m = mixer.chans[k]
-    local fn = m.fn
-    if m.send then
-      mixer.answer(coroutine.resume(fn, table.unpack(m.args)))
-      m.send = false
-    end
-  end
-end
-
 function mixer.thread()
   print "mixer start"
-  synth.push(0, 'custom_stereo')
-  synth.set(0, true, 1)
-  for i = 1, CHANNELS do
-    mixer.chans[i] = { }
-  end
   local r, v, a
   while true do
     r, v, a = mixer.getreq()
@@ -174,48 +144,23 @@ function mixer.thread()
       local oval = mixer.vol
       mixer.vol = v or oval
       mixer.answer(oval)
-    elseif r == 'new' then -- new generator
-      mixer.answer(mixer.req_new(v, a))
-    elseif r == 'send' then -- send to generator
-      if not mixer.req_send(v) then
-        mixer.answer(false, "Invalid argument")
-      end
-    elseif r == 'stop' then -- stop generator
-      mixer.answer(mixer.req_stop(v))
     end
-    mixer.reqs()
-    mixer.fill() -- fill buffer/send and rcv
-    mixer.write_audio() -- write to audio!
+    mixer.change()
+    mixer.proc(mixer.tick) -- write to audio!
   end
   print "mixer finish"
 end
 
 ----------------------------- Client side -------------------------------
-
-function mixer.audio(t)
-  local idx = 1
-  local rc
-  while true do
-    rc = sys.audio(t, idx)
-    if #t == rc + idx - 1 then
-      return
-    end
-    idx = idx + rc
-    coroutine.yield()
-  end
-end
-
 function mixer.coroutine()
   if not mixer.thr then
     mixer.thread()
   else
-    while true do
-      if mixer.running then
-        local e = mixer.thr:err() -- force show peer end error msg
-        if e then
-          mixer.running = false
-          error(e)
-        end
+    while mixer.running do
+      local e = mixer.thr:err() -- force show peer end error msg
+      if e then
+        mixer.running = false
+        error(e)
       end
       coroutine.yield()
     end
@@ -230,47 +175,9 @@ function mixer.clireq(...)
     mixer.ack = {}
     return table.unpack(ack)
   else
-    local r = {}
-    for k, v in ipairs({...}) do
-      if type(v) == 'function' then
-        local c, e = dump.new(v)
-        if not c then
-          error(e, 2)
-        end
-        v = c
-      end
-      table.insert(r, v)
-    end
-    mixer.thr:write(table.unpack(r))
+    mixer.thr:write(...)
     return mixer.thr:read()
   end
-end
-
-local sound = {
-}
-sound.__index = sound
-
-function sound:send(...)
-  return mixer.clireq("send",
-    { channel = self.channel, id = self.id, ...})
-end
-
-function sound:stop(...)
-  return mixer.clireq("stop",
-    { channel = self.channel, id = self.id })
-end
-
-function mixer.new(fn, ...)
-  if type(fn) ~= 'function' then
-    error("Wrong argument to mixer.add()", 2)
-  end
-  local ch, id = mixer.clireq('new', fn, {...})
-  local snd = {
-    channel = ch;
-    id = id;
-  }
-  setmetatable(snd, sound)
-  return snd
 end
 
 function mixer.volume(vol)
@@ -304,4 +211,5 @@ function mixer.init()
   mixer.thr = t
   mixer.co = core.go(mixer.coroutine)
 end
+
 return mixer

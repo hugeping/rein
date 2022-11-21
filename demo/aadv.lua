@@ -1,6 +1,7 @@
 -- fast and dirty port from pico-8
 require "tiny"
 require "std"
+local sfx = require "sfx"
 
 border(0)
 
@@ -261,29 +262,17 @@ function sget(x, y)
 end
 local border_nr = false
 
-function engine()
-  local sfx = require "sfx"
-  local on = false
-  local v, i = 0, 256
-  while true do
-    req = coroutine.yield(v)
-    if req == 'on' then
-      i = 0
-      v = 'ack'
-    else
-      v = i < 256 and sfx.saw(sfx.hz(i, 300), 0.3)*0.5 or 0
-    end
-    if i < 256 then
-      i = i + 1
-    end
-  end
+local engine_samples = {}
+for i=1, 256 do
+  engine_samples[i] = sfx.saw(sfx.hz(i-1, 300), 0.3)*0.5
 end
 
-local eng = mixer.new(engine)
+synth.samples(0, engine_samples)
 
 function sfx(nr)
   if nr == 0 then
-    eng:send 'on'
+    synth.set(0, true, 1)
+    synth.change(0, 0, 1, 1)
     return
   end
   if nr == 1 or nr == 2 then
