@@ -387,8 +387,7 @@ end
 function EmptyVoice:update()
 end
 
-function sfx.play_song(chans, pans, tracks, tick, nr)
-  local left, right, l, r, voice, pan, ro
+function sfx.play_song_once(chans, pans, tracks, temp)
   for _, row in ipairs(tracks) do
     for i, c in ipairs(chans) do
       local freq, vol = row[i][1], row[i][2]
@@ -396,58 +395,21 @@ function sfx.play_song(chans, pans, tracks, tick, nr)
         synth.change(c, 0, synth.NOTE_ON, freq, 1.0)
       end
       if vol then
-        synth.set(c, true, 0.5)
+        synth.set(c, true, vol/255, pans[i])
       end
     end
-    for i = 1, tick do 
+    for i = 1, temp do
       coroutine.yield()
     end
   end
 end
---[==[
-  local voices = {
-        sfx.SquareVoice(),
-        sfx.SawVoice(),
-        sfx.SquareVoice(),
-  }
-  print(voices[1], voices[2], voices[3])
-  local pans = { -1, 0, 1 };
-  local song = [[
-  C-3 80 | E-4 FF | C-5 50
-  ... .. | ... .. | D-5 45
-  ... .. | ... .. | C-5 40
-  E-3 .. | ... .. | D-5 35
-  ... .. | ... .. | C-5 30
-  ... .. | ... .. | D-5 25
-  G-3 .. | D-4 A0 | C-5 20
-  ... .. | ... .. | D-5 15
-  ... .. | ... .. | C-5 10
-  C-3 .. | C-4 FF | D-5 50
-  ... .. | ... .. | C-5 45
-  ... .. | ... .. | D-5 40
-  E-3 .. | G-3 FF | C-5 35
-  ... .. | ... .. | D-5 30
-  ... .. | ... .. | C-5 25
-  G-3 .. | ... .. | D-5 20
-  ... .. | ... .. | C-5 15
-  ... .. | ... .. | D-5 10
-  C-3 .. | A-3 A0 | C-5 50
-  ... .. | ... .. | D-5 45
-  ... .. | ... .. | C-5 40
-  E-3 .. | ... .. | D-5 35
-  ... .. | ... .. | C-5 30
-  ... .. | ... .. | D-5 25
-  G-3 .. | ... .. | C-5 20
-  ... .. | ... .. | D-5 15
-  ... .. | ... .. | C-5 10
-  C-3 .. | C-4 FF | D-5 50
-  ... .. | ... .. | C-5 45
-  ... .. | ... .. | D-5 40
-  E-3 .. | ... .. | C-5 35
-  ... .. | ... .. | C-5 30
-  ... .. | ... .. | D-5 25
-  G-3 .. | ... .. | C-5 20
-  ]]
-  sfx.play_song(voices, pans, sfx.parse_song(song))
-]==]
+
+function sfx.play_song(chans, pans, tracks, temp, nr)
+  nr = nr or 1
+  while nr == -1 or nr > 0 do
+    if nr ~= -1 then nr = nr - 1 end
+    sfx.play_song_once(chans, pans, tracks, temp)
+  end
+end
+
 return sfx
