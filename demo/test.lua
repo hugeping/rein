@@ -50,15 +50,9 @@ local function showkeys()
   return t
 end
 
-function tune(nr)
-  local sfx = require "sfx"
-  local voices = {
-    sfx.BDVoice(),
-    sfx.SnareVoice(),
-    sfx.SquareVoice(),
-    sfx.SawVoice(),
-  }
-  local pans = { 0, 0, -0.75, 0.75 };
+function tune()
+  local voices = {'test_square', 'test_square', 'test_square','test_square'}
+  local pan = { 0, 0, -0.75, 0.75 }
   local song = [[
 C-3 A0 | ... .. | C-4 .. | C-3 64
 ... .. | ... .. | G-3 45 | ... ..
@@ -125,18 +119,11 @@ C-3 80 | ... .. | D#4 .. | ... ..
 ... .. | ... .. | G-3 .. | ... ..
 ... .. | ... .. | D-4 45 | ... ..
 ]]
-  local song = sfx.parse_song(song)
-  nr = nr or -1
-  while nr ~= 0 do
-    sfx.play_song(voices, pans, song)
-    if nr ~= -1 then
-      nr = nr - 1
-    end
-  end
+  return mixer.play(voices, pan, song, 16, -1)
 end
 
 mixer.volume(0.5)
--- mixer.new(tune)
+tune()
 
 local s = gfx.new
 [[

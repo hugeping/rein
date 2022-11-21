@@ -4,98 +4,90 @@ require "std"
 local THREADED = true
 
 local mixer = {
+  id = 0;
   vol = 0.5;
   req = { };
   ack = { };
-  chans = { };
+  fn = { };
+  chans = { size = 32 };
   freq = 1/100;
   hz = 44100;
 }
 mixer.tick = mixer.hz * mixer.freq
 
-local test = coroutine.create(function()
-local song = [[
-C-3 A0 | ... .. | C-4 .. | C-3 64
-... .. | ... .. | G-3 45 | ... ..
-C-3 80 | ... .. | C-4 .. | ... ..
-... .. | ... .. | C-4 45 | ... ..
-... .. | C-3 80 | D-4 .. | ... ..
-... .. | ... .. | C-4 45 | ... ..
-... .. | ... .. | D-4 .. | ... ..
-... .. | C-3 80 | D-4 45 | ... ..
-C-3 A0 | ... .. | D#4 .. | ... ..
-... .. | C-3 80 | D-4 45 | ... ..
-C-3 80 | ... .. | D#4 .. | ... ..
-... .. | ... .. | D#4 45 | ... ..
-... .. | C-3 80 | F-4 .. | ... ..
-... .. | ... .. | D#4 45 | ... ..
-... .. | ... .. | G-4 .. | ... ..
-... .. | C-3 80 | F-4 45 | ... ..
-C-3 A0 | ... .. | C-4 .. | ... ..
-... .. | ... .. | G-4 45 | ... ..
-C-3 80 | ... .. | C-4 .. | ... ..
-... .. | ... .. | C-4 45 | ... ..
-... .. | C-3 80 | D-4 .. | ... ..
-... .. | ... .. | C-4 45 | ... ..
-... .. | ... .. | D-4 .. | ... ..
-... .. | C-3 80 | D-4 45 | ... ..
-C-3 A0 | ... .. | D#4 .. | D-3 64
-... .. | C-3 80 | D-4 45 | ... ..
-C-3 80 | ... .. | D#4 .. | ... ..
-... .. | ... .. | D#4 45 | ... ..
-... .. | C-3 80 | D-4 .. | D#3 64
-... .. | ... .. | D#4 45 | ... ..
-C-3 A0 | ... .. | G-3 .. | ... ..
-... .. | C-3 80 | D-4 45 | ... ..
-C-3 A0 | ... .. | C-4 .. | G#2 64
-... .. | ... .. | G-3 45 | ... ..
-C-3 80 | ... .. | C-4 .. | ... ..
-... .. | ... .. | C-4 45 | ... ..
-... .. | C-3 80 | D-4 .. | ... ..
-... .. | ... .. | C-4 45 | ... ..
-... .. | ... .. | D-4 .. | ... ..
-... .. | C-3 80 | D-4 45 | ... ..
-C-3 A0 | ... .. | D#4 .. | ... ..
-... .. | C-3 80 | D-4 45 | ... ..
-C-3 80 | ... .. | D#4 .. | ... ..
-... .. | ... .. | D#4 45 | ... ..
-... .. | C-3 80 | F-4 .. | ... ..
-... .. | ... .. | D#4 45 | ... ..
-... .. | ... .. | G-4 .. | ... ..
-... .. | C-3 80 | F-4 45 | ... ..
-C-3 a0 | ... .. | C-4 .. | ... ..
-... .. | ... .. | G-4 45 | ... ..
-C-3 80 | ... .. | C-4 .. | ... ..
-... .. | ... .. | C-4 45 | ... ..
-... .. | C-3 80 | D-4 .. | ... ..
-... .. | ... .. | C-4 45 | ... ..
-C-3 A0 | ... .. | D-4 .. | ... ..
-... .. | C-3 80 | D-4 45 | ... ..
-C-3 a0 | ... .. | D#4 .. | ... ..
-... .. | C-3 80 | D-4 45 | ... ..
-C-3 80 | ... .. | D#4 .. | ... ..
-... .. | ... .. | D#4 45 | ... ..
-... .. | C-3 80 | D-4 .. | ... ..
-... .. | ... .. | D#4 45 | ... ..
-... .. | ... .. | G-3 .. | ... ..
-... .. | ... .. | D-4 45 | ... ..
-]]
-  synth.push(1, "test_square")
-  synth.push(2, "test_square")
-  synth.push(3, "test_square")
-  synth.push(4, "test_square")
-  synth.set(1, true, 1)
-  synth.set(2, true, 1)
-  synth.set(3, true, 1)
-  synth.set(4, true, 1)
-  local song = sfx.parse_song(song)
-  sfx.play_song({1, 2, 3, 4 }, { 0, 0, -0.75, 0.75 }, song, 16)
-end)
+function mixer.get_channels(nr)
+  local free = {}
+  for i = 1, mixer.chans.size do
+    if not mixer.chans[i] then
+      table.insert(free, i)
+      if #free >= nr then break end
+    end
+  end
+  if #free < nr then
+    return false
+  end
+  for _, c in ipairs(free) do
+    mixer.chans[c] = true
+  end
+  return free
+end
+
+function mixer.setup_channels(chans, voices)
+  for i, v in ipairs(voices) do
+    synth.free(chans[i])
+    synth.push(chans[i], v)
+  end
+end
+
+function mixer.req_nextid()
+  mixer.id = (mixer.id + 1) % 0xffff
+end
+
+function mixer.req_play(voices, pans, song, temp, nr)
+  song = sfx.parse_song(song)
+  if #song == 0 then
+    return false, "Wrong song format"
+  end
+  local chans = mixer.get_channels(#song[1])
+  if not chans then
+    return false, "No free channels"
+  end
+  local f, e = coroutine.create(sfx.play_song)
+  if not f then
+    error(e)
+  end
+  mixer.req_nextid()
+  mixer.setup_channels(chans, voices)
+  table.insert(mixer.fn, { id = mixer.id, fn = f, chans = chans,
+    args = { chans, pans, song, temp, nr } })
+  return mixer.id
+end
+
+function mixer.free_channels(chans)
+  for _, c in ipairs(chans) do
+    mixer.chans[c] = false
+  end
+end
 
 function mixer.change()
--- TODO
---  local r, e = coroutine.resume(test)
---  if not r then print(e) end
+  local r, e
+  for i, v in ipairs(mixer.fn) do
+    if coroutine.status(v.fn) ~= 'dead' then
+      r, e = coroutine.resume(v.fn, table.unpack(v.args))
+      if not r then error(e) end
+    else
+      mixer.fn[i].dead = true
+    end
+  end
+  local i = 1
+  while i <= #mixer.fn do -- clean dead coroutines and free chans
+    if mixer.fn[i].dead then
+      r = table.remove(mixer.fn, i)
+      mixer.free_channels(r.chans)
+    else
+      i = i + 1
+    end
+  end
 end
 
 function mixer.proc(tick)
@@ -134,7 +126,7 @@ end
 
 function mixer.thread()
   print "mixer start"
-  local r, v, a
+  local r, v, a, b, c
   while true do
     r, v, a = mixer.getreq()
     if r == 'quit' then -- stop thread
@@ -144,10 +136,13 @@ function mixer.thread()
       local oval = mixer.vol
       mixer.vol = v or oval
       mixer.answer(oval)
+    elseif r == 'play' then
+      mixer.answer(mixer.req_play(table.unpack(v)))
     end
     mixer.change()
     mixer.proc(mixer.tick) -- write to audio!
   end
+  synth.stop()
   print "mixer finish"
 end
 
@@ -187,11 +182,14 @@ end
 function mixer.stop()
   if not mixer.running then return end
   mixer.running = false
-  synth.stop()
   if mixer.thr then
     mixer.clireq 'quit'
   end
   core.stop(mixer.co)
+end
+
+function mixer.play(...)
+  return mixer.clireq("play", {...})
 end
 
 function mixer.init()
