@@ -53,7 +53,8 @@ end
 function tune()
   mixer.voice('empty', 'empty')
   mixer.voice('square', 'test_square')
-  mixer.voice('saw', 'test_square', 'test_delay', { synth.VOLUME, 0.1 } )
+  mixer.voice('saw', 'test_square', 'delay',
+    { synth.VOLUME, 0.1 }, { synth.FEEDBACK, 0.9 }, { synth.TIME, 0.1 })
   local voices = {'empty', 'empty', 'square', 'saw'}
   local pan = { 0, 0, -0.75, 0.75 }
   local song = [[
