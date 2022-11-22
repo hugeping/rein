@@ -56,6 +56,10 @@ unsigned int lfsr(unsigned int state, int bits, int *taps, int taps_size) {
     return (state >> 1) | ((~x & 1) << (bits - 1));
 }
 
+double dist(double x, double drive) {
+    return tanh(x * drive);
+}
+
 void phasor_init(struct phasor_state *s) {
     s->phase = 0;
 }

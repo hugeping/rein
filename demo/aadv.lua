@@ -268,8 +268,7 @@ for i=1, 256 do
 end
 
 synth.push(0, 'samples')
-synth.change(0, 0, synth.SAMPLES_INIT, 256)
-synth.change(0, 0, synth.SAMPLES_ADD, engine_samples)
+synth.change(0, 0, synth.SAMPLES_LOAD, engine_samples)
 
 function sfx(nr)
   if nr == 0 then

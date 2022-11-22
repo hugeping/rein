@@ -90,16 +90,16 @@ struct sfx_proto test_saw_box = {
     .state_size = sizeof(struct test_saw_state)
 };
 
-struct delay_box_state {
+struct sfx_delay_state {
     struct delay_state d;
     double delay_buf[SR];
 };
 
-void delay_box_init(struct delay_box_state *s) {
+void sfx_delay_init(struct sfx_delay_state *s) {
     delay_init(&s->d, s->delay_buf, sec(0.5), 0.5, 0.5);
 }
 
-void delay_box_change(struct delay_box_state *s, int param, float val, float *user) {
+void sfx_delay_change(struct sfx_delay_state *s, int param, float val, float *user) {
     (void) user;
     if (param == ZV_VOLUME) {
         s->d.level = val;
@@ -111,14 +111,45 @@ void delay_box_change(struct delay_box_state *s, int param, float val, float *us
     }
 }
 
-double delay_box_mono(struct delay_box_state *s, double l) {
+double sfx_delay_mono(struct sfx_delay_state *s, double l) {
     return delay_next(&s->d, l);
 }
 
-struct sfx_proto delay_box = {
+struct sfx_proto sfx_delay = {
     .name = "delay",
-    .init = (sfx_init_func) delay_box_init,
-    .change = (sfx_change_func) delay_box_change,
-    .mono = (sfx_mono_func) delay_box_mono,
-    .state_size = sizeof(struct delay_box_state)
+    .init = (sfx_init_func) sfx_delay_init,
+    .change = (sfx_change_func) sfx_delay_change,
+    .mono = (sfx_mono_func) sfx_delay_mono,
+    .state_size = sizeof(struct sfx_delay_state)
+};
+
+struct sfx_dist_state {
+    double drive;
+    double vol;
+};
+
+void sfx_dist_init(struct sfx_dist_state *s) {
+    s->drive = 1;
+    s->vol = 1;
+}
+
+void sfx_dist_change(struct sfx_dist_state *s, int param, float val, float *user) {
+    (void) user;
+    if (param == ZV_VOLUME) {
+        s->vol = val;
+    } else if (param == ZV_DRIVE) {
+        s->drive = val;
+    }
+}
+
+double sfx_dist_mono(struct sfx_dist_state *s, double l) {
+    return s->vol * dist(l, s->drive);
+}
+
+struct sfx_proto sfx_dist = {
+    .name = "distortion",
+    .init = (sfx_init_func) sfx_dist_init,
+    .change = (sfx_change_func) sfx_dist_change,
+    .mono = (sfx_mono_func) sfx_dist_mono,
+    .state_size = sizeof(struct sfx_dist_state)
 };
