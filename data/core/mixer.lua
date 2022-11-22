@@ -104,7 +104,7 @@ function mixer.proc(tick)
   local rc
   repeat
     rc = synth.mix(tick, mixer.vol)
-    if rc == 0 then sys.sleep(mixer.freq*2) end
+    if rc == 0 then coroutine.yield() end -- sys.sleep(mixer.freq*2) end
     tick = tick - rc
   until tick == 0
 end
@@ -145,7 +145,7 @@ function mixer.getreq()
     mixer.req = false
     return table.unpack(r)
   else
-    local rd, _ = thread:poll(0)
+    local rd, _ = thread:poll(mixer.freq * 2)
     if rd then
       return thread:read()
     end
@@ -167,6 +167,13 @@ function mixer.reset()
   mixer.ids = {}
 end
 
+mixer.sched = coroutine.create(function()
+  while true do
+    mixer.change()
+    mixer.proc(mixer.tick) -- write to audio!
+  end
+end)
+
 function mixer.thread()
   print "mixer start"
   local r, v, a, b, c
@@ -185,8 +192,10 @@ function mixer.thread()
     elseif r == 'voice' then
       mixer.answer(mixer.req_voice(v, a))
     end
-    mixer.change()
-    mixer.proc(mixer.tick) -- write to audio!
+    r, v = coroutine.resume(mixer.sched)
+    if not r then
+      error(v)
+    end
   end
   mixer.free_channels()
   synth.stop()
