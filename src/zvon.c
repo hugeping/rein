@@ -147,9 +147,6 @@ double seq_next(struct env_state *s) {
 void delay_init(struct delay_state *s, double *buf, size_t buf_size, double level, double fb) {
     s->buf = buf;
     s->buf_size = buf_size;
-    for (size_t i = 0; i < buf_size; i++) {
-        s->buf[i] = 0;
-    }
     s->level = level;
     s->fb = fb;
     s->pos = 0;
@@ -226,22 +223,22 @@ void chan_set(struct chan_state *c, int is_on, double vol, double pan) {
 void chan_free(struct chan_state *c) {
     for (int i = 0; i < c->stack_size; i++) {
         if (c->stack[i].proto->free) {
-            c->stack[i].proto->free(&c->stack[i].state);
+            c->stack[i].proto->free(c->stack[i].state);
         }
         free(c->stack[i].state);
     }
     c->stack_size = 0;
 }
 
-void *chan_push(struct chan_state *c, struct sfx_proto *proto) {
+struct sfx_box *chan_push(struct chan_state *c, struct sfx_proto *proto) {
     if (c->stack_size < MAX_SFX_BOXES) {
         struct sfx_box *box = &c->stack[c->stack_size];
         box->proto = proto;
         box->state = calloc(1, proto->state_size);
-        if (box->state) {
+        if (box->state || !box->proto->state_size) {
             proto->init(box->state);
             c->stack_size++;
-            return box->state;
+            return box;
         }
     }
     return NULL;

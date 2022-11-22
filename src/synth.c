@@ -2,8 +2,13 @@
 #include "platform.h"
 
 #include "zvon.h"
-#include "zvon_platform.h"
 #include "zvon_sfx.h"
+
+enum {
+    ZV_SAMPLES_INIT = ZV_END + 1,
+    ZV_SAMPLES_ADD,
+    ZV_SAMPLES_RESET,
+};
 
 #define CHANNELS_MAX 32
 
@@ -30,7 +35,7 @@ custom_synth_change(struct custom_synth_state *s, int param, float size, float *
 	unsigned int pos = s->tail;
 	if (!s->free)
 		return;
-	for (i = 0; i < size && s->free; i ++) {
+	for (i = 0; i < size/2 && s->free; i ++) {
 		s->data[pos++ % s->size] = data[i++];
 		s->data[pos++ % s->size] = data[i++];
 		s->tail = pos % s->size;
@@ -39,7 +44,7 @@ custom_synth_change(struct custom_synth_state *s, int param, float size, float *
 }
 
 static void
-custom_synth_next(struct custom_synth_state *s, double *l, double *r)
+custom_synth_stereo(struct custom_synth_state *s, double *l, double *r)
 {
 	if (!(s->size - s->free))
 		return;
@@ -52,7 +57,7 @@ custom_synth_next(struct custom_synth_state *s, double *l, double *r)
 static struct sfx_proto custom_box = {
 	.name = "custom_stereo",
 	.change = (sfx_change_func) custom_synth_change,
-	.stereo = (sfx_stereo_func) custom_synth_next,
+	.stereo = (sfx_stereo_func) custom_synth_stereo,
 	.state_size = sizeof(struct custom_synth_state),
 	.init = (sfx_init_func) custom_synth_init,
 };
@@ -82,43 +87,55 @@ static struct sfx_proto empty_box = {
 };
 
 
-struct samples_synth_state {
+struct samples_state {
 	int stereo;
-	double *data;
+	float *data;
 	unsigned int head;
 	unsigned int size;
 };
 
 static void
-samples_synth_init(struct samples_synth_state *s)
-{
-	s->head = 0;
-}
-
-static void
-samples_synth_free(struct samples_synth_state *s)
+samples_free(struct samples_state *s)
 {
 	free(s->data);
 }
 
 static void
-samples_synth_change(struct samples_synth_state *s, int param, float val, float *data)
+samples_change(struct samples_state *s, int param, float val, float *data)
 {
-	s->head = 0;
+	int i;
+	switch (param) {
+	case ZV_SAMPLES_INIT:
+		free(s->data);
+		s->data = calloc(val, sizeof(float));
+		break;
+	case ZV_SAMPLES_ADD:
+		if (!data)
+			break;
+		for (i = 0; i < (int)val; i ++)
+			s->data[i] = data[i];
+		s->size = val;
+		break;
+	case ZV_SAMPLES_RESET:
+		s->head = 0;
+		break;
+	default:
+		s->head = 0;
+	}
 }
 
 static double
-samples_synth_next(struct samples_synth_state *s, double x)
+samples_mono(struct samples_state *s, double x)
 {
-	if (s->head >= s->size)
+	if (s->head >= s->size || !s->data)
 		return x;
 	return s->data[s->head++];
 }
 
 static void
-samples_synth_stereo_next(struct samples_synth_state *s, double *l, double *r)
+samples_stereo(struct samples_state *s, double *l, double *r)
 {
-	if (s->head >= s->size)
+	if (s->head >= s->size || !s->data)
 		return;
 	*l = s->data[s->head++];
 	*r = s->data[s->head++];
@@ -126,23 +143,24 @@ samples_synth_stereo_next(struct samples_synth_state *s, double *l, double *r)
 
 static struct sfx_proto samples_box = {
 	.name = "samples",
-	.change = (sfx_change_func) samples_synth_change,
-	.mono = (sfx_mono_func) samples_synth_next,
-	.state_size = sizeof(struct samples_synth_state),
-	.init = (sfx_init_func) samples_synth_init,
-	.free = (sfx_free_func) samples_synth_free,
+	.change = (sfx_change_func) samples_change,
+	.mono = (sfx_mono_func) samples_mono,
+	.state_size = sizeof(struct samples_state),
+	.init = (sfx_init_func) empty_init,
+	.free = (sfx_free_func) samples_free,
 };
 
 static struct sfx_proto samples_stereo_box = {
 	.name = "samples-stereo",
-	.change = (sfx_change_func) samples_synth_change,
-	.stereo = (sfx_stereo_func) samples_synth_stereo_next,
-	.state_size = sizeof(struct samples_synth_state),
-	.init = (sfx_init_func) samples_synth_init,
-	.free = (sfx_free_func) samples_synth_free,
+	.change = (sfx_change_func) samples_change,
+	.stereo = (sfx_stereo_func) samples_stereo,
+	.state_size = sizeof(struct samples_state),
+	.init = (sfx_init_func) empty_init,
+	.free = (sfx_free_func) samples_free,
 };
 
-static struct sfx_proto *boxes[] = { &empty_box, &custom_box, &test_square_box, &test_saw_box, NULL };
+static struct sfx_proto *boxes[] = { &empty_box, &custom_box,
+	&samples_box, &samples_stereo_box, &test_square_box, &test_saw_box, NULL };
 
 static struct chan_state channels[CHANNELS_MAX];
 
@@ -151,7 +169,8 @@ synth_change(lua_State *L)
 {
 	int len = 0, i;
 	float f;
-	float floats[64];
+	float floats64[64];
+	float *floats = floats64;
 	const int chan = luaL_checkinteger(L, 1);
 	const int nr = luaL_checkinteger(L, 2);
 	const int param = luaL_checkinteger(L, 3);
@@ -160,16 +179,18 @@ synth_change(lua_State *L)
 	if (lua_istable(L, 4)) {
 		len = lua_rawlen(L, 4);
 		if (len > 64)
-			return luaL_error(L, "To much table");
-		for (i = 0; i < len; i++) {
+			floats = calloc(len, sizeof(float));
+		if (!floats)
+			return luaL_error(L, "To much arg table");
+		for (i = 1; i <= len; i++) {
 			lua_rawgeti(L, 4, i);
 			f = luaL_checknumber(L, -1);
 			lua_pop(L, 1);
-			floats[i] = f;
+			floats[i - 1] = f;
 		}
 		val = len;
 	} else {
-		val = luaL_checknumber(L, 4);
+		val  = luaL_optnumber(L, 4, 0);
 	}
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
@@ -177,6 +198,8 @@ synth_change(lua_State *L)
 		return luaL_error(L, "Wrong stack position");
 	box = &channels[chan].stack[nr];
 	box->proto->change(box->state, param, val, (len == 0)?NULL:floats);
+	if (floats != floats64)
+		free(floats);
 	return 0;
 }
 
@@ -270,39 +293,6 @@ synth_stop(lua_State *L)
 	return 0;
 }
 
-static int
-synth_samples(lua_State *L)
-{
-	int stereo, len, chan, i;
-	double f;
-	struct samples_synth_state *box;
-	chan = luaL_checkinteger(L, 1);
-	if (chan < 0 || chan >= CHANNELS_MAX)
-		return luaL_error(L, "Wrong channel number");
-	if (!lua_istable(L, 2))
-		return 0;
-	lua_getfield(L, 2, "stereo");
-	stereo = lua_toboolean(L, -1);
-	lua_pop(L, 1);
-
-	len = lua_rawlen(L, 2);
-	chan_free(&channels[chan]);
-	box = (struct samples_synth_state*)chan_push(&channels[chan],
-		(stereo)?&samples_stereo_box:&samples_box);
-	box->data = (double *)calloc(len, sizeof(double));
-	if (stereo)
-		len &= ~1;
-	box->size = len;
-	box->stereo = stereo;
-	for (i = 1; i <= len; i++) {
-		lua_rawgeti(L, 2, i);
-		f = luaL_checknumber(L, -1);
-		lua_pop(L, 1);
-		box->data[i-1] = f;
-	}
-	return 0;
-}
-
 static const luaL_Reg
 synth_lib[] = {
 	{ "push", synth_push },
@@ -311,7 +301,6 @@ synth_lib[] = {
 	{ "change", synth_change },
 	{ "mix", synth_mix },
 	{ "stop", synth_stop },
-	{ "samples", synth_samples },
 	{ NULL, NULL }
 };
 
@@ -322,6 +311,9 @@ static struct {
 	{ "NOTE_ON", ZV_NOTE_ON },
 	{ "NOTE_OFF", ZV_NOTE_OFF },
 	{ "VOLUME", ZV_VOLUME },
+	{ "SAMPLES_INIT", ZV_SAMPLES_INIT },
+	{ "SAMPLES_ADD", ZV_SAMPLES_ADD },
+	{ "SAMPLES_RESET", ZV_SAMPLES_RESET },
 	{ NULL, },
 };
 
