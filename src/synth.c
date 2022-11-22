@@ -160,7 +160,8 @@ static struct sfx_proto samples_stereo_box = {
 };
 
 static struct sfx_proto *boxes[] = { &empty_box, &custom_box,
-	&samples_box, &samples_stereo_box, &test_square_box, &test_saw_box, NULL };
+	&samples_box, &samples_stereo_box, &test_square_box,
+	&test_saw_box, &test_delay_box, NULL };
 
 static struct chan_state channels[CHANNELS_MAX];
 
@@ -217,7 +218,7 @@ synth_push(lua_State *L)
 		return luaL_error(L, "Maximum boxes reached");
 	while (boxes[i] && strcmp(boxes[i]->name, box)) i++;
 	if (!boxes[i])
-		return luaL_error(L, "Unknown box name");
+		return luaL_error(L, "Unknown box name: %s", box);
 	chan_push(&channels[chan], boxes[i]);
 	lua_pushinteger(L, chan_state->stack_size - 1);
 	return 1;
