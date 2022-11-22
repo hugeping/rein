@@ -5,8 +5,7 @@
 #include "zvon_sfx.h"
 
 enum {
-    ZV_SAMPLES_INIT = ZV_END + 1,
-    ZV_SAMPLES_ADD,
+    ZV_SAMPLES_LOAD = ZV_END + 1,
     ZV_SAMPLES_RESET,
 };
 
@@ -105,11 +104,9 @@ samples_change(struct samples_state *s, int param, float val, float *data)
 {
 	int i;
 	switch (param) {
-	case ZV_SAMPLES_INIT:
+	case ZV_SAMPLES_LOAD:
 		free(s->data);
 		s->data = calloc(val, sizeof(float));
-		break;
-	case ZV_SAMPLES_ADD:
 		if (!data)
 			break;
 		for (i = 0; i < (int)val; i ++)
@@ -161,7 +158,7 @@ static struct sfx_proto samples_stereo_box = {
 
 static struct sfx_proto *boxes[] = { &empty_box, &custom_box,
 	&samples_box, &samples_stereo_box, &test_square_box,
-	&test_saw_box, &delay_box, NULL };
+	&test_saw_box, &sfx_delay, &sfx_dist, NULL };
 
 static struct chan_state channels[CHANNELS_MAX];
 
@@ -314,9 +311,9 @@ static struct {
 	{ "VOLUME", ZV_VOLUME },
 	{ "TIME", ZV_TIME },
 	{ "FEEDBACK", ZV_FEEDBACK },
-	{ "SAMPLES_INIT", ZV_SAMPLES_INIT },
-	{ "SAMPLES_ADD", ZV_SAMPLES_ADD },
+	{ "SAMPLES_LOAD", ZV_SAMPLES_LOAD },
 	{ "SAMPLES_RESET", ZV_SAMPLES_RESET },
+	{ "DRIVE", ZV_DRIVE },
 	{ NULL, },
 };
 

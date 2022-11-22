@@ -16,6 +16,7 @@ double saw(double phase, double width);
 double square(double phase, double width);
 double pwm(double phase, double offset, double width);
 unsigned int lfsr(unsigned int state, int bits, int *taps, int taps_size);
+double dist(double x, double drive);
 
 struct phasor_state {
     double phase;
