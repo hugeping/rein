@@ -51,7 +51,10 @@ local function showkeys()
 end
 
 function tune()
-  local voices = {'empty', 'empty', 'test_square','test_saw'}
+  mixer.voice('empty', 'empty')
+  mixer.voice('square', 'test_square')
+  mixer.voice('saw', 'test_square', 'test_delay', { synth.VOLUME, 0.1 } )
+  local voices = {'empty', 'empty', 'square', 'saw'}
   local pan = { 0, 0, -0.75, 0.75 }
   local song = [[
 C-3 A0 | ... .. | C-4 .. | C-3 64
