@@ -90,30 +90,35 @@ struct sfx_proto test_saw_box = {
     .state_size = sizeof(struct test_saw_state)
 };
 
-struct test_delay_state {
-    struct delay_state dly;
+struct delay_box_state {
+    struct delay_state d;
     double delay_buf[SR];
 };
 
-void test_delay_init(struct test_delay_state *s) {
-    delay_init(&s->dly, s->delay_buf, sec(0.5), 0.5, 0.5);
+void delay_box_init(struct delay_box_state *s) {
+    delay_init(&s->d, s->delay_buf, sec(0.5), 0.5, 0.5);
 }
 
-void test_delay_change(struct test_delay_state *s, int param, float val, float *user) {
+void delay_box_change(struct delay_box_state *s, int param, float val, float *user) {
     (void) user;
     if (param == ZV_VOLUME) {
-        s->dly.level = val;
+        s->d.level = val;
+    } else if (param == ZV_TIME) {
+        s->d.buf_size = limit(sec(val), 1, SR);
+        s->d.pos = 0;
+    } else if (param == ZV_FEEDBACK) {
+        s->d.fb = val;
     }
 }
 
-double test_delay_mono(struct test_delay_state *s, double l) {
-    return delay_next(&s->dly, l);
+double delay_box_mono(struct delay_box_state *s, double l) {
+    return delay_next(&s->d, l);
 }
 
-struct sfx_proto test_delay_box = {
-    .name = "test_delay",
-    .init = (sfx_init_func) test_delay_init,
-    .change = (sfx_change_func) test_delay_change,
-    .mono = (sfx_mono_func) test_delay_mono,
-    .state_size = sizeof(struct test_delay_state)
+struct sfx_proto delay_box = {
+    .name = "delay",
+    .init = (sfx_init_func) delay_box_init,
+    .change = (sfx_change_func) delay_box_change,
+    .mono = (sfx_mono_func) delay_box_mono,
+    .state_size = sizeof(struct delay_box_state)
 };

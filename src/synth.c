@@ -161,7 +161,7 @@ static struct sfx_proto samples_stereo_box = {
 
 static struct sfx_proto *boxes[] = { &empty_box, &custom_box,
 	&samples_box, &samples_stereo_box, &test_square_box,
-	&test_saw_box, &test_delay_box, NULL };
+	&test_saw_box, &delay_box, NULL };
 
 static struct chan_state channels[CHANNELS_MAX];
 
@@ -312,6 +312,8 @@ static struct {
 	{ "NOTE_ON", ZV_NOTE_ON },
 	{ "NOTE_OFF", ZV_NOTE_OFF },
 	{ "VOLUME", ZV_VOLUME },
+	{ "TIME", ZV_TIME },
+	{ "FEEDBACK", ZV_FEEDBACK },
 	{ "SAMPLES_INIT", ZV_SAMPLES_INIT },
 	{ "SAMPLES_ADD", ZV_SAMPLES_ADD },
 	{ "SAMPLES_RESET", ZV_SAMPLES_RESET },
