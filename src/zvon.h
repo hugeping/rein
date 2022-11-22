@@ -123,7 +123,7 @@ struct chan_state {
 
 void chan_set(struct chan_state *c, int is_on, double vol, double pan);
 void chan_free(struct chan_state *c);
-void *chan_push(struct chan_state *c, struct sfx_proto *proto);
+struct sfx_box *chan_push(struct chan_state *c, struct sfx_proto *proto);
 
 void mix_init(struct chan_state *channels, int num_channels);
 void mix_process(struct chan_state *channels, int num_channels, double vol, float *samples, int num_samples);

@@ -8,7 +8,8 @@
 enum {
     ZV_NOTE_ON,
     ZV_NOTE_OFF,
-    ZV_VOLUME
+    ZV_VOLUME,
+    ZV_END
 };
 
 extern struct sfx_proto test_square_box;
