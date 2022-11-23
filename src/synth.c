@@ -170,7 +170,7 @@ synth_change(lua_State *L)
 	float floats64[64];
 	float *floats = floats64;
 	const int chan = luaL_checkinteger(L, 1);
-	const int nr = luaL_checkinteger(L, 2);
+	int nr = luaL_checkinteger(L, 2);
 	const int param = luaL_checkinteger(L, 3);
 	double val;
 	struct sfx_box *box;
@@ -192,7 +192,9 @@ synth_change(lua_State *L)
 	}
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
-	if (nr >= channels[chan].stack_size)
+	if (nr < 0)
+		nr = channels[chan].stack_size + nr;
+	if (nr < 0 || nr >= channels[chan].stack_size)
 		return luaL_error(L, "Wrong stack position");
 	box = &channels[chan].stack[nr];
 	box->proto->change(box->state, param, val, (len == 0)?NULL:floats);
