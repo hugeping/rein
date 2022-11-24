@@ -56,7 +56,7 @@ unsigned int lfsr(unsigned int state, int bits, int *taps, int taps_size) {
     return (state >> 1) | ((~x & 1) << (bits - 1));
 }
 
-double dist(double x, double drive) {
+double softclip(double x, double drive) {
     return tanh(x * drive);
 }
 
@@ -148,6 +148,43 @@ double seq_next(struct env_state *s) {
     return env_next_head(s, step);
 }
 
+void adsr_init(struct adsr_state *s, int is_sustain_on) {
+    env_init(&s->env, 3, s->deltas, s->levels, 0);
+    env_set(&s->env, 0, sec(0.01), 1);
+    env_set(&s->env, 1, sec(0.1), 0.5);
+    env_set(&s->env, 2, sec(0.3), 0);
+    s->sustain_mode = is_sustain_on ? 1 : -1;
+}
+
+void adsr_set_attack(struct adsr_state *s, double t) {
+    s->env.deltas[0] = sec(t);
+}
+
+void adsr_set_decay(struct adsr_state *s, double t) {
+    s->env.deltas[1] = sec(t);
+}
+
+void adsr_set_sustain(struct adsr_state *s, double level) {
+    s->env.levels[1] = level;
+}
+
+void adsr_set_release(struct adsr_state *s, double t) {
+    s->env.deltas[2] = sec(t);
+}
+
+void adsr_note_on(struct adsr_state *s) {
+    env_reset(&s->env);
+    s->env.sustain_pos = s->sustain_mode;
+}
+
+void adsr_note_off(struct adsr_state *s) {
+    s->env.sustain_pos = -1;
+}
+
+double adsr_next(struct adsr_state *s) {
+    return env_next(&s->env);
+}
+
 void delay_init(struct delay_state *s, double *buf, size_t buf_size, double level, double fb) {
     s->buf = buf;
     s->buf_size = buf_size;
@@ -224,7 +261,7 @@ void chan_set(struct chan_state *c, int is_on, double vol, double pan) {
     c->pan = pan;
 }
 
-void chan_free(struct chan_state *c) {
+void chan_drop(struct chan_state *c) {
     for (int i = 0; i < c->stack_size; i++) {
         if (c->stack[i].proto->free) {
             c->stack[i].proto->free(c->stack[i].state);

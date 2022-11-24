@@ -16,7 +16,7 @@ double saw(double phase, double width);
 double square(double phase, double width);
 double pwm(double phase, double offset, double width);
 unsigned int lfsr(unsigned int state, int bits, int *taps, int taps_size);
-double dist(double x, double drive);
+double softclip(double x, double drive);
 
 struct phasor_state {
     double phase;
@@ -50,6 +50,22 @@ void env_reset(struct env_state *s);
 double env_next_head(struct env_state *s, env_func func);
 double env_next(struct env_state *s);
 double seq_next(struct env_state *s);
+
+struct adsr_state {
+    int deltas[3];
+    double levels[3];
+    struct env_state env;
+    int sustain_mode;
+};
+
+void adsr_init(struct adsr_state *s, int is_sustain_on);
+void adsr_set_attack(struct adsr_state *s, double t);
+void adsr_set_decay(struct adsr_state *s, double t);
+void adsr_set_sustain(struct adsr_state *s, double levels);
+void adsr_set_release(struct adsr_state *s, double t);
+void adsr_note_on(struct adsr_state *s);
+void adsr_note_off(struct adsr_state *s);
+double adsr_next(struct adsr_state *s);
 
 struct delay_state {
     double *buf;
@@ -91,7 +107,7 @@ struct noise_state {
 void noise_init(struct noise_state *s, int bits, int *taps, int taps_size);
 double noise_next(struct noise_state *s, double freq);
 
-typedef void (*sfx_change_func)(void *state, int param, float val, float *user);
+typedef void (*sfx_change_func)(void *state, int param, float val, float *data);
 typedef double (*sfx_mono_func)(void *state, double l);
 typedef void (*sfx_stereo_func)(void *state, double *l, double *r);
 typedef void (*sfx_init_func)(void *state);
@@ -123,7 +139,7 @@ struct chan_state {
 };
 
 void chan_set(struct chan_state *c, int is_on, double vol, double pan);
-void chan_free(struct chan_state *c);
+void chan_drop(struct chan_state *c);
 struct sfx_box *chan_push(struct chan_state *c, struct sfx_proto *proto);
 
 void mix_init(struct chan_state *channels, int num_channels);

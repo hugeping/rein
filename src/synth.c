@@ -157,8 +157,7 @@ static struct sfx_proto samples_stereo_box = {
 };
 
 static struct sfx_proto *boxes[] = { &empty_box, &custom_box,
-	&samples_box, &samples_stereo_box, &test_square_box,
-	&test_saw_box, &sfx_delay, &sfx_dist, NULL };
+	&samples_box, &samples_stereo_box, &sfx_delay, &sfx_dist, &sfx_synth, NULL };
 
 static struct chan_state channels[CHANNELS_MAX];
 
@@ -229,7 +228,7 @@ synth_free(lua_State *L)
 	const int chan = luaL_checkinteger(L, 1);
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
-	chan_free(&channels[chan]);
+	chan_drop(&channels[chan]);
 	return 0;
 }
 
@@ -281,14 +280,14 @@ synth_stop(lua_State *L)
 	const int chan = luaL_optinteger(L, 1, -1);
 	if (chan == -1) {
 		for (i = 0; i < CHANNELS_MAX; i ++) {
-			chan_free(&channels[i]);
+			chan_drop(&channels[i]);
 			chan_set(&channels[i], 0, 0, 0);
 		}
 		return 0;
 	}
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
-	chan_free(&channels[chan]);
+	chan_drop(&channels[chan]);
 	chan_set(&channels[chan], 0, 0, 0);
 	return 0;
 }
@@ -313,9 +312,17 @@ static struct {
 	{ "VOLUME", ZV_VOLUME },
 	{ "TIME", ZV_TIME },
 	{ "FEEDBACK", ZV_FEEDBACK },
+	{ "GAIN", ZV_GAIN },
+	{ "WAVE_TYPE", ZV_WAVE_TYPE },
+	{ "ATTACK_TIME", ZV_ATTACK_TIME },
+	{ "DECAY_TIME", ZV_DECAY_TIME },
+	{ "SUSTAIN_LEVEL", ZV_SUSTAIN_LEVEL },
+	{ "RELEASE_TIME", ZV_RELEASE_TIME },
 	{ "SAMPLES_LOAD", ZV_SAMPLES_LOAD },
 	{ "SAMPLES_RESET", ZV_SAMPLES_RESET },
-	{ "DRIVE", ZV_DRIVE },
+	{ "SIN", 0 },
+	{ "SQUARE", 1 },
+	{ "SAW", 2 },
 	{ NULL, },
 };
 

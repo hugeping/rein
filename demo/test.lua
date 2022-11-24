@@ -52,9 +52,10 @@ end
 
 function tune()
   mixer.voice('empty', 'empty')
-  mixer.voice('square', 'test_square')
-  mixer.voice('saw', 'test_square', 'delay',
-    { synth.VOLUME, 0.1 }, { synth.FEEDBACK, 0.9 }, { synth.TIME, 0.1 })
+  mixer.voice('square', 'synth', { synth.WAVE_TYPE, synth.SQUARE })
+  mixer.voice('saw', 'synth', { synth.WAVE_TYPE, synth.SAW },
+    { synth.ATTACK_TIME, 0.5 }, { synth.DECAY_TIME, 0.5 }, { synth.SUSTAIN_LEVEL, 0.5 },
+    'delay', { synth.VOLUME, 0.5 }, { synth.FEEDBACK, 0.5 }, { synth.TIME, 0.2 })
   local voices = {'empty', 'empty', 'square', 'saw'}
   local pan = { 0, 0, -0.75, 0.75 }
   local song = [[
