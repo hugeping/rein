@@ -25,7 +25,7 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, float val, fl
     } else if (param == ZV_NOTE_OFF) {
         adsr_note_off(&s->adsr);
     } else if (param == ZV_WAVE_TYPE) {
-        s->wave_type = limit(val, 0, 1);
+        s->wave_type = limit(val, 0, 2);
     } else if (param == ZV_ATTACK_TIME) {
         adsr_set_attack(&s->adsr, val);
     } else if (param == ZV_DECAY_TIME) {
