@@ -6,6 +6,8 @@
 struct sfx_synth_state {
     struct phasor_state phase;
     struct adsr_state adsr;
+    struct glide_state glide;
+    int is_glide_on;
     double freq;
     int wave_type;
 };
@@ -13,8 +15,10 @@ struct sfx_synth_state {
 static void sfx_synth_init(struct sfx_synth_state *s) {
     phasor_init(&s->phase);
     adsr_init(&s->adsr, 0);
+    glide_init(&s->glide, 440, 100);
     s->freq = 0;
     s->wave_type = 0;
+    s->is_glide_on = 0;
 }
 
 static void sfx_synth_change(struct sfx_synth_state *s, int param, float val, float *data) {
@@ -25,7 +29,7 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, float val, fl
     } else if (param == ZV_NOTE_OFF) {
         adsr_note_off(&s->adsr);
     } else if (param == ZV_WAVE_TYPE) {
-        s->wave_type = limit(val, 0, 2);
+        s->wave_type = val;
     } else if (param == ZV_ATTACK_TIME) {
         adsr_set_attack(&s->adsr, val);
     } else if (param == ZV_DECAY_TIME) {
@@ -34,13 +38,20 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, float val, fl
         adsr_set_sustain(&s->adsr, val);
     } else if (param == ZV_RELEASE_TIME) {
         adsr_set_release(&s->adsr, val);
+    } else if (param == ZV_GLIDE_MODE) {
+        s->is_glide_on = val;
+    } else if (param == ZV_GLIDE_RATE) {
+        glide_set_rate(&s->glide, val);
     }
 }
 
 static double sfx_synth_mono(struct sfx_synth_state *s, double l) {
     (void) l;
-    double x = 0;
-    double p = phasor_next(&s->phase, s->freq);
+    double x = 0, freq = s->freq;
+    if (s->is_glide_on) {
+        freq = glide_next(&s->glide, s->freq);
+    }
+    double p = phasor_next(&s->phase, freq);
     if (s->wave_type == 0) {
         x = sin(p);
     } else if (s->wave_type == 1) {

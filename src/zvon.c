@@ -215,6 +215,10 @@ double filter_hp_next(struct filter_state *s, double x, double width) {
 
 void glide_init(struct glide_state *s, double source, double rate) {
     s->source = source;
+    glide_set_rate(s, rate);
+}
+
+void glide_set_rate(struct glide_state *s, double rate) {
     s->rate = rate * (1. / SR);
 }
 
