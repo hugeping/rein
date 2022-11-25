@@ -52,10 +52,12 @@ end
 
 function tune()
   mixer.voice('empty', 'empty')
-  mixer.voice('square', 'synth', { synth.WAVE_TYPE, synth.SQUARE },  { synth.GLIDE_ON, 50 }, { synth.WIDTH_LFO_OFFSET, 0.7 } )
+  mixer.voice('square', 'synth', { synth.WAVE_TYPE, synth.SQUARE }, { synth.GLIDE_ON, 50 },
+    { synth.WIDTH_LFO_OFFSET, 0.7 } )
   mixer.voice('saw', 'synth', { synth.WAVE_TYPE, synth.SAW },
     { synth.ATTACK_TIME, 0.5 }, { synth.DECAY_TIME, 0.5 }, { synth.SUSTAIN_LEVEL, 0.5 },
-    'delay', { synth.VOLUME, 1 }, { synth.FEEDBACK, 0.5 }, { synth.TIME, 0.2 }, 'dist', { synth.GAIN, 1})
+    'delay', { synth.VOLUME, 1 }, { synth.FEEDBACK, 0.5 }, { synth.TIME, 0.2 }, 'dist', { synth.GAIN, 1},
+    { synth.FREQ_LFO_WAVE_TYPE, 4 }, { synth.FREQ_LFO_FREQ, 5 }, { synth.FREQ_LFO_LEVEL, 10 })
   local voices = {'empty', 'empty', 'square', 'saw'}
   local pan = { 0, 0, -0.75, 0.75 }
   local song = [[
