@@ -116,7 +116,7 @@ struct lfo_state {
     int is_oneshot;
 };
 
-void lfo_init(struct lfo_state *s, int func, int sign, double freq, double level, double offset, int is_oneshot);
+void lfo_init(struct lfo_state *s, int func, int sign, double freq, double level, int is_oneshot);
 double lfo_func(double x, int func);
 double lfo_next(struct lfo_state *s);
 
