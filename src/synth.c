@@ -333,9 +333,10 @@ static struct {
 	{ "WIDTH_LFO_IS_ONESHOT", ZV_WIDTH_LFO_IS_ONESHOT },
 	{ "SAMPLES_LOAD", ZV_SAMPLES_LOAD },
 	{ "SAMPLES_RESET", ZV_SAMPLES_RESET },
-	{ "SIN", 0 },
-	{ "SQUARE", 1 },
-	{ "SAW", 2 },
+	{ "SIN", ZV_SIN },
+	{ "SQUARE", ZV_SQUARE },
+	{ "SAW", ZV_SAW },
+	{ "TRIANGLE", ZV_TRIANGLE },
 	{ NULL, },
 };
 
