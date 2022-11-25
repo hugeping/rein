@@ -120,42 +120,11 @@ void lfo_init(struct lfo_state *s, int func, int sign, double freq, double level
 double lfo_func(double x, int func);
 double lfo_next(struct lfo_state *s);
 
-typedef void (*sfx_change_func)(void *state, int param, float val, float *data);
-typedef double (*sfx_mono_func)(void *state, double l);
-typedef void (*sfx_stereo_func)(void *state, double *l, double *r);
-typedef void (*sfx_init_func)(void *state);
-typedef void (*sfx_free_func)(void *state);
-
-struct sfx_box {
-    struct sfx_proto *proto;
-    void *state;
+enum {
+    LFO_SIN,
+    LFO_SAW,
+    LFO_SQUARE,
+    LFO_TRIANGLE
 };
-
-struct sfx_proto {
-    char *name;
-    sfx_change_func change;
-    sfx_mono_func mono;
-    sfx_stereo_func stereo;
-    sfx_init_func init;
-    sfx_free_func free;
-    size_t state_size;
-};
-
-#define MAX_SFX_BOXES 8
-
-struct chan_state {
-    int is_on;
-    double vol;
-    double pan;
-    struct sfx_box stack[MAX_SFX_BOXES];
-    int stack_size;
-};
-
-void chan_set(struct chan_state *c, int is_on, double vol, double pan);
-void chan_drop(struct chan_state *c);
-struct sfx_box *chan_push(struct chan_state *c, struct sfx_proto *proto);
-
-void mix_init(struct chan_state *channels, int num_channels);
-void mix_process(struct chan_state *channels, int num_channels, double vol, float *samples, int num_samples);
 
 #endif

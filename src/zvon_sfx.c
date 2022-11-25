@@ -1,7 +1,75 @@
 /* Author: Peter Sovietov */
 
 #include <math.h>
+#include <stdlib.h>
 #include "zvon_sfx.h"
+
+void mix_init(struct chan_state *channels, int num_channels) {
+    for (int i = 0; i < num_channels; i++) {
+        struct chan_state *c = &channels[i];
+        chan_set(c, 0, 0, 0);
+        c->stack_size = 0;
+    }
+}
+
+void chan_set(struct chan_state *c, int is_on, double vol, double pan) {
+    c->is_on = is_on;
+    c->vol = vol;
+    c->pan = pan;
+}
+
+void chan_drop(struct chan_state *c) {
+    for (int i = 0; i < c->stack_size; i++) {
+        if (c->stack[i].proto->free) {
+            c->stack[i].proto->free(c->stack[i].state);
+        }
+        free(c->stack[i].state);
+    }
+    c->stack_size = 0;
+}
+
+struct sfx_box *chan_push(struct chan_state *c, struct sfx_proto *proto) {
+    if (c->stack_size < MAX_SFX_BOXES) {
+        struct sfx_box *box = &c->stack[c->stack_size];
+        box->proto = proto;
+        box->state = calloc(1, proto->state_size);
+        if (box->state || !box->proto->state_size) {
+            proto->init(box->state);
+            c->stack_size++;
+            return box;
+        }
+    }
+    return NULL;
+}
+
+static void chan_process(struct sfx_box *stack, int stack_size, double *l, double *r) {
+    for (int i = 0; i < stack_size; i++) {
+        if (stack[i].proto->stereo) {
+            stack[i].proto->stereo(stack[i].state, l, r);
+        } else {
+            *l = stack[i].proto->mono(stack[i].state, *l);
+            *r = *l;
+        }
+    }
+}
+
+void mix_process(struct chan_state *channels, int num_channels, double vol, float *samples, int num_samples) {
+    for (; num_samples; num_samples--, samples += 2) {
+        double left = 0, right = 0;
+        for (int i = 0; i < num_channels; i++) {
+            struct chan_state *c = &channels[i];
+            double l = 0, r = 0;
+            if (c->is_on) {
+                chan_process(c->stack, c->stack_size, &l, &r);
+                double pan = (c->pan + 1) * 0.5;
+                left += c->vol * l * (1 - pan);
+                right += c->vol * r * pan;
+            }
+        }
+        samples[0] = vol * left;
+        samples[1] = vol * right;
+    }
+}
 
 struct sfx_synth_state {
     struct phasor_state phase;
@@ -20,9 +88,9 @@ static void sfx_synth_init(struct sfx_synth_state *s) {
     phasor_init(&s->phase);
     adsr_init(&s->adsr, 0);
     glide_init(&s->glide, 440, 100);
-    lfo_init(&s->freq_lfo, 0, 1, 0, 1, 0);
-    lfo_init(&s->width_lfo, 0, 1, 0, 1, 0);
-    s->wave_type = 0;
+    lfo_init(&s->freq_lfo, ZV_SIN, 1, 0, 1, 0);
+    lfo_init(&s->width_lfo, ZV_SIN, 1, 0, 1, 0);
+    s->wave_type = ZV_SIN;
     s->freq = 0;
     s->wave_width = 0.5;
     s->is_glide_on = 0;
@@ -108,12 +176,12 @@ static double sfx_synth_mono(struct sfx_synth_state *s, double l) {
     freq = limit(freq + lfo_next(&s->freq_lfo), 0, 15000);
     double width = limit(s->wave_width + lfo_next(&s->width_lfo), 0, 0.9);
     double phase = phasor_next(&s->phase, freq);
-    if (s->wave_type == 0) {
+    if (s->wave_type == ZV_SIN) {
         x = sin(phase);
-    } else if (s->wave_type == 1) {
-        x = square(phase, width);
-    } else if (s->wave_type == 2) {
+    } else if (s->wave_type == ZV_SAW) {
         x = saw(phase, width);
+    } else if (s->wave_type == ZV_SQUARE) {
+        x = square(phase, width);
     }
     return x * adsr_next(&s->adsr) * s->vol;
 }
