@@ -92,6 +92,7 @@ struct glide_state {
 };
 
 void glide_init(struct glide_state *s, double source, double rate);
+void glide_set_rate(struct glide_state *s, double rate);
 double glide_next(struct glide_state *s, double target);
 
 #define MAX_TAPS 32
