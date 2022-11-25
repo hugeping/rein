@@ -52,7 +52,7 @@ end
 
 function tune()
   mixer.voice('empty', 'empty')
-  mixer.voice('square', 'synth', { synth.WAVE_TYPE, synth.SQUARE }, { synth.GLIDE_MODE, 1 }, { synth.GLIDE_RATE, 50 })
+  mixer.voice('square', 'synth', { synth.WAVE_TYPE, synth.SQUARE },  { synth.GLIDE_ON, 50 }, { synth.WIDTH_LFO_OFFSET, 0.7 } )
   mixer.voice('saw', 'synth', { synth.WAVE_TYPE, synth.SAW },
     { synth.ATTACK_TIME, 0.5 }, { synth.DECAY_TIME, 0.5 }, { synth.SUSTAIN_LEVEL, 0.5 },
     'delay', { synth.VOLUME, 1 }, { synth.FEEDBACK, 0.5 }, { synth.TIME, 0.2 }, 'dist', { synth.GAIN, 1})
