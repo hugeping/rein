@@ -83,13 +83,17 @@ struct sfx_synth_state {
     int is_glide_on;
     int wave_type;
     double wave_width;
+    double wave_offset;
     double freq;
     double vol;
 };
 
-#define LFO_TARGET_FREQ 0 
-#define LFO_TARGET_WIDTH 1
-#define LFO_TARGET_NONE -1
+enum {
+    LFO_TARGET_NONE,
+    LFO_TARGET_FREQ,
+    LFO_TARGET_WIDTH,
+    LFO_TARGET_OFFSET
+};
 
 static void sfx_synth_init(struct sfx_synth_state *s) {
     phasor_init(&s->phase);
@@ -97,12 +101,10 @@ static void sfx_synth_init(struct sfx_synth_state *s) {
     glide_init(&s->glide, 440, 100);
     for (int i = 0; i < SYNTH_LFOS; i++) {
         lfo_init(&s->lfo[i], ZV_SIN, 1, 0, 1, 0);
-        s->lfo_target[i] = LFO_TARGET_NONE;
     }
     s->wave_type = ZV_SIN;
-    s->freq = 0;
     s->wave_width = 0.5;
-    s->is_glide_on = 0;
+    s->wave_offset = 0.5;
 }
 
 static void sfx_synth_change(struct sfx_synth_state *s, int param, double val) {
@@ -125,6 +127,9 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, double val) {
         break;
     case ZV_WAVE_WIDTH:
         s->wave_width = val;
+        break;
+    case ZV_WAVE_OFFSET:
+        s->wave_offset = val;
         break;
     case ZV_ATTACK_TIME:
         adsr_set_attack(&s->adsr, val);
@@ -150,6 +155,9 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, double val) {
         break;
     case ZV_LFO_TO_WIDTH:
        s->lfo_target[(int) limit(val, 0, SYNTH_LFOS - 1)] = LFO_TARGET_WIDTH;
+        break;
+    case ZV_LFO_TO_OFFSET:
+       s->lfo_target[(int) limit(val, 0, SYNTH_LFOS - 1)] = LFO_TARGET_OFFSET;
         break;
     case ZV_LFO_SELECT:
         s->lfo_current = limit(val, 0, SYNTH_LFOS - 1);
@@ -177,11 +185,14 @@ static double sfx_synth_mono(struct sfx_synth_state *s, double l) {
     double x = 0;
     double freq = s->is_glide_on ? glide_next(&s->glide, s->freq) : s->freq;
     double width = s->wave_width;
+    double offset = s->wave_offset;
     for(int i = 0; i < SYNTH_LFOS; i++) {
         if (s->lfo_target[i] == LFO_TARGET_FREQ) {
             freq += lfo_next(&s->lfo[i]);
         } else if (s->lfo_target[i] == LFO_TARGET_WIDTH) {
             width += lfo_next(&s->lfo[i]);
+        } else if (s->lfo_target[i] == LFO_TARGET_OFFSET) {
+            offset += lfo_next(&s->lfo[i]);
         }
     }
     double phase = phasor_next(&s->phase, limit(freq, 0, 15000));
@@ -192,6 +203,10 @@ static double sfx_synth_mono(struct sfx_synth_state *s, double l) {
         x = saw(phase, width);
     } else if (s->wave_type == ZV_SQUARE) {
         x = square(phase, width);
+    } else if (s->wave_type == ZV_PWM) {
+        x = pwm(phase, offset, width);
+    } else if (s->wave_type == ZV_FM) {
+        x = dsf(phase, offset, width);
     }
     return x * adsr_next(&s->adsr) * s->vol;
 }

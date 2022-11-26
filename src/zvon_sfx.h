@@ -52,6 +52,7 @@ enum {
     ZV_GAIN,
     ZV_WAVE_TYPE,
     ZV_WAVE_WIDTH,
+    ZV_WAVE_OFFSET,
     ZV_ATTACK_TIME,
     ZV_DECAY_TIME,
     ZV_SUSTAIN_LEVEL,
@@ -66,6 +67,7 @@ enum {
     ZV_LFO_IS_ONESHOT,
     ZV_LFO_TO_FREQ,
     ZV_LFO_TO_WIDTH,
+    ZV_LFO_TO_OFFSET,
     ZV_END
 };
 
@@ -73,7 +75,9 @@ enum {
     ZV_SIN = LFO_SIN,
     ZV_SAW = LFO_SAW,
     ZV_SQUARE = LFO_SQUARE,
-    ZV_TRIANGLE = LFO_TRIANGLE
+    ZV_TRIANGLE = LFO_TRIANGLE,
+    ZV_PWM,
+    ZV_FM
 };
 
 extern struct sfx_proto sfx_synth;
