@@ -77,6 +77,7 @@ struct sfx_synth_state {
     struct phasor_state phase;
     struct adsr_state adsr;
     struct glide_state glide;
+    struct noise_state noise;
     struct lfo_state lfo[SYNTH_LFOS];
     int lfo_target[SYNTH_LFOS];
     int lfo_current;
@@ -100,6 +101,7 @@ static void sfx_synth_init(struct sfx_synth_state *s) {
     phasor_init(&s->phase);
     adsr_init(&s->adsr, 0);
     glide_init(&s->glide, 440, 100);
+    noise_init(&s->noise, 16, (int[]) {0, 3, 10}, 3);
     for (int i = 0; i < SYNTH_LFOS; i++) {
         lfo_init(&s->lfo[i], ZV_SIN, 1, 0, 1, 0);
     }
@@ -187,9 +189,10 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, double val) {
 
 static double sfx_synth_mono(struct sfx_synth_state *s, double l) {
     (void) l;
-    double x = 0;
     double freq = s->freq * s->freq_scaler;
-    freq = s->is_glide_on ? glide_next(&s->glide, freq) : freq;
+    if (s->is_glide_on) {
+        freq = glide_next(&s->glide, freq);
+    }
     double width = s->wave_width;
     double offset = s->wave_offset;
     for(int i = 0; i < SYNTH_LFOS; i++) {
@@ -203,6 +206,7 @@ static double sfx_synth_mono(struct sfx_synth_state *s, double l) {
     }
     double phase = phasor_next(&s->phase, limit(freq, 0, 15000));
     width = limit(width, 0, 0.9);
+    double x = 0;
     if (s->wave_type == ZV_SIN) {
         x = sin(phase);
     } else if (s->wave_type == ZV_SAW) {
@@ -213,6 +217,8 @@ static double sfx_synth_mono(struct sfx_synth_state *s, double l) {
         x = pwm(phase, offset, width);
     } else if (s->wave_type == ZV_FM) {
         x = dsf(phase, offset, width);
+    } else if (s->wave_type == ZV_NOISE) {
+        x = noise_next(&s->noise, freq);
     }
     return x * adsr_next(&s->adsr) * s->vol;
 }

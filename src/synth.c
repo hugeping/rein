@@ -194,6 +194,7 @@ static struct {
 	{ "TRIANGLE", ZV_TRIANGLE },
 	{ "PWM", ZV_PWM },
 	{ "FM", ZV_FM },
+	{ "NOISE", ZV_NOISE },
 	{ NULL, },
 };
 
