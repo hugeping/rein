@@ -85,6 +85,7 @@ struct sfx_synth_state {
     double wave_width;
     double wave_offset;
     double freq;
+    double freq_scaler;
     double vol;
 };
 
@@ -102,6 +103,7 @@ static void sfx_synth_init(struct sfx_synth_state *s) {
     for (int i = 0; i < SYNTH_LFOS; i++) {
         lfo_init(&s->lfo[i], ZV_SIN, 1, 0, 1, 0);
     }
+    s->freq_scaler = 1;
     s->wave_type = ZV_SIN;
     s->wave_width = 0.5;
     s->wave_offset = 0.5;
@@ -150,6 +152,9 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, double val) {
     case ZV_GLIDE_OFF:
         s->is_glide_on = 0;
         break;
+    case ZV_FREQ_SCALER:
+        s->freq_scaler = val;
+        break;
     case ZV_LFO_TO_FREQ:
         s->lfo_target[(int) limit(val, 0, SYNTH_LFOS - 1)] = LFO_TARGET_FREQ;
         break;
@@ -183,7 +188,8 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, double val) {
 static double sfx_synth_mono(struct sfx_synth_state *s, double l) {
     (void) l;
     double x = 0;
-    double freq = s->is_glide_on ? glide_next(&s->glide, s->freq) : s->freq;
+    double freq = s->freq * s->freq_scaler;
+    freq = s->is_glide_on ? glide_next(&s->glide, freq) : freq;
     double width = s->wave_width;
     double offset = s->wave_offset;
     for(int i = 0; i < SYNTH_LFOS; i++) {
