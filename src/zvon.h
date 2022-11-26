@@ -112,7 +112,6 @@ struct lfo_state {
     int func;
     int sign;
     double level;
-    double offset;
     int is_oneshot;
 };
 

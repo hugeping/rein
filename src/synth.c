@@ -11,64 +11,14 @@ enum {
 
 #define CHANNELS_MAX 32
 
-#define CUSTOM_BUF (1024*2)
-struct custom_synth_state {
-	double data[CUSTOM_BUF];
-	unsigned int head;
-	unsigned int tail;
-	unsigned int size;
-	unsigned int free;
-};
-
-static void
-custom_synth_init(struct custom_synth_state *s)
-{
-	s->head = s->tail = 0;
-	s->free = s->size = CUSTOM_BUF;
-}
-
-static void
-custom_synth_change(struct custom_synth_state *s, int param, float size, float *data)
-{
-	int i;
-	unsigned int pos = s->tail;
-	if (!s->free)
-		return;
-	for (i = 0; i < size/2 && s->free; i ++) {
-		s->data[pos++ % s->size] = data[i++];
-		s->data[pos++ % s->size] = data[i++];
-		s->tail = pos % s->size;
-		s->free -= 2;
-	}
-}
-
-static void
-custom_synth_stereo(struct custom_synth_state *s, double *l, double *r)
-{
-	if (!(s->size - s->free))
-		return;
-	*l = s->data[s->head ++ % s->size];
-	*r = s->data[s->head ++ % s->size];
-	s->head %= s->size;
-	s->free += 2;
-}
-
-static struct sfx_proto custom_box = {
-	.name = "custom_stereo",
-	.change = (sfx_change_func) custom_synth_change,
-	.stereo = (sfx_stereo_func) custom_synth_stereo,
-	.state_size = sizeof(struct custom_synth_state),
-	.init = (sfx_init_func) custom_synth_init,
-};
-
 static double
-empty_mono(struct custom_synth_state *s, double x)
+empty_mono(void *s, double x)
 {
 	return 0.0;
 }
 
 static void
-empty_change(void *s, int param, float val, float *data)
+empty_change(void *s, int param, float val)
 {
 }
 
@@ -85,110 +35,18 @@ static struct sfx_proto empty_box = {
 	.state_size = 0,
 };
 
-
-struct samples_state {
-	int stereo;
-	float *data;
-	unsigned int head;
-	unsigned int size;
-};
-
-static void
-samples_free(struct samples_state *s)
-{
-	free(s->data);
-}
-
-static void
-samples_change(struct samples_state *s, int param, float val, float *data)
-{
-	int i;
-	switch (param) {
-	case ZV_SAMPLES_LOAD:
-		free(s->data);
-		s->data = calloc(val, sizeof(float));
-		if (!data)
-			break;
-		for (i = 0; i < (int)val; i ++)
-			s->data[i] = data[i];
-		s->size = val;
-		break;
-	case ZV_SAMPLES_RESET:
-		s->head = 0;
-		break;
-	default:
-		s->head = 0;
-	}
-}
-
-static double
-samples_mono(struct samples_state *s, double x)
-{
-	if (s->head >= s->size || !s->data)
-		return x;
-	return s->data[s->head++];
-}
-
-static void
-samples_stereo(struct samples_state *s, double *l, double *r)
-{
-	if (s->head >= s->size || !s->data)
-		return;
-	*l = s->data[s->head++];
-	*r = s->data[s->head++];
-}
-
-static struct sfx_proto samples_box = {
-	.name = "samples",
-	.change = (sfx_change_func) samples_change,
-	.mono = (sfx_mono_func) samples_mono,
-	.state_size = sizeof(struct samples_state),
-	.init = (sfx_init_func) empty_init,
-	.free = (sfx_free_func) samples_free,
-};
-
-static struct sfx_proto samples_stereo_box = {
-	.name = "samples-stereo",
-	.change = (sfx_change_func) samples_change,
-	.stereo = (sfx_stereo_func) samples_stereo,
-	.state_size = sizeof(struct samples_state),
-	.init = (sfx_init_func) empty_init,
-	.free = (sfx_free_func) samples_free,
-};
-
-static struct sfx_proto *boxes[] = { &empty_box, &custom_box,
-	&samples_box, &samples_stereo_box, &sfx_delay, &sfx_dist, &sfx_synth, NULL };
+static struct sfx_proto *boxes[] = { &empty_box, &sfx_delay, &sfx_dist, &sfx_synth, NULL };
 
 static struct chan_state channels[CHANNELS_MAX];
 
 static int
 synth_change(lua_State *L)
 {
-	int len = 0, i;
-	float f;
-	float floats64[64];
-	float *floats = floats64;
 	const int chan = luaL_checkinteger(L, 1);
 	int nr = luaL_checkinteger(L, 2);
 	const int param = luaL_checkinteger(L, 3);
-	double val;
+	const double val = luaL_checknumber(L, 4);
 	struct sfx_box *box;
-	if (lua_istable(L, 4)) {
-		len = lua_rawlen(L, 4);
-		if (len > 64)
-			floats = calloc(len, sizeof(float));
-		if (!floats)
-			return luaL_error(L, "To much arg table");
-		for (i = 1; i <= len; i++) {
-			lua_rawgeti(L, 4, i);
-			f = luaL_checknumber(L, -1);
-			lua_pop(L, 1);
-			floats[i - 1] = f;
-		}
-		val = len;
-	} else {
-		val  = luaL_optnumber(L, 4, 0);
-	}
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
 	if (nr < 0)
@@ -196,9 +54,7 @@ synth_change(lua_State *L)
 	if (nr < 0 || nr >= channels[chan].stack_size)
 		return luaL_error(L, "Wrong stack position");
 	box = &channels[chan].stack[nr];
-	box->proto->change(box->state, param, val, (len == 0)?NULL:floats);
-	if (floats != floats64)
-		free(floats);
+	box->proto->change(box->state, param, val);
 	return 0;
 }
 
@@ -321,18 +177,14 @@ static struct {
 	{ "RELEASE_TIME", ZV_RELEASE_TIME },
 	{ "GLIDE_ON", ZV_GLIDE_ON },
 	{ "GLIDE_OFF", ZV_GLIDE_OFF },
-	{ "FREQ_LFO_WAVE_TYPE", ZV_FREQ_LFO_WAVE_TYPE },
-	{ "FREQ_LFO_WAVE_SIGN", ZV_FREQ_LFO_WAVE_SIGN },
-	{ "FREQ_LFO_FREQ", ZV_FREQ_LFO_FREQ },
-	{ "FREQ_LFO_LEVEL", ZV_FREQ_LFO_LEVEL },
-	{ "FREQ_LFO_IS_ONESHOT", ZV_FREQ_LFO_IS_ONESHOT },
-	{ "WIDTH_LFO_WAVE_TYPE", ZV_WIDTH_LFO_WAVE_TYPE },
-	{ "WIDTH_LFO_WAVE_SIGN", ZV_WIDTH_LFO_WAVE_SIGN },
-	{ "WIDTH_LFO_FREQ", ZV_WIDTH_LFO_FREQ },
-	{ "WIDTH_LFO_LEVEL", ZV_WIDTH_LFO_LEVEL },
-	{ "WIDTH_LFO_IS_ONESHOT", ZV_WIDTH_LFO_IS_ONESHOT },
-	{ "SAMPLES_LOAD", ZV_SAMPLES_LOAD },
-	{ "SAMPLES_RESET", ZV_SAMPLES_RESET },
+	{ "LFO_SELECT", ZV_LFO_SELECT },
+	{ "LFO_WAVE_TYPE", ZV_LFO_WAVE_TYPE },
+	{ "LFO_WAVE_SIGN", ZV_LFO_WAVE_SIGN },
+	{ "LFO_FREQ", ZV_LFO_FREQ },
+	{ "LFO_LEVEL", ZV_LFO_LEVEL },
+	{ "LFO_IS_ONESHOT", ZV_LFO_IS_ONESHOT },
+	{ "LFO_TO_FREQ", ZV_LFO_TO_FREQ },
+	{ "LFO_TO_WIDTH", ZV_LFO_TO_WIDTH },
 	{ "SIN", ZV_SIN },
 	{ "SQUARE", ZV_SQUARE },
 	{ "SAW", ZV_SAW },
