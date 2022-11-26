@@ -82,7 +82,11 @@ function tune()
     { synth.FEEDBACK, 0.5 },
     { synth.TIME, 0.2 },
     'dist',
-    { synth.GAIN, 1})
+    { synth.GAIN, 1},
+    'filter',
+    { synth.FILTER_TYPE, synth.FILTER_LP },
+    { synth.FILTER_WIDTH, 0.1 },
+    { synth.VOLUME, 1 })
   local voices = {'bass', 'empty', 'square', 'saw'}
   local pan = { 0, 0, -0.75, 0.75 }
   local song = [[
