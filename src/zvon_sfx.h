@@ -69,6 +69,8 @@ enum {
     ZV_LFO_TO_FREQ,
     ZV_LFO_TO_WIDTH,
     ZV_LFO_TO_OFFSET,
+    ZV_FILTER_TYPE,
+    ZV_FILTER_WIDTH,
     ZV_END
 };
 
@@ -82,8 +84,14 @@ enum {
     ZV_NOISE
 };
 
+enum {
+    ZV_FILTER_LP,
+    ZV_FILTER_HP
+};
+
 extern struct sfx_proto sfx_synth;
 extern struct sfx_proto sfx_delay;
 extern struct sfx_proto sfx_dist;
+extern struct sfx_proto sfx_filter;
 
 #endif

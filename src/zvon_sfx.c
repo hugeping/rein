@@ -294,3 +294,42 @@ struct sfx_proto sfx_dist = {
     .mono = (sfx_mono_func) sfx_dist_mono,
     .state_size = sizeof(struct sfx_dist_state)
 };
+
+struct sfx_filter_state {
+    struct filter_state filter;
+    int type;
+    double width;
+    double vol;
+};
+
+static void sfx_filter_init(struct sfx_filter_state *s) {
+    filter_init(&s->filter);
+    s->vol = 1;
+}
+
+static void sfx_filter_change(struct sfx_filter_state *s, int param, double val) {
+    if (param == ZV_VOLUME) {
+        s->vol = val;
+    } else if (param == ZV_FILTER_TYPE) {
+        s->type = val;
+    } else if (param == ZV_FILTER_WIDTH) {
+        s->width = val;
+    }
+}
+
+static double sfx_filter_mono(struct sfx_filter_state *s, double l) {
+    if (s->type == ZV_FILTER_LP) {
+        return s->vol * filter_lp_next(&s->filter, l, s->width);
+    } else if (s->type == ZV_FILTER_HP) {
+        return s->vol * filter_hp_next(&s->filter, l, s->width);
+    }
+    return 0;
+}
+
+struct sfx_proto sfx_filter = {
+    .name = "filter",
+    .init = (sfx_init_func) sfx_filter_init,
+    .change = (sfx_change_func) sfx_filter_change,
+    .mono = (sfx_mono_func) sfx_filter_mono,
+    .state_size = sizeof(struct sfx_filter_state)
+};

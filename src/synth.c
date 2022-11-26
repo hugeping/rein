@@ -35,7 +35,7 @@ static struct sfx_proto empty_box = {
 	.state_size = 0,
 };
 
-static struct sfx_proto *boxes[] = { &empty_box, &sfx_delay, &sfx_dist, &sfx_synth, NULL };
+static struct sfx_proto *boxes[] = { &empty_box, &sfx_delay, &sfx_dist, &sfx_synth, &sfx_filter, NULL };
 
 static struct chan_state channels[CHANNELS_MAX];
 
@@ -188,6 +188,8 @@ static struct {
 	{ "LFO_TO_FREQ", ZV_LFO_TO_FREQ },
 	{ "LFO_TO_WIDTH", ZV_LFO_TO_WIDTH },
 	{ "LFO_TO_OFFSET", ZV_LFO_TO_OFFSET },
+	{ "FILTER_TYPE", ZV_FILTER_TYPE },
+	{ "FILTER_WIDTH", ZV_FILTER_WIDTH },
 	{ "SIN", ZV_SIN },
 	{ "SQUARE", ZV_SQUARE },
 	{ "SAW", ZV_SAW },
@@ -195,6 +197,8 @@ static struct {
 	{ "PWM", ZV_PWM },
 	{ "FM", ZV_FM },
 	{ "NOISE", ZV_NOISE },
+	{ "FILTER_LP", ZV_FILTER_LP },
+	{ "FILTER_HP", ZV_FILTER_HP },
 	{ NULL, },
 };
 

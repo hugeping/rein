@@ -16,7 +16,7 @@ double limit(double x, double low, double high) {
 }
 
 double lerp(double a, double b, double x) {
-    return a * (1 - x) + b * x;
+    return a + x * (b - a);
 }
 
 double hertz(double t, double freq) {
@@ -200,7 +200,7 @@ double filter_lp_next(struct filter_state *s, double x, double width) {
 }
 
 double filter_hp_next(struct filter_state *s, double x, double width) {
-    return x - filter_lp_next(s, x, width);
+    return x - filter_lp_next(s, x, 1 - width);
 }
 
 void glide_init(struct glide_state *s, double source, double rate) {
