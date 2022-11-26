@@ -78,7 +78,8 @@ enum {
     ZV_SQUARE = LFO_SQUARE,
     ZV_TRIANGLE = LFO_TRIANGLE,
     ZV_PWM,
-    ZV_FM
+    ZV_FM,
+    ZV_NOISE
 };
 
 extern struct sfx_proto sfx_synth;
