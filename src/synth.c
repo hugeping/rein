@@ -171,6 +171,7 @@ static struct {
 	{ "GAIN", ZV_GAIN },
 	{ "WAVE_TYPE", ZV_WAVE_TYPE },
 	{ "WAVE_WIDTH", ZV_WAVE_WIDTH },
+	{ "WAVE_OFFSET", ZV_WAVE_OFFSET },
 	{ "ATTACK_TIME", ZV_ATTACK_TIME },
 	{ "DECAY_TIME", ZV_DECAY_TIME },
 	{ "SUSTAIN_LEVEL", ZV_SUSTAIN_LEVEL },
@@ -185,10 +186,13 @@ static struct {
 	{ "LFO_IS_ONESHOT", ZV_LFO_IS_ONESHOT },
 	{ "LFO_TO_FREQ", ZV_LFO_TO_FREQ },
 	{ "LFO_TO_WIDTH", ZV_LFO_TO_WIDTH },
+	{ "LFO_TO_OFFSET", ZV_LFO_TO_OFFSET },
 	{ "SIN", ZV_SIN },
 	{ "SQUARE", ZV_SQUARE },
 	{ "SAW", ZV_SAW },
 	{ "TRIANGLE", ZV_TRIANGLE },
+	{ "PWM", ZV_PWM },
+	{ "FM", ZV_FM },
 	{ NULL, },
 };
 
