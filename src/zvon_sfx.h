@@ -5,7 +5,7 @@
 
 #include "zvon.h"
 
-typedef void (*sfx_change_func)(void *state, int param, float val, float *data);
+typedef void (*sfx_change_func)(void *state, int param, double val);
 typedef double (*sfx_mono_func)(void *state, double l);
 typedef void (*sfx_stereo_func)(void *state, double *l, double *r);
 typedef void (*sfx_init_func)(void *state);
@@ -58,16 +58,14 @@ enum {
     ZV_RELEASE_TIME,
     ZV_GLIDE_ON,
     ZV_GLIDE_OFF,
-    ZV_FREQ_LFO_WAVE_TYPE,
-    ZV_FREQ_LFO_WAVE_SIGN,
-    ZV_FREQ_LFO_FREQ,
-    ZV_FREQ_LFO_LEVEL,
-    ZV_FREQ_LFO_IS_ONESHOT,
-    ZV_WIDTH_LFO_WAVE_TYPE,
-    ZV_WIDTH_LFO_WAVE_SIGN,
-    ZV_WIDTH_LFO_FREQ,
-    ZV_WIDTH_LFO_LEVEL,
-    ZV_WIDTH_LFO_IS_ONESHOT,
+    ZV_LFO_SELECT,
+    ZV_LFO_WAVE_TYPE,
+    ZV_LFO_WAVE_SIGN,
+    ZV_LFO_FREQ,
+    ZV_LFO_LEVEL,
+    ZV_LFO_IS_ONESHOT,
+    ZV_LFO_TO_FREQ,
+    ZV_LFO_TO_WIDTH,
     ZV_END
 };
 

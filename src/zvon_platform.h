@@ -1,6 +1,8 @@
 #ifndef ZVON_PLATFORM_H
 #define ZVON_PLATFORM_H
+
 #include <stddef.h>
+
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 

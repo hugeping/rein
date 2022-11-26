@@ -71,12 +71,15 @@ void mix_process(struct chan_state *channels, int num_channels, double vol, floa
     }
 }
 
+#define SYNTH_LFOS 4
+
 struct sfx_synth_state {
     struct phasor_state phase;
     struct adsr_state adsr;
     struct glide_state glide;
-    struct lfo_state freq_lfo;
-    struct lfo_state width_lfo;
+    struct lfo_state lfo[SYNTH_LFOS];
+    int lfo_target[SYNTH_LFOS];
+    int lfo_current;
     int is_glide_on;
     int wave_type;
     double wave_width;
@@ -84,20 +87,25 @@ struct sfx_synth_state {
     double vol;
 };
 
+#define LFO_TARGET_FREQ 0 
+#define LFO_TARGET_WIDTH 1
+#define LFO_TARGET_NONE -1
+
 static void sfx_synth_init(struct sfx_synth_state *s) {
     phasor_init(&s->phase);
     adsr_init(&s->adsr, 0);
     glide_init(&s->glide, 440, 100);
-    lfo_init(&s->freq_lfo, ZV_SIN, 1, 0, 1, 0);
-    lfo_init(&s->width_lfo, ZV_SIN, 1, 0, 1, 0);
+    for (int i = 0; i < SYNTH_LFOS; i++) {
+        lfo_init(&s->lfo[i], ZV_SIN, 1, 0, 1, 0);
+        s->lfo_target[i] = LFO_TARGET_NONE;
+    }
     s->wave_type = ZV_SIN;
     s->freq = 0;
     s->wave_width = 0.5;
     s->is_glide_on = 0;
 }
 
-static void sfx_synth_change(struct sfx_synth_state *s, int param, float val, float *data) {
-    (void) data;
+static void sfx_synth_change(struct sfx_synth_state *s, int param, double val) {
     switch (param) {
     case ZV_VOLUME:
         s->vol = val;
@@ -105,8 +113,9 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, float val, fl
     case ZV_NOTE_ON:
         s->freq = val;
         adsr_note_on(&s->adsr);
-        s->freq_lfo.phase = 0;
-        s->width_lfo.phase = 0;
+        for (int i = 0; i < SYNTH_LFOS; i++) {
+            s->lfo[i].phase = 0;
+        }
         break;
     case ZV_NOTE_OFF:
         adsr_note_off(&s->adsr);
@@ -136,35 +145,29 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, float val, fl
     case ZV_GLIDE_OFF:
         s->is_glide_on = 0;
         break;
-    case ZV_FREQ_LFO_WAVE_TYPE:
-        s->freq_lfo.func = val;
+    case ZV_LFO_TO_FREQ:
+        s->lfo_target[(int) limit(val, 0, SYNTH_LFOS - 1)] = LFO_TARGET_FREQ;
         break;
-    case ZV_FREQ_LFO_WAVE_SIGN:
-        s->freq_lfo.sign = val;
+    case ZV_LFO_TO_WIDTH:
+       s->lfo_target[(int) limit(val, 0, SYNTH_LFOS - 1)] = LFO_TARGET_WIDTH;
         break;
-    case ZV_FREQ_LFO_FREQ:
-        s->freq_lfo.freq = val;
+    case ZV_LFO_SELECT:
+        s->lfo_current = limit(val, 0, SYNTH_LFOS - 1);
         break;
-    case ZV_FREQ_LFO_LEVEL:
-        s->freq_lfo.level = val;
+    case ZV_LFO_WAVE_TYPE:
+        s->lfo[s->lfo_current].func = val;
         break;
-    case ZV_FREQ_LFO_IS_ONESHOT:
-        s->freq_lfo.is_oneshot = val;
+    case ZV_LFO_WAVE_SIGN:
+        s->lfo[s->lfo_current].sign = val;
         break;
-    case ZV_WIDTH_LFO_WAVE_TYPE:
-        s->width_lfo.func = val;
+    case ZV_LFO_FREQ:
+        s->lfo[s->lfo_current].freq = val;
         break;
-    case ZV_WIDTH_LFO_WAVE_SIGN:
-        s->width_lfo.sign = val;
+    case ZV_LFO_LEVEL:
+        s->lfo[s->lfo_current].level = val;
         break;
-    case ZV_WIDTH_LFO_FREQ:
-        s->width_lfo.freq = val;
-        break;
-    case ZV_WIDTH_LFO_LEVEL:
-        s->width_lfo.level = val;
-        break;
-    case ZV_WIDTH_LFO_IS_ONESHOT:
-        s->width_lfo.is_oneshot = val;
+    case ZV_LFO_IS_ONESHOT:
+        s->lfo[s->lfo_current].is_oneshot = val;
         break;
     }
 }
@@ -173,9 +176,16 @@ static double sfx_synth_mono(struct sfx_synth_state *s, double l) {
     (void) l;
     double x = 0;
     double freq = s->is_glide_on ? glide_next(&s->glide, s->freq) : s->freq;
-    freq = limit(freq + lfo_next(&s->freq_lfo), 0, 15000);
-    double width = limit(s->wave_width + lfo_next(&s->width_lfo), 0, 0.9);
-    double phase = phasor_next(&s->phase, freq);
+    double width = s->wave_width;
+    for(int i = 0; i < SYNTH_LFOS; i++) {
+        if (s->lfo_target[i] == LFO_TARGET_FREQ) {
+            freq += lfo_next(&s->lfo[i]);
+        } else if (s->lfo_target[i] == LFO_TARGET_WIDTH) {
+            width += lfo_next(&s->lfo[i]);
+        }
+    }
+    double phase = phasor_next(&s->phase, limit(freq, 0, 15000));
+    width = limit(width, 0, 0.9);
     if (s->wave_type == ZV_SIN) {
         x = sin(phase);
     } else if (s->wave_type == ZV_SAW) {
@@ -205,8 +215,7 @@ static void sfx_delay_init(struct sfx_delay_state *s) {
     delay_init(&s->d, s->delay_buf, sec(0.5), 0.5, 0.5);
 }
 
-static void sfx_delay_change(struct sfx_delay_state *s, int param, float val, float *user) {
-    (void) user;
+static void sfx_delay_change(struct sfx_delay_state *s, int param, double val) {
     if (param == ZV_VOLUME) {
         s->d.level = val;
     } else if (param == ZV_TIME) {
@@ -239,8 +248,7 @@ static void sfx_dist_init(struct sfx_dist_state *s) {
     s->vol = 1;
 }
 
-static void sfx_dist_change(struct sfx_dist_state *s, int param, float val, float *user) {
-    (void) user;
+static void sfx_dist_change(struct sfx_dist_state *s, int param, double val) {
     if (param == ZV_VOLUME) {
         s->vol = val;
     } else if (param == ZV_GAIN) {

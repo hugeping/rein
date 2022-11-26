@@ -249,6 +249,20 @@ function mixer.play(...)
 end
 
 function mixer.voice(name, ...)
+  local a = {...}
+  for i, v in ipairs(a) do
+    if type(v) ~= 'string' and type(v) ~= 'table' then
+      error("Wrong voice data near "..tostring(i).." item", 2)
+    end
+    if type(v) == 'table' then
+      if #v ~= 2 then
+        error("Wrong voice data near "..tostring(i).." item", 2)
+      end
+      if type(v[1]) ~= 'number' or type(v[2]) ~= 'number' then
+        error("Wrong voice data near "..tostring(i).." item", 2)
+      end
+    end
+  end
   return mixer.clireq("voice", name, {...})
 end
 
