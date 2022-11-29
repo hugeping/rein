@@ -178,8 +178,7 @@ function core.render(force)
 
   local win = gfx.win()
   win:clip(core.view_x, core.view_y,
-    core.view_x + core.view_w,
-    core.view_y + core.view_h)
+    core.view_w, core.view_h)
   env.screen:stretch(win,
     core.view_x, core.view_y,
     core.view_w, core.view_h)

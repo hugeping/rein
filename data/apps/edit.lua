@@ -437,7 +437,7 @@ end
 function buff:show()
   local s = self
   screen:clear(s.x, s.y, s.w, s.h, conf.bg)
-  screen:clip(s.x, s.y, s.x + s.w, s.y + s.h)
+  screen:clip(s.x, s.y, s.w, s.h)
   local l, words
   local px, py = s.x, s.y
   local cols

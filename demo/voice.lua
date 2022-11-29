@@ -70,7 +70,7 @@ function edit:show()
   local x, y = self:realpos()
   screen:offset(x, y)
   if not self.value:empty() or self.edit then
-    screen:clip(x, y, x + self.w, y + self.h)
+    screen:clip(x, y, self.w, self.h)
     local xoff = (self.w - w)/2
     if xoff < 0 then xoff = self.w - w end
     self.font:text(self.value .. (self.edit and '|' or ''), self.fg):
@@ -94,7 +94,7 @@ function label:show()
   local x, y = self:realpos()
   if w == 0 then return end
   screen:offset(x, y)
-  screen:clip(x, y, x + self.w, y + self.h)
+  screen:clip(x, y, self.w, self.h)
   local xoff, yoff = (self.w - w)/2, (self.h - h)/2
   if self.left then xoff = 0 end
   self.font:text(self.text or ' ', self.fg):

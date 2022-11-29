@@ -262,18 +262,9 @@ function sget(x, y)
 end
 local border_nr = false
 
-local engine_samples = {}
-for i=1, 256 do
-  engine_samples[i] = sfx.saw(sfx.hz(i-1, 300), 0.3)*0.5
-end
-
-synth.push(0, 'samples')
-synth.change(0, 0, synth.SAMPLES_LOAD, engine_samples)
-
 function sfx(nr)
   if nr == 0 then
-    synth.set(0, true, 1)
-    synth.change(0, 0, synth.SAMPLES_RESET)
+  -- todo
     return
   end
   if nr == 1 or nr == 2 then
