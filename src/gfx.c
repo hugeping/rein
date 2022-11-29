@@ -1772,25 +1772,21 @@ pixels_stretch(lua_State *L)
 static int
 pixels_clip(lua_State *L)
 {
-	int x1, y1, x2, y2;
+	int x, y, w, h;
 	struct lua_pixels *src;
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 
 	lua_pushinteger(L, src->img.clip_x1);
 	lua_pushinteger(L, src->img.clip_y1);
-	lua_pushinteger(L, src->img.clip_x2);
-	lua_pushinteger(L, src->img.clip_y2);
+	lua_pushinteger(L, src->img.clip_x2 - src->img.clip_x1);
+	lua_pushinteger(L, src->img.clip_y2 - src->img.clip_y1);
 	if (lua_isnil(L, 2))
 		return 4;
-	x1 = luaL_checkinteger(L, 2);
-	y1 = luaL_checkinteger(L, 3);
-	x2 = luaL_checkinteger(L, 4);
-	y2 = luaL_checkinteger(L, 5);
-	if (x2 < 0)
-		x2 = src->img.w - x2;
-	if (y2 < 0)
-		y2 = src->img.h - y2;
-	img_clip(&src->img, x1, y1, x2, y2);
+	x = luaL_checkinteger(L, 2);
+	y = luaL_checkinteger(L, 3);
+	w = luaL_checkinteger(L, 4);
+	h = luaL_checkinteger(L, 5);
+	img_clip(&src->img, x, y, x + w, y + h);
 	return 4;
 }
 
