@@ -339,7 +339,7 @@ PlatformInit(void)
 	spec.freq = 44100;
 	spec.format = AUDIO_S16;
 	spec.channels = 2;
-	spec.samples = 2048 * spec.channels;
+	spec.samples = 1024 * spec.channels;
 	spec.callback = audio_cb;
 	spec.userdata = NULL;
 	audiodev = SDL_OpenAudioDevice(NULL, 0, &spec, &audiospec, 0);
