@@ -190,7 +190,7 @@ function win:event(r, ...)
   if not r then return end
   table.sort(self.childs, function(a, b) return a.lev < b.lev end)
   for _, w in ipairs(self.childs) do
-    if w:event(r, ...) then break end
+    if w:event(r, ...) then return true end
   end
 end
 
@@ -221,11 +221,11 @@ end
 local boxes = {
   { nam = 'synth',
     { 'type', synth.WAVE_TYPE },
-    { 'width', synth.WAVE_WIDTH },
-    { 'attack', synth.ATTACK_TIME },
-    { 'decay', synth.DECAY_TIME },
-    { 'sustain', synth.SUSTAIN_LEVEL },
-    { 'release', synth.RELEASE_TIME },
+    { 'width', synth.WAVE_WIDTH, def = 0.5 },
+    { 'attack', synth.ATTACK_TIME, def = 0.01  },
+    { 'decay', synth.DECAY_TIME, def = 0.1 },
+    { 'sustain', synth.SUSTAIN_LEVEL, def = 0.5 },
+    { 'release', synth.RELEASE_TIME, def = 0.3 },
   },
   { nam = 'dist',
     { "volume", synth.VOLUME },
@@ -265,7 +265,8 @@ function config_box(s)
     local wl = label:new { text = v[1], w = 16*7/2, h = 10, lev = -1 }
     wl.x = (w_conf.w/2 - wl.w)/2
     wl.y = i * 10 + 2
-    local wb = edit:new { value = stack[s.id][v[1]] or '0', w = 16*7/2, h = 10, lev = -1 }
+    local wb = edit:new { value = tostring(stack[s.id][v[1]] or v.def or 0),
+      w = 16*7/2, h = 10, lev = -1 }
     wb.y = wl.y
     wb.id = s.id
     wb.nam = v[1]
@@ -348,7 +349,7 @@ for i, b in ipairs(boxes) do
   w_boxes:with { wb }
 end
 
-local w_play = button:new { w = 64, h = 12, x = 0, y = 0, text = "PLAY", border = true }
+local w_play = button:new { w = 64, h = 12, x = 0, y = 0, text = "PLAY", border = true, lev = 2 }
 local w_info = label:new { w = 29*7, h = 12, x = w_play.x + w_play.w + 2, text = "", border = false, left = true } 
 
 local key2note = {
@@ -435,9 +436,11 @@ function w_play:event(r, v, ...)
     chans.notes[c] = note
     chans.times[c] = sys.time()
     synth.change(c, 0, synth.NOTE_ON, hz)
-    synth.change(c, 0, synth.VOLUME, 1)
+    synth.change(c, 0, synth.VOLUME, 0.5)
+    return true
   elseif r == 'keyup' then
     for c = 1, chans.max do
+      v = tonumber(v) or v
       if chans[c] == v then
         chans[c] = false
         synth.change(c, 0, synth.NOTE_OFF, 0)
