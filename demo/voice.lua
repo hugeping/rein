@@ -1,7 +1,8 @@
 local sfx = require 'sfx'
 gfx.win(384, 384)
+mixer.volume(0.5)
 
-local chans = { notes = {}, max = 10 } -- number of fingers :)
+local chans = { notes = {}, times = {}, max = 10 } -- number of fingers :)
 
 local W, H = screen:size()
 
@@ -369,8 +370,8 @@ function w_info:show()
     for i = 1, chans.max do
       if chans[i] then
         self.text = self.text .. ' '..chans.notes[i]
-      else
-        self.text = self.text .. ' ...'
+--      else
+--        self.text = self.text .. ' ...'
       end
     end
   end
@@ -387,6 +388,20 @@ function w_play:onclick()
       synth.free(i)
     end
   end
+end
+
+function find_free_channel()
+  local free = {}
+  for c = 1, chans.max do
+    if not chans[c] then
+      table.insert(free, c)
+    end
+  end
+  if #free == 0 then return 1 end
+  table.sort(free, function(a, b)
+    return (chans.times[a] or 0) < (chans.times[b] or 0)
+  end)
+  return free[1]
 end
 
 function w_play:event(r, v, ...)
@@ -415,15 +430,12 @@ function w_play:event(r, v, ...)
         return true
       end
     end
-    for c = 1, chans.max do
-      if not chans[c] then
-        chans[c] = v
-        chans.notes[c] = note
-        synth.change(c, 0, synth.NOTE_ON, hz)
-        synth.change(c, 0, synth.VOLUME, 1)
-        break
-      end
-    end
+    local c = find_free_channel()
+    chans[c] = v
+    chans.notes[c] = note
+    chans.times[c] = sys.time()
+    synth.change(c, 0, synth.NOTE_ON, hz)
+    synth.change(c, 0, synth.VOLUME, 1)
   elseif r == 'keyup' then
     for c = 1, chans.max do
       if chans[c] == v then
