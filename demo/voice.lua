@@ -30,11 +30,11 @@ function win:after(d)
   return self.x + self.w + (d or 0)
 end
 
-local select = win:new { value = 1, choices = {}, min = 1, max = 1 }
+local select = win:new { value = 1, choice = {}, min = 1, max = 1 }
 
 function select:show()
   win.show(self)
-  local text = self.choices[self.value] or tostring(self.value)
+  local text = self.choice[self.value] or tostring(self.value)
   local w, h = self.font:size(text)
   local x, y = self:realpos()
   screen:offset(x, y)
@@ -42,7 +42,7 @@ function select:show()
   local xoff = (self.w - w)/2
   if xoff < 0 then xoff = self.w - w end
   self.font:text(text, self.fg):
-  blend(screen, xoff, (self.h -h)/2)
+    blend(screen, xoff, (self.h -h)/2)
   screen:noclip()
   screen:nooffset()
 end
@@ -60,6 +60,7 @@ function select:event(r, v, ...)
       self.value = self.value + 1
       if self.value > self.max then self.value = self.min end
     end
+    if self.onedit then self:onedit() end
     return true
   end
 end
@@ -260,7 +261,10 @@ end
 
 local boxes = {
   { nam = 'synth',
-    { 'type', synth.WAVE_TYPE },
+    { 'type', synth.WAVE_TYPE,
+      choice = { 'sin', 'square', 'saw', 'pwm', 'fm', 'noise' },
+      val = { synth.SIN, synth.SQUARE, synth.SAW,
+        synth.PWM, synth.FM, synth.NOISE } },
     { 'width', synth.WAVE_WIDTH, def = 0.5 },
     { 'attack', synth.ATTACK_TIME, def = 0.01  },
     { 'decay', synth.DECAY_TIME, def = 0.1 },
@@ -310,15 +314,27 @@ function config_box(s)
     local wl = label:new { text = v[1], w = 16*7/2, h = 10, lev = -1 }
     wl.x = (w_conf.w/2 - wl.w)/2
     wl.y = i * 10 + 2
-    local wb = edit:new { value = tostring(stack[s.id][v[1]] or v.def or 0),
-      w = 16*7/2, h = 10, lev = -1 }
+    local wb
+    if v.choice then
+      wb = select:new { choice = v.choice, max = #v.choice }
+    else
+      wb = edit:new { value = tostring(stack[s.id][v[1]] or v.def or 0) }
+    end
+    wb.w = 16*7/2
+    wb.lev = -1
+    wb.h = 10
     wb.y = wl.y
     wb.id = s.id
+    wb.info = v
     wb.nam = v[1]
     wb.par = v[2]
     wb.onedit = function(s)
-      stack[s.id][s.nam] = s.value
-      apply_change(#stack - s.id, s.par, tonumber(s.value) or 0)
+      local val = tonumber(s.value) or 0
+      if s.info.choice and s.info.val then
+        val = s.info.val[s.value]
+      end
+      stack[s.id][s.nam] = val
+      apply_change(#stack - s.id, s.par, val)
     end
     wb.x = w_conf.w/2
     w_conf:with { wl, wb }
@@ -336,11 +352,6 @@ function config_box(s)
   w_conf:with { rem }
 end
 
-function apply_change(id, par, val)
-  for c = 1, chans.max do
-    synth.change(c, id, par, val)
-  end
-end
 
 function apply_boxes()
   for c = 1, chans.max do
@@ -445,9 +456,19 @@ local note2sym = { 'c-', 'c#', 'd-', 'd#', 'e-', 'f-', 'f#', 'g-', 'g#', 'a-', '
 
 w_play.octave = 2
 
+function apply_change(id, par, val)
+  if not w_play.play then
+    return
+  end
+  for c = 1, chans.max do
+    synth.change(c, id, par, val)
+  end
+end
+
 function w_info:show()
   if not w_play.play then
     self.text = ''
+    self.bg = nil
   else
     self.text = string.format('%d', w_play.octave)
     for i = 1, chans.max do
@@ -457,6 +478,7 @@ function w_info:show()
 --        self.text = self.text .. ' ...'
       end
     end
+    self.bg = 15
   end
   label.show(self)
 end
