@@ -2,6 +2,8 @@ local sfx = require 'sfx'
 gfx.win(384, 384)
 mixer.volume(0.5)
 
+local cur_voice = 1
+
 local chans = { notes = {}, times = {}, max = 10 } -- number of fingers :)
 
 local W, H = screen:size()
@@ -9,12 +11,9 @@ local W, H = screen:size()
 local win = {
   padding = 1.2,
   border = false,
-  x = 0,
-  y = 0,
-  w = W,
-  h = H,
-  fg = 0,
-  bg = 16,
+  x = 0, y = 0,
+  w = W, h = H,
+  fg = 0, bg = 16,
   lev = 0,
   font = font,
   childs = {},
@@ -25,6 +24,44 @@ function win:new(w)
   setmetatable(w, self)
   self.__index = self
   return w
+end
+
+function win:after(d)
+  return self.x + self.w + (d or 0)
+end
+
+local select = win:new { value = 1, choices = {}, min = 1, max = 1 }
+
+function select:show()
+  win.show(self)
+  local text = self.choices[self.value] or tostring(self.value)
+  local w, h = self.font:size(text)
+  local x, y = self:realpos()
+  screen:offset(x, y)
+  screen:clip(x, y, self.w, self.h)
+  local xoff = (self.w - w)/2
+  if xoff < 0 then xoff = self.w - w end
+  self.font:text(text, self.fg):
+  blend(screen, xoff, (self.h -h)/2)
+  screen:noclip()
+  screen:nooffset()
+end
+
+function select:event(r, v, ...)
+  local m = self:mevent(r, v, ...)
+  if not m then
+    return win.event(self, r, v, ...)
+  end
+  if m == 'mouseup' then
+    if v == 'right' then
+      self.value = self.value - 1
+      if self.value < self.min then self.value = self.max end
+    else
+      self.value = self.value + 1
+      if self.value > self.max then self.value = self.min end
+    end
+    return true
+  end
 end
 
 local edit = win:new { value = '' }
@@ -199,9 +236,12 @@ function win:for_childs(fn, ...)
     fn(v, ...)
   end
 end
-local stack = {
-  { nam = 'synth' },
+
+local voices = {
+  { nam = '1', { nam = 'synth' } },
 }
+
+local stack = voices[cur_voice]
 
 local w_conf
 
@@ -228,8 +268,8 @@ local boxes = {
     { 'release', synth.RELEASE_TIME, def = 0.3 },
   },
   { nam = 'dist',
-    { "volume", synth.VOLUME },
-    { "gain", synth.gain },
+    { "volume", synth.VOLUME, def = 0.5 },
+    { "gain", synth.GAIN, def = 0.5 },
   },
   { nam = 'delay',
     { 'volume', synth.VOLUME },
@@ -321,6 +361,8 @@ function apply_boxes()
 end
 
 function build_stack()
+  w_stack:for_childs(function(w) w.selected = false end)
+  w_conf.hidden = true
   w_stack.h = (#stack + 2)*10
   w_stack.x = 0
   w_stack.y = H - w_stack.h
@@ -343,8 +385,8 @@ local w_boxes = win:new { title = 'Push box',
   w = 16*7, h = (#boxes + 2)* 10,
   border = true }
 
-w_boxes.x = W - w_boxes.w
-w_boxes.y = 0
+w_boxes.x = 0 -- W - w_boxes.w
+w_boxes.y = 12 + 1
 
 for i, b in ipairs(boxes) do
   local wb = button:new { text = b.nam, w = 14*7, h = 10, lev = -1 }
@@ -354,8 +396,43 @@ for i, b in ipairs(boxes) do
   w_boxes:with { wb }
 end
 
-local w_play = button:new { w = 64, h = 12, x = 0, y = 0, text = "PLAY", border = true, lev = 2 }
-local w_info = label:new { w = 29*7, h = 12, x = w_play.x + w_play.w + 2, text = "", border = false, left = true } 
+local w_prev = button:new { text = "<" ,
+  x = 0, y = 0, w = 10, h = 12, border = true}
+
+local w_voice = edit:new { border = false, value = voices[cur_voice].nam,
+  x = w_prev:after(1), y = 0, w = 14*7-8, h = 12,
+  onedit = function(s)
+    if s.value:empty() then s.value = tostring(cur_voice) end
+    voices[cur_voice].nam = s.value
+  end
+}
+
+local w_next = button:new { text = ">",
+  x = w_voice:after(1),
+  y = 0, w = 10, h = 12, border = true }
+
+function w_prev:onclick(s)
+  cur_voice = cur_voice - 1
+  if cur_voice < 1 then cur_voice = 1 end
+  stack = voices[cur_voice]
+  w_voice.value = voices[cur_voice].nam
+  build_stack()
+end
+
+function w_next:onclick(s)
+  cur_voice = cur_voice + 1
+  if not voices[cur_voice] then
+    voices[cur_voice] = { nam = tostring(cur_voice) }
+  end
+  stack = voices[cur_voice]
+  w_voice.value = voices[cur_voice].nam
+  build_stack()
+end
+
+local w_play = button:new { w = 64, h = 12,
+  x = W - 64, y = 0, text = "PLAY", border = true, lev = 2 }
+local w_info = label:new { w = 29*7, h = 12,
+  x = w_next:after(1), y = w_play.y, text = "", border = false, left = true }
 
 local key2note = {
   z = 0, s = 1, x = 2, d = 3, c = 4, v = 5, g = 6, b = 7, h = 8, n = 9, j = 10, m = 11,
@@ -427,6 +504,7 @@ function w_play:event(r, v, ...)
     if not m then
       return
     end
+    if #stack == 0 then return true end
     local note = note2sym[m%12 + 1]
     note = string.format("%s%d", note, w_play.octave + math.floor(m/12))
     m = m + 12 * (w_play.octave + 2)
@@ -455,7 +533,7 @@ function w_play:event(r, v, ...)
   end
 end
 
-win:with { w_boxes, w_stack, w_conf, w_play, w_info }
+win:with { w_prev, w_voice, w_next, w_boxes, w_stack, w_conf, w_play, w_info }
 
 while true do
   win:event(sys.input())
