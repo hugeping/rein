@@ -47,7 +47,7 @@ function win:fill_dict(t)
   local dict = self.dict
   dict.__hash__ = dict.__hash__ or {}
   for l in t:lines() do
-    for _, w in ipairs(l:split(" \t.,:?!@#$*()<>/~-")) do
+    for _, w in ipairs(l:split("[ \t.,:?!@#$*()<>/~-]+", true)) do
       if not dict.__hash__[w] then
         add(dict, w)
         dict.__hash__[w] = true
