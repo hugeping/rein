@@ -18,11 +18,30 @@ function string.strip(str)
   return str
 end
 
-function string.split(s, sep_arg)
-  local sep, fields = sep_arg or " ", {}
-  local pattern = string.format("([^%s]+)", sep)
-  s:gsub(pattern, function(c) table.insert(fields, string.strip(c)) end)
-  return fields
+function string.split(self, n, sep, rexp)
+  if type(n) ~= 'number' then
+    sep, rexp, n = n, sep, false
+  end
+  if not sep then
+    rexp = true
+    sep = "[ \t]+"
+  end
+  local ret = {}
+  if self:len() == 0 then
+    return ret
+  end
+  n = n or -1
+  local idx, start = 1, 1
+  local s, e = self:find(sep, start, not rexp)
+  while s and n ~= 0 do
+    ret[idx] = self:sub(start, s - 1)
+    idx = idx + 1
+    start = e + 1
+    s, e = self:find(sep, start, not rexp)
+    n = n - 1
+  end
+  ret[idx] = self:sub(start)
+  return ret
 end
 
 function string.startswith(s, pfx)
