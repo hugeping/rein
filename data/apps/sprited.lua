@@ -197,6 +197,7 @@ function pal:click(x, y, mb, click)
 end
 
 grid = {
+  cache = {};
   x = 0;
   y = 0;
   w = 256;
@@ -302,18 +303,22 @@ end
 function grid:draw(fx, fy, w, h, x, y, scale)
   local s = self
   local pixels = map_mode and s.backpixels or s.pixels
-  local spr = gfx.new(w, h)
-  for yy=1, h do
-    local r = pixels[fy+yy] or {}
-    for xx=1, w do
-      local c = r[fx+xx] or -1
-      if c ~= -1 then
-        spr:val(xx-1, yy-1, c)
-      else
-        local v = pixels[yy] and pixels[yy][xx] or -1
-        spr:val(xx-1, yy-1, v == -1 and tcol or v) -- 0 sprite
+  local spr = s.cache[string.format("%d-%d-%d-%d", fx, fy, w, h)]
+  if not spr then
+    spr = gfx.new(w, h)
+    for yy=1, h do
+      local r = pixels[fy+yy] or {}
+      for xx=1, w do
+        local c = r[fx+xx] or -1
+        if c ~= -1 then
+          spr:val(xx-1, yy-1, c)
+        else
+          local v = pixels[yy] and pixels[yy][xx] or -1
+          spr:val(xx-1, yy-1, v == -1 and tcol or v) -- 0 sprite
+        end
       end
     end
+    s.cache[string.format("%d-%d-%d-%d", fx, fy, w, h)] = spr
   end
   spr:stretch(screen, x, y, w*(scale or 1), h*(scale or 1))
 end
@@ -646,6 +651,7 @@ end
 function grid:mode()
   local s = self
   s.history = {}
+  s.cahe = {}
   s.clipboard = {}
   s.dirty, s.backdirty = s.backdirty, s.dirty
   s.xoff, s.xoffback = s.xoffback or 0, s.xoff
@@ -934,7 +940,6 @@ function grid:show()
   local s = self
   local mx, my = input.mouse()
   mx, my = s:pos2cell(mx, my)
-
   local dx = floor(self.w / s.grid)
   screen:clear(s.x, s.y, s.w, s.h, 1)
   local Xd = spr.X:size()
