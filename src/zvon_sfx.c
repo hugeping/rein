@@ -32,6 +32,7 @@ struct sfx_synth_state {
     struct lfo_state lfo[SYNTH_LFOS];
     int lfo_target[SYNTH_LFOS];
     double lfo_param[LFO_TARGETS];
+    int lfo_remap[LFO_TARGETS];
     double amp;
     double freq;
     double width;
@@ -43,11 +44,18 @@ struct sfx_synth_state {
     int is_glide_on;
 };
 
+static void lfo_reset_remap(struct sfx_synth_state *s) {
+    for (int i = 0; i < LFO_TARGETS; i++) {
+        s->lfo_remap[i] = i;
+    }
+}
+
 static void sfx_synth_init(struct sfx_synth_state *s) {
     osc_init(&s->osc);
     for (int i = 0; i < SYNTH_LFOS; i++) {
         lfo_init(&s->lfo[i]);
     }
+    lfo_reset_remap(s);
     s->amp = 1;
     s->freq = 0;
     s->freq_mul = 1;
@@ -71,6 +79,8 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
     (void) elem;
     switch (param) {
     case ZV_NOTE_ON:
+        if (s->osc.mode == OSC_NOISE8)
+          noise_init(&s->osc.noise1);
         s->freq = val;
         adsr_note_on(&s->adsr, 0);
         lfo_note_on(s);
@@ -116,6 +126,13 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
     case ZV_OFFSET:
         s->offset = val;
         break;
+    case ZV_REMAP_FREQ:
+        lfo_reset_remap(s);
+        int idx = limit(val, 0, LFO_TARGETS - 1);
+        int old_idx = s->lfo_remap[idx];
+        s->lfo_remap[idx] = LFO_TARGET_FREQ;
+        s->lfo_remap[LFO_TARGET_FREQ] = old_idx;
+        break;
     case ZV_LFO_FUNC:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
         lfo_set_func(&s->lfo[elem], val);
@@ -143,7 +160,11 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
     }
 }
 
-static double osc_next(struct osc_state *s, double amp, double freq, double width, double offset) {
+static double osc_next(struct osc_state *s, double *lfo_param) {
+    double amp = lfo_param[LFO_TARGET_AMP];
+    double freq = lfo_param[LFO_TARGET_FREQ];
+    double width = lfo_param[LFO_TARGET_WIDTH];
+    double offset = lfo_param[LFO_TARGET_OFFSET];
     double w = limit(width, 0, 0.9);
     switch (s->mode) {
     case OSC_SIN:
@@ -158,7 +179,10 @@ static double osc_next(struct osc_state *s, double amp, double freq, double widt
         return amp * dsf2(phasor_next(&s->phasor1, freq), offset, w);
     case OSC_PWM:
         return amp * pwm(phasor_next(&s->phasor1, freq), offset, w);
-    case OSC_NOISE:
+    case OSC_NOISE8:
+        noise_set_width(&s->noise1, 2);
+        return noise_next(&s->noise1, freq);
+    case OSC_SIN_NOISE:
         noise_set_width(&s->noise1, amp);
         double y1 = sin(phasor_next(&s->phasor1, freq));
         double y2 = sin(phasor_next(&s->phasor2, offset + noise_lerp_next(&s->noise1, width)));
@@ -167,27 +191,20 @@ static double osc_next(struct osc_state *s, double amp, double freq, double widt
     return 0;
 }
 
-static void lfo_process(struct sfx_synth_state *s) {
-    for(int i = 0; i < LFO_TARGETS; i++) {
-        s->lfo_param[i] = 0;
-    }
-    for(int i = 0; i < SYNTH_LFOS; i++) {
-        s->lfo_param[s->lfo_target[i]] += lfo_next(&s->lfo[i]);
-    }
-}
-
 static double sfx_synth_mono(struct sfx_synth_state *s, double l) {
     (void) l;
-    lfo_process(s);
-    double amp = s->amp + s->lfo_param[LFO_TARGET_AMP];
     double freq = s->freq * s->freq_mul;
     if (s->is_glide_on) {
         freq = glide_next(&s->glide, freq);
     }
-    freq += s->lfo_param[LFO_TARGET_FREQ];
-    double width = s->width + s->lfo_param[LFO_TARGET_WIDTH];
-    double offset = s->offset + s->lfo_param[LFO_TARGET_OFFSET];
-    double y = osc_next(&s->osc, amp, freq, width, offset);
+    s->lfo_param[s->lfo_remap[LFO_TARGET_AMP]] = s->amp;
+    s->lfo_param[s->lfo_remap[LFO_TARGET_FREQ]] = freq;
+    s->lfo_param[s->lfo_remap[LFO_TARGET_WIDTH]] = s->width;
+    s->lfo_param[s->lfo_remap[LFO_TARGET_OFFSET]] = s->offset;
+    for(int i = 0; i < SYNTH_LFOS; i++) {
+        s->lfo_param[s->lfo_remap[s->lfo_target[i]]] += lfo_next(&s->lfo[i]);
+    }
+    double y = osc_next(&s->osc, s->lfo_param);
     return y * adsr_next(&s->adsr, s->is_sustain_on);
 }
 

@@ -203,6 +203,7 @@ static struct {
 	{ "AMP", ZV_AMP },
 	{ "WIDTH", ZV_WIDTH }, /* +fliter */
 	{ "OFFSET", ZV_OFFSET },
+	{ "REMAP", ZV_REMAP_FREQ },
 	{ "LFO_FUNC", ZV_LFO_FUNC },
 	{ "LFO_FREQ", ZV_LFO_FREQ },
 	{ "LFO_LOW", ZV_LFO_LOW },
@@ -225,7 +226,8 @@ static struct {
 	{ "OSC_DSF", OSC_DSF },
 	{ "OSC_DSF2", OSC_DSF2 },
 	{ "OSC_PWM", OSC_PWM },
-	{ "OSC_NOISE", OSC_NOISE },
+	{ "OSC_SIN_NOISE", OSC_SIN_NOISE },
+	{ "OSC_NOISE8", OSC_NOISE8 },
 	{ "LFO_NONE", LFO_NONE },
 	{ "LFO_SIN", LFO_SIN },
 	{ "LFO_SAW", LFO_SAW },

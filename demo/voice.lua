@@ -34,7 +34,7 @@ local select = win:new { value = 1, choice = {}, min = 1, max = 1 }
 
 function select:show()
   win.show(self)
-  local text = self.choice[self.value] or tostring(self.value)
+  local text = self.choice[tonumber(self.value)] or tostring(self.value)
   local w, h = self.font:size(text)
   local x, y = self:realpos()
   screen:offset(x, y)
@@ -54,12 +54,41 @@ function select:event(r, v, ...)
   end
   if m == 'mouseup' then
     if v == 'right' then
-      self.value = self.value - 1
+      self.value = tonumber(self.value) - 1
       if self.value < self.min then self.value = self.max end
     else
-      self.value = self.value + 1
+      self.value = tonumber(self.value) + 1
       if self.value > self.max then self.value = self.min end
     end
+    if self.onedit then self:onedit() end
+    return true
+  end
+end
+
+local trigger = win:new { value = 0 }
+
+function trigger:show()
+  win.show(self)
+  local x, y = self:realpos()
+  screen:offset(x, y)
+  screen:clip(x, y, self.w, self.h)
+  local w, h = 5, 5
+  local xx, yy = (self.w - w)/2, (self.h - h)/2
+  screen:rect(xx, yy, xx+w, yy+h, self.fg)
+  if self.value == 1 then
+    screen:clear(xx, yy, w, h, self.fg)
+  end
+  screen:noclip()
+  screen:nooffset()
+end
+
+function trigger:event(r, v, ...)
+  local m = self:mevent(r, v, ...)
+  if not m then
+    return win.event(self, r, v, ...)
+  end
+  if m == 'mouseup' then
+    self.value = self.value == 0 and 1 or 0
     if self.onedit then self:onedit() end
     return true
   end
@@ -261,31 +290,40 @@ end
 
 local boxes = {
   { nam = 'synth',
-    { 'type', synth.WAVE_TYPE,
-      choice = { 'sin', 'square', 'saw', 'pwm', 'fm', 'noise' },
-      val = { synth.SIN, synth.SQUARE, synth.SAW,
-        synth.PWM, synth.FM, synth.NOISE } },
-    { 'width', synth.WAVE_WIDTH, def = 0.5 },
-    { 'attack', synth.ATTACK_TIME, def = 0.01  },
-    { 'decay', synth.DECAY_TIME, def = 0.1 },
-    { 'sustain', synth.SUSTAIN_LEVEL, def = 0.5 },
-    { 'release', synth.RELEASE_TIME, def = 0.3 },
+    { "volume", synth.VOLUME, def = 0 },
+    { 'mode', synth.MODE,
+      choice = { 'sin', 'saw', 'square', 'dsf', 'dsf2', 'pwm', 'sin+noise', 'noise8' },
+      val = { synth.OSC_SIN, synth.OSC_SAW, synth.OSC_SQUARE,
+        synth.OSC_DSF, synth.OSC_DSF2, synth.OSC_PWM, synth.OSC_SIN_NOISE, synth.OSC_NOISE8 } },
+    { 'width', synth.WIDTH, def = 0.5 },
+    { 'attack', synth.ATTACK, def = 0.01  },
+    { 'decay', synth.DECAY, def = 0.1 },
+    { 'sustain', synth.SUSTAIN, def = 0.5 },
+    { 'release', synth.RELEASE, def = 0.3 },
+    { 'sustain_on', synth.SUSTAIN_ON, def = 0 },
+    { 'offset', synth.OFFSET, def = 0.5 },
+    { 'amp', synth.AMP, def = 1.0 },
+    { 'glide_on', synth.GLIDE_ON, trigger = true, def = 0 },
+    { 'glide_off', synth.GLIDE_OFF, trigger = true, def = 0 },
+    { 'remap', synth.REMAP, choice = { 'freq', 'offset' },
+      val = { synth.LFO_TARGET_FREQ, synth.LFO_TARGET_OFFSET } },
   },
   { nam = 'dist',
-    { "volume", synth.VOLUME, def = 0.5 },
+    { "volume", synth.VOLUME, def = 0 },
     { "gain", synth.GAIN, def = 0.5 },
   },
   { nam = 'delay',
-    { 'volume', synth.VOLUME },
+    { 'volume', synth.VOLUME, def = 0 },
     { 'time', synth.TIME, max = 1, min = 0 },
-    { 'feedback', synth.FEEDBACK },
+    { 'level', synth.LEVEL, def = 0.5 },
+    { 'feedback', synth.FEEDBACK, def = 0.5 },
   },
   { nam = 'filter' },
 }
 
 w_conf = win:new { title = 'Settings',
     hidden = true,
-    w = 32 * 7,
+    w = 38 * 7,
     h = 10 * 2,
     border = true }
 
@@ -311,17 +349,22 @@ function config_box(s)
   w_conf.childs = {}
   local info = box_info(b.nam)
   for i, v in ipairs(info) do
-    local wl = label:new { text = v[1], w = 16*7/2, h = 10, lev = -1 }
+    local wl = label:new { text = v[1], w = 18*7, h = 10, lev = -1 }
     wl.x = (w_conf.w/2 - wl.w)/2
     wl.y = i * 10 + 2
+    wl.bg = i % 2 == 0 and 15 or 16
     local wb
     if v.choice then
       wb = select:new { choice = v.choice, max = #v.choice }
+    elseif v.trigger then
+      wb = trigger:new { }
     else
-      wb = edit:new { value = tostring(stack[s.id][v[1]] or v.def or 0) }
+      wb = edit:new { }
     end
-    wb.w = 16*7/2
+    wb.value = tostring(stack[s.id][v[1]] or v.def or wb.value)
+    wb.w = 18*7
     wb.lev = -1
+    wb.bg = wl.bg
     wb.h = 10
     wb.y = wl.y
     wb.id = s.id
@@ -367,7 +410,8 @@ function apply_boxes()
         end
       end
     end
-    synth.set(c, true, 1)
+    synth.on(c, true)
+    synth.vol(c, 1)
   end
 end
 
@@ -541,7 +585,7 @@ function w_play:event(r, v, ...)
     chans.notes[c] = note
     chans.times[c] = sys.time()
     synth.change(c, 0, synth.NOTE_ON, hz)
-    synth.change(c, 0, synth.VOLUME, 0.5)
+--    synth.change(c, 0, synth.VOLUME, 0.5)
     return true
   elseif r == 'keyup' then
     for c = 1, chans.max do
