@@ -37,7 +37,7 @@ end
 function mixer.apply_voice(chan, voice)
   voice = mixer.voices[voice] or error("No such voice: "..tostring(voice))
   local stack = 0
-  synth.free(chan)
+  synth.drop(chan)
   for _, v in ipairs(voice) do
     if type(v) == 'string' then
       stack = synth.push(chan, v)
@@ -255,7 +255,7 @@ function mixer.voice(name, ...)
       error("Wrong voice data near "..tostring(i).." item", 2)
     end
     if type(v) == 'table' then
-      if #v ~= 2 then
+      if #v ~= 2 and #v ~= 3 then
         error("Wrong voice data near "..tostring(i).." item", 2)
       end
       if type(v[1]) ~= 'number' or type(v[2]) ~= 'number' then

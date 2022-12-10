@@ -356,7 +356,7 @@ end
 function apply_boxes()
   for c = 1, chans.max do
     chans[c] = false
-    synth.free(c)
+    synth.drop(c)
     for i=#stack,1,-1 do
       synth.push(c, stack[i].nam)
       local info = box_info(stack[i].nam)
@@ -490,7 +490,7 @@ function w_play:onclick()
     apply_boxes()
   else
     for i=1, chans.max do
-      synth.free(i)
+      synth.drop(i)
     end
   end
 end

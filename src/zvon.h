@@ -3,20 +3,25 @@
 #ifndef ZVON_H
 #define ZVON_H
 
-#include "zvon_platform.h"
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+
+#define PI 3.14159265358979323846
+
+#ifndef SR
+#define SR 44100
+#endif
 
 int sec(double t);
 double midi_freq(int m);
 double limit(double x, double low, double high);
-double lerp(double a, double b, double x);
-double hertz(double t, double freq);
+double lerp(double x, double y, double a);
 double dsf(double phase, double mod, double width);
 double dsf2(double phase, double mod, double width);
 double saw(double phase, double width);
 double square(double phase, double width);
 double pwm(double phase, double offset, double width);
-unsigned int lfsr(unsigned int state, int bits, int *taps, int taps_size);
-double softclip(double x, double drive);
+double softclip(double x, double gain);
 
 struct phasor_state {
     double phase;
@@ -25,56 +30,40 @@ struct phasor_state {
 void phasor_init(struct phasor_state *s);
 double phasor_next(struct phasor_state *s, double freq);
 
-struct env_state {
-    int *deltas;
-    double *levels;
-    size_t env_size;
-    int is_end;
-    int is_loop;
-    int is_full_reset;
-    size_t sustain_pos;
-    double level_0;
-    double level;
-    int t;
-    double level_at_pos;
-    int t_at_pos;
-    size_t pos;
-};
-
-typedef double (*env_func)(double a, double b, double x);
-
-void env_init(struct env_state *s, int env_size, int *deltas, double *levels, double level_0);
-void env_set(struct env_state *s, int pos, int delta, double level);
-void env_reset(struct env_state *s);
-double env_next_head(struct env_state *s, env_func func);
-double env_next(struct env_state *s);
-double seq_next(struct env_state *s);
-
 struct adsr_state {
-    int deltas[3];
-    double levels[3];
-    struct env_state env;
-    int sustain_mode;
+    int state;
+    double level;
+    double attack;
+    double decay;
+    double sustain;
+    double release;
+    double attack_step;
+    double decay_step;
+    double release_step;
 };
 
-void adsr_init(struct adsr_state *s, int is_sustain_on);
-void adsr_set_attack(struct adsr_state *s, double t);
-void adsr_set_decay(struct adsr_state *s, double t);
-void adsr_set_sustain(struct adsr_state *s, double levels);
-void adsr_set_release(struct adsr_state *s, double t);
-void adsr_note_on(struct adsr_state *s);
+void adsr_init(struct adsr_state *s);
+void adsr_set_attack(struct adsr_state *s, double attack);
+void adsr_set_decay(struct adsr_state *s, double decay);
+void adsr_set_sustain(struct adsr_state *s, double sustain);
+void adsr_set_release(struct adsr_state *s, double release);
+void adsr_note_on(struct adsr_state *s, int is_reset_level_on);
 void adsr_note_off(struct adsr_state *s);
-double adsr_next(struct adsr_state *s);
+double adsr_next(struct adsr_state *s, int is_sustain_on);
 
 struct delay_state {
     double *buf;
-    size_t buf_size;
+    int buf_size;
+    int pos;
+    int size;
     double level;
     double fb;
-    size_t pos;
 };
 
-void delay_init(struct delay_state *s, double *buf, size_t buf_size, double level, double fb);
+void delay_init(struct delay_state *s, double *buf, int buf_size);
+void delay_set_time(struct delay_state *s, double time);
+void delay_set_level(struct delay_state *s, double level);
+void delay_set_fb(struct delay_state *s, double fb);
 double delay_next(struct delay_state *s, double x);
 
 struct filter_state {
@@ -90,40 +79,48 @@ struct glide_state {
     double rate;
 };
 
-void glide_init(struct glide_state *s, double source, double rate);
+void glide_init(struct glide_state *s);
+void glide_set_source(struct glide_state *s, double source);
+void glide_set_rate(struct glide_state *s, double rate);
 double glide_next(struct glide_state *s, double target);
 
-#define MAX_TAPS 32
-
 struct noise_state {
-    int bits;
-    int taps[MAX_TAPS];
-    int taps_size;
-    unsigned int state;
     double phase;
+    unsigned int state;
+    unsigned int old_y;
+    unsigned int y;
+    unsigned int width;
 };
 
-void noise_init(struct noise_state *s, int bits, int *taps, int taps_size);
+void noise_init(struct noise_state *s);
+void noise_set_width(struct noise_state *s, unsigned int width);
+double noise_lerp_next(struct noise_state *s, double freq);
 double noise_next(struct noise_state *s, double freq);
 
-struct lfo_state {
-    double phase;
-    double freq;
-    int func;
-    int sign;
-    double level;
-    int is_oneshot;
-};
-
-void lfo_init(struct lfo_state *s, int func, int sign, double freq, double level, int is_oneshot);
-double lfo_func(double x, int func);
-double lfo_next(struct lfo_state *s);
-
 enum {
+    LFO_NONE,
     LFO_SIN,
     LFO_SAW,
     LFO_SQUARE,
     LFO_TRIANGLE
 };
+
+struct lfo_state {
+    double phase;
+    int func;
+    double freq;
+    double y_mul;
+    double low;
+    double high;
+    int is_loop;
+};
+
+void lfo_init(struct lfo_state *s);
+void lfo_set_func(struct lfo_state *s, int func);
+void lfo_set_freq(struct lfo_state *s, double freq);
+void lfo_set_low(struct lfo_state *s, double low);
+void lfo_set_high(struct lfo_state *s, double high);
+void lfo_set_loop(struct lfo_state *s, int is_loop);
+double lfo_next(struct lfo_state *s);
 
 #endif

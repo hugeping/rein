@@ -388,10 +388,14 @@ function EmptyVoice:update()
 end
 
 function sfx.play_song_once(chans, pans, tracks, temp)
+  for i, c in ipairs(chans) do
+    synth.on(c, true)
+    synth.pan(c, pans[i])
+    synth.vol(c, 0.5)
+  end
   for _, row in ipairs(tracks) do
     for i, c in ipairs(chans) do
       local freq, vol = row[i][1], row[i][2]
-      synth.set(c, true, 1, pans[i])
       if freq then
         synth.change(c, 0, synth.NOTE_ON, freq)
       end
