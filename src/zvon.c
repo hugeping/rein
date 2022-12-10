@@ -15,12 +15,8 @@ double limit(double x, double low, double high) {
     return MIN(MAX(x, low), high);
 }
 
-double lerp(double a, double b, double x) {
-    return a + x * (b - a);
-}
-
-double hertz(double t, double freq) {
-    return (2 * PI / SR) * freq * t;
+double lerp(double x, double y, double a) {
+    return x + a * (y - x);
 }
 
 double dsf(double phase, double mod, double width) {
@@ -47,16 +43,15 @@ double pwm(double phase, double offset, double width) {
     return saw(phase, width) - saw(phase + offset, width);
 }
 
-unsigned int lfsr(unsigned int state, int bits, int *taps, int taps_size) {
-    unsigned int x = 0;
-    for (int i = 0; i < taps_size; i++) {
-        x ^= state >> taps[i];
-    }
-    return (state >> 1) | ((~x & 1) << (bits - 1));
+static unsigned int xorshift(unsigned int x) {
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    return x;
 }
 
-double softclip(double x, double drive) {
-    return tanh(x * drive);
+double softclip(double x, double gain) {
+    return tanh(x * gain);
 }
 
 void phasor_init(struct phasor_state *s) {
@@ -69,124 +64,108 @@ double phasor_next(struct phasor_state *s, double freq) {
     return p;
 }
 
-void env_init(struct env_state *s, int env_size, int *deltas, double *levels, double level_0) {
-    s->deltas = deltas;
-    s->levels = levels;
-    s->env_size = env_size;
-    s->is_loop = 0;
-    s->is_full_reset = 0;
-    s->sustain_pos = -1;
-    s->level_0 = level_0;
-    s->level = level_0;
-    env_reset(s);
+enum {
+    ADSR_ATTACK,
+    ADSR_DECAY,
+    ADSR_SUSTAIN,
+    ADSR_RELEASE,
+    ADSR_END
+};
+
+void adsr_init(struct adsr_state *s) {
+    s->state = ADSR_END;
+    s->level = 0;
+    adsr_set_attack(s, 0.01);
+    adsr_set_decay(s, 0.1);
+    s->sustain = 0.5;
+    adsr_set_release(s, 0.3);
 }
 
-void env_set(struct env_state *s, int pos, int delta, double level) {
-    s->deltas[pos] = delta;
-    s->levels[pos] = level;
+void adsr_set_attack(struct adsr_state *s, double attack) {
+    s->attack = attack;
+    int dt = sec(attack);
+    s->attack_step = 1. / (dt ? dt : 1);
 }
 
-void env_reset(struct env_state *s) {
-    s->is_end = 0;
-    s->t = 0;
-    s->pos = 0;
-    s->t_at_pos = 0;
-    if (s->is_full_reset) {
-        s->level = s->level_0;
+void adsr_set_decay(struct adsr_state *s, double decay) {
+    s->decay = decay;
+    int dt = sec(decay);
+    s->decay_step = (1 - s->sustain) / (dt ? dt : 1);
+}
+
+void adsr_set_sustain(struct adsr_state *s, double sustain) {
+    s->sustain = sustain;
+    adsr_set_decay(s, s->decay);
+    adsr_set_release(s, s->release);
+}
+
+void adsr_set_release(struct adsr_state *s, double release) {
+    s->release = release;
+    int dt = sec(release);
+    s->release_step = s->sustain / (dt ? dt : 1);
+}
+
+void adsr_note_on(struct adsr_state *s, int is_reset_level_on) {
+    s->state = ADSR_ATTACK;
+    if (is_reset_level_on) {
+        s->level = 0;
     }
-    s->level_at_pos = s->level;
-}
-
-static double env_next_tail(struct env_state *s, env_func func) {
-    double dt = s->deltas[s->pos];
-    if (s->t < s->t_at_pos + dt) {
-        s->level = func(s->level_at_pos, s->levels[s->pos], (s->t - s->t_at_pos) / dt);
-        s->t++;
-        return s->level;
-    }
-    if (s->sustain_pos == s->pos) {
-        return s->level;
-    }
-    s->t_at_pos += dt;
-    s->level_at_pos = s->levels[s->pos];
-    s->pos++;
-    return s->level;
-}
-
-double env_next_head(struct env_state *s, env_func func) {
-    if (s->pos >= s->env_size) {
-        if (!s->is_loop) {
-            s->is_end = 1;
-            return s->level;
-        }
-        env_reset(s);
-    }
-    return env_next_tail(s, func);
-}
-
-static double step(double a, double b, double x) {
-    (void) a;
-    (void) x;
-    return b;
-}
-
-double env_next(struct env_state *s) {
-    return env_next_head(s, lerp);
-}
-
-double seq_next(struct env_state *s) {
-    return env_next_head(s, step);
-}
-
-void adsr_init(struct adsr_state *s, int is_sustain_on) {
-    env_init(&s->env, 3, s->deltas, s->levels, 0);
-    env_set(&s->env, 0, sec(0.01), 1);
-    env_set(&s->env, 1, sec(0.1), 0.5);
-    env_set(&s->env, 2, sec(0.3), 0);
-    s->sustain_mode = is_sustain_on ? 1 : -1;
-}
-
-void adsr_set_attack(struct adsr_state *s, double t) {
-    s->env.deltas[0] = sec(t);
-}
-
-void adsr_set_decay(struct adsr_state *s, double t) {
-    s->env.deltas[1] = sec(t);
-}
-
-void adsr_set_sustain(struct adsr_state *s, double level) {
-    s->env.levels[1] = level;
-}
-
-void adsr_set_release(struct adsr_state *s, double t) {
-    s->env.deltas[2] = sec(t);
-}
-
-void adsr_note_on(struct adsr_state *s) {
-    env_reset(&s->env);
-    s->env.sustain_pos = s->sustain_mode;
 }
 
 void adsr_note_off(struct adsr_state *s) {
-    s->env.sustain_pos = -1;
+    s->state = ADSR_RELEASE;
 }
 
-double adsr_next(struct adsr_state *s) {
-    return env_next(&s->env);
+double adsr_next(struct adsr_state *s, int is_sustain_on) {
+    if (s->state == ADSR_ATTACK) {
+        s->level += s->attack_step;
+        if (s->level >= 1) {
+            s->level = 1;
+            s->state = ADSR_DECAY;
+        }
+    } else if (s->state == ADSR_DECAY) {
+        s->level -= s->decay_step;
+        if (s->level <= s->sustain) {
+            s->level = s->sustain;
+            s->state = is_sustain_on ? ADSR_SUSTAIN : ADSR_RELEASE;
+        }
+    } else if (s->state == ADSR_RELEASE) {
+        s->level -= s->release_step;
+        if (s->level <= 0) {
+            s->level = 0;
+            s->state = ADSR_END;
+        }
+    }
+    return s->level;
 }
 
-void delay_init(struct delay_state *s, double *buf, size_t buf_size, double level, double fb) {
+void delay_init(struct delay_state *s, double *buf, int buf_size) {
     s->buf = buf;
+    for (int i = 0; i < buf_size; i++) {
+        s->buf[i] = 0;
+    }
     s->buf_size = buf_size;
-    s->level = level;
-    s->fb = fb;
     s->pos = 0;
+    s->size = buf_size;
+    delay_set_level(s, 0.5);
+    delay_set_fb(s, 0.5);
+}
+
+void delay_set_time(struct delay_state *s, double time) {
+    s->size = limit(sec(time), 1, s->buf_size);
+}
+
+void delay_set_level(struct delay_state *s, double level) {
+    s->level = level;
+}
+void delay_set_fb(struct delay_state *s, double fb) {
+    s->fb = fb;
 }
 
 double delay_next(struct delay_state *s, double x) {
     double y = x + s->buf[s->pos] * s->level;
-    s->buf[s->pos] = s->buf[s->pos] * s->fb + x;
-    s->pos = (s->pos + 1) % s->buf_size;
+    s->buf[s->pos] = x + s->buf[s->pos] * s->fb;
+    s->pos = (s->pos + 1) % s->size;
     return y;
 }
 
@@ -203,8 +182,16 @@ double filter_hp_next(struct filter_state *s, double x, double width) {
     return x - filter_lp_next(s, x, 1 - width);
 }
 
-void glide_init(struct glide_state *s, double source, double rate) {
+void glide_init(struct glide_state *s) {
+    glide_set_source(s, 440);
+    glide_set_rate(s, 100);
+}
+
+void glide_set_source(struct glide_state *s, double source) {
     s->source = source;
+}
+
+void glide_set_rate(struct glide_state *s, double rate) {
     s->rate = rate * (1. / SR);
 }
 
@@ -218,34 +205,78 @@ double glide_next(struct glide_state *s, double target) {
     return s->source;
 }
 
-void noise_init(struct noise_state *s, int bits, int *taps, int taps_size) {
-    s->bits = bits;
-    s->taps_size = limit(taps_size, 1, MAX_TAPS);
-    for (int i = 0; i < s->taps_size; i++) {
-        s->taps[i] = taps[i];
-    }
-    s->state = 1;
+void noise_init(struct noise_state *s) {
     s->phase = 0;
+    s->state = 1;
+    s->old_y = 0;
+    s->y = 0;
+    noise_set_width(s, 2);
+}
+
+void noise_set_width(struct noise_state *s, unsigned int width) {
+    width += 1;
+    s->width = width < 2 ? 2 : width;
+}
+
+double noise_lerp_next(struct noise_state *s, double freq) {
+    s->phase += freq * (1. / SR);
+    if (s->phase >= 1) {
+        s->phase -= 1;
+        s->state = xorshift(s->state);
+        s->old_y = s->y;
+        s->y = s->state % s->width;
+    }
+    return lerp(s->old_y, s->y, s->phase) - s->width / 2;
 }
 
 double noise_next(struct noise_state *s, double freq) {
-    double old_phase = s->phase;
-    s->phase = fmod(s->phase + freq * (1. / SR), 1);
-    if (old_phase >= s->phase) {
-        s->state = lfsr(s->state, s->bits, s->taps, s->taps_size);
+   s->phase += freq * (1. / SR);
+    if (s->phase >= 1) {
+        s->phase -= 1;
+        s->state = xorshift(s->state);
+        s->y = s->state % s->width;
     }
-    return 2 * (int) (s->state & 1) - 1;
+    return s->y - s->width / 2;
 }
 
-void lfo_init(struct lfo_state *s, int func, int sign, double freq, double level, int is_oneshot) {
+static void lfo_update_y_mul(struct lfo_state *s) {
+    s->y_mul = (s->high - s->low) * 0.5;
+}
+
+void lfo_init(struct lfo_state *s) {
+    s->phase = 0;
+    s->freq = 0;
+    lfo_set_func(s, LFO_NONE);
+    lfo_set_freq(s, 0);
+    s->low = -1;
+    s->high = 1;
+    lfo_update_y_mul(s);
+    lfo_set_loop(s, 1);
+}
+
+void lfo_set_func(struct lfo_state *s, int func) {
     s->func = func;
-    s->sign = sign;
-    s->freq = freq;
-    s->level = level;
-    s->is_oneshot = is_oneshot;
 }
 
-double lfo_func(double x, int func) {
+void lfo_set_freq(struct lfo_state *s, double freq) {
+    s->freq = freq;
+}
+
+void lfo_set_low(struct lfo_state *s, double low) {
+    s->low = low;
+    lfo_update_y_mul(s);
+}
+
+void lfo_set_high(struct lfo_state *s, double high) {
+    s->high = high;
+    lfo_update_y_mul(s);
+}
+
+void lfo_set_loop(struct lfo_state *s, int is_loop) {
+    s->is_loop = is_loop;
+}
+
+double lfo_func(int func, double x) {
     switch (func) {
     case LFO_SIN:
         return sin(x * 2 * PI);
@@ -261,11 +292,10 @@ double lfo_func(double x, int func) {
 }
 
 double lfo_next(struct lfo_state *s) {
-    double y = s->sign * lfo_func(s->phase, s->func) * s->level;
-    double old_phase = s->phase;
-    s->phase = fmod(s->phase + s->freq * (1. / SR), 1);
-    if (s->is_oneshot && old_phase >= s->phase) {
-        s->phase = old_phase;
+    double y = s->low + s->y_mul * (lfo_func(s->func, s->phase) + 1);
+    s->phase += s->freq * (1. / SR);
+    if (s->phase >= 1) {
+        s->phase = s->is_loop ? s->phase - 1 : 1;
     }
     return y;
 }

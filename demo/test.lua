@@ -51,32 +51,54 @@ local function showkeys()
 end
 
 function tune()
-  mixer.voice('empty', 'empty')
+  mixer.voice('snare', 'synth',
+    { synth.MODE, synth.OSC_NOISE },
+    { synth.AMP, 10000 },
+    { synth.WIDTH, 10000 },
+    { synth.OFFSET, 0 },
+    { synth.DECAY, 0.13 },
+    { synth.SUSTAIN, 0 },
+    { synth.RELEASE, 0 },
+    { synth.LFO_ASSIGN, 0, synth.LFO_TARGET_FREQ },
+    { synth.LFO_FUNC, 0, LFO_SAW },
+    { synth.LFO_FREQ, 0, 5 },
+    { synth.LFO_LOW, 0, 120 },
+    { synth.LFO_HIGH, 0, 0 },
+    { synth.LFO_LOOP, 0, 0 },
+    { synth.LFO_ASSIGN, 1, synth.LFO_TARGET_OFFSET },
+    { synth.LFO_FUNC, 1, synth.LFO_SAW },
+    { synth.LFO_FREQ, 1, 5 },
+    { synth.LFO_LOW, 1, 10000 },
+    { synth.LFO_HIGH, 1, 5000 },
+    { synth.LFO_LOOP, 1, 0 });
+
   mixer.voice('bass', 'synth',
-    { synth.WAVE_TYPE, synth. SQUARE },
-    { synth.WAVE_WIDTH, 0 },
+    { synth.FREQ_MUL, 0.5 },
+    { synth.MODE, synth.OSC_SQUARE },
+    { synth.WIDTH, 0 },
+    { synth.DECAY, 0.2 },
+    { synth.SUSTAIN, 0 },
+    { synth.RELEASE, 0 },
     { synth.VOLUME, 0.5 },
-    { synth.LFO_SELECT, 0 },
-    { synth.LFO_WAVE_TYPE, synth.SAW },
-    { synth.LFO_WAVE_SIGN, -1 },
-    { synth.LFO_FREQ, 15 },
-    { synth.LFO_LEVEL, 100 },
-    { synth.LFO_IS_ONESHOT, 1 },
-    { synth.LFO_SELECT, 1 },
-    { synth.LFO_WAVE_TYPE, synth.SAW },
-    { synth.LFO_WAVE_SIGN, -1 },
-    { synth.LFO_FREQ, 15 },
-    { synth.LFO_LEVEL, 0.5 },
-    { synth.LFO_IS_ONESHOT, 1 },
-    { synth.LFO_TO_FREQ, 0 },
-    { synth.LFO_TO_WIDTH, 1 })
-  mixer.voice('square', 'synth', { synth.WAVE_TYPE, synth.SQUARE }, { synth.GLIDE_ON, 50 },
-    { synth.WAVE_WIDTH, 0.7 } )
+    { synth.LFO_ASSIGN, 0, synth.LFO_TARGET_FREQ },
+    { synth.LFO_FUNC, 0, synth.LFO_SAW },
+    { synth.LFO_FREQ, 0, 15 },
+    { synth.LFO_LOW, 0, 100 },
+    { synth.LFO_HIGH, 0, -100 },
+    { synth.LFO_LOOP, 0, 0 },
+    { synth.LFO_ASSIGN, 1, synth.LFO_TARGET_WIDTH },
+    { synth.LFO_FUNC, 1, synth.LFO_SAW },
+    { synth.LFO_FREQ, 1, 15 },
+    { synth.LFO_LOW, 1, 0.5 },
+    { synth.LFO_HIGH, 1, -0.5 },
+    { synth.LFO_LOOP, 1, 0 })
+  mixer.voice('square', 'synth', { synth.MODE, synth.OSC_SQUARE }, { synth.GLIDE_ON, 50 },
+    { synth.WIDTH, 0.7 } )
   mixer.voice('saw', 'synth',
-    { synth.WAVE_TYPE, synth.SAW },
-    { synth.ATTACK_TIME, 0.5 },
-    { synth.DECAY_TIME, 0.5 },
-    { synth.SUSTAIN_LEVEL, 0.5 },
+    { synth.MODE, synth.OSC_SAW },
+    { synth.ATTACK, 0.5 },
+    { synth.DECAY, 0.5 },
+    { synth.SUSTAIN, 0.5 },
     'delay',
     { synth.VOLUME, 1 },
     { synth.FEEDBACK, 0.5 },
@@ -84,10 +106,10 @@ function tune()
     'dist',
     { synth.GAIN, 1},
     'filter',
-    { synth.FILTER_TYPE, synth.FILTER_LP },
-    { synth.FILTER_WIDTH, 0.1 },
+    { synth.MODE, synth.LOWPASS },
+    { synth.WIDTH, 0.1 },
     { synth.VOLUME, 1 })
-  local voices = {'bass', 'empty', 'square', 'saw'}
+  local voices = {'bass', 'snare', 'square', 'saw'}
   local pan = { 0, 0, -0.75, 0.75 }
   local song = [[
 C-2 A0 | ... .. | C-4 .. | C-3 64

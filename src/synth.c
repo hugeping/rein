@@ -4,11 +4,6 @@
 #include "zvon.h"
 #include "zvon_sfx.h"
 
-enum {
-    ZV_SAMPLES_LOAD = ZV_END + 1,
-    ZV_SAMPLES_RESET,
-};
-
 #define CHANNELS_MAX 32
 
 static double
@@ -45,16 +40,24 @@ synth_change(lua_State *L)
 	const int chan = luaL_checkinteger(L, 1);
 	int nr = luaL_checkinteger(L, 2);
 	const int param = luaL_checkinteger(L, 3);
-	const double val = luaL_checknumber(L, 4);
+	int elem = 0;
+	double val;
 	struct sfx_box *box;
+
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
+
+	if (lua_isnumber(L, 5)) {
+		elem = luaL_checkinteger(L, 4);
+		val = luaL_checknumber(L, 5);
+	} else
+		val = luaL_checknumber(L, 4);
 	if (nr < 0)
 		nr = channels[chan].stack_size + nr;
 	if (nr < 0 || nr >= channels[chan].stack_size)
 		return luaL_error(L, "Wrong stack position");
 	box = &channels[chan].stack[nr];
-	box->proto->change(box->state, param, val);
+	sfx_box_change(box, param, elem, val);
 	return 0;
 }
 
@@ -68,7 +71,7 @@ synth_push(lua_State *L)
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
 	chan_state = &channels[chan];
-	if (chan_state->stack_size >= MAX_SFX_BOXES)
+	if (chan_state->stack_size >= SFX_MAX_BOXES)
 		return luaL_error(L, "Maximum boxes reached");
 	while (boxes[i] && strcmp(boxes[i]->name, box)) i++;
 	if (!boxes[i])
@@ -79,7 +82,7 @@ synth_push(lua_State *L)
 }
 
 static int
-synth_free(lua_State *L)
+synth_drop(lua_State *L)
 {
 	const int chan = luaL_checkinteger(L, 1);
 	if (chan < 0 || chan >= CHANNELS_MAX)
@@ -89,17 +92,34 @@ synth_free(lua_State *L)
 }
 
 static int
-synth_set(lua_State *L)
+synth_set_on(lua_State *L)
 {
-	struct chan_state *chan_state;
 	const int chan = luaL_checkinteger(L, 1);
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
-	chan_state = &channels[chan];
-	if (lua_isboolean(L, 2))
-		chan_state->is_on = lua_toboolean(L, 2);
-	chan_state->vol = luaL_optnumber(L, 3, chan_state->vol);
-	chan_state->pan = luaL_optnumber(L, 4, chan_state->pan);
+	chan_set_on(&channels[chan], lua_toboolean(L, 2));
+	return 0;
+}
+
+static int
+synth_set_vol(lua_State *L)
+{
+	const int chan = luaL_checkinteger(L, 1);
+	const double val = luaL_checknumber(L, 2);
+	if (chan < 0 || chan >= CHANNELS_MAX)
+		return luaL_error(L, "Wrong channel number");
+	chan_set_vol(&channels[chan], val);
+	return 0;
+}
+
+static int
+synth_set_pan(lua_State *L)
+{
+	const int chan = luaL_checkinteger(L, 1);
+	const double pan = luaL_checknumber(L, 2);
+	if (chan < 0 || chan >= CHANNELS_MAX)
+		return luaL_error(L, "Wrong channel number");
+	chan_set_pan(&channels[chan], pan);
 	return 0;
 }
 
@@ -137,22 +157,26 @@ synth_stop(lua_State *L)
 	if (chan == -1) {
 		for (i = 0; i < CHANNELS_MAX; i ++) {
 			chan_drop(&channels[i]);
-			chan_set(&channels[i], 0, 0, 0);
+			chan_set_on(&channels[i], 0);
 		}
 		return 0;
 	}
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
 	chan_drop(&channels[chan]);
-	chan_set(&channels[chan], 0, 0, 0);
+	chan_set_on(&channels[chan], 0);
+	chan_set_pan(&channels[chan], 0);
+	chan_set_vol(&channels[chan], 0);
 	return 0;
 }
 
 static const luaL_Reg
 synth_lib[] = {
 	{ "push", synth_push },
-	{ "free", synth_free },
-	{ "set", synth_set },
+	{ "drop", synth_drop },
+	{ "on", synth_set_on },
+	{ "vol", synth_set_vol },
+	{ "pan", synth_set_pan },
 	{ "change", synth_change },
 	{ "mix", synth_mix },
 	{ "stop", synth_stop },
@@ -163,43 +187,55 @@ static struct {
 	const char *name;
 	int val;
 } constants[] = {
+	{ "VOLUME", ZV_VOLUME },
+	/* synth */
 	{ "NOTE_ON", ZV_NOTE_ON },
 	{ "NOTE_OFF", ZV_NOTE_OFF },
-	{ "VOLUME", ZV_VOLUME },
-	{ "TIME", ZV_TIME },
-	{ "FEEDBACK", ZV_FEEDBACK },
-	{ "GAIN", ZV_GAIN },
-	{ "WAVE_TYPE", ZV_WAVE_TYPE },
-	{ "WAVE_WIDTH", ZV_WAVE_WIDTH },
-	{ "WAVE_OFFSET", ZV_WAVE_OFFSET },
-	{ "ATTACK_TIME", ZV_ATTACK_TIME },
-	{ "DECAY_TIME", ZV_DECAY_TIME },
-	{ "SUSTAIN_LEVEL", ZV_SUSTAIN_LEVEL },
-	{ "RELEASE_TIME", ZV_RELEASE_TIME },
 	{ "GLIDE_ON", ZV_GLIDE_ON },
 	{ "GLIDE_OFF", ZV_GLIDE_OFF },
-	{ "FREQ_SCALER", ZV_FREQ_SCALER },
-	{ "LFO_SELECT", ZV_LFO_SELECT },
-	{ "LFO_WAVE_TYPE", ZV_LFO_WAVE_TYPE },
-	{ "LFO_WAVE_SIGN", ZV_LFO_WAVE_SIGN },
+	{ "ATTACK", ZV_ATTACK },
+	{ "DECAY", ZV_DECAY },
+	{ "SUSTAIN", ZV_SUSTAIN },
+	{ "RELEASE", ZV_RELEASE },
+	{ "SUSTAIN_ON", ZV_SUSTAIN_ON },
+	{ "FREQ_MUL", ZV_FREQ_MUL },
+	{ "MODE", ZV_MODE }, /* +filter */
+	{ "AMP", ZV_AMP },
+	{ "WIDTH", ZV_WIDTH }, /* +fliter */
+	{ "OFFSET", ZV_OFFSET },
+	{ "LFO_FUNC", ZV_LFO_FUNC },
 	{ "LFO_FREQ", ZV_LFO_FREQ },
-	{ "LFO_LEVEL", ZV_LFO_LEVEL },
-	{ "LFO_IS_ONESHOT", ZV_LFO_IS_ONESHOT },
-	{ "LFO_TO_FREQ", ZV_LFO_TO_FREQ },
-	{ "LFO_TO_WIDTH", ZV_LFO_TO_WIDTH },
-	{ "LFO_TO_OFFSET", ZV_LFO_TO_OFFSET },
-	{ "FILTER_TYPE", ZV_FILTER_TYPE },
-	{ "FILTER_WIDTH", ZV_FILTER_WIDTH },
-	{ "SIN", ZV_SIN },
-	{ "SQUARE", ZV_SQUARE },
-	{ "SAW", ZV_SAW },
-	{ "TRIANGLE", ZV_TRIANGLE },
-	{ "PWM", ZV_PWM },
-	{ "FM", ZV_FM },
-	{ "NOISE", ZV_NOISE },
-	{ "FILTER_LP", ZV_FILTER_LP },
-	{ "FILTER_HP", ZV_FILTER_HP },
-	{ NULL, },
+	{ "LFO_LOW", ZV_LFO_LOW },
+	{ "LFO_HIGH", ZV_LFO_HIGH },
+	{ "LFO_LOOP", ZV_LFO_LOOP },
+	{ "LFO_ASSIGN", ZV_LFO_ASSIGN },
+	/* delay */
+	{ "TIME", ZV_TIME },
+	{ "LEVEL", ZV_LEVEL },
+	{ "FEEDBACK", ZV_FEEDBACK },
+	/* dist */
+	{ "GAIN", ZV_GAIN },
+	/* filter */
+	{ "LOWPASS", ZV_LOWPASS },
+	{ "HIGHPASS", ZV_HIGHPASS },
+	/* values */
+	{ "OSC_SIN", OSC_SIN },
+	{ "OSC_SAW", OSC_SAW },
+	{ "OSC_SQUARE", OSC_SQUARE },
+	{ "OSC_DSF", OSC_DSF },
+	{ "OSC_DSF2", OSC_DSF2 },
+	{ "OSC_PWM", OSC_PWM },
+	{ "OSC_NOISE", OSC_NOISE },
+	{ "LFO_NONE", LFO_NONE },
+	{ "LFO_SIN", LFO_SIN },
+	{ "LFO_SAW", LFO_SAW },
+	{ "LFO_SQUARE", LFO_SQUARE },
+	{ "LFO_TRIANGLE", LFO_TRIANGLE },
+	{ "LFO_TARGET_AMP", LFO_TARGET_AMP },
+	{ "LFO_TARGET_FREQ", LFO_TARGET_FREQ },
+	{ "LFO_TARGET_WIDTH", LFO_TARGET_WIDTH },
+	{ "LFO_TARGET_OFFSET", LFO_TARGET_OFFSET },
+	{ NULL }
 };
 
 int
