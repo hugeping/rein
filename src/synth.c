@@ -6,6 +6,8 @@
 
 #define CHANNELS_MAX 32
 
+static int mutex;
+
 static double
 empty_mono(void *s, double x)
 {
@@ -52,12 +54,16 @@ synth_change(lua_State *L)
 		val = luaL_checknumber(L, 5);
 	} else
 		val = luaL_checknumber(L, 4);
+	MutexLock(mutex);
 	if (nr < 0)
 		nr = channels[chan].stack_size + nr;
-	if (nr < 0 || nr >= channels[chan].stack_size)
+	if (nr < 0 || nr >= channels[chan].stack_size) {
+		MutexUnlock(mutex);
 		return luaL_error(L, "Wrong stack position");
+	}
 	box = &channels[chan].stack[nr];
 	sfx_box_change(box, param, elem, val);
+	MutexUnlock(mutex);
 	return 0;
 }
 
@@ -70,13 +76,19 @@ synth_push(lua_State *L)
 	const char *box = luaL_checkstring(L, 2);
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
+	MutexLock(mutex);
 	chan_state = &channels[chan];
-	if (chan_state->stack_size >= SFX_MAX_BOXES)
+	if (chan_state->stack_size >= SFX_MAX_BOXES) {
+		MutexUnlock(mutex);
 		return luaL_error(L, "Maximum boxes reached");
+	}
 	while (boxes[i] && strcmp(boxes[i]->name, box)) i++;
-	if (!boxes[i])
+	if (!boxes[i]) {
+		MutexUnlock(mutex);
 		return luaL_error(L, "Unknown box name: %s", box);
+	}
 	chan_push(&channels[chan], boxes[i]);
+	MutexUnlock(mutex);
 	lua_pushinteger(L, chan_state->stack_size - 1);
 	return 1;
 }
@@ -87,7 +99,9 @@ synth_drop(lua_State *L)
 	const int chan = luaL_checkinteger(L, 1);
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
+	MutexLock(mutex);
 	chan_drop(&channels[chan]);
+	MutexUnlock(mutex);
 	return 0;
 }
 
@@ -97,7 +111,9 @@ synth_set_on(lua_State *L)
 	const int chan = luaL_checkinteger(L, 1);
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
+	MutexLock(mutex);
 	chan_set_on(&channels[chan], lua_toboolean(L, 2));
+	MutexUnlock(mutex);
 	return 0;
 }
 
@@ -108,7 +124,9 @@ synth_set_vol(lua_State *L)
 	const double val = luaL_checknumber(L, 2);
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
+	MutexLock(mutex);
 	chan_set_vol(&channels[chan], val);
+	MutexUnlock(mutex);
 	return 0;
 }
 
@@ -119,7 +137,9 @@ synth_set_pan(lua_State *L)
 	const double pan = luaL_checknumber(L, 2);
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
+	MutexLock(mutex);
 	chan_set_pan(&channels[chan], pan);
+	MutexUnlock(mutex);
 	return 0;
 }
 
@@ -128,11 +148,13 @@ synth_mix(lua_State *L)
 {
 	int samples = luaL_checkinteger(L, 1);
 	const double vol = luaL_optnumber(L, 2, 1.0f);
-	unsigned int free = AudioWrite(NULL, 0);
+	unsigned int free;
 	#define SAMPLES_NR 128
 	float floats[SAMPLES_NR*2];
 	signed short buf[SAMPLES_NR*2];
 	int nr, written, i;
+	MutexLock(mutex);
+	free = AudioWrite(NULL, 0);
 	if (samples > free / 4) /* stereo * sizeof(short) */
 		samples = free / 4;
 	written = samples;
@@ -144,6 +166,7 @@ synth_mix(lua_State *L)
 		AudioWrite(buf, nr * 4);
 		samples -= nr;
 	}
+	MutexUnlock(mutex);
 	#undef SAMPLES_NR
 	lua_pushinteger(L, written);
 	return 1;
@@ -155,18 +178,22 @@ synth_stop(lua_State *L)
 	int i;
 	const int chan = luaL_optinteger(L, 1, -1);
 	if (chan == -1) {
+		MutexLock(mutex);
 		for (i = 0; i < CHANNELS_MAX; i ++) {
 			chan_drop(&channels[i]);
 			chan_set_on(&channels[i], 0);
 		}
+		MutexUnlock(mutex);
 		return 0;
 	}
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
+	MutexLock(mutex);
 	chan_drop(&channels[chan]);
 	chan_set_on(&channels[chan], 0);
 	chan_set_pan(&channels[chan], 0);
 	chan_set_vol(&channels[chan], 0);
+	MutexUnlock(mutex);
 	return 0;
 }
 
@@ -241,10 +268,23 @@ static struct {
 };
 
 int
+synth_init()
+{
+	mutex = Mutex();
+	mix_init(channels, CHANNELS_MAX);
+	return 0;
+}
+
+void
+synth_done()
+{
+	MutexDestroy(mutex);
+}
+
+int
 luaopen_synth(lua_State *L)
 {
 	int i;
-	mix_init(channels, CHANNELS_MAX);
 	luaL_newlib(L, synth_lib);
 	for (i = 0; constants[i].name; i++) {
 		lua_pushstring(L, constants[i].name);
