@@ -48,6 +48,13 @@ function editarea:get()
   return text
 end
 
+function editarea:size()
+  local s = self
+  local columns = math.floor((s.w-2) / s.spw)
+  local lines = math.floor(s.h / s.sph) - 2
+  return columns, lines
+end
+
 function editarea:scroll()
   local s = self
   if s.cur.x < 1 then s.cur.x = 1 end
@@ -61,8 +68,7 @@ function editarea:scroll()
     end
   end
   if s.cur.x > #s.lines[s.cur.y] then s.cur.x = #s.lines[s.cur.y] + 1 end
-  local columns = math.floor((s.w-2) / s.spw)
-  local lines = math.floor(s.h / s.sph) - 2
+  local columns, lines = self:size()
   if s.cur.y >= s.line and s.cur.y <= s.line + lines - 1
     and s.cur.x >= s.col and s.cur.x < columns then
     return
@@ -123,6 +129,7 @@ function editarea:show()
   screen:clip(x, y, self.w, self.h)
   local px, py, l
   py = 0
+  local columns, lines = self:size()
   for nr=self.line, #self.lines do
     l = self.lines[nr]
     px = 0
@@ -136,7 +143,7 @@ function editarea:show()
       px = px + w
     end
     py = py + self.sph
-    if py >= self.h - 12 then
+    if py >= lines * self.sph then
       break
     end
   end
@@ -204,6 +211,14 @@ function editarea:event(r, v, ...)
     elseif v == 'end' or v == 'keypad 1' or
       (v == 'e' and input.keydown 'ctrl') then
       self.cur.x = #self.lines[self.cur.y] + 1
+    elseif v == 'pagedown' or v == 'keypad 3' then
+      local _, lines = self:size()
+      self.cur.y = self.cur.y + lines
+      self:scroll()
+    elseif v == 'pageup' or v == 'keypad 9' then
+      local _, lines = self:size()
+      self.cur.y = self.cur.y - lines
+      self:scroll()
     end
     self:scroll()
   end
