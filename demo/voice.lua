@@ -305,8 +305,8 @@ local boxes = {
     { 'amp', synth.AMP, def = 1.0 },
     { 'glide_on', synth.GLIDE_ON, trigger = true, def = 0 },
     { 'glide_off', synth.GLIDE_OFF, trigger = true, def = 0 },
-    { 'remap', synth.REMAP, choice = { 'freq', 'offset' },
-      val = { synth.LFO_TARGET_FREQ, synth.LFO_TARGET_OFFSET } },
+--    { 'remap', synth.REMAP, choice = { 'freq', 'offset' },
+--      val = { synth.LFO_PARAM_FREQ, synth.LFO_PARAM_OFFSET } },
   },
   { nam = 'dist',
     { "volume", synth.VOLUME, def = 0 },
@@ -318,7 +318,13 @@ local boxes = {
     { 'level', synth.LEVEL, def = 0.5 },
     { 'feedback', synth.FEEDBACK, def = 0.5 },
   },
-  { nam = 'filter' },
+  { nam = 'filter' ,
+    { 'mode', synth.MODE, def = 1,
+      choice = { 'lopass', 'highpass' },
+      val = { synth.LOPASS, synth.HIGHPASS },
+    },
+    { 'width', synth.MODE, def = 0.5 },
+  }
 }
 
 w_conf = win:new { title = 'Settings',

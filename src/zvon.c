@@ -230,13 +230,13 @@ double noise_lerp_next(struct noise_state *s, double freq) {
 }
 
 double noise_next(struct noise_state *s, double freq) {
-   s->phase += freq * (1. / SR);
+    s->phase += freq * (1. / SR);
     if (s->phase >= 1) {
         s->phase -= 1;
         s->state = xorshift(s->state);
         s->y = s->state % s->width;
     }
-    return s->y - s->width / 2;
+    return (double) s->y - s->width / 2;
 }
 
 static void lfo_update_y_mul(struct lfo_state *s) {
