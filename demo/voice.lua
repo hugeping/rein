@@ -97,6 +97,186 @@ function trigger:event(r, v, ...)
   end
 end
 
+local editarea = win:new { value = '', cur = {x = 1, y = 1},
+  col = 1, line = 1, lines = {}, sph = 10, spw = 7, glyph_cache = {} }
+
+function editarea:set(text)
+  self.lines = {}
+  for l in text:lines() do
+    table.insert(self.lines, utf.chars(l))
+  end
+end
+
+function editarea:get()
+  local text = ''
+  for _, l in ipairs(self.lines) do
+    text = text .. table.concat(l) .. '\n'
+  end
+  return text
+end
+
+function editarea:scroll()
+  local s = self
+  if s.cur.x < 1 then s.cur.x = 1 end
+  if s.cur.y < 1 then s.cur.y = 1 end
+  if s.cur.y > #s.lines then
+    s.cur.y = #s.lines
+    if #s.lines[s.cur.y] ~= 0 then
+      s.cur.y = s.cur.y + 1
+      s.cur.x = 1
+      s.lines[s.cur.y] = {}
+    end
+  end
+  if s.cur.x > #s.lines[s.cur.y] then s.cur.x = #s.lines[s.cur.y] + 1 end
+  local columns = math.floor((s.w-2) / s.spw)
+  local lines = math.floor(s.h / s.sph) - 2
+  if s.cur.y >= s.line and s.cur.y <= s.line + lines - 1
+    and s.cur.x >= s.col and s.cur.x < columns then
+    return
+  end
+  if s.cur.x < s.col then
+    s.col = s.cur.x
+  elseif s.cur.x > s.col + columns - 1 then
+    s.col = s.cur.x - columns + 1
+  end
+  if s.cur.y < s.line then
+    s.line = s.cur.y
+  elseif s.cur.y > s.line + lines - 1 then
+    s.line = s.cur.y - lines + 1
+  end
+end
+
+function editarea:input(t)
+  local s = self
+  local c = utf.chars(t)
+  for _, v in ipairs(c) do
+    table.insert(s.lines[s.cur.y], s.cur.x, v)
+    s.cur.x = s.cur.x + 1
+  end
+  s:scroll()
+end
+
+function editarea:cursor()
+  local s = self
+  if math.floor(sys.time()*4) % 2 == 1 then
+    return
+  end
+  local px, py = (s.cur.x - s.col)*s.spw, (s.cur.y - s.line)*s.sph
+  for y=py, py + s.sph-1 do
+    for x=px, px + s.spw-1 do
+      local r, g, b = screen:pixel(x, y)
+      r = bit.bxor(r, 255)
+      g = bit.bxor(g, 255)
+      b = bit.bxor(b, 255)
+      screen:pixel(x, y, {r, g, b, 255})
+    end
+  end
+end
+
+function editarea:glyph(t)
+  local key = t
+  if self.glyph_cache[key] then
+    return self.glyph_cache[key]
+  end
+  self.glyph_cache[key] = self.font:text(t, self.fg)
+  return self.glyph_cache[key]
+end
+
+function editarea:show()
+  if self.hidden then return end
+  win.show(self)
+  local x, y = self:realpos()
+  screen:offset(x + 1, self.title and (y + 10) or y)
+  screen:clip(x, y, self.w, self.h)
+  local px, py, l
+  py = 0
+  for nr=self.line, #self.lines do
+    l = self.lines[nr]
+    px = 0
+    for i=self.col,#l do
+      if px >= self.w then
+        break
+      end
+      local g = self:glyph(l[i]) or glyph("?")
+      local w, _ = g:size()
+      g:blend(screen, px, py)
+      px = px + w
+    end
+    py = py + self.sph
+    if py >= self.h - 12 then
+      break
+    end
+  end
+  self:cursor()
+  screen:noclip()
+  screen:nooffset()
+end
+
+function editarea:newline()
+  local s = self
+  local l = s.lines[s.cur.y]
+  table.insert(s.lines, s.cur.y + 1, {})
+  for k=s.cur.x, #l do
+    table.insert(s.lines[s.cur.y+1], table.remove(l, s.cur.x))
+  end
+  s.cur.y = s.cur.y + 1
+  s.cur.x = 1
+end
+
+function editarea:backspace()
+  local s = self
+  if s.cur.x > 1 then
+    table.remove(s.lines[s.cur.y], s.cur.x - 1)
+    s.cur.x = s.cur.x - 1
+  elseif s.cur.y > 1 then
+    local l = table.remove(s.lines, s.cur.y)
+    s.cur.y = s.cur.y - 1
+    s.cur.x = #s.lines[s.cur.y] + 1
+    for _, v in ipairs(l) do
+      table.insert(s.lines[s.cur.y], v)
+    end
+  end
+end
+
+function editarea:event(r, v, ...)
+  if self.hidden then return end
+  local m, mb, x, y = self:mevent(r, v, ...)
+  if m and r == 'mousedown' and y >= 10 then
+    y = math.floor((y - 10)/self.sph)
+    x = math.floor(x/self.spw)
+    self.cur.y = y + self.line
+    self.cur.x = x + self.col
+    self:scroll()
+    return true
+  end
+  if r == 'text' then
+    self:input(v)
+    return true
+  elseif r == 'keydown' then
+    if v == 'backspace' then
+      self:backspace()
+    elseif v == 'return' or v == 'keypad enter' then
+      self:newline()
+    elseif v == 'up' then
+      self.cur.y = self.cur.y - 1
+    elseif v == 'down' then
+      self.cur.y = self.cur.y + 1
+    elseif v == 'right' then
+      self.cur.x = self.cur.x + 1
+    elseif v == 'left' then
+      self.cur.x = self.cur.x - 1
+    elseif v == 'home' or v == 'keypad 7' or
+      (v == 'a' and input.keydown 'ctrl') then
+      self.cur.x = 1
+    elseif v == 'end' or v == 'keypad 1' or
+      (v == 'e' and input.keydown 'ctrl') then
+      self.cur.x = #self.lines[self.cur.y] + 1
+    end
+    self:scroll()
+  end
+  return win.event(self, r, v, ...)
+end
+
 local edit = win:new { value = '' }
 
 function edit:edline(r, v, ...)
@@ -291,72 +471,14 @@ function remove_box(s)
   build_stack()
 end
 
-local boxes = {
-  { nam = 'synth',
-    { "volume", synth.VOLUME, def = 0 },
-    { 'mode', synth.MODE,
-      choice = { 'sin', 'saw', 'square', 'dsf', 'dsf2', 'pwm', 'sin+noise', 'noise8' },
-      val = { synth.OSC_SIN, synth.OSC_SAW, synth.OSC_SQUARE,
-        synth.OSC_DSF, synth.OSC_DSF2, synth.OSC_PWM, synth.OSC_SIN_NOISE, synth.OSC_NOISE8 } },
-    { 'width', synth.WIDTH, def = 0.5 },
-    { 'attack', synth.ATTACK, def = 0.01  },
-    { 'decay', synth.DECAY, def = 0.1 },
-    { 'sustain', synth.SUSTAIN, def = 0.5 },
-    { 'release', synth.RELEASE, def = 0.3 },
-    { 'sustain_on', synth.SUSTAIN_ON, def = 0 },
-    { 'offset', synth.OFFSET, def = 0.5 },
-    { 'amp', synth.AMP, def = 1.0 },
-    { 'glide_on', synth.GLIDE_ON, trigger = true, def = 0 },
-    { 'glide_off', synth.GLIDE_OFF, trigger = true, def = 0 },
-    { 'lfo', synth.LFO_FUNC,
-      array = { '0', '1', '2', '3' },
-      choice = { 'none', 'sin', 'saw', 'square', 'triangle' },
-      def = synth.LFO_NONE,
-      val = { synth.LFO_NONE, synth.LFO_SIN, synth.LFO_SAW, synth.LFO_SQUARE, synth.LFO_TRIANGLE }
-    },
-    { 'lfo freq', synth.LFO_FUNC,
-      array = { '0', '1', '2', '3' },
-      def = 0,
-    },
-    { 'lfo loop', synth.LFO_LOOP,
-      array = { '0', '1', '2', '3' },
-      def = 0,
-      trigger = true,
-    },
-    { 'remap', synth.REMAP,
-      choice = { 'freq', 'offset' },
-      val = { synth.LFO_TARGET_FREQ, synth.LFO_TARGET_OFFSET }
-    },
-  },
-  { nam = 'dist',
-    { "volume", synth.VOLUME, def = 0 },
-    { "gain", synth.GAIN, def = 0.5 },
-  },
-  { nam = 'delay',
-    { 'volume', synth.VOLUME, def = 0 },
-    { 'time', synth.TIME, max = 1, min = 0 },
-    { 'level', synth.LEVEL, def = 0.5 },
-    { 'feedback', synth.FEEDBACK, def = 0.5 },
-  },
---[[
-{ nam = 'filter' ,
-    { 'mode', synth.MODE, def = 1,
-      choice = { 'lopass', 'highpass' },
-      val = { synth.LOPASS, synth.HIGHPASS },
-    },
-    { 'width', synth.MODE, def = 0.5 },
-  }
-]]--
-}
-
-w_conf = win:new { title = 'Settings',
+w_conf = editarea:new { title = 'Settings',
     hidden = true,
     w = 38 * 7,
     h = 10 * 2,
     border = true }
 
 function box_info(nam)
-  for _, v in ipairs(boxes) do
+  for _, v in ipairs(sfx.boxes) do
     if v.nam == nam then return v end
   end
 end
@@ -365,25 +487,39 @@ local w_stack = win:new { title = 'Stack',
   w = 16*7,
   border = true }
 
-function get_wb(wb)
-  local saved = stack[wb.id][wb.nam]
-  if type(saved) == 'table' then
-    saved = saved[wb.wl.value] or wb.def
+function config_check()
+  if w_conf.hidden then
+    return true
   end
-  if not wb.info.val then
-    wb.value = saved or wb.def or wb.value
-    return
-  end
-  for idx, v in ipairs(wb.info.val) do
-    if v == saved then
-      wb.value = idx
-      return
+  local lines = {}
+  for _, l in ipairs(w_conf.lines) do
+    if l[1] ~= '#' or l[2] ~= 'e' or l[3] ~= 'r' or l[4] ~= 'r' or l[5] ~= ' ' then
+      table.insert(lines, l)
     end
   end
-  wb.value = 1
+  w_conf.lines = lines
+
+  local r, e, line = sfx.compile(w_conf.nam, w_conf:get())
+  if r then
+    return true
+  end
+  w_conf.cur.y = line
+  w_conf.cur.x = #w_conf.lines[line] + 1
+  for l in e:lines() do
+    w_conf:newline()
+    w_conf:input('#err '..l)
+  end
+  w_conf.cur.y = line
+  w_conf.cur.x = #w_conf.lines[line] + 1
+  w_conf.col = 1
+  w_conf:scroll()
+  return false, e, line
 end
 
 function config_box(s)
+  if not config_check() then
+    return
+  end
   if s.selected then
     s.selected = false
     w_conf.hidden = true
@@ -392,60 +528,10 @@ function config_box(s)
   s.parent:for_childs(function(w) w.selected = false end)
   s.selected = true
   local b = s.box
+  w_conf.nam = b.nam
   w_conf.childs = {}
-  local info = box_info(b.nam)
-  for i, v in ipairs(info) do
-    local wl, wb
-    if v.array then
-      wl = select:new { text = v[1], choice = v.array, max = #v.array }
-      wl.onedit = function(s)
-        get_wb(s.wb)
-      end
-    else
-      wl = label:new { text = v[1] }
-    end
-    wl.w, wl.h = 18*7, 10
-    wl.lev = -0.5
-    wl.x, wl.y = (w_conf.w/2 - wl.w)/2, i * 10 + 2
-    wl.bg = i % 2 == 0 and 15 or 16
-
-    if v.choice then
-      wb = select:new { choice = v.choice, max = #v.choice }
-    elseif v.trigger then
-      wb = trigger:new { }
-    else
-      wb = edit:new { }
-    end
-    wl.wb = wb
-    wb.wl = wl
-    wb.w, wb.h = 18*7, 10
-    wb.lev = -1
-    wb.bg = wl.bg
-    wb.x, wb.y = w_conf.w/2, wl.y
-    wb.id = s.id
-    wb.info = v
-    wb.nam = v[1]
-    wb.par = v[2]
-    wb.def = v.def
-    wb.onedit = function(s)
-      s.value = tonumber(s.value) or 0
-      local val = s.value
-      if s.info.choice and s.info.val then
-        val = s.info.val[s.value]
-      end
-      if s.wl.choice then
-        local idx = s.wl.value
-        stack[s.id][s.nam] = stack[s.id][s.nam] or {}
-        stack[s.id][s.nam][idx] = val
-      else
-        stack[s.id][s.nam] = val
-      end
-      apply_change(#stack - s.id, s.par, val)
-    end
-    get_wb(wb)
-    w_conf:with { wl, wb }
-  end
-  w_conf.h = (#info + 2) * 10 + 16
+  w_conf:set(sfx.defs(b.nam))
+  w_conf.h = H - 13
   w_conf.y = H - w_conf.h
   w_conf.x = w_stack.x + w_stack.w + 1
   w_conf.hidden = false
@@ -457,7 +543,6 @@ function config_box(s)
   rem.onclick = remove_box
   w_conf:with { rem }
 end
-
 
 function apply_boxes()
   for c = 1, chans.max do
@@ -500,13 +585,13 @@ end
 build_stack()
 
 local w_boxes = win:new { title = 'Push box',
-  w = 16*7, h = (#boxes + 2)* 10,
+  w = 16*7, h = (#sfx.boxes + 2)* 10,
   border = true }
 
 w_boxes.x = 0 -- W - w_boxes.w
 w_boxes.y = 12 + 1
 
-for i, b in ipairs(boxes) do
+for i, b in ipairs(sfx.boxes) do
   local wb = button:new { text = b.nam, w = 14*7, h = 10, lev = -1 }
   wb.x = (w_boxes.w - wb.w)/2
   wb.y = i * 10 + 2
@@ -548,7 +633,7 @@ function w_next:onclick(s)
 end
 
 local w_play = button:new { w = 64, h = 12,
-  x = W - 64, y = 0, text = "PLAY", border = true, lev = 2 }
+  x = W - 64, y = 0, text = "PLAY", border = true, lev = -2 }
 local w_info = label:new { w = 29*7, h = 12,
   x = w_next:after(1), y = w_play.y, text = "", border = false, left = true }
 
@@ -618,9 +703,14 @@ end
 
 function w_play:event(r, v, ...)
   if button.event(self, r, v, ...) then return true end
-  if v ~= 'space' and not self.play then return end
-  if r == 'keydown' then
-    if v == 'space' then
+  if v ~= 'escape' and not self.play then return end
+  if r == 'text' then
+    return true
+  elseif r == 'keydown' then
+    if v == 'escape' then
+      if not config_check() then
+        return true
+      end
       self:onclick()
       return true
     end
@@ -631,7 +721,7 @@ function w_play:event(r, v, ...)
     v = tonumber(v) or v
     local m = key2note[v]
     if not m then
-      return
+      return true
     end
     if #stack == 0 then return true end
     local note = note2sym[m%12 + 1]

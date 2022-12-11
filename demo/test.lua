@@ -52,7 +52,7 @@ end
 
 function tune()
   mixer.voice('snare', 'synth',
-    { synth.MODE, synth.OSC_NOISE },
+    { synth.MODE, synth.OSC_SIN_NOISE },
     { synth.AMP, 10000 },
     { synth.WIDTH, 10000 },
     { synth.OFFSET, 0 },
