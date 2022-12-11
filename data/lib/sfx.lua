@@ -186,15 +186,12 @@ end
 
 local function par_value(par, val)
   if par.choice then
-    local help = ''
     for idx, c in ipairs(par.choice) do
-      if help ~= '' then help = help .. ',' end
-      help = help .. tostring(c)
       if c == val or c == tonumber(val) then
         return par.vals and par.vals[idx] or c
       end
-      return false
     end
+    return false
   end
   val = tonumber(val)
   if not val then
