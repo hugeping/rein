@@ -13,6 +13,9 @@ extern int luaopen_utf(lua_State *L);
 extern int luaopen_net(lua_State *L);
 extern int luaopen_synth(lua_State *L);
 
+extern int synth_init(void);
+extern void synth_done(void);
+
 static const luaL_Reg lua_libs[] = {
 	{ "sys", luaopen_system },
 	{ "utf", luaopen_utf },
@@ -146,7 +149,7 @@ main(int argc, char **argv)
 		fprintf(stderr, "Can not do platform init!\n");
 		return 1;
 	}
-
+	synth_init();
 	luaL_openlibs(L);
 	lua_newtable(L);
 	for (i = 0; i < argc; i++) {
@@ -188,6 +191,7 @@ main(int argc, char **argv)
 	dostring(L, "core.done()");
 
 	lua_close(L);
+	synth_done();
 	PlatformDone();
 	return 0;
 }
