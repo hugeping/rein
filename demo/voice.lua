@@ -35,6 +35,9 @@ local select = win:new { value = 1, choice = {}, min = 1, max = 1 }
 function select:show()
   win.show(self)
   local text = self.choice[tonumber(self.value)] or tostring(self.value)
+  if self.text then
+    text = self.text .. ' '..text
+  end
   local w, h = self.font:size(text)
   local x, y = self:realpos()
   screen:offset(x, y)
@@ -75,7 +78,7 @@ function trigger:show()
   local w, h = 5, 5
   local xx, yy = (self.w - w)/2, (self.h - h)/2
   screen:rect(xx, yy, xx+w, yy+h, self.fg)
-  if self.value == 1 then
+  if tonumber(self.value) == 1 then
     screen:clear(xx, yy, w, h, self.fg)
   end
   screen:noclip()
@@ -88,7 +91,7 @@ function trigger:event(r, v, ...)
     return win.event(self, r, v, ...)
   end
   if m == 'mouseup' then
-    self.value = self.value == 0 and 1 or 0
+    self.value = tonumber(self.value) == 0 and 1 or 0
     if self.onedit then self:onedit() end
     return true
   end
@@ -118,8 +121,8 @@ function edit:event(r, v, ...)
   local m = self:mevent(r, v, ...)
   if not m then
     if r == 'mousedown' then
+      if self.edit and self.onedit then self:onedit() end
       self.edit = false
-      if self.onedit then self:onedit() end
     elseif self.edit and self:edline(r, v, ...) then
       return true
     end
@@ -305,8 +308,25 @@ local boxes = {
     { 'amp', synth.AMP, def = 1.0 },
     { 'glide_on', synth.GLIDE_ON, trigger = true, def = 0 },
     { 'glide_off', synth.GLIDE_OFF, trigger = true, def = 0 },
---    { 'remap', synth.REMAP, choice = { 'freq', 'offset' },
---      val = { synth.LFO_PARAM_FREQ, synth.LFO_PARAM_OFFSET } },
+    { 'lfo', synth.LFO_FUNC,
+      array = { '0', '1', '2', '3' },
+      choice = { 'none', 'sin', 'saw', 'square', 'triangle' },
+      def = synth.LFO_NONE,
+      val = { synth.LFO_NONE, synth.LFO_SIN, synth.LFO_SAW, synth.LFO_SQUARE, synth.LFO_TRIANGLE }
+    },
+    { 'lfo freq', synth.LFO_FUNC,
+      array = { '0', '1', '2', '3' },
+      def = 0,
+    },
+    { 'lfo loop', synth.LFO_LOOP,
+      array = { '0', '1', '2', '3' },
+      def = 0,
+      trigger = true,
+    },
+    { 'remap', synth.REMAP,
+      choice = { 'freq', 'offset' },
+      val = { synth.LFO_TARGET_FREQ, synth.LFO_TARGET_OFFSET }
+    },
   },
   { nam = 'dist',
     { "volume", synth.VOLUME, def = 0 },
@@ -318,13 +338,15 @@ local boxes = {
     { 'level', synth.LEVEL, def = 0.5 },
     { 'feedback', synth.FEEDBACK, def = 0.5 },
   },
-  { nam = 'filter' ,
+--[[
+{ nam = 'filter' ,
     { 'mode', synth.MODE, def = 1,
       choice = { 'lopass', 'highpass' },
       val = { synth.LOPASS, synth.HIGHPASS },
     },
     { 'width', synth.MODE, def = 0.5 },
   }
+]]--
 }
 
 w_conf = win:new { title = 'Settings',
@@ -343,6 +365,24 @@ local w_stack = win:new { title = 'Stack',
   w = 16*7,
   border = true }
 
+function get_wb(wb)
+  local saved = stack[wb.id][wb.nam]
+  if type(saved) == 'table' then
+    saved = saved[tonumber(wb.wl.value)] or wb.def
+  end
+  if not wb.info.val then
+    wb.value = tostring(saved or wb.def or wb.value)
+    return
+  end
+  for idx, v in ipairs(wb.info.val) do
+    if v == saved then
+      wb.value = idx
+      return
+    end
+  end
+  wb.value = 1
+end
+
 function config_box(s)
   if s.selected then
     s.selected = false
@@ -355,11 +395,20 @@ function config_box(s)
   w_conf.childs = {}
   local info = box_info(b.nam)
   for i, v in ipairs(info) do
-    local wl = label:new { text = v[1], w = 18*7, h = 10, lev = -1 }
-    wl.x = (w_conf.w/2 - wl.w)/2
-    wl.y = i * 10 + 2
+    local wl, wb
+    if v.array then
+      wl = select:new { text = v[1], choice = v.array, max = #v.array }
+      wl.onedit = function(s)
+        get_wb(s.wb)
+      end
+    else
+      wl = label:new { text = v[1] }
+    end
+    wl.w, wl.h = 18*7, 10
+    wl.lev = -0.5
+    wl.x, wl.y = (w_conf.w/2 - wl.w)/2, i * 10 + 2
     wl.bg = i % 2 == 0 and 15 or 16
-    local wb
+
     if v.choice then
       wb = select:new { choice = v.choice, max = #v.choice }
     elseif v.trigger then
@@ -367,25 +416,32 @@ function config_box(s)
     else
       wb = edit:new { }
     end
-    wb.value = tostring(stack[s.id][v[1]] or v.def or wb.value)
-    wb.w = 18*7
+    wl.wb = wb
+    wb.wl = wl
+    wb.w, wb.h = 18*7, 10
     wb.lev = -1
     wb.bg = wl.bg
-    wb.h = 10
-    wb.y = wl.y
+    wb.x, wb.y = w_conf.w/2, wl.y
     wb.id = s.id
     wb.info = v
     wb.nam = v[1]
     wb.par = v[2]
+    wb.def = v.def
     wb.onedit = function(s)
       local val = tonumber(s.value) or 0
       if s.info.choice and s.info.val then
         val = s.info.val[s.value]
       end
-      stack[s.id][s.nam] = val
+      if s.wl.choice then
+        local idx = tonumber(s.wl.value)
+        stack[s.id][s.nam] = stack[s.id][s.nam] or {}
+        stack[s.id][s.nam][idx] = val
+      else
+        stack[s.id][s.nam] = val
+      end
       apply_change(#stack - s.id, s.par, val)
     end
-    wb.x = w_conf.w/2
+    get_wb(wb)
     w_conf:with { wl, wb }
   end
   w_conf.h = (#info + 2) * 10 + 16

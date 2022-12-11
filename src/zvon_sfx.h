@@ -22,7 +22,7 @@ enum {
     ZV_AMP,
     ZV_WIDTH,
     ZV_OFFSET,
-    ZV_REMAP,
+    ZV_REMAP_FREQ,
     ZV_LFO_FUNC,
     ZV_LFO_FREQ,
     ZV_LFO_LOW,
@@ -53,11 +53,12 @@ enum {
 #define SYNTH_LFOS 4
 
 enum {
-    LFO_PARAM_AMP,
-    LFO_PARAM_FREQ,
-    LFO_PARAM_WIDTH,
-    LFO_PARAM_OFFSET,
-    LFO_PARAMS
+    LFO_TARGET_AMP,
+    LFO_TARGET_FREQ,
+    LFO_TARGET_FREQ_MUL,
+    LFO_TARGET_WIDTH,
+    LFO_TARGET_OFFSET,
+    LFO_TARGETS
 };
 
 extern struct sfx_proto sfx_synth;
