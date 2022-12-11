@@ -30,73 +30,6 @@ function win:after(d)
   return self.x + self.w + (d or 0)
 end
 
-local select = win:new { value = 1, choice = {}, min = 1, max = 1 }
-
-function select:show()
-  win.show(self)
-  local text = self.choice[self.value] or tostring(self.value)
-  if self.text then
-    text = self.text .. ' '..text
-  end
-  local w, h = self.font:size(text)
-  local x, y = self:realpos()
-  screen:offset(x, y)
-  screen:clip(x, y, self.w, self.h)
-  local xoff = (self.w - w)/2
-  if xoff < 0 then xoff = self.w - w end
-  self.font:text(text, self.fg):
-    blend(screen, xoff, (self.h -h)/2)
-  screen:noclip()
-  screen:nooffset()
-end
-
-function select:event(r, v, ...)
-  local m = self:mevent(r, v, ...)
-  if not m then
-    return win.event(self, r, v, ...)
-  end
-  if m == 'mouseup' then
-    if v == 'right' then
-      self.value = self.value - 1
-      if self.value < self.min then self.value = self.max end
-    else
-      self.value = self.value + 1
-      if self.value > self.max then self.value = self.min end
-    end
-    if self.onedit then self:onedit() end
-    return true
-  end
-end
-
-local trigger = win:new { value = 0 }
-
-function trigger:show()
-  win.show(self)
-  local x, y = self:realpos()
-  screen:offset(x, y)
-  screen:clip(x, y, self.w, self.h)
-  local w, h = 5, 5
-  local xx, yy = (self.w - w)/2, (self.h - h)/2
-  screen:rect(xx, yy, xx+w, yy+h, self.fg)
-  if self.value == 1 then
-    screen:clear(xx, yy, w, h, self.fg)
-  end
-  screen:noclip()
-  screen:nooffset()
-end
-
-function trigger:event(r, v, ...)
-  local m = self:mevent(r, v, ...)
-  if not m then
-    return win.event(self, r, v, ...)
-  end
-  if m == 'mouseup' then
-    self.value = self.value == 0 and 1 or 0
-    if self.onedit then self:onedit() end
-    return true
-  end
-end
-
 local editarea = win:new { value = '', cur = {x = 1, y = 1},
   col = 1, line = 1, lines = {}, sph = 10, spw = 7, glyph_cache = {} }
 
@@ -501,6 +434,7 @@ function config_check()
 
   local r, e, line = sfx.compile(w_conf.nam, w_conf:get())
   if r then
+    stack[w_conf.id].conf = w_conf:get()
     return true
   end
   w_conf.cur.y = line
@@ -528,9 +462,11 @@ function config_box(s)
   s.parent:for_childs(function(w) w.selected = false end)
   s.selected = true
   local b = s.box
+  w_conf.id = s.id
   w_conf.nam = b.nam
   w_conf.childs = {}
-  w_conf:set(sfx.defs(b.nam))
+  local text = stack[s.id].conf
+  w_conf:set(text or sfx.defs(b.nam))
   w_conf.h = H - 13
   w_conf.y = H - w_conf.h
   w_conf.x = w_stack.x + w_stack.w + 1
@@ -550,12 +486,12 @@ function apply_boxes()
     synth.drop(c)
     for i=#stack,1,-1 do
       synth.push(c, stack[i].nam)
-      local info = box_info(stack[i].nam)
-      for _, v in ipairs(info) do
-        local n, p = v[1], v[2]
-        if stack[i][n] then
-          synth.change(c, -1, p, stack[i][n])
-        end
+      local conf, e = sfx.compile(stack[i].nam, stack[i].conf or '')
+      if not conf then
+        error("Error compiling box: "..e)
+      end
+      for _, args in ipairs(conf) do
+        synth.change(c, -1, table.unpack(args))
       end
     end
     synth.on(c, true)
