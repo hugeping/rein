@@ -94,7 +94,7 @@ struct noise_state {
 
 void noise_init(struct noise_state *s);
 void noise_set_width(struct noise_state *s, unsigned int width);
-double noise_lerp_next(struct noise_state *s, double freq);
+double noise_lin_next(struct noise_state *s, double freq);
 double noise_next(struct noise_state *s, double freq);
 
 enum {
@@ -102,25 +102,38 @@ enum {
     LFO_SIN,
     LFO_SAW,
     LFO_SQUARE,
-    LFO_TRIANGLE
+    LFO_TRIANGLE,
+    LFO_SEQ
 };
+
+#define LFO_MAX_SEQ_STEPS 128
 
 struct lfo_state {
     double phase;
-    int func;
     double freq;
-    double y_mul;
+    int func;
+    double seq[LFO_MAX_SEQ_STEPS];
+    int edit_pos;
+    int seq_size;
+    int is_lin_seq;
+    double prev;
+    int pos;
     double low;
     double high;
     int is_loop;
 };
 
 void lfo_init(struct lfo_state *s);
+void lfo_reset(struct lfo_state *s);
 void lfo_set_func(struct lfo_state *s, int func);
 void lfo_set_freq(struct lfo_state *s, double freq);
 void lfo_set_low(struct lfo_state *s, double low);
 void lfo_set_high(struct lfo_state *s, double high);
 void lfo_set_loop(struct lfo_state *s, int is_loop);
+void lfo_set_seq_pos(struct lfo_state *s, int pos);
+void lfo_set_seq_val(struct lfo_state *s, double val);
+void lfo_set_seq_size(struct lfo_state *s, int size);
+void lfo_is_lin_seq(struct lfo_state *s, int is_lin_seq);
 double lfo_next(struct lfo_state *s);
 
 #endif

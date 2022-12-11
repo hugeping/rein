@@ -117,24 +117,28 @@ void adsr_note_off(struct adsr_state *s) {
 }
 
 double adsr_next(struct adsr_state *s, int is_sustain_on) {
-    if (s->state == ADSR_ATTACK) {
+    switch (s->state) {
+    case ADSR_ATTACK:
         s->level += s->attack_step;
         if (s->level >= 1) {
             s->level = 1;
             s->state = ADSR_DECAY;
         }
-    } else if (s->state == ADSR_DECAY) {
+        break;
+    case ADSR_DECAY:
         s->level -= s->decay_step;
         if (s->level <= s->sustain) {
             s->level = s->sustain;
             s->state = is_sustain_on ? ADSR_SUSTAIN : ADSR_RELEASE;
         }
-    } else if (s->state == ADSR_RELEASE) {
+        break;
+    case ADSR_RELEASE:
         s->level -= s->release_step;
         if (s->level <= 0) {
             s->level = 0;
             s->state = ADSR_END;
         }
+        break;
     }
     return s->level;
 }
@@ -214,11 +218,11 @@ void noise_init(struct noise_state *s) {
 }
 
 void noise_set_width(struct noise_state *s, unsigned int width) {
-    width += 1;
+    width++;
     s->width = width < 2 ? 2 : width;
 }
 
-double noise_lerp_next(struct noise_state *s, double freq) {
+double noise_lin_next(struct noise_state *s, double freq) {
     s->phase += freq * (1. / SR);
     if (s->phase >= 1) {
         s->phase -= 1;
@@ -239,19 +243,26 @@ double noise_next(struct noise_state *s, double freq) {
     return (double) s->y - s->width / 2;
 }
 
-static void lfo_update_y_mul(struct lfo_state *s) {
-    s->y_mul = (s->high - s->low) * 0.5;
-}
-
 void lfo_init(struct lfo_state *s) {
-    s->phase = 0;
     s->freq = 0;
+    lfo_reset(s);
+    for (int i = 0; i < LFO_MAX_SEQ_STEPS; i++) {
+        s->seq[i] = 0;
+    }
+    s->edit_pos = 0;
+    lfo_set_seq_size(s, 0);
+    lfo_is_lin_seq(s, 0);
     lfo_set_func(s, LFO_NONE);
     lfo_set_freq(s, 0);
-    s->low = -1;
-    s->high = 1;
-    lfo_update_y_mul(s);
+    lfo_set_low(s, -1);
+    lfo_set_high(s, 1);
     lfo_set_loop(s, 1);
+}
+
+void lfo_reset(struct lfo_state *s) {
+    s->phase = 0;
+    s->prev = 0;
+    s->pos = 0;
 }
 
 void lfo_set_func(struct lfo_state *s, int func) {
@@ -264,38 +275,71 @@ void lfo_set_freq(struct lfo_state *s, double freq) {
 
 void lfo_set_low(struct lfo_state *s, double low) {
     s->low = low;
-    lfo_update_y_mul(s);
-}
+ }
 
 void lfo_set_high(struct lfo_state *s, double high) {
     s->high = high;
-    lfo_update_y_mul(s);
-}
+ }
 
 void lfo_set_loop(struct lfo_state *s, int is_loop) {
     s->is_loop = is_loop;
 }
 
-double lfo_func(int func, double x) {
-    switch (func) {
+void lfo_set_seq_pos(struct lfo_state *s, int pos) {
+    s->edit_pos = limit(pos, 0, LFO_MAX_SEQ_STEPS - 1);
+}
+
+void lfo_set_seq_val(struct lfo_state *s, double val) {
+    s->seq[s->edit_pos] = val;
+}
+
+void lfo_set_seq_size(struct lfo_state *s, int size) {
+    s->seq_size = limit(size, 0, LFO_MAX_SEQ_STEPS);
+}
+
+void lfo_is_lin_seq(struct lfo_state *s, int is_lin_seq) {
+    s->is_lin_seq = is_lin_seq;
+}
+
+static double lfo_func(struct lfo_state *s) {
+    double x = s->phase;
+    switch (s->func) {
     case LFO_SIN:
-        return sin(x * 2 * PI);
+        return (sin(x * 2 * PI) + 1) * 0.5;
     case LFO_SAW:
-        return 2 * x - 1;
+        return x;
     case LFO_SQUARE:
-        return 2 * floor(x * 2) - 1;
+        return floor(x * 2);
     case LFO_TRIANGLE:
-        return 4 * (x - floor(2 * x) * (2 * x - 1)) - 1;
+        return 2 * (x - floor(2 * x) * (2 * x - 1));
+    case LFO_SEQ:
+        if (s->is_lin_seq) {
+            return lerp(s->prev, s->seq[s->pos], x);
+        }
+        return s->seq[s->pos];
     default:
         return 0;
     }
 }
 
+static void lfo_seq_next(struct lfo_state *s) {
+    s->phase = 0;
+    s->prev = s->seq[s->pos];
+    s->pos++;
+    if (s->pos >= s->seq_size) {
+        s->pos = s->is_loop ? 0 : s->seq_size - 1;
+    }
+}
+
 double lfo_next(struct lfo_state *s) {
-    double y = s->low + s->y_mul * (lfo_func(s->func, s->phase) + 1);
+    double y = s->low + (s->high - s->low) * lfo_func(s);
     s->phase += s->freq * (1. / SR);
     if (s->phase >= 1) {
-        s->phase = s->is_loop ? s->phase - 1 : 1;
+        if (s->func == LFO_SEQ) {
+            lfo_seq_next(s);
+        } else {
+            s->phase = s->is_loop ? s->phase - 1 : 1;
+        }
     }
     return y;
 }

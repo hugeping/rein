@@ -71,8 +71,8 @@ static void sfx_synth_init(struct sfx_synth_state *s) {
 
 static void lfo_note_on(struct sfx_synth_state *s) {
     for (int i = 0; i < SYNTH_LFOS; i++) {
-        if (!s->lfo[i].is_loop) {
-            s->lfo[i].phase = 0;
+        if (s->lfo[i].func == LFO_SEQ || !s->lfo[i].is_loop) {
+            lfo_reset(&s->lfo[i]);
         }
     }
 }
@@ -153,6 +153,15 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
         elem = limit(elem, 0, SYNTH_LFOS - 1);
         lfo_set_loop(&s->lfo[elem], val);
         break;
+    case ZV_LFO_SEQ_POS:
+        lfo_set_seq_pos(&s->lfo[elem], val);
+        break;
+    case ZV_LFO_SEQ_VAL:
+        lfo_set_seq_val(&s->lfo[elem], val);
+        break;
+    case ZV_LFO_SEQ_SIZE:
+        lfo_set_seq_size(&s->lfo[elem], val);
+        break;
     case ZV_LFO_ASSIGN:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
         s->lfo_target[elem] = limit(val, 0, LFO_TARGETS - 1);
@@ -185,7 +194,7 @@ static double osc_next(struct osc_state *s, double *lfo_param) {
     case OSC_SIN_NOISE:
         noise_set_width(&s->noise1, amp);
         double y1 = sin(phasor_next(&s->phasor1, freq));
-        double y2 = sin(phasor_next(&s->phasor2, offset + noise_lerp_next(&s->noise1, width)));
+        double y2 = sin(phasor_next(&s->phasor2, offset + noise_lin_next(&s->noise1, width)));
         return y1 + y2;
     }
     return 0;
