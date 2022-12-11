@@ -470,6 +470,8 @@ function config_box(s)
   w_conf.h = H - 13
   w_conf.y = H - w_conf.h
   w_conf.x = w_stack.x + w_stack.w + 1
+  w_conf.cur.x = 1
+  w_conf.cur.y = 1
   w_conf.hidden = false
   local rem = button:new {
     text = 'Remove', w = 24 * 7, h = 10, lev = -1 }
