@@ -34,7 +34,7 @@ local select = win:new { value = 1, choice = {}, min = 1, max = 1 }
 
 function select:show()
   win.show(self)
-  local text = self.choice[tonumber(self.value)] or tostring(self.value)
+  local text = self.choice[self.value] or tostring(self.value)
   if self.text then
     text = self.text .. ' '..text
   end
@@ -57,10 +57,10 @@ function select:event(r, v, ...)
   end
   if m == 'mouseup' then
     if v == 'right' then
-      self.value = tonumber(self.value) - 1
+      self.value = self.value - 1
       if self.value < self.min then self.value = self.max end
     else
-      self.value = tonumber(self.value) + 1
+      self.value = self.value + 1
       if self.value > self.max then self.value = self.min end
     end
     if self.onedit then self:onedit() end
@@ -78,7 +78,7 @@ function trigger:show()
   local w, h = 5, 5
   local xx, yy = (self.w - w)/2, (self.h - h)/2
   screen:rect(xx, yy, xx+w, yy+h, self.fg)
-  if tonumber(self.value) == 1 then
+  if self.value == 1 then
     screen:clear(xx, yy, w, h, self.fg)
   end
   screen:noclip()
@@ -91,7 +91,7 @@ function trigger:event(r, v, ...)
     return win.event(self, r, v, ...)
   end
   if m == 'mouseup' then
-    self.value = tonumber(self.value) == 0 and 1 or 0
+    self.value = self.value == 0 and 1 or 0
     if self.onedit then self:onedit() end
     return true
   end
@@ -139,7 +139,7 @@ function edit:show()
   local w, h = self.font:size(self.value .. (self.edit and '|' or ''))
   local x, y = self:realpos()
   screen:offset(x, y)
-  if not self.value:empty() or self.edit then
+  if not tostring(self.value):empty() or self.edit then
     screen:clip(x, y, self.w, self.h)
     local xoff = (self.w - w)/2
     if xoff < 0 then xoff = self.w - w end
@@ -368,10 +368,10 @@ local w_stack = win:new { title = 'Stack',
 function get_wb(wb)
   local saved = stack[wb.id][wb.nam]
   if type(saved) == 'table' then
-    saved = saved[tonumber(wb.wl.value)] or wb.def
+    saved = saved[wb.wl.value] or wb.def
   end
   if not wb.info.val then
-    wb.value = tostring(saved or wb.def or wb.value)
+    wb.value = saved or wb.def or wb.value
     return
   end
   for idx, v in ipairs(wb.info.val) do
@@ -428,12 +428,13 @@ function config_box(s)
     wb.par = v[2]
     wb.def = v.def
     wb.onedit = function(s)
-      local val = tonumber(s.value) or 0
+      s.value = tonumber(s.value) or 0
+      local val = s.value
       if s.info.choice and s.info.val then
         val = s.info.val[s.value]
       end
       if s.wl.choice then
-        local idx = tonumber(s.wl.value)
+        local idx = s.wl.value
         stack[s.id][s.nam] = stack[s.id][s.nam] or {}
         stack[s.id][s.nam][idx] = val
       else
