@@ -31,8 +31,8 @@ struct sfx_synth_state {
     struct osc_state osc;
     struct lfo_state lfo[SYNTH_LFOS];
     int lfo_target[SYNTH_LFOS];
-    double lfo_param[LFO_TARGETS];
-    int lfo_remap[LFO_TARGETS];
+    double lfo_param[LFO_PARAMS];
+    int lfo_remap[LFO_PARAMS];
     double amp;
     double freq;
     double width;
@@ -45,7 +45,7 @@ struct sfx_synth_state {
 };
 
 static void lfo_reset_remap(struct sfx_synth_state *s) {
-    for (int i = 0; i < LFO_TARGETS; i++) {
+    for (int i = 0; i < LFO_PARAMS; i++) {
         s->lfo_remap[i] = i;
     }
 }
@@ -79,8 +79,6 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
     (void) elem;
     switch (param) {
     case ZV_NOTE_ON:
-        if (s->osc.mode == OSC_NOISE8)
-          noise_init(&s->osc.noise1);
         s->freq = val;
         adsr_note_on(&s->adsr, 0);
         lfo_note_on(s);
@@ -126,12 +124,13 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
     case ZV_OFFSET:
         s->offset = val;
         break;
-    case ZV_REMAP_FREQ:
+    case ZV_REMAP:
         lfo_reset_remap(s);
-        int idx = limit(val, 0, LFO_TARGETS - 1);
-        int old_idx = s->lfo_remap[idx];
-        s->lfo_remap[idx] = LFO_TARGET_FREQ;
-        s->lfo_remap[LFO_TARGET_FREQ] = old_idx;
+        int source = limit(elem, 0, LFO_PARAMS - 1);
+        int target = limit(val, 0, LFO_PARAMS - 1);
+        int old = s->lfo_remap[target];
+        s->lfo_remap[target] = source;
+        s->lfo_remap[source] = old;
         break;
     case ZV_LFO_FUNC:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
@@ -155,16 +154,16 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
         break;
     case ZV_LFO_ASSIGN:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
-        s->lfo_target[elem] = limit(val, 0, LFO_TARGETS - 1);
+        s->lfo_target[elem] = limit(val, 0, LFO_PARAMS - 1);
         break;
     }
 }
 
 static double osc_next(struct osc_state *s, double *lfo_param) {
-    double amp = lfo_param[LFO_TARGET_AMP];
-    double freq = lfo_param[LFO_TARGET_FREQ];
-    double width = lfo_param[LFO_TARGET_WIDTH];
-    double offset = lfo_param[LFO_TARGET_OFFSET];
+    double amp = lfo_param[LFO_PARAM_AMP];
+    double freq = lfo_param[LFO_PARAM_FREQ];
+    double width = lfo_param[LFO_PARAM_WIDTH];
+    double offset = lfo_param[LFO_PARAM_OFFSET];
     double w = limit(width, 0, 0.9);
     switch (s->mode) {
     case OSC_SIN:
@@ -180,7 +179,7 @@ static double osc_next(struct osc_state *s, double *lfo_param) {
     case OSC_PWM:
         return amp * pwm(phasor_next(&s->phasor1, freq), offset, w);
     case OSC_NOISE8:
-        noise_set_width(&s->noise1, 2);
+        //noise_set_width(&s->noise1, 4);
         return noise_next(&s->noise1, freq);
     case OSC_SIN_NOISE:
         noise_set_width(&s->noise1, amp);
@@ -197,10 +196,10 @@ static double sfx_synth_mono(struct sfx_synth_state *s, double l) {
     if (s->is_glide_on) {
         freq = glide_next(&s->glide, freq);
     }
-    s->lfo_param[s->lfo_remap[LFO_TARGET_AMP]] = s->amp;
-    s->lfo_param[s->lfo_remap[LFO_TARGET_FREQ]] = freq;
-    s->lfo_param[s->lfo_remap[LFO_TARGET_WIDTH]] = s->width;
-    s->lfo_param[s->lfo_remap[LFO_TARGET_OFFSET]] = s->offset;
+    s->lfo_param[s->lfo_remap[LFO_PARAM_AMP]] = s->amp;
+    s->lfo_param[s->lfo_remap[LFO_PARAM_FREQ]] = freq;
+    s->lfo_param[s->lfo_remap[LFO_PARAM_WIDTH]] = s->width;
+    s->lfo_param[s->lfo_remap[LFO_PARAM_OFFSET]] = s->offset;
     for(int i = 0; i < SYNTH_LFOS; i++) {
         s->lfo_param[s->lfo_remap[s->lfo_target[i]]] += lfo_next(&s->lfo[i]);
     }
