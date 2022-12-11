@@ -270,6 +270,7 @@ function sfx.defs(nam)
     if p.array then
       for _, a in ipairs(p.array) do
         txt = txt .. string.format("%s %s %s\n", p[1], a, p.def or 0)
+        break -- only 1st
       end
     else
       txt = txt .. string.format("%s %s\n", p[1], p.def or 0)
