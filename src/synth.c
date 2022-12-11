@@ -1,7 +1,5 @@
 #include "external.h"
 #include "platform.h"
-
-#include "zvon.h"
 #include "zvon_sfx.h"
 
 #define CHANNELS_MAX 32
@@ -262,6 +260,7 @@ static struct {
 	{ "LFO_TRIANGLE", LFO_TRIANGLE },
 	{ "LFO_TARGET_AMP", LFO_TARGET_AMP },
 	{ "LFO_TARGET_FREQ", LFO_TARGET_FREQ },
+	{ "LFO_TARGET_FREQ_MUL", LFO_TARGET_FREQ_MUL },
 	{ "LFO_TARGET_WIDTH", LFO_TARGET_WIDTH },
 	{ "LFO_TARGET_OFFSET", LFO_TARGET_OFFSET },
 	{ NULL }
