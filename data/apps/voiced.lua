@@ -528,7 +528,8 @@ function apply_boxes()
     synth.drop(c)
     for i=#stack,1,-1 do
       synth.push(c, stack[i].nam)
-      local conf, e = sfx.compile_box(stack[i].nam, stack[i].conf or '')
+      local conf, e = sfx.compile_box(stack[i].nam,
+        stack[i].conf or sfx.box_defs(stack[i].nam))
       if not conf then
         error("Error compiling box: "..e)
       end
@@ -653,9 +654,11 @@ function w_next:onclick(s)
   build_stack()
 end
 
-local w_play = button:new { w = 64, h = 12,
-  x = W - 64, y = 0, text = "PLAY", border = true, lev = -2 }
-local w_info = label:new { w = 29*7, h = 12,
+local w_play = button:new { w = 5*7, h = 12,
+  x = W - 5*7, y = 0, text = "PLAY", border = true, lev = -2 }
+local w_poly = button:new { w = 5*7, h = 12,
+  x = W - 10*7 - 1, y = 0, text = "POLY", border = true, lev = -2, selected = true }
+local w_info = label:new { w = 28*7, h = 12,
   x = w_next:after(1), y = w_play.y, text = "", border = false, left = true }
 
 local key2note = {
@@ -694,6 +697,15 @@ function w_info:show()
     self.bg = 15
   end
   label.show(self)
+end
+
+function w_poly:onclick()
+  self.selected = not self.selected
+  if not self.selected then
+    chans.max = 1
+  else
+    chans.max = 10
+  end
 end
 
 function w_play:onclick()
@@ -773,7 +785,8 @@ function w_play:event(r, v, ...)
   end
 end
 
-win:with { w_prev, w_voice, w_next, w_boxes, w_stack, w_conf, w_play, w_info, w_rem, w_file }
+win:with { w_prev, w_voice, w_next, w_boxes, w_stack, w_conf, w_play,
+  w_poly, w_info, w_rem, w_file }
 
 load(FILE)
 
