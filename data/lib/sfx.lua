@@ -91,7 +91,7 @@ end
 
 local boxes = {
   { nam = 'synth',
-    { "volume", synth.VOLUME, def = 0 },
+    { "volume", synth.VOLUME, def = 0.5 },
     { 'mode', synth.MODE,
       def = 'sin',
       choice = { 'sin', 'saw', 'square', 'dsf',
