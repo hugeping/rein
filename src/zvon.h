@@ -98,7 +98,7 @@ double noise_lin_next(struct noise_state *s, double freq);
 double noise_next(struct noise_state *s, double freq);
 
 enum {
-    LFO_NONE,
+    LFO_ZERO,
     LFO_SIN,
     LFO_SAW,
     LFO_SQUARE,

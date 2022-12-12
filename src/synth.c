@@ -261,7 +261,7 @@ static struct {
 	{ "OSC_SIN_NOISE", OSC_SIN_NOISE },
 	{ "OSC_NOISE8", OSC_NOISE8 },
 	{ "OSC_NOISE", OSC_NOISE },
-	{ "LFO_NONE", LFO_NONE },
+	{ "LFO_ZERO", LFO_ZERO },
 	{ "LFO_SIN", LFO_SIN },
 	{ "LFO_SAW", LFO_SAW },
 	{ "LFO_SQUARE", LFO_SQUARE },

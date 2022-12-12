@@ -252,7 +252,7 @@ void lfo_init(struct lfo_state *s) {
     s->edit_pos = 0;
     lfo_set_seq_size(s, 0);
     lfo_is_lin_seq(s, 0);
-    lfo_set_func(s, LFO_NONE);
+    lfo_set_func(s, LFO_ZERO);
     lfo_set_freq(s, 0);
     lfo_set_low(s, 0);
     lfo_set_high(s, 0);
