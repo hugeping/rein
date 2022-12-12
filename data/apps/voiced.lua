@@ -408,22 +408,27 @@ local voices = {
 
 local stack = voices[cur_voice]
 
-local w_conf, w_rem
+local w_conf, w_rem, w_bypass
+
+function conf_show(show)
+  w_conf.hidden = not show
+  w_rem.hidden = not show
+  w_bypass.hidden = not show
+  w_bypass.selected = show and stack[w_conf.id].bypass
+end
 
 function push_box(s)
   if not config_check() then
     return
   end
   if #stack == 8 then return end
-  w_conf.hidden = true
-  w_rem.hidden = true
+  conf_show(false)
   table.insert(stack, 1, { nam = s.text })
   build_stack()
 end
 
 function remove_box(s)
-  w_conf.hidden = true
-  w_rem.hidden = true
+  conf_show(false)
   table.remove(stack, s.id)
   build_stack()
 end
@@ -439,7 +444,11 @@ w_rem = button:new { hidden = true, text = 'Remove',
   w = 8 * 7, h = 12, lev = -1, y = H - 12, x = H - 8*7, border = true,
   onclick = remove_box }
 
-local w_file = button:new { text = FILE, w = 30*7, bg = 7,
+w_bypass = button:new { hidden = true, text = 'Bypass',
+  w = 8 * 7, h = 12, lev = -1, y = H - 12, x = H - 8*7 - 8*7 - 1, border = true,
+  onclick = bypass_box }
+
+local w_file = button:new { text = FILE, w = 22*7, bg = 7,
   h = 12, y = H - 12, x = 113 }
 
 function dirty(flag)
@@ -448,6 +457,13 @@ function dirty(flag)
   else
     w_file.bg = 7
   end
+end
+
+function w_bypass:onclick()
+  stack[w_conf.id].bypass = not stack[w_conf.id].bypass
+  self.selected = stack[w_conf.id].bypass
+  build_stack()
+  conf_show(true)
 end
 
 function w_file:onclick()
@@ -506,8 +522,7 @@ function config_box(s)
   end
   if s.selected then
     s.selected = false
-    w_conf.hidden = true
-    w_rem.hidden = true
+    conf_show(false)
     return
   end
   s.parent:for_childs(function(w) w.selected = false end)
@@ -520,8 +535,7 @@ function config_box(s)
   w_conf.x = w_stack.x + w_stack.w + 1
   w_conf.cur.x = 1
   w_conf.cur.y = 1
-  w_conf.hidden = false
-  w_rem.hidden = false
+  conf_show(true)
   w_rem.id = s.id
 end
 
@@ -530,7 +544,7 @@ function apply_boxes()
     chans[c] = false
     synth.drop(c)
     for i=#stack,1,-1 do
-      synth.push(c, stack[i].nam)
+      synth.push(c, stack[i].bypass and "bypass" or stack[i].nam)
       local conf, e = sfx.compile_box(stack[i].nam,
         stack[i].conf or sfx.box_defs(stack[i].nam))
       if not conf then
@@ -806,7 +820,7 @@ function w_play:event(r, v, ...)
 end
 
 win:with { w_prev, w_voice, w_next, w_boxes, w_stack, w_conf, w_play,
-  w_poly, w_info, w_rem, w_file }
+  w_poly, w_info, w_rem, w_bypass, w_file }
 
 load(FILE)
 

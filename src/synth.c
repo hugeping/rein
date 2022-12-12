@@ -17,7 +17,7 @@ empty_mono(void *s, double x)
 }
 
 static void
-empty_change(void *s, int param, float val)
+empty_change(void *s, int param, double val)
 {
 }
 
@@ -34,7 +34,21 @@ static struct sfx_proto empty_box = {
 	.state_size = 0,
 };
 
-static struct sfx_proto *boxes[] = { &empty_box, &sfx_delay, &sfx_dist, &sfx_synth, &sfx_filter, NULL };
+static double
+bypass_mono(void *s, double x)
+{
+	return x;
+}
+
+static struct sfx_proto bypass_box = {
+	.name = "bypass",
+	.init = (sfx_init_func) empty_init,
+	.change = (sfx_change_func) empty_change,
+	.mono = (sfx_mono_func) bypass_mono,
+	.state_size = 0,
+};
+
+static struct sfx_proto *boxes[] = { &empty_box, &bypass_box, &sfx_delay, &sfx_dist, &sfx_synth, &sfx_filter, NULL };
 
 static struct chan_state channels[CHANNELS_MAX];
 
