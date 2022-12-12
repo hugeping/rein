@@ -36,7 +36,7 @@ sustain 0.01
 release 0.01
 ]]
 
-local voices = snd.load_voices(__voices__)
+local voices = snd.voices(__voices__)
 
 local __spr__ = [[
 -123456789abcdef
@@ -279,7 +279,7 @@ local border_nr = false
 
 synth.on(1, true)
 synth.vol(1, 0.3)
-snd.apply_voice(1, voices[1])
+voices:apply(1, 1)
 
 function sfx(nr)
   if nr == 0 then

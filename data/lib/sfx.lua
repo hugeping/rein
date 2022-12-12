@@ -285,7 +285,10 @@ function sfx.compile_box(nam, text)
   return res
 end
 
-function sfx.load_voices(text)
+local voices = {}
+voices.__index = voices
+
+function sfx.voices(text)
   local box
   local line = 0
   local res = {}
@@ -322,7 +325,34 @@ function sfx.load_voices(text)
       return false, "No box declaration", line
     end
   end
+  setmetatable(res, voices)
   return res
+end
+
+function voices:lookup(name)
+  local voice
+  if type(name) == 'number' then
+    return self[name]
+  end
+  for _, v in ipairs(self) do
+    if v.nam == name then
+      voice = v
+      break
+    end
+  end
+  return voice
+end
+
+function voices:apply(name, chan)
+  synth.drop(chan)
+  local voice = self:lookup(name)
+  for _, b in ipairs(voice) do
+    synth.push(chan, b.nam)
+    for _, p in ipairs(b) do
+      synth.change(chan, -1, table.unpack(p))
+    end
+  end
+  return true
 end
 
 function sfx.box_defs(nam)
@@ -342,16 +372,6 @@ function sfx.box_defs(nam)
   return txt
 end
 
-function sfx.apply_voice(chan, voice)
-  synth.drop(chan)
-  for _, b in ipairs(voice) do
-    synth.push(chan, b.nam)
-    print(b.nam)
-    for _, p in ipairs(b) do
-      synth.change(chan, -1, table.unpack(p))
-    end
-  end
-end
 
 sfx.boxes = boxes
 
