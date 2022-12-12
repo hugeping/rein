@@ -869,5 +869,5 @@ load(FILE)
 while true do
   win:event(sys.input())
   win:show()
-  gfx.flip(1, true)
+  gfx.flip(1/20, true)
 end
