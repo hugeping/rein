@@ -11,14 +11,14 @@ enum {
     ZV_VOLUME,
     ZV_NOTE_ON,
     ZV_NOTE_OFF,
-    ZV_GLIDE_ON,
-    ZV_GLIDE_OFF,
+    ZV_SET_GLIDE_ON,
+    ZV_GLIDE_RATE,
     ZV_FREQ_MUL,
     ZV_ATTACK,
     ZV_DECAY,
     ZV_SUSTAIN,
     ZV_RELEASE,
-    ZV_SUSTAIN_ON,
+    ZV_SET_SUSTAIN_ON,
     ZV_AMP,
     ZV_WIDTH,
     ZV_OFFSET,
@@ -50,6 +50,7 @@ enum {
     OSC_DSF2,
     OSC_PWM,
     OSC_NOISE8,
+    OSC_NOISE,
     OSC_SIN_NOISE
 };
 

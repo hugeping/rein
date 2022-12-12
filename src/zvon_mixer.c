@@ -38,7 +38,7 @@ struct sfx_box *chan_push(struct chan_state *c, struct sfx_proto *proto) {
         struct sfx_box *box = &c->stack[c->stack_size];
         box->proto = proto;
         box->state = calloc(1, proto->state_size);
-        if (box->state) {
+        if (box->state || !box->proto->state_size) {
             proto->init(box->state);
             sfx_box_set_vol(box, 1);
             c->stack_size++;
