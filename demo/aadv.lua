@@ -1,7 +1,7 @@
 -- fast and dirty port from pico-8
 require "tiny"
 require "std"
-local sfx = require "sfx"
+local snd = require "sfx"
 
 border(0)
 
@@ -22,6 +22,21 @@ local tm = 0
 function rnd(n)
   return math.random() * n
 end
+
+local __voices__ = [[
+voice engine
+box synth
+# synth
+volume 0.2
+mode noise8
+width 0.01
+attack 0.005
+decay 0.01
+sustain 0.01
+release 0.01
+]]
+
+local voices = snd.load_voices(__voices__)
 
 local __spr__ = [[
 -123456789abcdef
@@ -262,9 +277,13 @@ function sget(x, y)
 end
 local border_nr = false
 
+synth.on(1, true)
+synth.vol(1, 0.3)
+snd.apply_voice(1, voices[1])
+
 function sfx(nr)
   if nr == 0 then
-  -- todo
+    synth.change(1, -1, synth.NOTE_ON, 320)
     return
   end
   if nr == 1 or nr == 2 then

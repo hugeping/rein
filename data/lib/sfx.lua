@@ -315,7 +315,9 @@ function sfx.load_voices(text)
       if not cmd then
         return false, e, line
       end
-      table.insert(box, cmd)
+      if #cmd > 0 then
+        table.insert(box, cmd)
+      end
     else
       return false, "No box declaration", line
     end
@@ -338,6 +340,17 @@ function sfx.box_defs(nam)
     end
   end
   return txt
+end
+
+function sfx.apply_voice(chan, voice)
+  synth.drop(chan)
+  for _, b in ipairs(voice) do
+    synth.push(chan, b.nam)
+    print(b.nam)
+    for _, p in ipairs(b) do
+      synth.change(chan, -1, table.unpack(p))
+    end
+  end
 end
 
 sfx.boxes = boxes
