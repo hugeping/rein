@@ -59,6 +59,11 @@ end
 
 function editarea:scroll()
   local s = self
+  if #s.lines == 0 then
+    s.cur.x, s.cur.y = 1, 1
+    s.lines[1] = {}
+    return
+  end
   if s.cur.x < 1 then s.cur.x = 1 end
   if s.cur.y < 1 then s.cur.y = 1 end
   if s.cur.y > #s.lines then
@@ -221,6 +226,8 @@ function editarea:event(r, v, ...)
       local _, lines = self:size()
       self.cur.y = self.cur.y - lines
       self:scroll()
+    elseif v == 'y' and input.keydown 'ctrl' then
+      table.remove(self.lines, self.cur.y)
     end
     self:scroll()
   end
