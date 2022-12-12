@@ -573,7 +573,7 @@ function save(fname)
     end
     txt = txt .. '\n'
   end
-  return io.file(fname, txt)
+  return io.file(fname, txt:strip()..'\n')
 end
 
 function load(fname)
