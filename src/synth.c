@@ -4,6 +4,10 @@
 
 #define CHANNELS_MAX 32
 
+enum {
+	ZV_BYPASS = ZV_END + 1,
+};
+
 static int mutex;
 
 static double
@@ -216,13 +220,13 @@ static struct {
 	/* synth */
 	{ "NOTE_ON", ZV_NOTE_ON },
 	{ "NOTE_OFF", ZV_NOTE_OFF },
-	{ "GLIDE_ON", ZV_GLIDE_ON },
-	{ "GLIDE_OFF", ZV_GLIDE_OFF },
+	{ "SET_GLIDE_ON", ZV_SET_GLIDE_ON },
+	{ "GLIDE_RATE", ZV_GLIDE_RATE },
 	{ "ATTACK", ZV_ATTACK },
 	{ "DECAY", ZV_DECAY },
 	{ "SUSTAIN", ZV_SUSTAIN },
 	{ "RELEASE", ZV_RELEASE },
-	{ "SUSTAIN_ON", ZV_SUSTAIN_ON },
+	{ "SET_SUSTAIN_ON", ZV_SET_SUSTAIN_ON },
 	{ "FREQ_MUL", ZV_FREQ_MUL },
 	{ "MODE", ZV_MODE }, /* +filter */
 	{ "AMP", ZV_AMP },
@@ -256,6 +260,7 @@ static struct {
 	{ "OSC_PWM", OSC_PWM },
 	{ "OSC_SIN_NOISE", OSC_SIN_NOISE },
 	{ "OSC_NOISE8", OSC_NOISE8 },
+	{ "OSC_NOISE", OSC_NOISE },
 	{ "LFO_NONE", LFO_NONE },
 	{ "LFO_SIN", LFO_SIN },
 	{ "LFO_SAW", LFO_SAW },

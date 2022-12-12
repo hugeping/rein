@@ -88,13 +88,12 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
     case ZV_NOTE_OFF:
         adsr_note_off(&s->adsr);
         break;
-    case ZV_GLIDE_ON:
+    case ZV_SET_GLIDE_ON:
         glide_set_source(&s->glide, s->freq);
-        glide_set_rate(&s->glide, val);
-        s->is_glide_on = 1;
+        s->is_glide_on = val;
         break;
-    case ZV_GLIDE_OFF:
-        s->is_glide_on = 0;
+    case ZV_GLIDE_RATE:
+        glide_set_rate(&s->glide, val);
         break;
     case ZV_ATTACK:
         adsr_set_attack(&s->adsr, val);
@@ -108,7 +107,7 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
     case ZV_RELEASE:
         adsr_set_release(&s->adsr, val);
         break;
-    case ZV_SUSTAIN_ON:
+    case ZV_SET_SUSTAIN_ON:
         s->is_sustain_on = val;
         break;
     case ZV_FREQ_MUL:
@@ -191,6 +190,9 @@ static double osc_next(struct osc_state *s, double *lfo_param) {
     case OSC_NOISE8:
         noise_set_width(&s->noise1, 2);
         return amp * noise_next(&s->noise1, freq);
+    case OSC_NOISE:
+        noise_set_width(&s->noise1, amp);
+        return sin(phasor_next(&s->phasor1, freq + noise_lin_next(&s->noise1, width)));
     case OSC_SIN_NOISE:
         noise_set_width(&s->noise1, amp);
         double y1 = sin(phasor_next(&s->phasor1, freq));
