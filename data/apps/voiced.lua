@@ -32,6 +32,10 @@ function win:after(d)
   return self.x + self.w + (d or 0)
 end
 
+function win:below(d)
+  return self.y + self.h + (d or 0)
+end
+
 local editarea = win:new { value = '', cur = {x = 1, y = 1},
   col = 1, line = 1, lines = {}, sph = 10, spw = 7, glyph_cache = {} }
 
@@ -266,7 +270,7 @@ function edit:edline(r, v, ...)
 end
 
 function edit:event(r, v, ...)
-  local m = self:mevent(r, v, ...)
+  local m, d = self:mevent(r, v, ...)
   if not m then
     if r == 'mousedown' then
       if self.edit and self.onedit then self:onedit() end
@@ -280,6 +284,11 @@ function edit:event(r, v, ...)
     if self.edit and self.onedit then self:onedit() end
     self.edit = not self.edit
     return true
+  elseif m == 'mousewheel' and self.delta then
+    self.value = (tonumber(self.value) or 0) - self.delta * d
+    if self.min and self.value < self.min then self.value = self.min end
+    if self.max and self.value > self.max then self.value = self.max end
+    self.value = tostring(self.value)
   end
 end
 
@@ -292,8 +301,9 @@ function edit:show()
     screen:clip(x, y, self.w, self.h)
     local xoff = (self.w - w)/2
     if xoff < 0 then xoff = self.w - w end
-    self.font:text(self.value .. (self.edit and '|' or ''), self.fg):
-      blend(screen, xoff, (self.h -h)/2)
+    self.font:text(self.value ..
+      (self.edit and '|' or ''), self.fg):
+        blend(screen, xoff, (self.h -h)/2)
     screen:noclip()
   end
   screen:nooffset()
@@ -393,7 +403,8 @@ function win:show()
 end
 
 function win:mevent(r, mb, x, y)
-  if not r:startswith 'mouse' or r == 'mousewheel' then
+  if r == 'mousewheel' then x, y = input.mouse() end
+  if not r:startswith 'mouse' then
     return false
   end
   local xx, yy = self:realpos()
@@ -616,6 +627,19 @@ local w_boxes = win:new { title = 'Push box',
   w = 16*7, h = (#sfx.boxes + 2)* 10,
   border = true }
 
+local w_volume = win:new { title = 'Mix vol.',
+  lev = -3,
+  w = 16*7, h = 22, x = 0, y = w_boxes:below(16),
+  border = true }:with {
+  edit:new { border = false, value = 0.5, x = 1, y = 10, w = 16*7-2, h = 10,
+    delta = 0.01, min = 0,
+    onedit = function(s)
+      s.value = tonumber(s.value) or 0.5
+      mixer.volume(s.value)
+    end
+  }
+}
+
 w_boxes.x = 0 -- W - w_boxes.w
 w_boxes.y = 12 + 1
 
@@ -837,7 +861,7 @@ function w_play:event(r, v, ...)
   end
 end
 
-win:with { w_prev, w_voice, w_next, w_boxes, w_stack, w_conf, w_play,
+win:with { w_prev, w_voice, w_next, w_boxes, w_volume, w_stack, w_conf, w_play,
   w_poly, w_info, w_rem, w_bypass, w_file }
 
 load(FILE)
