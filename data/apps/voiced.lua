@@ -185,6 +185,15 @@ function editarea:backspace()
   end
 end
 
+function editarea:paste()
+  local s = self
+  local text = sys.clipboard() or ''
+  for l in text:lines() do
+    s:input(l)
+    s:newline()
+  end
+end
+
 function editarea:event(r, v, ...)
   if self.hidden then return end
   local m, mb, x, y = self:mevent(r, v, ...)
@@ -228,6 +237,8 @@ function editarea:event(r, v, ...)
       self:scroll()
     elseif v == 'y' and input.keydown 'ctrl' then
       table.remove(self.lines, self.cur.y)
+    elseif v == 'v' and input.keydown 'ctrl' then
+      self:paste()
     end
     self:scroll()
   end
@@ -834,5 +845,5 @@ load(FILE)
 while true do
   win:event(sys.input())
   win:show()
-  gfx.flip(1/30, true)
+  gfx.flip(1, true)
 end
