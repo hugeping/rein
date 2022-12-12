@@ -107,7 +107,7 @@ local boxes = {
     { 'sustain_on', synth.SUSTAIN_ON, def = 0 },
     { 'offset', synth.OFFSET, def = 0.5 },
     { 'amp', synth.AMP, def = 1.0 },
-    { 'glide_on', synth.GLIDE_ON, def = 0 },
+    { 'glide_on', synth.GLIDE_ON, def = 0, comment = true },
     { 'freq_mul', synth.FREQ_MUL, def = 1 },
 --    { 'glide_off', synth.GLIDE_OFF, choice = { 0, 1}, def = 0 },
     { 'lfo_func', synth.LFO_FUNC,
@@ -164,7 +164,7 @@ local boxes = {
 ]]--
 }
 
-function sfx.getinfo(nam)
+function sfx.box_info(nam)
   for _, v in ipairs(boxes) do
     if v.nam == nam then
       return v
@@ -229,44 +229,95 @@ local function par_value(par, val)
   return val
 end
 
-function sfx.compile(nam, text)
-  local v = sfx.getinfo(nam)
+function sfx.compile_par(nam, l)
+  local v = sfx.box_info(nam)
   local a, p
+  local cmd = {}
+  a = l:split("#", 1)
+  a = a[1] and a[1]:split()
+  if a and a[1] and not a[1]:empty() then
+    p = par_lookup(v, a[1])
+    if not p then
+      return false, string.format("Param:%s", a[1])
+    end
+    table.insert(cmd, p[2])
+    if p.array then
+      local elem = par_array(p.array, tonumber(a[2]))
+      if not elem then
+        return false, string.format("Element:%s", a[2])
+      end
+      table.insert(cmd, elem)
+      table.remove(a, 2)
+    end
+    local val = par_value(p, a[2])
+    if not val then
+      return false, string.format("Value:%s\nHelp:%s", a[2], par_help(p))
+    end
+    table.insert(cmd, val)
+  end
+  return cmd
+end
+
+function sfx.compile_box(nam, text)
   local line = 0
   local res = {}
+  local cmd, e
   for l in text:lines() do
     line = line + 1
-    a = l:split("#", 1)
-    a = a[1] and a[1]:split()
-    if a and a[1] and not a[1]:empty() then
-      p = par_lookup(v, a[1])
-      if not p then
-        return false, string.format("Param:%s", a[1]), line
-      end
-      local cmd = { p[2] }
-      if p.array then
-        local elem = par_array(p.array, tonumber(a[2]))
-        if not elem then
-          return false, string.format("Element:%s", a[2]), line
-        end
-        table.insert(cmd, elem)
-        table.remove(a, 2)
-      end
-      local val = par_value(p, a[2])
-      if not val then
-        return false, string.format("Value:%s\nHelp:%s", a[2], par_help(p)), line
-      end
-      table.insert(cmd, val)
+    cmd, e = sfx.compile_par(nam, l)
+    if not cmd then
+      return false, e, line
+    end
+    if #cmd > 0 then
       table.insert(res, cmd)
     end
   end
   return res
 end
 
-function sfx.defs(nam)
-  local v = sfx.getinfo(nam)
+function sfx.load_voices(text)
+  local box
+  local line = 0
+  local res = {}
+  local cmd, e, a
+  local voice
+  local nr = 0
+  for l in text:lines() do
+    line = line + 1
+    a = l:split("#", 1)
+    a = a[1] and a[1]:split() or {}
+    if a[1] == 'voice' then
+      box = nil
+      nr = nr + 1
+      voice = { nam = a[2] or tonumber(nr) }
+      table.insert(res, voice)
+    elseif not voice then
+      return false, "No voice declaration", line
+    elseif a[1] == 'box' then
+      if not sfx.box_info(a[2]) then
+        return false, string.format("Wrong box name: %s", a[2]), line
+      end
+      box = { nam = a[2], conf = '' }
+      table.insert(voice, box)
+    elseif box then
+      box.conf = box.conf .. l .. '\n'
+      cmd, e = sfx.compile_par(box.nam, l)
+      if not cmd then
+        return false, e, line
+      end
+      table.insert(box, cmd)
+    else
+      return false, "No box declaration", line
+    end
+  end
+  return res
+end
+
+function sfx.box_defs(nam)
+  local v = sfx.box_info(nam)
   local txt = string.format("# %s\n", nam)
   for _, p in ipairs(v) do
+    if p.comment then txt = txt .. '# ' end
     if p.array then
       for _, a in ipairs(p.array) do
         txt = txt .. string.format("%s %s %s\n", p[1], a, p.def or 0)

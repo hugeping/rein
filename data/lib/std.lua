@@ -69,3 +69,22 @@ function string.lines(text)
   end
   return next_line
 end
+
+function io.file(fname, data)
+  local f, e, d
+  if data == nil then
+    f, e = io.open(fname, "rb")
+    if not f then return f, e end
+    d, e = f:read("*all")
+    f:close()
+    return d, e
+  end
+  f, e = io.open(fname, "wb")
+  if not f then return f, e end
+  if data then
+    f:write(data)
+  end
+  f:flush()
+  f:close()
+  return true
+end
