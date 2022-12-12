@@ -576,29 +576,6 @@ function save(fname)
   return io.file(fname, txt:strip()..'\n')
 end
 
-function load(fname)
-  local v, e
-  v, e = io.file(fname)
-  if not v then
-    return v, e
-  end
-  v, e = sfx.load_voices(v)
-  if not v then
-    return v, e
-  end
-  voices = {}
-  for _, voice in ipairs(v) do
-    local vo = { nam = voice.nam }
-    table.insert(voices, vo)
-    for _, b in ipairs(voice) do
-      table.insert(vo, { nam = b.nam, conf = b.conf })
-    end
-  end
-  cur_voice = 1
-  stack = voices[cur_voice]
-  build_stack()
-  return true
-end
 
 local w_boxes = win:new { title = 'Push box',
   w = 16*7, h = (#sfx.boxes + 2)* 10,
@@ -652,6 +629,31 @@ function w_next:onclick(s)
   stack = voices[cur_voice]
   w_voice.value = voices[cur_voice].nam
   build_stack()
+end
+
+function load(fname)
+  local v, e
+  v, e = io.file(fname)
+  if not v then
+    return v, e
+  end
+  v, e = sfx.load_voices(v)
+  if not v then
+    return v, e
+  end
+  voices = {}
+  for _, voice in ipairs(v) do
+    local vo = { nam = voice.nam }
+    table.insert(voices, vo)
+    for _, b in ipairs(voice) do
+      table.insert(vo, { nam = b.nam, conf = b.conf })
+    end
+  end
+  cur_voice = 1
+  stack = voices[cur_voice]
+  w_voice.value = voices[cur_voice].nam
+  build_stack()
+  return true
 end
 
 local w_play = button:new { w = 5*7, h = 12,
