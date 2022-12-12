@@ -167,8 +167,8 @@ local boxes = {
   },
   { nam = 'filter' ,
     { 'mode', synth.MODE, def = 'lowpass',
-      choice = { 'lopass', 'highpass' },
-      vals = { synth.LOPASS, synth.HIGHPASS },
+      choice = { 'lowpass', 'highpass' },
+      vals = { synth.LOWPASS, synth.HIGHPASS },
     },
     { 'width', synth.WIDTH, def = 0.5 },
   }
