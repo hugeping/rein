@@ -2,6 +2,8 @@ local sfx = require 'sfx'
 gfx.win(384, 384)
 mixer.volume(0.5)
 
+local FILE = ARGS[2] or 'voices.syn'
+
 local cur_voice = 1
 
 local chans = { notes = {}, times = {}, max = 10 } -- number of fingers :)
@@ -51,7 +53,7 @@ end
 function editarea:size()
   local s = self
   local columns = math.floor((s.w-2) / s.spw)
-  local lines = math.floor(s.h / s.sph) - 2
+  local lines = math.floor(s.h / s.sph) - 1
   return columns, lines
 end
 
@@ -257,7 +259,8 @@ function edit:event(r, v, ...)
     return win.event(self, r, v, ...)
   end
   if m == 'mouseup' then
-    self.edit = true
+    if self.edit and self.onedit then self:onedit() end
+    self.edit = not self.edit
     return true
   end
 end
@@ -320,6 +323,7 @@ function button:event(r, v, ...)
 end
 
 function button:show()
+  if self.hidden then return end
   if self.active or self.selected then
     self.fg, self.bg = self.bg, self.fg
     label.show(self)
@@ -404,26 +408,51 @@ local voices = {
 
 local stack = voices[cur_voice]
 
-local w_conf
+local w_conf, w_rem
 
 function push_box(s)
   if #stack == 8 then return end
   w_conf.hidden = true
+  w_rem.hidden = true
   table.insert(stack, 1, { nam = s.text })
   build_stack()
 end
 
 function remove_box(s)
   w_conf.hidden = true
+  w_rem.hidden = true
   table.remove(stack, s.id)
   build_stack()
 end
 
 w_conf = editarea:new { title = 'Settings',
     hidden = true,
-    w = 38 * 7,
-    h = 10 * 2,
+    w = 38 * 7 + 5,
+    y = 13,
+    h = H - 13 - 20 + 7,
     border = true }
+
+w_rem = button:new { hidden = true, text = 'Remove',
+  w = 8 * 7, h = 12, lev = -1, y = H - 12, x = H - 8*7, border = true,
+  onclick = remove_box }
+
+local w_file = button:new { text = FILE, w = 30*7, bg = 7,
+  h = 12, y = H - 12, x = 113 }
+
+function dirty(flag)
+  if flag then
+    w_file.bg = 8
+  else
+    w_file.bg = 7
+  end
+end
+
+function w_file:onclick()
+  if not config_check() then
+    return
+  end
+  if save(FILE) then dirty(false) end
+end
 
 function box_info(nam)
   for _, v in ipairs(sfx.boxes) do
@@ -447,8 +476,11 @@ function config_check()
   end
   w_conf.lines = lines
 
-  local r, e, line = sfx.compile(w_conf.nam, w_conf:get())
+  local r, e, line = sfx.compile_box(w_conf.nam, w_conf:get())
   if r then
+    if stack[w_conf.id].conf ~= w_conf:get() then
+      dirty(true)
+    end
     stack[w_conf.id].conf = w_conf:get()
     return true
   end
@@ -472,6 +504,7 @@ function config_box(s)
   if s.selected then
     s.selected = false
     w_conf.hidden = true
+    w_rem.hidden = true
     return
   end
   s.parent:for_childs(function(w) w.selected = false end)
@@ -479,22 +512,14 @@ function config_box(s)
   local b = s.box
   w_conf.id = s.id
   w_conf.nam = b.nam
-  w_conf.childs = {}
   local text = stack[s.id].conf
-  w_conf:set(text or sfx.defs(b.nam))
-  w_conf.h = H - 13
-  w_conf.y = H - w_conf.h
+  w_conf:set(text or sfx.box_defs(b.nam))
   w_conf.x = w_stack.x + w_stack.w + 1
   w_conf.cur.x = 1
   w_conf.cur.y = 1
   w_conf.hidden = false
-  local rem = button:new {
-    text = 'Remove', w = 24 * 7, h = 10, lev = -1 }
-  rem.x = (w_conf.w - rem.w)/2
-  rem.y = w_conf.h - 12
-  rem.id = s.id
-  rem.onclick = remove_box
-  w_conf:with { rem }
+  w_rem.hidden = false
+  w_rem.id = s.id
 end
 
 function apply_boxes()
@@ -503,7 +528,7 @@ function apply_boxes()
     synth.drop(c)
     for i=#stack,1,-1 do
       synth.push(c, stack[i].nam)
-      local conf, e = sfx.compile(stack[i].nam, stack[i].conf or '')
+      local conf, e = sfx.compile_box(stack[i].nam, stack[i].conf or '')
       if not conf then
         error("Error compiling box: "..e)
       end
@@ -519,6 +544,7 @@ end
 function build_stack()
   w_stack:for_childs(function(w) w.selected = false end)
   w_conf.hidden = true
+  w_rem.hidden = true
   w_stack.h = (#stack + 2)*10
   w_stack.x = 0
   w_stack.y = H - w_stack.h
@@ -536,6 +562,42 @@ function build_stack()
 end
 
 build_stack()
+
+function save(fname)
+  local txt = ''
+  for _, v in ipairs(voices) do
+    txt = txt .. string.format("voice %s\n", v.nam:gsub(" ", "_"))
+    for _, b in ipairs(v) do
+      txt = txt .. string.format("box %s\n%s", b.nam, b.conf or sfx.box_defs(b.nam))
+    end
+    txt = txt .. '\n'
+  end
+  return io.file(fname, txt)
+end
+
+function load(fname)
+  local v, e
+  v, e = io.file(fname)
+  if not v then
+    return v, e
+  end
+  v, e = sfx.load_voices(v)
+  if not v then
+    return v, e
+  end
+  voices = {}
+  for _, voice in ipairs(v) do
+    local vo = { nam = voice.nam }
+    table.insert(voices, vo)
+    for _, b in ipairs(voice) do
+      table.insert(vo, { nam = b.nam, conf = b.conf })
+    end
+  end
+  cur_voice = 1
+  stack = voices[cur_voice]
+  build_stack()
+  return true
+end
 
 local w_boxes = win:new { title = 'Push box',
   w = 16*7, h = (#sfx.boxes + 2)* 10,
@@ -568,6 +630,9 @@ local w_next = button:new { text = ">",
   y = 0, w = 10, h = 12, border = true }
 
 function w_prev:onclick(s)
+  if not config_check() then
+    return
+  end
   cur_voice = cur_voice - 1
   if cur_voice < 1 then cur_voice = 1 end
   stack = voices[cur_voice]
@@ -576,6 +641,9 @@ function w_prev:onclick(s)
 end
 
 function w_next:onclick(s)
+  if not config_check() then
+    return
+  end
   cur_voice = cur_voice + 1
   if not voices[cur_voice] then
     voices[cur_voice] = { nam = tostring(cur_voice) }
@@ -629,6 +697,9 @@ function w_info:show()
 end
 
 function w_play:onclick()
+  if not config_check() then
+    return
+  end
   self.play = not self.play
   self.selected = self.play
   if self.play then
@@ -661,9 +732,6 @@ function w_play:event(r, v, ...)
     return true
   elseif r == 'keydown' then
     if v == 'escape' then
-      if not config_check() then
-        return true
-      end
       self:onclick()
       return true
     end
@@ -705,15 +773,12 @@ function w_play:event(r, v, ...)
   end
 end
 
-win:with { w_prev, w_voice, w_next, w_boxes, w_stack, w_conf, w_play, w_info }
+win:with { w_prev, w_voice, w_next, w_boxes, w_stack, w_conf, w_play, w_info, w_rem, w_file }
+
+load(FILE)
 
 while true do
   win:event(sys.input())
   win:show()
-  if w_conf then
-    w_conf.y = H - w_conf.h
-    w_conf.x = w_stack.x + w_stack.w + 1
-    w_conf:show()
-  end
   gfx.flip(1/30, true)
 end
