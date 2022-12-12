@@ -599,7 +599,7 @@ local w_prev = button:new { text = "<" ,
   x = 0, y = 0, w = 10, h = 12, border = true}
 
 local w_voice = edit:new { border = false, value = voices[cur_voice].nam,
-  x = w_prev:after(1), y = 0, w = 14*7-8, h = 12,
+  x = w_prev:after(1), y = 0, w = 14*7-8, h = 12, lev = -1,
   onedit = function(s)
     if s.value:empty() then s.value = tostring(cur_voice) end
     voices[cur_voice].nam = s.value
