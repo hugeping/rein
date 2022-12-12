@@ -737,7 +737,22 @@ function find_free_channel()
   return free[1]
 end
 
+local play_stop_keys = {
+  backspace = true;
+  left = true;
+  right = true;
+  down = true;
+  up = true;
+}
 function w_play:event(r, v, ...)
+  if self.selected and not w_conf.hidden and
+    ((w_conf:mevent(r, v, ...) and r == 'mousedown') or
+    (r == 'keydown' and play_stop_keys[v]))
+    and self.selected then
+    self:onclick()
+    return
+  end
+
   if button.event(self, r, v, ...) then return true end
   if v ~= 'escape' and not self.play then return end
   if r == 'text' then
