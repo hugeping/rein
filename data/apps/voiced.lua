@@ -411,6 +411,9 @@ local stack = voices[cur_voice]
 local w_conf, w_rem
 
 function push_box(s)
+  if not config_check() then
+    return
+  end
   if #stack == 8 then return end
   w_conf.hidden = true
   w_rem.hidden = true
