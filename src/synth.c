@@ -234,6 +234,9 @@ static struct {
 	{ "LFO_LOW", ZV_LFO_LOW },
 	{ "LFO_HIGH", ZV_LFO_HIGH },
 	{ "LFO_LOOP", ZV_LFO_LOOP },
+	{ "LFO_SEQ_POS", ZV_LFO_SEQ_POS },
+	{ "LFO_SEQ_VAL", ZV_LFO_SEQ_VAL },
+	{ "LFO_SEQ_SIZE", ZV_LFO_SEQ_SIZE },
 	{ "LFO_ASSIGN", ZV_LFO_ASSIGN },
 	/* delay */
 	{ "TIME", ZV_TIME },
@@ -258,6 +261,7 @@ static struct {
 	{ "LFO_SAW", LFO_SAW },
 	{ "LFO_SQUARE", LFO_SQUARE },
 	{ "LFO_TRIANGLE", LFO_TRIANGLE },
+	{ "LFO_SEQ", LFO_SEQ },
 	{ "LFO_TARGET_AMP", LFO_TARGET_AMP },
 	{ "LFO_TARGET_FREQ", LFO_TARGET_FREQ },
 	{ "LFO_TARGET_FREQ_MUL", LFO_TARGET_FREQ_MUL },
