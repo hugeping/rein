@@ -97,7 +97,7 @@ local boxes = {
       choice = { 'sin', 'saw', 'square', 'dsf',
         'dsf2', 'pwm', 'sin_noise', 'noise8', 'noise' },
       vals = { synth.OSC_SIN, synth.OSC_SAW, synth.OSC_SQUARE, synth.OSC_DSF,
-        synth.OSC_DSF2, synth.OSC_PWM, synth.OSC_SIN_NOISE, synth.OSC_NOISE8 },
+        synth.OSC_DSF2, synth.OSC_PWM, synth.OSC_SIN_NOISE, synth.OSC_NOISE8, synth.OSC_NOISE },
     },
     { 'amp', synth.AMP, def = 1.0 },
     { 'freq_mul', synth.FREQ_MUL, def = 1 },
