@@ -2,7 +2,7 @@
 require "tiny"
 require "std"
 local snd = require "sfx"
-
+mixer.volume(1)
 border(0)
 
 function cos(a)
@@ -35,10 +35,10 @@ decay 0.01
 sustain 0.01
 release 0.01
 
-voice 2
+voice boom
 box synth
 # synth
-volume 0.9
+volume 0.5
 mode lin_noise
 amp 1
 freq_mul 6
@@ -50,10 +50,10 @@ sustain 0.1
 release 0.1
 set_sustain 0
 
-voice 3
+voice flash
 box synth
 # synth
-volume 0.4
+volume 0.5
 mode reso_noise
 amp 3000
 freq_mul 1
@@ -323,9 +323,9 @@ synth.on(3, true)
 synth.vol(1, 1)
 synth.vol(2, 1)
 synth.vol(3, 1)
-voices:apply(1, 1)
-voices:apply(2, 2)
-voices:apply(3, 3)
+voices:apply('engine', 1)
+voices:apply('boom', 2)
+voices:apply('flash', 3)
 
 function sfx(nr)
   if nr == 0 then
