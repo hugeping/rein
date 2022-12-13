@@ -107,8 +107,8 @@ local boxes = {
     { 'decay', synth.DECAY, def = 0.1 },
     { 'sustain', synth.SUSTAIN, def = 0.5 },
     { 'release', synth.RELEASE, def = 0.3 },
-    { 'set_sustain_on', synth.SET_SUSTAIN_ON, def = 0 },
-    { 'set_glide_on', synth.SET_GLIDE_ON, def = 0 },
+    { 'set_sustain', synth.SET_SUSTAIN, def = 0 },
+    { 'set_glide', synth.SET_GLIDE, def = 0 },
     { 'glide_rate', synth.GLIDE_RATE, def = 0 },
     { 'lfo_func', synth.LFO_FUNC,
       array = { 0, 1, 2, 3 },
@@ -129,10 +129,15 @@ local boxes = {
       array = { 0, 1, 2, 3 },
       def = 0,
     },
-    { 'lfo_loop', synth.LFO_LOOP,
+    { 'lfo_set_loop', synth.LFO_SET_LOOP,
       array = { 0, 1, 2, 3 },
       def = 1,
       choice = { 0, 1 },
+    },
+    { 'lfo_set_reset', synth.LFO_SET_RESET,
+      array = { 0, 1, 2, 3 },
+      choice = { 0, 1 },
+      def = 1
     },
     { 'lfo_assign', synth.LFO_ASSIGN,
       array = { 0, 1, 2, 3 },
@@ -153,6 +158,11 @@ local boxes = {
     { 'lfo_seq_size', synth.LFO_SEQ_SIZE,
       array = { 0, 1, 2, 3 },
       def = 0, min = 0, max = 129,
+    },
+    { 'lfo_set_lin_seq', synth.LFO_SET_LIN_SEQ,
+      array = { 0, 1, 2, 3 },
+      choice = { 0, 1 },
+      def = 0
     },
   },
   { nam = 'dist',
@@ -250,6 +260,9 @@ function sfx.compile_par(nam, l)
     p = par_lookup(v, a[1])
     if not p then
       return false, string.format("Param:%s", a[1])
+    end
+    if not p[2] then
+      return false, string.format("Internal error:%s", a[1])
     end
     table.insert(cmd, p[2])
     if p.array then

@@ -71,9 +71,7 @@ static void sfx_synth_init(struct sfx_synth_state *s) {
 
 static void lfo_note_on(struct sfx_synth_state *s) {
     for (int i = 0; i < SYNTH_LFOS; i++) {
-        if (s->lfo[i].func == LFO_SEQ || !s->lfo[i].is_loop) {
-            lfo_reset(&s->lfo[i]);
-        }
+        lfo_reset(&s->lfo[i]);
     }
 }
 
@@ -88,7 +86,7 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
     case ZV_NOTE_OFF:
         adsr_note_off(&s->adsr);
         break;
-    case ZV_SET_GLIDE_ON:
+    case ZV_SET_GLIDE:
         glide_set_source(&s->glide, s->freq);
         s->is_glide_on = val;
         break;
@@ -107,7 +105,7 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
     case ZV_RELEASE:
         adsr_set_release(&s->adsr, val);
         break;
-    case ZV_SET_SUSTAIN_ON:
+    case ZV_SET_SUSTAIN:
         s->is_sustain_on = val;
         break;
     case ZV_FREQ_MUL:
@@ -148,18 +146,29 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
         elem = limit(elem, 0, SYNTH_LFOS - 1);
         lfo_set_high(&s->lfo[elem], val);
         break;
-    case ZV_LFO_LOOP:
+    case ZV_LFO_SET_LOOP:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
         lfo_set_loop(&s->lfo[elem], val);
         break;
+    case ZV_LFO_SET_RESET:
+        elem = limit(elem, 0, SYNTH_LFOS - 1);
+        lfo_set_reset(&s->lfo[elem], val);
+        break;
     case ZV_LFO_SEQ_POS:
+        elem = limit(elem, 0, SYNTH_LFOS - 1);
         lfo_set_seq_pos(&s->lfo[elem], val);
         break;
     case ZV_LFO_SEQ_VAL:
+        elem = limit(elem, 0, SYNTH_LFOS - 1);
         lfo_set_seq_val(&s->lfo[elem], val);
         break;
     case ZV_LFO_SEQ_SIZE:
+        elem = limit(elem, 0, SYNTH_LFOS - 1);
         lfo_set_seq_size(&s->lfo[elem], val);
+        break;
+    case ZV_LFO_SET_LIN_SEQ:
+        elem = limit(elem, 0, SYNTH_LFOS - 1);
+        lfo_set_lin_seq(&s->lfo[elem], val);
         break;
     case ZV_LFO_ASSIGN:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
