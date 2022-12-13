@@ -614,10 +614,11 @@ function save(fname)
   local txt = ''
   for _, v in ipairs(voices) do
     txt = txt .. string.format("voice %s\n", v.nam:gsub(" ", "_"))
+    local conf = ''
     for _, b in ipairs(v) do
-      txt = txt .. string.format("box %s\n%s", b.nam, b.conf or sfx.box_defs(b.nam))
+      conf = string.format("box %s\n%s", b.nam, b.conf or sfx.box_defs(b.nam)) .. conf
     end
-    txt = txt .. '\n'
+    txt = txt .. conf .. '\n'
   end
   return io.file(fname, txt:strip()..'\n')
 end
@@ -705,7 +706,7 @@ function load(fname)
     local vo = { nam = voice.nam }
     table.insert(voices, vo)
     for _, b in ipairs(voice) do
-      table.insert(vo, { nam = b.nam, conf = b.conf })
+      table.insert(vo, 1, { nam = b.nam, conf = b.conf })
     end
   end
   cur_voice = 1

@@ -54,7 +54,7 @@ function tune()
   mixer.voices [[
     voice snare
     box synth
-    mode sin_noise
+    mode sin_reso_noise
     amp 10000
     width 10000
     offset 0

@@ -242,6 +242,7 @@ static struct {
 	{ "RELEASE", ZV_RELEASE },
 	{ "SET_SUSTAIN", ZV_SET_SUSTAIN },
 	{ "FREQ_MUL", ZV_FREQ_MUL },
+	{ "FREQ", ZV_FREQ },
 	{ "MODE", ZV_MODE }, /* +filter */
 	{ "AMP", ZV_AMP },
 	{ "WIDTH", ZV_WIDTH }, /* +fliter */
@@ -274,9 +275,10 @@ static struct {
 	{ "OSC_DSF", OSC_DSF },
 	{ "OSC_DSF2", OSC_DSF2 },
 	{ "OSC_PWM", OSC_PWM },
-	{ "OSC_SIN_NOISE", OSC_SIN_NOISE },
-	{ "OSC_NOISE8", OSC_NOISE8 },
 	{ "OSC_NOISE", OSC_NOISE },
+	{ "OSC_LIN_NOISE", OSC_LIN_NOISE },
+	{ "OSC_RESO_NOISE", OSC_RESO_NOISE },
+	{ "OSC_SIN_RESO_NOISE", OSC_SIN_RESO_NOISE },
 	{ "LFO_ZERO", LFO_ZERO },
 	{ "LFO_SIN", LFO_SIN },
 	{ "LFO_SAW", LFO_SAW },

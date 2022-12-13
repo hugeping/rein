@@ -95,9 +95,13 @@ local boxes = {
     { 'mode', synth.MODE,
       def = 'sin',
       choice = { 'sin', 'saw', 'square', 'dsf',
-        'dsf2', 'pwm', 'sin_noise', 'noise8', 'noise' },
+        'dsf2', 'pwm',
+        'reso_noise', 'sin_reso_noise',
+        'lin_noise', 'noise'},
       vals = { synth.OSC_SIN, synth.OSC_SAW, synth.OSC_SQUARE, synth.OSC_DSF,
-        synth.OSC_DSF2, synth.OSC_PWM, synth.OSC_SIN_NOISE, synth.OSC_NOISE8, synth.OSC_NOISE },
+        synth.OSC_DSF2, synth.OSC_PWM,
+        synth.OSC_RESO_NOISE, synth.OSC_SIN_RESO_NOISE,
+        synth.OSC_LIN_NOISE, synth.OSC_NOISE },
     },
     { 'amp', synth.AMP, def = 1.0 },
     { 'freq_mul', synth.FREQ_MUL, def = 1 },
@@ -371,10 +375,11 @@ end
 
 function sfx.apply_voice(chan, voice)
   synth.drop(chan)
-  for _, b in ipairs(voice) do
+  for i, b in ipairs(voice) do
     synth.push(chan, b.nam)
     for _, p in ipairs(b) do
       synth.change(chan, -1, table.unpack(p))
+      print(table.unpack(p))
     end
   end
 end

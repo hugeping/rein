@@ -28,7 +28,7 @@ voice engine
 box synth
 # synth
 volume 0.2
-mode noise8
+mode noise
 width 0.01
 attack 0.005
 decay 0.01
@@ -36,10 +36,6 @@ sustain 0.01
 release 0.01
 
 voice 2
-box dist
-# dist
-volume 0.7
-gain 0.5
 box synth
 # synth
 volume 0.5
@@ -53,6 +49,10 @@ decay 0.05
 sustain 0.1
 release 0.1
 set_sustain 0
+box dist
+# dist
+volume 0.7
+gain 0.5
 ]]
 
 local voices = snd.voices(__voices__)
@@ -305,12 +305,12 @@ voices:apply(2, 2)
 
 function sfx(nr)
   if nr == 0 then
-    synth.change(1, -1, synth.NOTE_ON, 320)
+    synth.change(1, 0, synth.NOTE_ON, 320)
     return
   end
   if nr == 1 or nr == 2 then
     border_nr = 1
-    synth.change(2, -1, synth.NOTE_ON, 100)
+    synth.change(2, 0, synth.NOTE_ON, 100)
   end
 end
 function update_border()
