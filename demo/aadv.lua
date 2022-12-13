@@ -41,7 +41,7 @@ box synth
 volume 0.9
 mode lin_noise
 amp 1
-freq_mul 5
+freq_mul 6
 width 6
 offset 0.5
 attack 0.01
@@ -301,12 +301,12 @@ voices:apply(2, 2)
 
 function sfx(nr)
   if nr == 0 then
-    synth.change(1, 0, synth.NOTE_ON, 320)
+    synth.change(1, 0, synth.NOTE_ON, 420)
     return
   end
   if nr == 1 or nr == 2 then
     border_nr = 1
-    synth.change(2, 0, synth.NOTE_ON, 100)
+    synth.change(2, 0, synth.NOTE_ON, 320)
   end
 end
 function update_border()
