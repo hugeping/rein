@@ -534,9 +534,12 @@ function config_check()
   end
   w_conf.cur.y = line
   w_conf.cur.x = #w_conf.lines[line] + 1
+  local width = w_conf:size()
   for l in e:lines() do
-    w_conf:newline()
-    w_conf:input('#err '..l)
+    for _, ll in ipairs(l:wrap(width-2)) do
+      w_conf:newline()
+      w_conf:input('#err '..ll)
+    end
   end
   w_conf.cur.y = line
   w_conf.cur.x = #w_conf.lines[line] + 1
