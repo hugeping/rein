@@ -92,7 +92,7 @@ function tune()
     { synth.LFO_LOW, 1, 0.5 },
     { synth.LFO_HIGH, 1, -0.5 },
     { synth.LFO_LOOP, 1, 0 })
-  mixer.voice('square', 'synth', { synth.MODE, synth.OSC_SQUARE }, { synth.GLIDE_ON, 50 },
+  mixer.voice('square', 'synth', { synth.MODE, synth.OSC_SQUARE }, { synth.SET_GLIDE_ON, 50 },
     { synth.WIDTH, 0.7 } )
   mixer.voice('saw', 'synth',
     { synth.MODE, synth.OSC_SAW },
