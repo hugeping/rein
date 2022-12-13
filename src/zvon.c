@@ -245,13 +245,14 @@ double noise_next(struct noise_state *s, double freq) {
 
 void lfo_init(struct lfo_state *s) {
     s->freq = 0;
+    lfo_set_reset(s, 1);
     lfo_reset(s);
     for (int i = 0; i < LFO_MAX_SEQ_STEPS; i++) {
         s->seq[i] = 0;
     }
     s->edit_pos = 0;
     lfo_set_seq_size(s, 0);
-    lfo_is_lin_seq(s, 0);
+    lfo_set_lin_seq(s, 0);
     lfo_set_func(s, LFO_ZERO);
     lfo_set_freq(s, 0);
     lfo_set_low(s, 0);
@@ -260,9 +261,15 @@ void lfo_init(struct lfo_state *s) {
 }
 
 void lfo_reset(struct lfo_state *s) {
-    s->phase = 0;
-    s->prev = 0;
-    s->pos = 0;
+    if (s->is_reset_on) {
+        s->phase = 0;
+        s->prev = 0;
+        s->pos = 0;
+    }
+}
+
+void lfo_set_reset(struct lfo_state *s, int is_reset_on) {
+    s->is_reset_on = is_reset_on;
 }
 
 void lfo_set_func(struct lfo_state *s, int func) {
@@ -297,7 +304,7 @@ void lfo_set_seq_size(struct lfo_state *s, int size) {
     s->seq_size = limit(size, 0, LFO_MAX_SEQ_STEPS);
 }
 
-void lfo_is_lin_seq(struct lfo_state *s, int is_lin_seq) {
+void lfo_set_lin_seq(struct lfo_state *s, int is_lin_seq) {
     s->is_lin_seq = is_lin_seq;
 }
 

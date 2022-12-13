@@ -52,7 +52,7 @@ attack 0.01
 decay 0.05
 sustain 0.1
 release 0.1
-set_sustain_on 0
+set_sustain 0
 ]]
 
 local voices = snd.voices(__voices__)

@@ -66,13 +66,13 @@ function tune()
     lfo_freq 0 5
     lfo_low 0 120
     lfo_high 0 0
-    lfo_loop 0 0
+    lfo_set_loop 0 0
     lfo_assign 1 offset
     lfo_func 1 saw
     lfo_freq 1 5
     lfo_low 1 10000
     lfo_high 1 5000
-    lfo_loop 1 0
+    lfo_set_loop 1 0
 
     voice bass
     box synth
@@ -88,18 +88,18 @@ function tune()
     lfo_freq 0 15
     lfo_low 0 100
     lfo_high 0 -100
-    lfo_loop 0 0
+    lfo_set_loop 0 0
     lfo_assign 1 width
     lfo_func 1 saw
     lfo_freq 1 15
     lfo_low 1 0.5
     lfo_high 1 -0.5
-    lfo_loop 1 0
+    lfo_set_loop 1 0
 
     voice square
     box synth
     mode square
-    set_glide_on 50
+    set_glide 50
     width 0.7
 
     voice saw
