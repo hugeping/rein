@@ -70,6 +70,36 @@ function string.lines(text)
   return next_line
 end
 
+function string.wrap(text, len, delim)
+  delim = delim or "[, ]"
+  local res = {}
+  local s, e = 1, 1
+  local last, done
+  while text:len() > 0 do
+    s, e = text:find(delim, s)
+    if not s then
+      s = utf.len(text)
+      e = s
+      done = true
+    end
+    if s >= len then
+      last = last or s
+      table.insert(res, text:sub(1, last))
+      text = text:sub(last + 1)
+      last = nil
+      s = 1
+    else
+      last = s
+      s = s + 1
+    end
+    if done then
+      table.insert(res, text)
+      break
+    end
+  end
+  return res
+end
+
 function io.file(fname, data)
   local f, e, d
   if data == nil then

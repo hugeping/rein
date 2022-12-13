@@ -49,6 +49,31 @@ decay 0.05
 sustain 0.1
 release 0.1
 set_sustain 0
+
+voice 3
+box synth
+# synth
+volume 0.4
+mode reso_noise
+amp 3000
+freq_mul 1
+width 3000
+offset 0
+attack 0.01
+decay 0.1
+sustain 1
+release 1
+set_sustain 0
+set_glide 0
+glide_rate 0
+lfo_func 0 triangle
+lfo_freq 0 1.5
+lfo_low 0 2000
+lfo_high 0 1000
+lfo_set_loop 0 1
+lfo_set_reset 0 1
+lfo_assign 0 freq
+
 ]]
 
 local voices = snd.voices(__voices__)
@@ -294,10 +319,13 @@ local border_nr = false
 
 synth.on(1, true)
 synth.on(2, true)
+synth.on(3, true)
 synth.vol(1, 1)
 synth.vol(2, 1)
+synth.vol(3, 1)
 voices:apply(1, 1)
 voices:apply(2, 2)
+voices:apply(3, 3)
 
 function sfx(nr)
   if nr == 0 then
@@ -307,6 +335,11 @@ function sfx(nr)
   if nr == 1 or nr == 2 then
     border_nr = 1
     synth.change(2, 0, synth.NOTE_ON, 320)
+    return
+  end
+  if nr == 5 then
+    synth.change(3, 0, synth.NOTE_ON, 220 + rnd(400))
+    return
   end
 end
 function update_border()
