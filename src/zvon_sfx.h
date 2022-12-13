@@ -11,6 +11,7 @@ enum {
     ZV_VOLUME,
     ZV_NOTE_ON,
     ZV_NOTE_OFF,
+    ZV_FREQ,
     ZV_SET_GLIDE,
     ZV_GLIDE_RATE,
     ZV_FREQ_MUL,
@@ -51,9 +52,10 @@ enum {
     OSC_DSF,
     OSC_DSF2,
     OSC_PWM,
-    OSC_NOISE8,
     OSC_NOISE,
-    OSC_SIN_NOISE
+    OSC_LIN_NOISE,
+    OSC_RESO_NOISE,
+    OSC_SIN_RESO_NOISE
 };
 
 #define SYNTH_LFOS 4

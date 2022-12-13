@@ -83,6 +83,9 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
         adsr_note_on(&s->adsr, 0);
         lfo_note_on(s);
         break;
+    case ZV_FREQ:
+        s->freq = val;
+        break;
     case ZV_NOTE_OFF:
         adsr_note_off(&s->adsr);
         break;
@@ -196,13 +199,16 @@ static double osc_next(struct osc_state *s, double *lfo_param) {
         return amp * dsf2(phasor_next(&s->phasor1, freq), offset, w);
     case OSC_PWM:
         return amp * pwm(phasor_next(&s->phasor1, freq), offset, w);
-    case OSC_NOISE8:
+    case OSC_NOISE:
         noise_set_width(&s->noise1, 2);
         return amp * noise_next(&s->noise1, freq);
-    case OSC_NOISE:
+    case OSC_LIN_NOISE:
+        noise_set_width(&s->noise1, width);
+        return amp * noise_lin_next(&s->noise1, freq);
+    case OSC_RESO_NOISE:
         noise_set_width(&s->noise1, amp);
         return sin(phasor_next(&s->phasor1, freq + noise_lin_next(&s->noise1, width)));
-    case OSC_SIN_NOISE:
+    case OSC_SIN_RESO_NOISE:
         noise_set_width(&s->noise1, amp);
         double y1 = sin(phasor_next(&s->phasor1, freq));
         double y2 = sin(phasor_next(&s->phasor2, offset + noise_lin_next(&s->noise1, width)));
