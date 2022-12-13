@@ -27,8 +27,8 @@ local __voices__ = [[
 voice engine
 box synth
 # synth
-volume 0.2
-mode noise
+volume 0.9
+mode lin_noise
 width 0.01
 attack 0.005
 decay 0.01
@@ -38,21 +38,17 @@ release 0.01
 voice 2
 box synth
 # synth
-volume 0.5
-mode noise
-amp 10000
-freq_mul 1
-width 10000
+volume 0.9
+mode lin_noise
+amp 1
+freq_mul 5
+width 6
 offset 0.5
 attack 0.01
 decay 0.05
 sustain 0.1
 release 0.1
 set_sustain 0
-box dist
-# dist
-volume 0.7
-gain 0.5
 ]]
 
 local voices = snd.voices(__voices__)
