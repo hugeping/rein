@@ -379,7 +379,6 @@ function sfx.apply_voice(chan, voice)
     synth.push(chan, b.nam)
     for _, p in ipairs(b) do
       synth.change(chan, -1, table.unpack(p))
-      print(table.unpack(p))
     end
   end
 end
