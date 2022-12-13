@@ -296,6 +296,12 @@ function sfx.voices(text)
   local cmd, e, a
   local voice
   local nr = 0
+  if not text:find("\n") then -- filename?
+    text, e = io.file(text)
+    if not text then
+      return text, e
+    end
+  end
   for l in text:lines() do
     l = l:strip()
     line = line + 1
