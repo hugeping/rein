@@ -6,7 +6,7 @@ local THREADED = true
 local mixer = {
   id = 0;
   ids = {};
-  voices = {};
+  voices_bank = {};
   vol = 0.5;
   req = { };
   ack = { };
@@ -35,18 +35,8 @@ function mixer.get_channels(nr)
 end
 
 function mixer.apply_voice(chan, voice)
-  voice = mixer.voices[voice] or error("No such voice: "..tostring(voice))
-  local stack = 0
-  synth.drop(chan)
-  for _, v in ipairs(voice) do
-    if type(v) == 'string' then
-      stack = synth.push(chan, v)
-    elseif type(v) == 'table' then
-      synth.change(chan, stack, table.unpack(v))
-    else
-      error("Wrong voice format: "..tostring(voice))
-    end
-  end
+  voice = mixer.voices_bank[voice] or error("No such voice: "..tostring(voice))
+  sfx.apply_voice(chan, voice)
 end
 
 function mixer.setup_channels(chans, voices)
@@ -131,8 +121,14 @@ function mixer.req_play(voices, pans, song, temp, nr)
   return mixer.id
 end
 
+function mixer.req_voices(vo)
+  for k, v in ipairs(vo) do
+    mixer.voices_bank[v.nam or k] = v
+  end
+end
+
 function mixer.req_voice(nam, a)
-  mixer.voices[nam] = (#a ~= 0) and a or nil
+  mixer.voices_bank[nam] = (#a ~= 0) and a or nil
   return true
 end
 
@@ -163,7 +159,7 @@ end
 
 function mixer.reset()
   mixer.fn = {}
-  mixer.voices = {}
+  mixer.voices_bank = {}
   mixer.ids = {}
 end
 
@@ -191,6 +187,8 @@ function mixer.thread()
       mixer.answer(mixer.req_play(table.unpack(v)))
     elseif r == 'voice' then
       mixer.answer(mixer.req_voice(v, a))
+    elseif r == 'voices' then
+      mixer.answer(mixer.req_voices(v))
     end
     r, v = coroutine.resume(mixer.sched)
     if not r then
@@ -248,22 +246,12 @@ function mixer.play(...)
   return mixer.clireq("play", {...})
 end
 
-function mixer.voice(name, ...)
-  local a = {...}
-  for i, v in ipairs(a) do
-    if type(v) ~= 'string' and type(v) ~= 'table' then
-      error("Wrong voice data near "..tostring(i).." item", 2)
-    end
-    if type(v) == 'table' then
-      if #v ~= 2 and #v ~= 3 then
-        error("Wrong voice data near "..tostring(i).." item", 2)
-      end
-      if type(v[1]) ~= 'number' or type(v[2]) ~= 'number' then
-        error("Wrong voice data near "..tostring(i).." item", 2)
-      end
-    end
+function mixer.voices(text)
+  local r, e = sfx.voices(text)
+  if not r then
+    return r, e
   end
-  return mixer.clireq("voice", name, {...})
+  return mixer.clireq("voices", r)
 end
 
 function mixer.init()

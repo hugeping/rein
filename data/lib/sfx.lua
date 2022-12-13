@@ -297,6 +297,7 @@ function sfx.voices(text)
   local voice
   local nr = 0
   for l in text:lines() do
+    l = l:strip()
     line = line + 1
     a = l:split("#", 1)
     a = a[1] and a[1]:split() or {}
@@ -305,7 +306,7 @@ function sfx.voices(text)
       nr = nr + 1
       voice = { nam = a[2] or tonumber(nr) }
       table.insert(res, voice)
-    elseif not voice then
+    elseif not voice and a[1] and not a[1]:empty() then
       return false, "No voice declaration", line
     elseif a[1] == 'box' then
       if not sfx.box_info(a[2]) then
@@ -322,7 +323,7 @@ function sfx.voices(text)
       if #cmd > 0 then
         table.insert(box, cmd)
       end
-    else
+    elseif a[1] and not a[1]:empty() then
       return false, "No box declaration", line
     end
   end
@@ -345,15 +346,18 @@ function voices:lookup(name)
 end
 
 function voices:apply(name, chan)
+  sfx.apply_voice(chan, self:lookup(name))
+  return true
+end
+
+function sfx.apply_voice(chan, voice)
   synth.drop(chan)
-  local voice = self:lookup(name)
   for _, b in ipairs(voice) do
     synth.push(chan, b.nam)
     for _, p in ipairs(b) do
       synth.change(chan, -1, table.unpack(p))
     end
   end
-  return true
 end
 
 function sfx.box_defs(nam)
