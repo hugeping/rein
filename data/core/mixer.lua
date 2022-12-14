@@ -5,7 +5,7 @@ local THREADED = not not thread
 
 local mixer = {
   id = 0;
-  reserve = 0;
+  res = 0;
   ids = {};
   vol = 0.5;
   req = { };
@@ -19,7 +19,7 @@ mixer.tick = mixer.hz * mixer.freq
 
 function mixer.get_channels(nr)
   local free = {}
-  for i = mixer.reserve + 1, mixer.chans.size do
+  for i = mixer.res + 1, mixer.chans.size do
     if not mixer.chans[i] then
       table.insert(free, i)
       if #free >= nr then break end
@@ -47,7 +47,7 @@ end
 
 function mixer.free_channels(chans)
   if not chans then
-    for i=mixer.reserve + 1, mixer.chans.size do
+    for i=mixer.res + 1, mixer.chans.size do
       mixer.chans[i] = false
     end
     return
