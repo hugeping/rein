@@ -127,11 +127,6 @@ function mixer.req_voices(vo)
   end
 end
 
-function mixer.req_voice(nam, a)
-  mixer.voices_bank[nam] = (#a ~= 0) and a or nil
-  return true
-end
-
 function mixer.getreq()
   if not mixer.thr then
     if not mixer.req then
@@ -185,8 +180,6 @@ function mixer.thread()
       mixer.answer(oval)
     elseif r == 'play' then
       mixer.answer(mixer.req_play(table.unpack(v)))
-    elseif r == 'voice' then
-      mixer.answer(mixer.req_voice(v, a))
     elseif r == 'voices' then
       mixer.answer(mixer.req_voices(v))
     end
