@@ -73,10 +73,9 @@ lfo_high 0 1000
 lfo_set_loop 0 1
 lfo_set_reset 0 1
 lfo_assign 0 freq
-
 ]]
 
-local voices = snd.voices(__voices__)
+snd.voices(__voices__)
 
 local __spr__ = [[
 -123456789abcdef
@@ -323,9 +322,9 @@ synth.on(3, true)
 synth.vol(1, 1)
 synth.vol(2, 1)
 synth.vol(3, 1)
-voices:apply('engine', 1)
-voices:apply('boom', 2)
-voices:apply('flash', 3)
+snd.apply_voice(1, 'engine')
+snd.apply_voice(2, 'boom')
+snd.apply_voice(3, 'flash')
 
 function sfx(nr)
   if nr == 0 then

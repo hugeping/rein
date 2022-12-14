@@ -6,7 +6,6 @@ local THREADED = not not thread
 local mixer = {
   id = 0;
   ids = {};
-  voices_bank = {};
   vol = 0.5;
   req = { };
   ack = { };
@@ -35,14 +34,7 @@ function mixer.get_channels(nr)
 end
 
 function mixer.apply_voice(chan, voice)
-  voice = mixer.voices_bank[voice] or error("No such voice: "..tostring(voice))
   sfx.apply_voice(chan, voice)
-end
-
-function mixer.setup_channels(chans, voices)
-  for i, v in ipairs(voices) do
-    mixer.apply_voice(chans[i], v)
-  end
 end
 
 function mixer.req_nextid()
@@ -99,12 +91,12 @@ function mixer.proc(tick)
   until tick == 0
 end
 
-function mixer.req_play(voices, pans, song, temp, nr)
+function mixer.req_play(song, temp, nr)
   song = sfx.parse_song(song)
   if #song == 0 then
     return false, "Wrong song format"
   end
-  local chans = mixer.get_channels(#song[1])
+  local chans = mixer.get_channels(song.tracks)
   if not chans then
     return false, "No free channels"
   end
@@ -113,18 +105,15 @@ function mixer.req_play(voices, pans, song, temp, nr)
     error(e)
   end
   mixer.req_nextid()
-  mixer.setup_channels(chans, voices)
   local r = { id = mixer.id, fn = f, chans = chans,
-    args = { chans, pans, song, temp, nr } }
+    args = { chans, song, temp or 1, nr or 1 } }
   table.insert(mixer.fn, r)
   mixer.ids[mixer.id] = r
   return mixer.id
 end
 
 function mixer.req_voices(vo)
-  for k, v in ipairs(vo) do
-    mixer.voices_bank[v.nam or k] = v
-  end
+  return sfx.voices(vo)
 end
 
 function mixer.getreq()
@@ -154,7 +143,6 @@ end
 
 function mixer.reset()
   mixer.fn = {}
-  mixer.voices_bank = {}
   mixer.ids = {}
 end
 
@@ -240,7 +228,7 @@ function mixer.play(...)
 end
 
 function mixer.voices(text)
-  local r, e = sfx.voices(text)
+  local r, e = sfx.parse_voices(text)
   if not r then
     return r, e
   end

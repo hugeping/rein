@@ -118,9 +118,16 @@ function tune()
     mode lowpass
     width 0.1
     volume 1]]
-  local voices = {'bass', 'snare', 'square', 'saw'}
-  local pan = { 0, 0, -0.75, 0.75 }
+
   local song = [[
+@voice 1 bass
+@voice 2 snare
+@voice 3 square
+@voice 4 saw
+@pan -1 0
+@pan 3 -0.75
+@pan 4 0.75
+@volume -1 0.9
 C-2 A0 | ... .. | C-4 .. | C-3 64
 ... .. | ... .. | G-3 45 | ... ..
 C-2 80 | ... .. | C-4 .. | ... ..
@@ -186,7 +193,7 @@ C-2 80 | ... .. | D#4 .. | ... ..
 ... .. | ... .. | G-3 .. | ... ..
 ... .. | ... .. | D-4 45 | ... ..
 ]]
-  return mixer.play(voices, pan, song, 16, -1)
+  return mixer.play(song, 16, -1)
 end
 
 mixer.volume(0.5)
