@@ -5,6 +5,7 @@ local THREADED = not not thread
 
 local mixer = {
   id = 0;
+  reserve = 0;
   ids = {};
   vol = 0.5;
   req = { };
@@ -18,7 +19,7 @@ mixer.tick = mixer.hz * mixer.freq
 
 function mixer.get_channels(nr)
   local free = {}
-  for i = 1, mixer.chans.size do
+  for i = mixer.reserve + 1, mixer.chans.size do
     if not mixer.chans[i] then
       table.insert(free, i)
       if #free >= nr then break end
@@ -46,7 +47,7 @@ end
 
 function mixer.free_channels(chans)
   if not chans then
-    for i=1, mixer.chans.size do
+    for i=mixer.reserve + 1, mixer.chans.size do
       mixer.chans[i] = false
     end
     return
@@ -120,6 +121,11 @@ function mixer.req_new(nam, snd)
   return sfx.new(nam, snd)
 end
 
+function mixer.req_reserve(nr)
+  mixer.reserve = nr or 0
+  return true
+end
+
 function mixer.getreq()
   if not mixer.thr then
     if not mixer.req then
@@ -174,6 +180,8 @@ function mixer.thread()
       mixer.answer(mixer.req_play(table.unpack(v)))
     elseif r == 'new' then
       mixer.answer(mixer.req_new(v, a))
+    elseif r == 'reserve' then
+      mixer.answer(mixer.req_reserve(v))
     elseif r == 'voices' then
       mixer.answer(mixer.req_voices(v))
     end
@@ -247,6 +255,10 @@ function mixer.new(nam, text)
     return r, e
   end
   return mixer.clireq("new", nam, r)
+end
+
+function mixer.reserve(nr)
+  return mixer.clireq("reserve", nr)
 end
 
 function mixer.init()
