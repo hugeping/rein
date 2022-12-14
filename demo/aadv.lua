@@ -1435,6 +1435,10 @@ end
 init()
 
 while true do
+  if sys.input() == 'quit' then
+    dprint "quit"
+    break
+  end
   update_border()
   update()
   if not gfx.framedrop() then
