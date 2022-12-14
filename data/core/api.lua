@@ -107,7 +107,7 @@ function env.dofile(n)
   end
   return dofile(n)
 end
-
+local thread = thread or {}
 function thread.start(code)
   local r, e, c
   if type(code) ~= 'function' and type(code) ~= 'string' then
@@ -155,8 +155,7 @@ local env_ro = {
     hidemouse = sys.hidemouse,
     audio = sys.audio,
     clipboard = sys.clipboard,
-    incoroutine = true,
-  };
+  },
   thread = thread,
   net = net,
   mixer = mixer,
@@ -394,7 +393,9 @@ function env.sys.sleep(to, interrupt)
     if left <= 0 then
       break
     end
-    sys.wait(left)
+    if not sys.wait(left) then
+      break
+    end
   until interrupt
 end
 

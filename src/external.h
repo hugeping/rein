@@ -32,4 +32,4 @@
 #include "emscripten.h"
 #include "emscripten/html5.h"
 #endif
-#include <sys/fcntl.h>
+#include <fcntl.h>
