@@ -700,7 +700,7 @@ function load(fname)
   if not v then
     return v, e
   end
-  v, e = sfx.voices(v)
+  v, e = sfx.parse_voices(v)
   if not v then
     return v, e
   end
