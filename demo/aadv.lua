@@ -96,6 +96,30 @@ lfo_high 0 1000
 lfo_set_loop 0 1
 lfo_set_reset 0 1
 lfo_assign 0 freq
+
+voice water
+box synth
+# synth
+volume 0.5
+mode reso_noise
+amp 1
+freq_mul 1
+width 20000
+offset 0
+attack 0.01
+decay 0.05
+sustain 0.4
+release 0.7
+set_sustain 0
+set_glide 0
+glide_rate 0
+lfo_func 0 triangle
+lfo_freq 0 1
+lfo_low 0 200000
+lfo_high 0 30000
+lfo_set_loop 0 1
+lfo_set_reset 0 1
+lfo_assign 0 offset
 ]]
 
 snd.voices(__voices__)
@@ -343,12 +367,15 @@ mixer.reserve(8)
 synth.on(1, true)
 synth.on(2, true)
 synth.on(3, true)
+synth.on(4, true)
 synth.vol(1, 1)
 synth.vol(2, 1)
 synth.vol(3, 1)
+synth.vol(4, 1)
 snd.apply_voice(1, 'engine')
 snd.apply_voice(2, 'boom')
 snd.apply_voice(3, 'flash')
+snd.apply_voice(4, 'water')
 
 function engine()
   if plane.t <= 0.5 or plane.sink==1 or plane.stp then
@@ -364,6 +391,10 @@ function sfx(nr)
   if nr == 1 or nr == 2 then
     border_nr = 1
     synth.change(2, 0, synth.NOTE_ON, 320)
+    return
+  end
+  if nr == 4 then
+    synth.change(4, 0, synth.NOTE_ON, 320)
     return
   end
   if nr == 5 then
