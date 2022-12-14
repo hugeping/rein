@@ -27,13 +27,36 @@ local __voices__ = [[
 voice engine
 box synth
 # synth
-volume 0.9
-mode lin_noise
-width 0.01
-attack 0.005
-decay 0.01
-sustain 0.01
-release 0.01
+volume 0.20
+mode reso_noise
+amp 0
+freq_mul 1
+width 20000
+offset 10000
+
+attack 0.01
+decay 0.5
+sustain 0.5
+release 0.1
+set_sustain 1
+
+set_glide 0
+glide_rate 0
+
+lfo_func 0 seq
+lfo_freq 0 100
+lfo_low 0 0
+lfo_high 0 1
+lfo_set_loop 0 1
+lfo_set_reset 0 1
+lfo_assign 0 amp
+
+lfo_seq_pos 0 0
+lfo_seq_val 0 1
+
+lfo_seq_size 0 10
+lfo_set_lin_seq 0 1
+remap_freq freq
 
 voice boom
 box synth
@@ -326,9 +349,15 @@ snd.apply_voice(1, 'engine')
 snd.apply_voice(2, 'boom')
 snd.apply_voice(3, 'flash')
 
+function engine()
+  if plane.t <= 0.5 or plane.sink==1 then
+    synth.change(1, 0, synth.NOTE_OFF, 0)
+  end
+end
 function sfx(nr)
   if nr == 0 then
-    synth.change(1, 0, synth.NOTE_ON, 420 + 100*plane.t)
+    synth.change(1, 0, synth.NOTE_ON, 440)
+    synth.change(1, 0, synth.LFO_FREQ, 100 + 100*plane.t)
     return
   end
   if nr == 1 or nr == 2 then
@@ -1440,6 +1469,7 @@ while true do
   end
   update_border()
   update()
+  engine()
   if not gfx.framedrop() then
     draw()
   end
