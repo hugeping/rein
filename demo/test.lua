@@ -193,7 +193,8 @@ C-2 80 | ... .. | D#4 .. | ... ..
 ... .. | ... .. | G-3 .. | ... ..
 ... .. | ... .. | D-4 45 | ... ..
 ]]
-  return mixer.play(song, 16, -1)
+  mixer.new('music', song)
+  mixer.play('music', 16, -1)
 end
 
 mixer.volume(0.5)

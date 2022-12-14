@@ -91,10 +91,10 @@ function mixer.proc(tick)
   until tick == 0
 end
 
-function mixer.req_play(song, temp, nr)
-  song = sfx.parse_song(song)
-  if #song == 0 then
-    return false, "Wrong song format"
+function mixer.req_play(text, temp, nr)
+  local song, e = sfx.parse_song(text)
+  if not song then
+    return false, e
   end
   local chans = mixer.get_channels(song.tracks)
   if not chans then
@@ -114,6 +114,10 @@ end
 
 function mixer.req_voices(vo)
   return sfx.voices(vo)
+end
+
+function mixer.req_new(nam, snd)
+  return sfx.new(nam, snd)
 end
 
 function mixer.getreq()
@@ -168,6 +172,8 @@ function mixer.thread()
       mixer.answer(oval)
     elseif r == 'play' then
       mixer.answer(mixer.req_play(table.unpack(v)))
+    elseif r == 'new' then
+      mixer.answer(mixer.req_new(v, a))
     elseif r == 'voices' then
       mixer.answer(mixer.req_voices(v))
     end
@@ -233,6 +239,14 @@ function mixer.voices(text)
     return r, e
   end
   return mixer.clireq("voices", r)
+end
+
+function mixer.new(nam, text)
+  local r, e = sfx.parse_song(text)
+  if not r then
+    return r, e
+  end
+  return mixer.clireq("new", nam, r)
 end
 
 function mixer.init()

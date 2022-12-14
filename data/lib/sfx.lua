@@ -1,7 +1,8 @@
 require "std"
 
 local sfx = {
-  voices_bank = {}
+  voices_bank = {},
+  sfx_bank = {},
 }
 
 local NOTES = {
@@ -53,6 +54,13 @@ function sfx.parse_row(text)
 end
 
 function sfx.parse_song(text)
+  if not tostring(text):find("\n") then
+    local song = sfx.sfx_bank[text]
+    if not song then
+      return false, "No such sfx:"..tostring(text)
+    end
+    return song
+  end
   local ret = { tracks = 0 }
   text = text:strip()
   for row in text:lines() do
@@ -60,7 +68,21 @@ function sfx.parse_song(text)
     table.insert(ret, r)
     ret.tracks = #r > ret.tracks and #r or ret.tracks
   end
+  if ret.tracks == 0 then
+    return false, "Wrong sfx format"
+  end
   return ret
+end
+
+function sfx.new(nam, song)
+  local snd = song
+  local e
+  if type(song) == 'text' then
+    snd, e = sfx.parse_song(text)
+    if not snd then return snd, e end
+  end
+  sfx.sfx_bank[nam] = snd
+  return true
 end
 
 local function chan_par(chans, ch)
