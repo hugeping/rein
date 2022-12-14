@@ -1,5 +1,7 @@
 require "std"
+
 local sfx = {
+  voices_bank = {}
 }
 
 local NOTES = {
@@ -39,6 +41,10 @@ end
 
 function sfx.parse_row(text)
   local ret = {}
+  if text:startswith("@") then -- directive
+    ret.cmd = text:split()
+    return ret
+  end
   for _, v in ipairs(text:split("|")) do
     v = sfx.parse_data(v:strip())
     table.insert(ret, v)
@@ -47,41 +53,73 @@ function sfx.parse_row(text)
 end
 
 function sfx.parse_song(text)
-  local ret = {}
+  local ret = { tracks = 0 }
   text = text:strip()
   for row in text:lines() do
-    table.insert(ret, sfx.parse_row(row:strip()))
+    local r = sfx.parse_row(row:strip())
+    table.insert(ret, r)
+    ret.tracks = #r > ret.tracks and #r or ret.tracks
   end
   return ret
 end
 
-function sfx.play_song_once(chans, pans, tracks, temp)
+local function chan_par(chans, ch)
+  ch = tonumber(ch) or 1
+  if ch ~= -1 then
+    return { chans[ch] or 0 }
+  end
+  return chans
+end
+
+function sfx.proc_cmd(chans, cmd)
+  if not cmd or #cmd == 0 then return end
+  if cmd[1] == '@voice' then
+    local voice = cmd[3]
+    for _, c in ipairs(chan_par(chans, cmd[2])) do
+      sfx.apply_voice(c, voice)
+    end
+  elseif cmd[1] == '@pan' then
+    for _, c in ipairs(chan_par(chans, cmd[2])) do
+      synth.pan(c, tonumber(cmd[3]) or 0)
+    end
+  elseif cmd[1] == '@volume' then
+    for _, c in ipairs(chan_par(chans, cmd[2])) do
+      synth.pan(c, tonumber(cmd[3]) or 0)
+    end
+  else
+    error("Wrong command: "..tostring(cmd[1]), 2)
+  end
+end
+
+function sfx.play_song_once(chans, tracks, temp)
   for i, c in ipairs(chans) do
     synth.on(c, true)
-    synth.pan(c, pans[i])
     synth.vol(c, 0.5)
   end
   for _, row in ipairs(tracks) do
-    for i, c in ipairs(chans) do
-      local freq, vol = row[i][1], row[i][2]
+    sfx.proc_cmd(chans, row.cmd)
+    for i, r in ipairs(row) do
+      local freq, vol = r[1], r[2]
       if freq then
-        synth.change(c, 0, synth.NOTE_ON, freq)
+        synth.change(chans[i], 0, synth.NOTE_ON, freq)
       end
       if vol then
-        synth.change(c, 0, synth.VOLUME, vol/255)
+        synth.change(chans[i], 0, synth.VOLUME, vol/255)
       end
     end
-    for i = 1, temp do
-      coroutine.yield()
+    if #row > 0 then
+      for i = 1, temp do
+        coroutine.yield()
+      end
     end
   end
 end
 
-function sfx.play_song(chans, pans, tracks, temp, nr)
+function sfx.play_song(chans, tracks, temp, nr)
   nr = nr or 1
   while nr == -1 or nr > 0 do
     if nr ~= -1 then nr = nr - 1 end
-    sfx.play_song_once(chans, pans, tracks, temp)
+    sfx.play_song_once(chans, tracks, temp)
   end
 end
 
@@ -313,7 +351,7 @@ end
 local voices = {}
 voices.__index = voices
 
-function sfx.voices(text)
+function sfx.parse_voices(text)
   local box
   local line = 0
   local res = {}
@@ -357,32 +395,28 @@ function sfx.voices(text)
       return false, "No box declaration", line
     end
   end
-  setmetatable(res, voices)
   return res
 end
 
-function voices:lookup(name)
-  local voice
-  if type(name) == 'number' then
-    return self[name]
+function sfx.voices(voices)
+  local e
+  if type(voices) == 'string' then
+    voices, e = sfx.parse_voices(voices)
+    if not voices then return false, e end
   end
-  for _, v in ipairs(self) do
-    if v.nam == name then
-      voice = v
-      break
-    end
+  for k, v in ipairs(voices) do
+    sfx.voices_bank[v.nam or k] = v
   end
-  return voice
-end
-
-function voices:apply(name, chan)
-  sfx.apply_voice(chan, self:lookup(name))
   return true
 end
 
 function sfx.apply_voice(chan, voice)
+  local vo = sfx.voices_bank[voice]
+  if not vo then
+    error("Unknown voice: "..tostring(voice), 2)
+  end
   synth.drop(chan)
-  for i, b in ipairs(voice) do
+  for i, b in ipairs(vo) do
     synth.push(chan, b.nam)
     for _, p in ipairs(b) do
       synth.change(chan, -1, table.unpack(p))
@@ -406,7 +440,6 @@ function sfx.box_defs(nam)
   end
   return txt
 end
-
 
 sfx.boxes = boxes
 
