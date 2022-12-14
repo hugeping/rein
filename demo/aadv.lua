@@ -27,7 +27,7 @@ local __voices__ = [[
 voice engine
 box synth
 # synth
-volume 0.20
+volume 0.25
 mode reso_noise
 amp 0
 freq_mul 1
@@ -357,7 +357,7 @@ end
 function sfx(nr)
   if nr == 0 then
     synth.change(1, 0, synth.NOTE_ON, 440)
-    synth.change(1, 0, synth.LFO_FREQ, 100 + 100*plane.t)
+    synth.change(1, 0, synth.LFO_FREQ, 100 + 90*plane.t)
     return
   end
   if nr == 1 or nr == 2 then
