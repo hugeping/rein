@@ -124,10 +124,10 @@ function tune()
 @voice 2 snare
 @voice 3 square
 @voice 4 saw
+@volume -1 0.8
 @pan -1 0
 @pan 3 -0.75
 @pan 4 0.75
-@volume -1 0.9
 C-2 A0 | ... .. | C-4 .. | C-3 64
 ... .. | ... .. | G-3 45 | ... ..
 C-2 80 | ... .. | C-4 .. | ... ..

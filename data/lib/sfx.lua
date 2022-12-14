@@ -106,7 +106,7 @@ function sfx.proc_cmd(chans, cmd)
     end
   elseif cmd[1] == '@volume' then
     for _, c in ipairs(chan_par(chans, cmd[2])) do
-      synth.pan(c, tonumber(cmd[3]) or 0)
+      synth.vol(c, tonumber(cmd[3]) or 0)
     end
   else
     error("Wrong command: "..tostring(cmd[1]), 2)
