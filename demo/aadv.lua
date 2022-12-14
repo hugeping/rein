@@ -339,6 +339,7 @@ function sget(x, y)
 end
 local border_nr = false
 
+mixer.reserve(8)
 synth.on(1, true)
 synth.on(2, true)
 synth.on(3, true)
@@ -350,7 +351,7 @@ snd.apply_voice(2, 'boom')
 snd.apply_voice(3, 'flash')
 
 function engine()
-  if plane.t <= 0.5 or plane.sink==1 then
+  if plane.t <= 0.5 or plane.sink==1 or plane.stp then
     synth.change(1, 0, synth.NOTE_OFF, 0)
   end
 end
