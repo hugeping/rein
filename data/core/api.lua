@@ -354,7 +354,9 @@ function env_ro.sys.input(reset)
     return
   end
   local v = table.remove(input.fifo, 1)
-  input.fifo = {}
+  if reset then
+    input.fifo = {}
+  end
   return v.nam, table.unpack(v.args)
 end
 
