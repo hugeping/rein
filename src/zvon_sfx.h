@@ -23,7 +23,6 @@ enum {
     ZV_AMP,
     ZV_WIDTH,
     ZV_OFFSET,
-    ZV_REMAP_FREQ,
     ZV_LFO_FUNC,
     ZV_LFO_FREQ,
     ZV_LFO_LOW,
@@ -53,9 +52,10 @@ enum {
     OSC_DSF2,
     OSC_PWM,
     OSC_NOISE,
-    OSC_LIN_NOISE,
-    OSC_RESO_NOISE,
-    OSC_SIN_RESO_NOISE
+    OSC_LNOISE,
+    OSC_RNOISE,
+    OSC_RLNOISE,
+    OSC_SIN_RLNOISE
 };
 
 #define SYNTH_LFOS 4

@@ -884,7 +884,7 @@ end
 win:with { w_prev, w_voice, w_next, w_boxes, w_volume, w_stack, w_conf, w_play,
   w_poly, w_info, w_rem, w_bypass, w_file }
 
-load(FILE)
+print(load(FILE))
 
 while true do
   win:event(sys.input())
