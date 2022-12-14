@@ -556,10 +556,10 @@ function api.event(e, v, a, b, c)
   if e == 'quit' then
     api.running = false
     input.fifo  = {}
-    mixer.stop()
+    mixer.done()
   elseif e == 'keydown' and (v == 'f10'
     or v == 'escape' and input.kbd.ctrl) then
-    mixer.stop()
+    mixer.done()
     core.stop()
     return true
   elseif e == 'mousemotion' then

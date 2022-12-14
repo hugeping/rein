@@ -845,7 +845,7 @@ function get_buff()
   return inp_mode and inp or b
 end
 
-mixer.stop()
+mixer.done()
 
 local HELP = [[Keys:
 F2,ctrl-s    - save
@@ -870,7 +870,7 @@ F10          - exit from running prog
 while true do
   if idle_mode then -- resume?
     gfx.border(conf.brd)
-    mixer.stop()
+    mixer.done()
     screen:nooffset()
     screen:noclip()
     sys.input(true) -- clear input
