@@ -329,7 +329,7 @@ voices:apply('flash', 3)
 
 function sfx(nr)
   if nr == 0 then
-    synth.change(1, 0, synth.NOTE_ON, 420)
+    synth.change(1, 0, synth.NOTE_ON, 420 + 100*plane.t)
     return
   end
   if nr == 1 or nr == 2 then
