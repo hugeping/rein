@@ -200,8 +200,14 @@ function core.abs2rel(x, y)
 end
 
 function core.run()
-  if not api.event(sys.poll()) then
-    return false
+  while true do
+    local r, v, a, b, c = sys.poll()
+    if not r then
+      break
+    end
+    if not api.event(r, v, a, b, c) then
+      return false
+    end
   end
 
   -- core.render()

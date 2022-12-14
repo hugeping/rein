@@ -360,6 +360,9 @@ thread_new(lua_State *L)
 	lua_setmetatable(nL, -2);
 	lua_setglobal(nL, "thread");
 
+	lua_pushboolean(nL, 1);
+	lua_setglobal(nL, "THREAD");
+
 	lua_thread_init(nL);
 
 	lua_getglobal(L, "EXEFILE");
@@ -470,6 +473,7 @@ thread_lib[] = {
 int
 luaopen_thread(lua_State *L)
 {
+#ifndef __EMSCRIPTEN__
 	luaL_newmetatable (L, "thread metatable");
 	luaL_setfuncs_int(L, thread_mt, 0);
 	lua_pushvalue(L, -1);
@@ -477,4 +481,7 @@ luaopen_thread(lua_State *L)
 
 	luaL_newlib(L, thread_lib);
 	return 1;
+#else
+	return 0;
+#endif
 }

@@ -27,7 +27,7 @@ function tcp:write(data)
     end
     len = len - rc
     i = i + rc
-    if sys.incoroutine then
+    if not THREAD then
       coroutine.yield()
     else
       sys.sleep(DELAY)

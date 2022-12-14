@@ -1,7 +1,7 @@
 local dump = require "dump"
 local sfx = require "sfx"
 require "std"
-local THREADED = true
+local THREADED = not not thread
 
 local mixer = {
   id = 0;
