@@ -189,6 +189,14 @@ function editarea:backspace()
   end
 end
 
+function editarea:copy()
+  local text = ''
+  for _, l in ipairs(self.lines) do
+    text = text..table.concat(l)..'\n'
+  end
+  sys.clipboard(text)
+end
+
 function editarea:paste()
   local s = self
   local text = sys.clipboard() or ''
@@ -241,6 +249,8 @@ function editarea:event(r, v, ...)
       self:scroll()
     elseif v == 'y' and input.keydown 'ctrl' then
       table.remove(self.lines, self.cur.y)
+    elseif v == 'c' and input.keydown 'ctrl' then
+      self:copy()
     elseif v == 'v' and input.keydown 'ctrl' then
       self:paste()
     end
