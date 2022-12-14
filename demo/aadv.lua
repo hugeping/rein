@@ -53,7 +53,7 @@ set_sustain 0
 voice flash
 box synth
 # synth
-volume 0.5
+volume 0.25
 mode reso_noise
 amp 3000
 freq_mul 1
