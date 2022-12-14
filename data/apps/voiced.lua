@@ -1,4 +1,7 @@
 local sfx = require 'sfx'
+
+local w_conf, w_rem, w_bypass
+
 gfx.win(384, 384)
 mixer.volume(0.5)
 
@@ -253,6 +256,10 @@ function editarea:event(r, v, ...)
       self:copy()
     elseif v == 'v' and input.keydown 'ctrl' then
       self:paste()
+    elseif v == 'd' and input.keydown 'ctrl' then
+      if not w_conf.hidden then
+        w_conf:set(sfx.box_defs(w_conf.nam))
+      end
     end
     self:scroll()
   end
@@ -446,8 +453,6 @@ local voices = {
 }
 
 local stack = voices[cur_voice]
-
-local w_conf, w_rem, w_bypass
 
 function conf_show(show)
   w_conf.hidden = not show
