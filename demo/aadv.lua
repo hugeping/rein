@@ -108,8 +108,8 @@ width 20000
 offset 0
 attack 0.01
 decay 0.05
-sustain 0.4
-release 0.7
+sustain 0.7
+release 0.9
 set_sustain 0
 set_glide 0
 glide_rate 0

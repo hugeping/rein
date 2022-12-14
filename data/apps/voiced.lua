@@ -631,8 +631,9 @@ function save(fname)
     for _, b in ipairs(v) do
       conf = string.format("box %s\n%s", b.nam, b.conf or sfx.box_defs(b.nam)) .. conf
     end
-    txt = txt .. conf .. '\n'
+    txt = txt .. conf:strip() .. '\n\n'
   end
+  print(txt:strip())
   return io.file(fname, txt:strip()..'\n')
 end
 
