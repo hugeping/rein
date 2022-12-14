@@ -28,7 +28,7 @@ voice engine
 box synth
 # synth
 volume 0.25
-mode reso_noise
+mode rnoise
 amp 0
 freq_mul 1
 width 20000
@@ -56,13 +56,12 @@ lfo_seq_val 0 1
 
 lfo_seq_size 0 10
 lfo_set_lin_seq 0 1
-remap_freq freq
 
 voice boom
 box synth
 # synth
 volume 0.5
-mode lin_noise
+mode lnoise
 amp 1
 freq_mul 0
 width 3
@@ -86,7 +85,7 @@ voice flash
 box synth
 # synth
 volume 0.25
-mode reso_noise
+mode rnoise
 amp 1
 freq_mul 1
 width 3000
@@ -110,7 +109,7 @@ voice water
 box synth
 # synth
 volume 0.5
-mode reso_noise
+mode rnoise
 amp 1
 freq_mul 1
 width 20000
