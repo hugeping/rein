@@ -206,8 +206,8 @@ static double osc_next(struct osc_state *s, double *lfo_param) {
         noise_set_width(&s->noise1, width);
         return amp * noise_lin_next(&s->noise1, freq);
     case OSC_RESO_NOISE:
-        noise_set_width(&s->noise1, amp);
-        return sin(phasor_next(&s->phasor1, freq + noise_lin_next(&s->noise1, width)));
+        noise_set_width(&s->noise1, offset);
+        return amp * sin(phasor_next(&s->phasor1, freq + noise_lin_next(&s->noise1, width)));
     case OSC_SIN_RESO_NOISE:
         noise_set_width(&s->noise1, amp);
         double y1 = sin(phasor_next(&s->phasor1, freq));

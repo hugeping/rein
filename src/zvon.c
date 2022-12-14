@@ -96,13 +96,15 @@ void adsr_set_decay(struct adsr_state *s, double decay) {
 void adsr_set_sustain(struct adsr_state *s, double sustain) {
     s->sustain = sustain;
     adsr_set_decay(s, s->decay);
-    adsr_set_release(s, s->release);
 }
 
 void adsr_set_release(struct adsr_state *s, double release) {
     s->release = release;
-    int dt = sec(release);
-    s->release_step = s->sustain / (dt ? dt : 1);
+}
+
+static void update_release_step(struct adsr_state *s, double level) {
+    int dt = sec(s->release);
+    s->release_step = level / (dt ? dt : 1);
 }
 
 void adsr_note_on(struct adsr_state *s, int is_reset_level_on) {
@@ -110,10 +112,12 @@ void adsr_note_on(struct adsr_state *s, int is_reset_level_on) {
     if (is_reset_level_on) {
         s->level = 0;
     }
+    update_release_step(s, s->sustain);
 }
 
 void adsr_note_off(struct adsr_state *s) {
     s->state = ADSR_RELEASE;
+    update_release_step(s, s->level);
 }
 
 double adsr_next(struct adsr_state *s, int is_sustain_on) {
@@ -219,7 +223,7 @@ void noise_init(struct noise_state *s) {
 
 void noise_set_width(struct noise_state *s, unsigned int width) {
     width++;
-    s->width = width < 2 ? 2 : width;
+    s->width = MAX(2, width);
 }
 
 double noise_lin_next(struct noise_state *s, double freq) {
