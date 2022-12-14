@@ -147,6 +147,19 @@ synth_set_vol(lua_State *L)
 }
 
 static int
+synth_mul_vol(lua_State *L)
+{
+	const int chan = luaL_checkinteger(L, 1);
+	const double val = luaL_checknumber(L, 2);
+	if (chan < 0 || chan >= CHANNELS_MAX)
+		return luaL_error(L, "Wrong channel number");
+	MutexLock(mutex);
+	channels[chan].vol *= val;
+	MutexUnlock(mutex);
+	return 0;
+}
+
+static int
 synth_set_pan(lua_State *L)
 {
 	const int chan = luaL_checkinteger(L, 1);
@@ -219,6 +232,7 @@ synth_lib[] = {
 	{ "drop", synth_drop },
 	{ "on", synth_set_on },
 	{ "vol", synth_set_vol },
+	{ "mul_vol", synth_mul_vol },
 	{ "pan", synth_set_pan },
 	{ "change", synth_change },
 	{ "mix", synth_mix },

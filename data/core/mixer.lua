@@ -65,9 +65,18 @@ end
 function mixer.change()
   local r, e
   for i, v in ipairs(mixer.fn) do
-    if coroutine.status(v.fn) ~= 'dead' then
+    if coroutine.status(v.fn) ~= 'dead' and not v.dead then
       r, e = coroutine.resume(v.fn, table.unpack(v.args))
       if not r then error(e) end
+      if v.fadeout then
+        for _, c in ipairs(v.chans) do
+          synth.mul_vol(c, v.fadeout)
+        end
+        v.fadeout = v.fadeout - v.fade_delta
+        if v.fadeout <= 0 then
+          mixer.fn[i].dead = true
+        end
+      end
     else
       mixer.fn[i].dead = true
     end
@@ -119,6 +128,18 @@ end
 
 function mixer.req_new(nam, snd)
   return sfx.new(nam, snd)
+end
+
+function mixer.req_stop(id, fo)
+  local r = mixer.ids[id]
+  if not r then return false, "No such sfx" end
+  if not fo or fo == 0 then
+    r.dead = true
+    return true
+  end
+  r.fadeout = 1
+  r.fade_delta = mixer.freq / fo
+  return true
 end
 
 function mixer.req_reserve(nr)
@@ -180,6 +201,8 @@ function mixer.thread()
       mixer.answer(mixer.req_play(table.unpack(v)))
     elseif r == 'new' then
       mixer.answer(mixer.req_new(v, a))
+    elseif r == 'stop' then
+      mixer.answer(mixer.req_stop(v, a))
     elseif r == 'reserve' then
       mixer.answer(mixer.req_reserve(v))
     elseif r == 'voices' then
@@ -228,7 +251,7 @@ function mixer.volume(vol)
   return mixer.clireq("volume", vol)
 end
 
-function mixer.stop()
+function mixer.done()
   if not mixer.running then return end
   mixer.running = false
   if mixer.thr then
@@ -259,6 +282,10 @@ end
 
 function mixer.reserve(nr)
   return mixer.clireq("reserve", nr)
+end
+
+function mixer.stop(nr, fade)
+  return mixer.clireq("stop", nr, fade)
 end
 
 function mixer.init()
