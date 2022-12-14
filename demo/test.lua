@@ -50,76 +50,76 @@ local function showkeys()
   return t
 end
 
-function tune()
-  mixer.voices [[
-    voice snare
-    box synth
-    mode sin_rlnoise
-    amp 10000
-    width 10000
-    offset 0
-    decay 0.13
-    sustain 0
-    release 0
-    lfo_assign 0 freq
-    lfo_func 0 saw
-    lfo_freq 0 5
-    lfo_low 0 120
-    lfo_high 0 0
-    lfo_set_loop 0 0
-    lfo_assign 1 offset
-    lfo_func 1 saw
-    lfo_freq 1 5
-    lfo_low 1 10000
-    lfo_high 1 5000
-    lfo_set_loop 1 0
+mixer.voices [[
+  voice snare
+  box synth
+  mode sin_rlnoise
+  amp 10000
+  width 10000
+  offset 0
+  decay 0.13
+  sustain 0
+  release 0
+  lfo_assign 0 freq
+  lfo_func 0 saw
+  lfo_freq 0 5
+  lfo_low 0 120
+  lfo_high 0 0
+  lfo_set_loop 0 0
+  lfo_assign 1 offset
+  lfo_func 1 saw
+  lfo_freq 1 5
+  lfo_low 1 10000
+  lfo_high 1 5000
+  lfo_set_loop 1 0
 
-    voice bass
-    box synth
-    freq_mul 0.5
-    mode square
-    width 0
-    decay 0.2
-    sustain 0
-    release 0
-    volume 0.5
-    lfo_assign 0 freq
-    lfo_func 0 saw
-    lfo_freq 0 15
-    lfo_low 0 100
-    lfo_high 0 -100
-    lfo_set_loop 0 0
-    lfo_assign 1 width
-    lfo_func 1 saw
-    lfo_freq 1 15
-    lfo_low 1 0.5
-    lfo_high 1 -0.5
-    lfo_set_loop 1 0
+  voice bass
+  box synth
+  freq_mul 0.5
+  mode square
+  width 0
+  decay 0.2
+  sustain 0
+  release 0
+  volume 0.5
+  lfo_assign 0 freq
+  lfo_func 0 saw
+  lfo_freq 0 15
+  lfo_low 0 100
+  lfo_high 0 -100
+  lfo_set_loop 0 0
+  lfo_assign 1 width
+  lfo_func 1 saw
+  lfo_freq 1 15
+  lfo_low 1 0.5
+  lfo_high 1 -0.5
+  lfo_set_loop 1 0
 
-    voice square
-    box synth
-    mode square
-    set_glide 50
-    width 0.7
+  voice square
+  box synth
+  mode square
+  set_glide 50
+  width 0.7
 
-    voice saw
-    box synth
-    mode saw
-    attack 0.5
-    decay 0.5
-    sustain 0.5
-    box delay
-    volume 1
-    feedback 0.5
-    time 0.2
-    box dist
-    gain 1
-    box filter
-    mode lowpass
-    width 0.1
-    volume 1]]
+  voice saw
+  box synth
+  mode saw
+  attack 0.5
+  decay 0.5
+  sustain 0.5
+  box delay
+  volume 1
+  feedback 0.5
+  time 0.2
+  box dist
+  gain 1
+  box filter
+  mode lowpass
+  width 0.1
+  volume 1
+]]
 
-  local song = [[
+local song = [[
 @voice 1 bass
 @voice 2 snare
 @voice 3 square
@@ -193,12 +193,9 @@ C-2 80 | ... .. | D#4 .. | ... ..
 ... .. | ... .. | G-3 .. | ... ..
 ... .. | ... .. | D-4 45 | ... ..
 ]]
-  mixer.new('music', song)
-  mixer.play('music', 16, -1)
-end
-
 mixer.volume(0.5)
-tune()
+mixer.new('music', song)
+mixer.play('music', 16, -1)
 
 local s = gfx.new
 [[
