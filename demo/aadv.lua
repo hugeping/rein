@@ -60,8 +60,8 @@ lfo_set_lin_seq 0 1
 voice boom
 box synth
 # synth
-volume 0.5
-mode lnoise
+volume 0.6
+mode noise
 amp 1
 freq_mul 0
 width 3
