@@ -64,14 +64,23 @@ box synth
 volume 0.5
 mode lin_noise
 amp 1
-freq_mul 6
-width 6
+freq_mul 0
+width 3
 offset 0.5
 attack 0.01
-decay 0.05
+decay 0.1
 sustain 0.1
 release 0.1
 set_sustain 0
+set_glide 0
+glide_rate 0
+lfo_func 0 triangle
+lfo_freq 0 1.5
+lfo_low 0 13
+lfo_high 0 1
+lfo_set_loop 0 1
+lfo_set_reset 0 1
+lfo_assign 0 freq_mul
 
 voice flash
 box synth
