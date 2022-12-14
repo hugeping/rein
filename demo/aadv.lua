@@ -55,10 +55,10 @@ box synth
 # synth
 volume 0.25
 mode reso_noise
-amp 3000
+amp 1
 freq_mul 1
 width 3000
-offset 0
+offset 3000
 attack 0.01
 decay 0.1
 sustain 1
