@@ -183,6 +183,7 @@ while true do
     for i=1, THREADS do
       thr[i]:write 'quit'
     end
+    break
   end
 
   if r == 'keydown' and v == 'space' then
