@@ -168,6 +168,13 @@ local boxes = {
       choice = { 0, 1 },
       def = 0
     },
+    { 'remap_freq', synth.REMAP_FREQ,
+      choice = { 'amp', 'freq', 'freq_mul', 'width', 'offset' },
+      def = 'freq',
+      vals = { synth.LFO_TARGET_AMP, synth.LFO_TARGET_FREQ,
+        synth.LFO_TARGET_FREQ_MUL, synth.LFO_TARGET_WIDTH,
+        synth.LFO_TARGET_OFFSET },
+    },
   },
   { nam = 'dist',
     { "volume", synth.VOLUME, def = 0.5 },

@@ -247,7 +247,7 @@ static struct {
 	{ "AMP", ZV_AMP },
 	{ "WIDTH", ZV_WIDTH }, /* +fliter */
 	{ "OFFSET", ZV_OFFSET },
-	{ "REMAP", ZV_REMAP_FREQ },
+	{ "REMAP_FREQ", ZV_REMAP_FREQ },
 	{ "LFO_FUNC", ZV_LFO_FUNC },
 	{ "LFO_FREQ", ZV_LFO_FREQ },
 	{ "LFO_LOW", ZV_LFO_LOW },
