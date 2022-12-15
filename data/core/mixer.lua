@@ -145,7 +145,7 @@ function mixer.req_stop(id, fo)
 end
 
 function mixer.req_reserve(nr)
-  mixer.reserve = nr or 0
+  mixer.res = nr or 0
   return true
 end
 

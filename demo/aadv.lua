@@ -137,7 +137,7 @@ mode saw
 voice boom2
 box synth
 # synth
-volume 0.6
+volume 0.1
 mode rnoise
 amp 1
 freq_mul 0
