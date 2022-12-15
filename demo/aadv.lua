@@ -128,9 +128,35 @@ lfo_high 0 30000
 lfo_set_loop 0 1
 lfo_set_reset 0 1
 lfo_assign 0 offset
+
+voice saw
+box synth
+volume 0.5
+mode saw
 ]]
 
 snd.voices(__voices__)
+
+local over_mus = [[
+@temp 12
+@volume -1 0.8
+@voice 1 saw
+a-2 b6
+g-2 b6
+f-2 b6
+g-2 b6
+f-2 b6
+e-2 b6
+f-2 b6
+e-2 b6
+d-2 b6
+c-2 b6
+... b6
+... b6
+... b6
+]]
+
+mixer.voices(__voices__)
 
 local __spr__ = [[
 -123456789abcdef
@@ -419,7 +445,11 @@ function update_border()
     border(0)
   end
 end
-function music()
+
+function music(nr)
+  if nr == 0 then
+    mixer.play(over_mus, 1)
+  end
 end
 
 local flipsx = {}
@@ -583,7 +613,7 @@ function plu(p)
     end
     if p.restore==0 and planes==0 then
       gameover=1
-      -- music(0)
+      music(0)
     end
   end
   p.x = xnorm(p.x)
