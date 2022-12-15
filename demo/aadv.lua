@@ -321,34 +321,6 @@ lfo_low 0 0
 lfo_high 0 -260
 lfo_set_loop 0 0
 lfo_assign 0 freq
-
-voice saw
-box synth
-# synth
-volume 0.5
-mode sin
-amp 1
-freq_mul 1
-width 0.5
-offset 0.5
-attack 0.01
-decay 0.1
-sustain 0.5
-release 0.3
-set_sustain 0
-set_glide 0
-glide_rate 0
-lfo_func 0 zero
-lfo_freq 0 0
-lfo_low 0 0
-lfo_high 0 0
-lfo_set_loop 0 1
-lfo_set_reset 0 1
-lfo_assign 0 amp
-lfo_seq_pos 0 0
-lfo_seq_val 0 0
-lfo_seq_size 0 0
-lfo_set_lin_seq 0 0
 ]]
 
 snd.voices(__voices__)
@@ -356,7 +328,7 @@ snd.voices(__voices__)
 local over_mus = [[
 @temp 12
 @volume -1 0.5
-@voice 1 saw
+@voice 1 violin
 a-2 b6
 g-2 b6
 f-2 b6
