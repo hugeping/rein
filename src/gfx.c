@@ -217,8 +217,8 @@ static int
 pixels_value(lua_State *L)
 {
 	struct lua_pixels *hdr = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
-	int x = luaL_optinteger(L, 2, -1);
-	int y = luaL_optinteger(L, 3, -1);
+	int x = luaL_optnumber(L, 2, -1);
+	int y = luaL_optnumber(L, 3, -1);
 	color_t col;
 	int get = 0;
 	unsigned char *ptr;
@@ -1760,10 +1760,10 @@ pixels_stretch(lua_State *L)
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
 	dst = (struct lua_pixels*)luaL_checkudata(L, 2, "pixels metatable");
 
-	x = luaL_optinteger(L, 3, 0);
-	y = luaL_optinteger(L, 4, 0);
-	w = luaL_optinteger(L, 5, -1);
-	h = luaL_optinteger(L, 6, -1);
+	x = luaL_optnumber(L, 3, 0);
+	y = luaL_optnumber(L, 4, 0);
+	w = luaL_optnumber(L, 5, -1);
+	h = luaL_optnumber(L, 6, -1);
 
 	img_pixels_stretch(&src->img, &dst->img, x, y, w, h);
 	return 0;
