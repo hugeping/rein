@@ -737,7 +737,11 @@ function buff:keydown(k)
     s:exec("sprited", 'data.spr')
   elseif k == 'f9' then
     os.remove('voices.syn')
-    s:export ('__voices__', 'voices.syn')
+    if not s:selected() then
+      s:export ('__voices__', 'voices.syn')
+    else
+      s:writesel('voices.syn')
+    end
     idle_mode = 'voices'
     s:exec("voiced", 'voices.syn')
   elseif k == 'f5' then
@@ -876,7 +880,11 @@ while true do
     sys.input(true) -- clear input
     gfx.win(W, H)
     if idle_mode == 'voices' then
-      b:import('__voices__', 'voices.syn')
+      if not b:selected() then
+        b:import('__voices__', 'voices.syn')
+      else
+        b:readsel('voices.syn')
+      end
     elseif idle_mode == 'spr' then
       if not b:selected() then
         b:import('__spr__', 'data.spr')

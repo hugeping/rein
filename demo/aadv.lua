@@ -133,6 +133,60 @@ voice saw
 box synth
 volume 0.5
 mode saw
+
+voice boom2
+box synth
+# synth
+volume 0.6
+mode rnoise
+amp 1
+freq_mul 0
+width 20000
+offset 10000
+attack 0.01
+decay 0.1
+sustain 0.3
+release 0.2
+set_sustain 0
+set_glide 0
+glide_rate 0
+lfo_func 0 square
+lfo_freq 0 3
+lfo_low 0 3
+lfo_high 0 0
+lfo_set_loop 0 1
+lfo_set_reset 0 1
+lfo_assign 0 amp
+
+voice takedown
+box synth
+# synth
+volume 0.5
+mode saw
+amp 1
+freq_mul 1
+width 0.5
+offset 0.5
+attack 0.01
+decay 0.01
+sustain 0.4
+release 0.1
+set_sustain 0
+set_glide 0
+glide_rate 0
+lfo_func 0 saw
+lfo_freq 0 10
+lfo_low 0 200
+lfo_high 0 800
+lfo_set_loop 0 0
+lfo_set_reset 0 1
+lfo_assign 0 freq
+
+lfo_func 1 sin
+lfo_freq 1 100
+lfo_low 1 0
+lfo_high 1 0.5
+lfo_assign 1 freq_mul
 ]]
 
 snd.voices(__voices__)
@@ -398,18 +452,16 @@ end
 local border_nr = false
 
 mixer.reserve(8)
-synth.on(1, true)
-synth.on(2, true)
-synth.on(3, true)
-synth.on(4, true)
-synth.vol(1, 1)
-synth.vol(2, 1)
-synth.vol(3, 1)
-synth.vol(4, 1)
+for i=1, 6 do
+  synth.on(i, true)
+  synth.vol(i, 1)
+end
 snd.apply(1, 'engine')
 snd.apply(2, 'boom')
 snd.apply(3, 'flash')
 snd.apply(4, 'water')
+snd.apply(5, 'boom2')
+snd.apply(6, 'takedown')
 
 function engine()
   if plane.t <= 0.5 or plane.sink==1 or plane.stp then
@@ -424,7 +476,15 @@ function sfx(nr)
   end
   if nr == 1 or nr == 2 then
     border_nr = 1
-    synth.change(2, 0, synth.NOTE_ON, 320)
+    if nr == 1 then
+      synth.change(2, 0, synth.NOTE_ON, 320)
+    else
+      synth.change(5, 0, synth.NOTE_ON, 320)
+    end
+    return
+  end
+  if nr == 3 then
+    synth.change(6, 0, synth.NOTE_ON, 160)
     return
   end
   if nr == 4 then
