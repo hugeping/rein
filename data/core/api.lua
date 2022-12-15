@@ -74,31 +74,7 @@ local env = {
 
 env._G = env
 
-local mods = {}
-
-local function make_require(n, env)
-  if setfenv then
-    setfenv(0, env)
-  else
-    if mods[n] then
-      return mods[n]
-    end
-    local name = DATADIR..'/lib/'..n..'.lua'
-    local f = io.open(name, "r")
-    if f then
-      f:close()
-      mods[n] = env.dofile(name)
-    else
-      mods[n] = env.dofile(n..'.lua')
-    end
-    return mods[n]
-  end
-  return require(n)
-end
-
-function env.require(n)
-  return make_require(n, env)
-end
+env.__mods_loaded__ = {}
 
 local function make_dofile(n, env)
   if setfenv then
@@ -111,6 +87,31 @@ local function make_dofile(n, env)
     return r()
   end
   return dofile(n)
+end
+
+local function make_require(n, env)
+  if setfenv and false then
+    setfenv(0, env)
+  else
+    local mods = env.__mods_loaded__
+    if mods[n] then
+      return mods[n]
+    end
+    local name = DATADIR..'/lib/'..n..'.lua'
+    local f = io.open(name, "r")
+    if f then
+      f:close()
+      mods[n] = make_dofile(name, env)
+    else
+      mods[n] = make_dofile(n..'.lua', env)
+    end
+    return mods[n]
+  end
+  return require(n)
+end
+
+function env.require(n)
+  return make_require(n, env)
 end
 
 function env.dofile(n)
@@ -492,7 +493,8 @@ end
 
 function env_ro.sys.exec(fn, ...)
   local newenv = {
-    ARGS = { fn, ... }
+    ARGS = { fn, ... },
+    __mods_loaded__ = {},
   }
   newenv.dofile = function(f) return make_dofile(f, newenv) end
   newenv.require = function(f) return make_require(f, newenv) end

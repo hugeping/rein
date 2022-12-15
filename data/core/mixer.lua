@@ -258,6 +258,7 @@ function mixer.done()
   mixer.running = false
   if mixer.thr then
     mixer.clireq 'quit'
+    mixer.thr:wait()
   end
   core.stop(mixer.co)
 end
