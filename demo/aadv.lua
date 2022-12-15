@@ -249,9 +249,9 @@ lfo_set_lin_seq 0 0
 box delay
 # delay
 volume 1
-time 0.5
-level 0.25
-feedback 0.3
+time 0.3
+level 0.1
+feedback 0.2
 
 voice bass
 box synth
@@ -281,6 +281,7 @@ mode sin_rlnoise
 amp 10000
 width 10000
 offset 0
+freq_mul 0.3
 decay 0.13
 sustain 0
 release 0
@@ -1776,11 +1777,11 @@ end
 local main_mus = [[
 @volume -1 0.25
 @voice 1 square
-@volume 2 0.15
+@volume 2 0.10
 @voice 2 violin
 @volume 3 0.4
 @voice 3 bass
-@volume 4 0.4
+@volume 4 0.2
 @voice 4 zip
 @temp 11
 c-3 91 | ... .. | ... .. | ... ..
