@@ -36,8 +36,8 @@ function mixer.get_channels(nr)
   return free
 end
 
-function mixer.apply_voice(chan, voice)
-  sfx.apply_voice(chan, voice)
+function mixer.apply(chan, voice)
+  sfx.apply(chan, voice)
 end
 
 function mixer.req_nextid()
