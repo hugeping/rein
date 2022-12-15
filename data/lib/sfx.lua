@@ -146,7 +146,7 @@ function sfx.proc.play(chans, mus, song)
 end
 
 function sfx.proc.voice(chans, mus,...)
-  sfx.apply_voice(...)
+  sfx.apply(...)
 end
 
 function sfx.proc.pan(chans, mus,...)
@@ -482,7 +482,7 @@ function sfx.voices(voices)
   return true
 end
 
-function sfx.apply_voice(chan, voice)
+function sfx.apply(chan, voice)
   local vo = sfx.voices_bank[voice]
   if not vo then
     error("Unknown voice: "..tostring(voice), 2)
