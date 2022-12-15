@@ -75,7 +75,8 @@ local env = {
 env._G = env
 
 local mods = {}
-function env.require(n)
+
+local function make_require(n, env)
   if setfenv then
     setfenv(0, env)
   else
@@ -95,7 +96,11 @@ function env.require(n)
   return require(n)
 end
 
-function env.dofile(n)
+function env.require(n)
+  return make_require(n, env)
+end
+
+local function make_dofile(n, env)
   if setfenv then
     setfenv(0, env)
   else
@@ -107,6 +112,11 @@ function env.dofile(n)
   end
   return dofile(n)
 end
+
+function env.dofile(n)
+  return make_dofile(n, env)
+end
+
 local thread = thread or {}
 function thread.start(code)
   local r, e, c
@@ -484,6 +494,8 @@ function env_ro.sys.exec(fn, ...)
   local newenv = {
     ARGS = { fn, ... }
   }
+  newenv.dofile = function(f) return make_dofile(f, newenv) end
+  newenv.require = function(f) return make_require(f, newenv) end
   rawset(env, '__index', env)
   setmetatable(newenv, env)
   local r, e = core.go(fn, newenv)
