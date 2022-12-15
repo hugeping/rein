@@ -150,7 +150,7 @@ release 0.2
 set_sustain 0
 set_glide 0
 glide_rate 0
-lfo_func 0 square
+lfo_func 0 saw
 lfo_freq 0 2
 lfo_low 0 3
 lfo_high 0 0
