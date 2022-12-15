@@ -4,7 +4,7 @@ local mixer = require "mixer"
 local bit = require "bit"
 local dump = require "dump"
 local utf = require "utf"
-
+local THREADED = not not thread
 local core
 
 local input = {
@@ -406,7 +406,9 @@ function env.sys.sleep(to, interrupt)
     if left <= 0 then
       break
     end
-    if not sys.wait(left) then
+    if not THREADED and left > 1/50 then
+      sys.wait(1/50)
+    elseif not sys.wait(left) then
       break
     end
   until interrupt
