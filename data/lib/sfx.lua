@@ -25,6 +25,9 @@ function sfx.get_midi_note(m)
 end
 
 function sfx.get_note(name)
+  if name:find("[=]+") then
+    return 0
+  end
   local n, o = name:sub(1, 2):lower(), tonumber(name:sub(3))
   return sfx.get_midi_note(NOTES[n] + 12 * (o + 2))
 end
@@ -182,7 +185,11 @@ function sfx.play_song_once(chans, tracks, temp)
     for i, r in ipairs(row) do
       local freq, vol = r[1], r[2]
       if freq then
-        synth.change(chans[i], 0, synth.NOTE_ON, freq)
+        if freq == 0 then
+          synth.change(chans[i], 0, synth.NOTE_OFF, 0)
+        else
+          synth.change(chans[i], 0, synth.NOTE_ON, freq)
+        end
       end
       if vol then
         synth.change(chans[i], 0, synth.VOLUME, vol/255)
