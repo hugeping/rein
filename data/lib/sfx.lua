@@ -174,7 +174,10 @@ end
 
 function sfx.play_song_once(chans, tracks, temp)
   tracks.temp = temp
-  for _, row in ipairs(tracks) do
+  local row
+  tracks.row = 1
+  while tracks.row <= #tracks do
+    row = tracks[tracks.row]
     sfx.proc_cmd(chans, tracks, row.cmd)
     for i, r in ipairs(row) do
       local freq, vol = r[1], r[2]
@@ -190,6 +193,7 @@ function sfx.play_song_once(chans, tracks, temp)
         coroutine.yield()
       end
     end
+    tracks.row = tracks.row + 1
   end
 end
 
