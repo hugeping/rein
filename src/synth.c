@@ -83,6 +83,30 @@ synth_change(lua_State *L)
 	return 0;
 }
 
+#if 0
+static int
+synth_peek(lua_State *L)
+{
+	const int chan = luaL_checkinteger(L, 1);
+	int nr = luaL_checkinteger(L, 2);
+	struct sfx_box *box;
+
+	if (chan < 0 || chan >= CHANNELS_MAX)
+		return 0;
+
+	MutexLock(mutex);
+	if (nr < 0)
+		nr = channels[chan].stack_size + nr;
+	if (nr < 0 || nr >= channels[chan].stack_size) {
+		MutexUnlock(mutex);
+		return 0;
+	}
+	box = &channels[chan].stack[nr];
+	lua_pushstring(L, box->proto->name);
+	MutexUnlock(mutex);
+	return 1;
+}
+#endif
 static int
 synth_push(lua_State *L)
 {
@@ -235,6 +259,7 @@ synth_lib[] = {
 	{ "mul_vol", synth_mul_vol },
 	{ "pan", synth_set_pan },
 	{ "change", synth_change },
+//	{ "peek", synth_peek },
 	{ "mix", synth_mix },
 	{ "stop", synth_stop },
 	{ NULL, NULL }
