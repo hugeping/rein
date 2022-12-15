@@ -47,6 +47,12 @@ function sfx.parse_cmd(cmd, mus)
   elseif cmd[1] == '@temp' then
     ret.args = { tonumber(cmd[2]) or 1 }
     return ret
+  elseif cmd[1] == '@push' then
+    ret.args = { tonumber(cmd[2]) or -1 }
+    return ret
+  elseif cmd[1] == '@pop' then
+    ret.args = { }
+    return ret
   end
   local chan = tonumber(cmd[2])
   if not chan then
@@ -144,6 +150,18 @@ end
 
 sfx.proc = {}
 
+function sfx.proc.push(chans, mus, nr)
+  if not mus.stack then mus.stack = {} end
+  table.insert(mus.stack, 1, { mus.row + 1, nr } )
+end
+
+function sfx.proc.pop(chans, mus)
+  local r = mus.stack and mus.stack[1]
+  if not r or r[2] == 0 then return end
+  mus.row = r[1]
+  if r[2] and r[2] > 0 then r[2] = r[2] - 1 end
+end
+
 function sfx.proc.play(chans, mus, song)
   sfx.play_song(chans, sfx.sfx_bank[song], mus.temp)
 end
@@ -182,6 +200,7 @@ function sfx.play_song_once(chans, tracks, temp)
   while tracks.row <= #tracks do
     row = tracks[tracks.row]
     sfx.proc_cmd(chans, tracks, row.cmd)
+    row = tracks[tracks.row]
     for i, r in ipairs(row) do
       local freq, vol = r[1], r[2]
       if freq then
