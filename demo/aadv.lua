@@ -1781,7 +1781,7 @@ local main_mus = [[
 @voice 2 violin
 @volume 3 0.4
 @voice 3 bass
-@volume 4 0.2
+@volume 4 0.1
 @voice 4 zip
 @temp 11
 c-3 91 | ... .. | ... .. | ... ..
