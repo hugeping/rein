@@ -151,7 +151,7 @@ set_sustain 0
 set_glide 0
 glide_rate 0
 lfo_func 0 square
-lfo_freq 0 3
+lfo_freq 0 2
 lfo_low 0 3
 lfo_high 0 0
 lfo_set_loop 0 1
@@ -479,7 +479,7 @@ function sfx(nr)
     if nr == 1 then
       synth.change(2, 0, synth.NOTE_ON, 320)
     else
-      synth.change(5, 0, synth.NOTE_ON, 320)
+      synth.change(5, 0, synth.NOTE_ON, 100)
     end
     return
   end
