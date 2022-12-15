@@ -406,8 +406,8 @@ function env.sys.sleep(to, interrupt)
     if left <= 0 then
       break
     end
-    if not THREADED and left > 1/50 then
-      sys.wait(1/50)
+    if not THREADED and left > 1/100 then
+      sys.wait(1/100)
     elseif not sys.wait(left) then
       break
     end
