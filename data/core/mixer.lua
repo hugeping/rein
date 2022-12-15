@@ -30,6 +30,8 @@ function mixer.get_channels(nr)
   end
   for _, c in ipairs(free) do
     mixer.chans[c] = true
+    synth.on(c, true)
+    synth.vol(c, 0.5)
   end
   return free
 end
@@ -44,7 +46,6 @@ function mixer.req_nextid()
   end
 end
 
-
 function mixer.free_channels(chans)
   if not chans then
     for i=mixer.res + 1, mixer.chans.size do
@@ -54,6 +55,7 @@ function mixer.free_channels(chans)
   end
   for _, c in ipairs(chans) do
     mixer.chans[c] = false
+    synth.on(c, false)
   end
 end
 
@@ -101,7 +103,7 @@ function mixer.proc(tick)
   until tick == 0
 end
 
-function mixer.req_play(text, temp, nr)
+function mixer.req_play(text, nr, temp)
   local song, e = sfx.parse_song(text)
   if not song then
     return false, e

@@ -120,6 +120,7 @@ mixer.voices [[
 ]]
 
 local song = [[
+@temp 16
 @voice 1 bass
 @voice 2 snare
 @voice 3 square
@@ -195,7 +196,7 @@ C-2 80 | ... .. | D#4 .. | ... ..
 ]]
 mixer.volume(0.5)
 mixer.new('music', song)
-mixer.play('music', 16, -1)
+mixer.play('music', -1)
 
 local s = gfx.new
 [[

@@ -29,7 +29,42 @@ function sfx.get_note(name)
   return sfx.get_midi_note(NOTES[n] + 12 * (o + 2))
 end
 
-function sfx.parse_data(text)
+function sfx.parse_cmd(cmd, mus)
+  cmd = cmd:split()
+  local ret = {}
+  ret.fn = cmd[1]:sub(2):strip()
+  if cmd[1] == '@play' then
+    local song = sfx.sfx_bank[cmd[2]]
+    if not song then
+      return false, "No such sfx: "..tostring(cmd[2])
+    end
+    if song.tracks > mus.tracks then mus.tracks = song.tracks end
+    ret.args = { cmd[2] }
+    return ret
+  elseif cmd[1] == '@temp' then
+    ret.args = { tonumber(cmd[2]) or 1 }
+    return ret
+  end
+  local chan = tonumber(cmd[2])
+  if not chan then
+    return false, "No channel arg in command: "..tostring(cmd[1])
+  end
+  ret.chan = chan
+  if cmd[1] == '@voice' then
+    local voice = cmd[3]
+    ret.args = { voice }
+  elseif cmd[1] == '@pan' then
+    local pan = tonumber(cmd[3]) or 0
+    ret.args = { pan }
+  elseif cmd[1] == '@volume' then
+    ret.args = { tonumber(cmd[3]) or 0 }
+  else
+    return false, "Wrong command: "..tostring(cmd[1])
+  end
+  return ret
+end
+
+function sfx.parse_data(text, mus)
   local cols = text:split(" ")
   local data = { not cols[1]:startswith "." and sfx.get_note(cols[1])
              or false }
@@ -40,14 +75,22 @@ function sfx.parse_data(text)
   return data
 end
 
-function sfx.parse_row(text)
+function sfx.parse_row(text, mus)
   local ret = {}
+  local r, e
   if text:startswith("@") then -- directive
-    ret.cmd = text:split()
+    r, e = sfx.parse_cmd(text, mus)
+    if not r then
+      return r, e
+    end
+    ret.cmd = r
     return ret
   end
   for _, v in ipairs(text:split("|")) do
-    v = sfx.parse_data(v:strip())
+    v, e = sfx.parse_data(v:strip(), mus)
+    if not v then
+      return v, e
+    end
     table.insert(ret, v)
   end
   return ret
@@ -64,7 +107,10 @@ function sfx.parse_song(text)
   local ret = { tracks = 0 }
   text = text:strip()
   for row in text:lines() do
-    local r = sfx.parse_row(row:strip())
+    local r, e = sfx.parse_row(row:strip(), ret)
+    if not r then
+      return r, e
+    end
     table.insert(ret, r)
     ret.tracks = #r > ret.tracks and #r or ret.tracks
   end
@@ -86,40 +132,50 @@ function sfx.new(nam, song)
 end
 
 local function chan_par(chans, ch)
-  ch = tonumber(ch) or 1
+  ch = ch or 1
   if ch ~= -1 then
     return { chans[ch] or 0 }
   end
   return chans
 end
 
-function sfx.proc_cmd(chans, cmd)
-  if not cmd or #cmd == 0 then return end
-  if cmd[1] == '@voice' then
-    local voice = cmd[3]
-    for _, c in ipairs(chan_par(chans, cmd[2])) do
-      sfx.apply_voice(c, voice)
-    end
-  elseif cmd[1] == '@pan' then
-    for _, c in ipairs(chan_par(chans, cmd[2])) do
-      synth.pan(c, tonumber(cmd[3]) or 0)
-    end
-  elseif cmd[1] == '@volume' then
-    for _, c in ipairs(chan_par(chans, cmd[2])) do
-      synth.vol(c, tonumber(cmd[3]) or 0)
-    end
-  else
-    error("Wrong command: "..tostring(cmd[1]), 2)
+sfx.proc = {}
+
+function sfx.proc.play(chans, mus, song)
+  sfx.play_song(chans, sfx.sfx_bank[song], mus.temp)
+end
+
+function sfx.proc.voice(chans, mus,...)
+  sfx.apply_voice(...)
+end
+
+function sfx.proc.pan(chans, mus,...)
+  synth.pan(...)
+end
+
+function sfx.proc.volume(chans, mus, ...)
+  synth.vol(...)
+end
+
+function sfx.proc.temp(chans, mus, temp)
+  mus.temp = temp
+end
+
+function sfx.proc_cmd(chans, mus, cmd)
+  if not cmd then return end
+  if not cmd.chan then
+    sfx.proc[cmd.fn](chans, mus, table.unpack(cmd.args))
+    return
+  end
+  for _, c in ipairs(chan_par(chans, cmd.chan)) do
+    sfx.proc[cmd.fn](chans, mus, c, table.unpack(cmd.args))
   end
 end
 
 function sfx.play_song_once(chans, tracks, temp)
-  for i, c in ipairs(chans) do
-    synth.on(c, true)
-    synth.vol(c, 0.5)
-  end
+  tracks.temp = temp
   for _, row in ipairs(tracks) do
-    sfx.proc_cmd(chans, row.cmd)
+    sfx.proc_cmd(chans, tracks, row.cmd)
     for i, r in ipairs(row) do
       local freq, vol = r[1], r[2]
       if freq then
@@ -130,7 +186,7 @@ function sfx.play_song_once(chans, tracks, temp)
       end
     end
     if #row > 0 then
-      for i = 1, temp do
+      for i = 1, tracks.temp do
         coroutine.yield()
       end
     end
@@ -139,6 +195,7 @@ end
 
 function sfx.play_song(chans, tracks, temp, nr)
   nr = nr or 1
+  temp = temp or 1
   while nr == -1 or nr > 0 do
     if nr ~= -1 then nr = nr - 1 end
     sfx.play_song_once(chans, tracks, temp)
