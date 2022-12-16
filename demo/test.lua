@@ -51,59 +51,62 @@ local function showkeys()
 end
 
 mixer.voices [[
-  voice snare
-  box synth
-  mode sin_rlnoise
-  amp 10000
-  width 10000
-  offset 0
-  decay 0.13
-  sustain 0
-  release 0
-  lfo_assign 0 freq
-  lfo_func 0 saw
-  lfo_freq 0 5
-  lfo_low 0 120
-  lfo_high 0 0
-  lfo_set_loop 0 0
-  lfo_assign 1 offset
-  lfo_func 1 saw
-  lfo_freq 1 5
-  lfo_low 1 10000
-  lfo_high 1 5000
-  lfo_set_loop 1 0
-
   voice bass
   box synth
-  freq_mul 0.5
-  mode square
+  fmul 0.5
+  type square
   width 0
   decay 0.2
   sustain 0
-  release 0
+  release 0.01
   volume 0.5
   lfo_assign 0 freq
-  lfo_func 0 saw
+  lfo_type 0 saw
   lfo_freq 0 15
   lfo_low 0 100
   lfo_high 0 -100
   lfo_set_loop 0 0
   lfo_assign 1 width
-  lfo_func 1 saw
+  lfo_type 1 saw
   lfo_freq 1 15
   lfo_low 1 0.5
   lfo_high 1 -0.5
   lfo_set_loop 1 0
 
+  voice snare
+  box synth
+  type sin_band_noise
+  set_lin 1
+  amp 1
+  offset 10000
+  width 10000
+  fmul 0.4
+  decay 0.15
+  sustain 0
+  release 0
+  remap freq freq2
+  lfo_assign 0 freq2
+  lfo_type 0 saw
+  lfo_freq 0 5
+  lfo_low 0 150
+  lfo_high 0 0
+  lfo_set_loop 0 0
+  lfo_assign 1 freq
+  lfo_type 1 saw
+  lfo_freq 1 5
+  lfo_low 1 10000
+  lfo_high 1 5000
+  lfo_set_loop 1 0
+
   voice square
   box synth
-  mode square
+  type square
   set_glide 50
   width 0.7
 
   voice saw
   box synth
-  mode saw
+  type saw
   attack 0.5
   decay 0.5
   sustain 0.5
@@ -114,7 +117,7 @@ mixer.voices [[
   box dist
   gain 1
   box filter
-  mode lowpass
+  type lowpass
   width 0.1
   volume 1
 ]]

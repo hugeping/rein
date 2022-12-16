@@ -55,6 +55,7 @@ function mixer.free_channels(chans)
   end
   for _, c in ipairs(chans) do
     mixer.chans[c] = false
+    synth.drop(c)
     synth.on(c, false)
   end
 end

@@ -28,11 +28,11 @@ voice engine
 box synth
 # synth
 volume 0.25
-mode rnoise
+type band_noise
 amp 0
-freq_mul 1
-width 20000
-offset 10000
+fmul 1
+offset 20000
+width 10000
 
 attack 0.01
 decay 0.5
@@ -43,7 +43,7 @@ set_sustain 1
 set_glide 0
 glide_rate 0
 
-lfo_func 0 seq
+lfo_type 0 seq
 lfo_freq 0 100
 lfo_low 0 0
 lfo_high 0 1
@@ -61,11 +61,11 @@ voice boom
 box synth
 # synth
 volume 0.6
-mode noise
+type noise
 amp 1
-freq_mul 0
-width 3
-offset 0.5
+fmul 0
+offset 3
+width 0.5
 attack 0.01
 decay 0.1
 sustain 0.1
@@ -73,23 +73,23 @@ release 0.1
 set_sustain 0
 set_glide 0
 glide_rate 0
-lfo_func 0 triangle
+lfo_type 0 triangle
 lfo_freq 0 1.5
 lfo_low 0 13
 lfo_high 0 1
 lfo_set_loop 0 1
 lfo_set_reset 0 1
-lfo_assign 0 freq_mul
+lfo_assign 0 fmul
 
 voice flash
 box synth
 # synth
 volume 0.25
-mode rnoise
+type band_noise
 amp 1
-freq_mul 1
-width 3000
+fmul 1
 offset 3000
+width 3000
 attack 0.01
 decay 0.1
 sustain 1
@@ -97,7 +97,7 @@ release 1
 set_sustain 0
 set_glide 0
 glide_rate 0
-lfo_func 0 triangle
+lfo_type 0 triangle
 lfo_freq 0 1.5
 lfo_low 0 2000
 lfo_high 0 1000
@@ -109,11 +109,11 @@ voice water
 box synth
 # synth
 volume 0.5
-mode rnoise
+type band_noise
 amp 1
-freq_mul 1
-width 20000
-offset 0
+fmul 1
+offset 20000
+width 0
 attack 0.01
 decay 0.05
 sustain 0.7
@@ -121,22 +121,22 @@ release 0.9
 set_sustain 0
 set_glide 0
 glide_rate 0
-lfo_func 0 triangle
+lfo_type 0 triangle
 lfo_freq 0 1
 lfo_low 0 200000
 lfo_high 0 30000
 lfo_set_loop 0 1
 lfo_set_reset 0 1
-lfo_assign 0 offset
+lfo_assign 0 width
 
 voice square
 box synth
 # synth
 volume 0.5
-mode square
+type square
 
 amp 1
-freq_mul 1
+fmul 1
 width 0
 offset 3.5
 
@@ -146,14 +146,14 @@ sustain 0.5
 release 0.01
 set_sustain 1
 
-lfo_func 0 triangle
+lfo_type 0 triangle
 lfo_freq 0 6
 lfo_low 0 -0.01
 lfo_high 0 0.01
 lfo_set_loop 0 1
-lfo_assign 0 freq_mul
+lfo_assign 0 fmul
 
-lfo_func 1 saw
+lfo_type 1 saw
 lfo_freq 1 35
 lfo_low 1 0.6
 lfo_high 1 0.5
@@ -164,11 +164,11 @@ voice boom2
 box synth
 # synth
 volume 0.1
-mode rnoise
+type band_noise
 amp 1
-freq_mul 0
-width 20000
-offset 10000
+fmul 0
+offset 20000
+width 10000
 attack 0.01
 decay 0.1
 sustain 0.3
@@ -176,7 +176,7 @@ release 0.2
 set_sustain 0
 set_glide 0
 glide_rate 0
-lfo_func 0 saw
+lfo_type 0 saw
 lfo_freq 0 2
 lfo_low 0 3
 lfo_high 0 0
@@ -188,9 +188,9 @@ voice takedown
 box synth
 # synth
 volume 0.5
-mode saw
+type saw
 amp 1
-freq_mul 1
+fmul 1
 width 0.5
 offset 0.5
 attack 0.01
@@ -200,7 +200,7 @@ release 0.1
 set_sustain 0
 set_glide 0
 glide_rate 0
-lfo_func 0 saw
+lfo_type 0 saw
 lfo_freq 0 10
 lfo_low 0 200
 lfo_high 0 800
@@ -208,19 +208,19 @@ lfo_set_loop 0 0
 lfo_set_reset 0 1
 lfo_assign 0 freq
 
-lfo_func 1 sin
+lfo_type 1 sin
 lfo_freq 1 100
 lfo_low 1 0
 lfo_high 1 0.5
-lfo_assign 1 freq_mul
+lfo_assign 1 fmul
 
 voice violin
 box synth
 # synth
 volume 0.1
-mode saw
+type saw
 amp 1
-freq_mul 1
+fmul 1
 width 0.75
 offset 0.5
 
@@ -233,13 +233,13 @@ set_sustain 1
 set_glide 0
 glide_rate 0
 
-lfo_func 0 triangle
+lfo_type 0 triangle
 lfo_freq 0 5
 lfo_low 0 -0.007
 lfo_high 0 0.007
 lfo_set_loop 0 1
 lfo_set_reset 0 1
-lfo_assign 0 freq_mul
+lfo_assign 0 fmul
 
 lfo_seq_pos 0 0
 lfo_seq_val 0 0
@@ -255,21 +255,21 @@ feedback 0.2
 
 voice bass
 box synth
-freq_mul 0.5
-mode square
+fmul 0.5
+type square
 width 0
 decay 0.2
 sustain 0
 release 0.01
 volume 0.5
 lfo_assign 0 freq
-lfo_func 0 saw
+lfo_type 0 saw
 lfo_freq 0 15
 lfo_low 0 100
 lfo_high 0 -100
 lfo_set_loop 0 0
 lfo_assign 1 width
-lfo_func 1 saw
+lfo_type 1 saw
 lfo_freq 1 15
 lfo_low 1 0.5
 lfo_high 1 -0.5
@@ -277,35 +277,38 @@ lfo_set_loop 1 0
 
 voice snare
 box synth
-mode sin_rlnoise
-amp 10000
+type band_noise
+set_lin 1
+amp 1
+offset 10000
 width 10000
-offset 0
-freq_mul 0.3
-decay 0.13
+fmul 0.4
+decay 0.15
 sustain 0
 release 0
-lfo_assign 0 freq
-lfo_func 0 saw
+remap freq freq2
+lfo_assign 0 freq2
+lfo_type 0 saw
 lfo_freq 0 5
-lfo_low 0 120
+lfo_low 0 150
 lfo_high 0 0
 lfo_set_loop 0 0
-lfo_assign 1 offset
-lfo_func 1 saw
+lfo_assign 1 freq
+lfo_type 1 saw
 lfo_freq 1 5
 lfo_low 1 10000
 lfo_high 1 5000
 lfo_set_loop 1 0
 
+
 voice zip
 box synth
 # synth
 volume 0.5
-mode saw
+type saw
 
 amp 1
-freq_mul 1
+fmul 1
 width 0.9
 offset 0
 
@@ -315,7 +318,7 @@ sustain 0.5
 release 0.001
 set_sustain 0
 
-lfo_func 0 saw
+lfo_type 0 saw
 lfo_freq 0 8
 lfo_low 0 0
 lfo_high 0 -260
@@ -327,7 +330,7 @@ snd.voices(__voices__)
 
 local over_mus = [[
 @temp 12
-@volume -1 0.5
+@volume -1 0.3
 @voice 1 violin
 a-2 b6
 g-2 b6
@@ -339,9 +342,9 @@ f-2 b6
 e-2 b6
 d-2 b6
 c-2 b6
-... b6
-... b6
-... b6
+... 96
+=== ..
+=== ..
 ]]
 
 mixer.voices(__voices__)
