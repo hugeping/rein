@@ -132,8 +132,8 @@ end
 function sfx.new(nam, song)
   local snd = song
   local e
-  if type(song) == 'text' then
-    snd, e = sfx.parse_song(text)
+  if type(song) == 'string' then
+    snd, e = sfx.parse_song(song)
     if not snd then return snd, e end
   end
   sfx.sfx_bank[nam] = snd
@@ -353,12 +353,24 @@ local function par_lookup(info, nam)
   end
 end
 
-local function par_array(array, par)
-  for _, v in ipairs(array) do
-    if v == par then
+local function par_array(p, par)
+  for idx, v in ipairs(p.array) do
+    if v == par or v == tonumber(par) then
+      if p.array_vals then
+        return p.array_vals[idx]
+      end
       return v
     end
   end
+end
+
+local function elem_help(par)
+  local help = ''
+  for _, v in ipairs(par.array) do
+    if help ~= '' then help = help .. ',' end
+    help = help .. tostring(v)
+  end
+  return help
 end
 
 local function par_help(par)
@@ -417,9 +429,9 @@ function sfx.compile_par(nam, l)
     end
     table.insert(cmd, p[2])
     if p.array then
-      local elem = par_array(p.array, tonumber(a[2]))
+      local elem = par_array(p, a[2])
       if not elem then
-        return false, string.format("Element:%s", a[2])
+        return false, string.format("Element:%s\nHelp:%s", a[2], elem_help(p))
       end
       table.insert(cmd, elem)
       table.remove(a, 2)
@@ -449,9 +461,6 @@ function sfx.compile_box(nam, text)
   end
   return res
 end
-
-local voices = {}
-voices.__index = voices
 
 function sfx.parse_voices(text)
   local box
