@@ -269,18 +269,18 @@ local boxes = {
         'freq', 'fmul', 'width', 'offset', 'set_lin', 'freq2',
       },
       array_vals = {
-        synth.FREQ, synth.FMUL,
-        synth.WIDTH, synth.OFFSET,
-        synth.SET_LIN, synth.FREQ2
+        synth.OSC_FREQ, synth.OSC_FMUL,
+        synth.OSC_WIDTH, synth.OSC_OFFSET,
+        synth.OSC_SET_LIN, synth.OSC_FREQ2
       },
       def = 'freq',
       choice = {
         'freq', 'fmul', 'amp', 'width', 'offset', 'set_lin', 'freq2'
       },
       vals = {
-        synth.FREQ, synth.FMUL,
-        synth.WIDTH, synth.OFFSET,
-        synth.SET_LIN, synth.FREQ2
+        synth.OSC_FREQ, synth.OSC_FMUL,
+        synth.OSC_WIDTH, synth.OSC_OFFSET,
+        synth.OSC_SET_LIN, synth.OSC_FREQ2
       },
     },
     { 'lfo_type', synth.LFO_TYPE,
@@ -318,9 +318,9 @@ local boxes = {
         'freq', 'fmul', 'amp', 'width', 'offset', 'set_lin', 'freq2'
       },
       def = 'freq',
-      vals = { synth.FREQ, synth.FMUL,
-        synth.WIDTH, synth.OFFSET,
-        synth.SET_LIN, synth.FREQ2 },
+      vals = { synth.OSC_FREQ, synth.OSC_FMUL,
+        synth.OSC_WIDTH, synth.OSC_OFFSET,
+        synth.OSC_SET_LIN, synth.OSC_FREQ2 },
     },
     { 'lfo_seq_pos', synth.LFO_SEQ_POS,
       array = { 0, 1, 2, 3 },
