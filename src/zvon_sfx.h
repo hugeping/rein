@@ -9,8 +9,14 @@ void sfx_box_change(struct sfx_box *box, int param, int elem, double val);
 
 enum {
     ZV_VOLUME,
-    ZV_OSC_TYPE,
-    ZV_OSC,
+    ZV_TYPE,
+    ZV_FREQ,
+    ZV_FMUL,
+    ZV_AMP,
+    ZV_WIDTH,
+    ZV_OFFSET,
+    ZV_SET_LIN,
+    ZV_FREQ2,
     ZV_NOTE_ON,
     ZV_NOTE_OFF,
     ZV_SET_GLIDE,
@@ -36,8 +42,6 @@ enum {
     ZV_LEVEL,
     ZV_FEEDBACK,
     ZV_GAIN,
-    ZV_MODE,
-    ZV_WIDTH,
     ZV_HIGHPASS,
     ZV_LOWPASS,
     ZV_END

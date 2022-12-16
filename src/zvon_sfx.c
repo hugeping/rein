@@ -75,12 +75,29 @@ static void lfo_note_on(struct sfx_synth_state *s) {
 static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, double val) {
     (void) elem;
     switch (param) {
-    case ZV_OSC_TYPE:
+    case ZV_TYPE:
         s->osc.type = val;
         break;
-    case ZV_OSC:
-        elem = limit(elem, 0, OSC_PARAMS - 1);
-        s->osc.params[elem] = val;
+    case ZV_FREQ:
+        s->osc.params[OSC_FREQ] = val;
+        break;
+    case ZV_FMUL:
+        s->osc.params[OSC_FMUL] = val;
+        break;
+    case ZV_AMP:
+        s->osc.params[OSC_AMP] = val;
+        break;
+    case ZV_WIDTH:
+        s->osc.params[OSC_WIDTH] = val;
+        break;
+    case ZV_OFFSET:
+        s->osc.params[OSC_OFFSET] = val;
+        break;
+    case ZV_SET_LIN:
+        s->osc.params[OSC_SET_LIN] = val;
+        break;
+    case ZV_FREQ2:
+        s->osc.params[OSC_FREQ2] = val;
         break;
     case ZV_NOTE_ON:
         s->osc.params[OSC_FREQ] = val;
@@ -312,7 +329,7 @@ static void sfx_filter_init(struct sfx_filter_state *s) {
 static void sfx_filter_change(struct sfx_filter_state *s, int param, int elem, double val) {
     (void) elem;
     switch (param) {
-    case ZV_MODE:
+    case ZV_TYPE:
         s->mode = val;
         break;
     case ZV_WIDTH:
