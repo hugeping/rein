@@ -248,7 +248,7 @@ double noise_next(struct noise_state *s, double freq) {
 }
 
 void lfo_init(struct lfo_state *s) {
-    s->freq = 0;
+    lfo_set_freq(s, 0);
     lfo_set_reset(s, 1);
     lfo_reset(s);
     for (int i = 0; i < LFO_MAX_SEQ_STEPS; i++) {

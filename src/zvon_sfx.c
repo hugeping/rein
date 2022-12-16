@@ -25,15 +25,16 @@ struct osc_state {
 
 static void osc_init(struct osc_state *s) {
     s->type = OSC_SIN;
-    phasor_init(&s->phasor1);
-    phasor_init(&s->phasor2);
-    noise_init(&s->noise1);
-    s->params[OSC_AMP] = 1;
     s->params[OSC_FREQ] = 0;
     s->params[OSC_FMUL] = 1;
+    s->params[OSC_AMP] = 1;
     s->params[OSC_WIDTH] = 0.5;
     s->params[OSC_OFFSET] = 1;
     s->params[OSC_SET_LIN] = 1;
+    s->params[OSC_FREQ2] = 0;
+    phasor_init(&s->phasor1);
+    phasor_init(&s->phasor2);
+    noise_init(&s->noise1);
 }
 
 struct sfx_synth_state {
@@ -41,7 +42,7 @@ struct sfx_synth_state {
     struct lfo_state lfos[SYNTH_LFOS];
     int lfo_targets[SYNTH_LFOS];
     double lfo_params[OSC_PARAMS];
-    int lfo_remap[OSC_PARAMS];
+    int remap[OSC_PARAMS];
     struct adsr_state adsr;
     int is_sustain_on;
     struct glide_state glide;
@@ -50,7 +51,7 @@ struct sfx_synth_state {
 
 static void lfo_reset_remap(struct sfx_synth_state *s) {
     for (int i = 0; i < OSC_PARAMS; i++) {
-        s->lfo_remap[i] = i;
+        s->remap[i] = i;
     }
 }
 
@@ -133,9 +134,9 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
         lfo_reset_remap(s);
         int source = limit(elem, 0, OSC_PARAMS - 1);
         int target = limit(val, 0, OSC_PARAMS - 1);
-        int old = s->lfo_remap[target];
-        s->lfo_remap[target] = source;
-        s->lfo_remap[source] = old;
+        int old = s->remap[target];
+        s->remap[target] = source;
+        s->remap[source] = old;
         break;
     case ZV_LFO_TYPE:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
@@ -226,15 +227,17 @@ static double osc_next(struct osc_state *s, double *params) {
 static double sfx_synth_mono(struct sfx_synth_state *s, double l) {
     (void) l;
     for(int i = 0; i < OSC_PARAMS; i++) {
-        s->lfo_params[s->lfo_remap[i]] = s->osc.params[i];
+        s->lfo_params[s->remap[i]] = s->osc.params[i];
     }
-    if (s->is_glide_on) {
-        s->lfo_params[OSC_FREQ] = glide_next(&s->glide, s->lfo_params[OSC_FREQ]);
-    }
+    s->lfo_params[OSC_FREQ] = 0;
     for(int i = 0; i < SYNTH_LFOS; i++) {
         s->lfo_params[s->lfo_targets[i]] += lfo_next(&s->lfos[i]);
     }
-    s->lfo_params[OSC_FREQ] *= s->lfo_params[OSC_FMUL];
+    double f = s->osc.params[OSC_FREQ];
+    if (s->is_glide_on) {
+        f = glide_next(&s->glide, f);
+    }
+    s->lfo_params[OSC_FREQ] += f * s->lfo_params[OSC_FMUL];
     double y = s->lfo_params[OSC_AMP] * osc_next(&s->osc, s->lfo_params);
     return y * adsr_next(&s->adsr, s->is_sustain_on);
 }

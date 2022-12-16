@@ -269,7 +269,7 @@ local boxes = {
         'freq', 'fmul', 'amp', 'width', 'offset', 'set_lin', 'freq2',
       },
       array_vals = {
-        synth.OSC_FREQ, synth.OSC_FMUL,
+        synth.OSC_FREQ, synth.OSC_FMUL, synth.OSC_AMP,
         synth.OSC_WIDTH, synth.OSC_OFFSET,
         synth.OSC_SET_LIN, synth.OSC_FREQ2
       },
@@ -278,7 +278,7 @@ local boxes = {
         'freq', 'fmul', 'amp', 'width', 'offset', 'set_lin', 'freq2'
       },
       vals = {
-        synth.OSC_FREQ, synth.OSC_FMUL,
+        synth.OSC_FREQ, synth.OSC_FMUL, synth.OSC_AMP,
         synth.OSC_WIDTH, synth.OSC_OFFSET,
         synth.OSC_SET_LIN, synth.OSC_FREQ2
       },
