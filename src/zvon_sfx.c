@@ -16,45 +16,50 @@ void sfx_box_change(struct sfx_box *box, int param, int elem, double val) {
 }
 
 struct osc_state {
-    int mode;
+    int type;
+    double params[OSC_PARAMS];
     struct phasor_state phasor1;
     struct phasor_state phasor2;
     struct noise_state noise1;
 };
 
 static void osc_init(struct osc_state *s) {
-    s->mode = OSC_SIN;
+    s->type = OSC_SIN;
     phasor_init(&s->phasor1);
     phasor_init(&s->phasor2);
     noise_init(&s->noise1);
+    s->params[OSC_AMP] = 1;
+    s->params[OSC_FREQ] = 0;
+    s->params[OSC_FMUL] = 1;
+    s->params[OSC_WIDTH] = 0.5;
+    s->params[OSC_OFFSET] = 1;
+    s->params[OSC_SET_LIN] = 1;
 }
 
 struct sfx_synth_state {
     struct osc_state osc;
-    struct lfo_state lfo[SYNTH_LFOS];
-    int lfo_target[SYNTH_LFOS];
-    double lfo_param[LFO_TARGETS];
-    double amp;
-    double freq;
-    double width;
-    double offset;
-    double freq_mul;
+    struct lfo_state lfos[SYNTH_LFOS];
+    int lfo_targets[SYNTH_LFOS];
+    double lfo_params[OSC_PARAMS];
+    int lfo_remap[OSC_PARAMS];
     struct adsr_state adsr;
     int is_sustain_on;
     struct glide_state glide;
     int is_glide_on;
 };
 
+static void lfo_reset_remap(struct sfx_synth_state *s) {
+    for (int i = 0; i < OSC_PARAMS; i++) {
+        s->lfo_remap[i] = i;
+    }
+}
+
 static void sfx_synth_init(struct sfx_synth_state *s) {
     osc_init(&s->osc);
     for (int i = 0; i < SYNTH_LFOS; i++) {
-        lfo_init(&s->lfo[i]);
+        lfo_init(&s->lfos[i]);
     }
-    s->amp = 1;
-    s->freq = 0;
-    s->freq_mul = 1;
-    s->width = 0.5;
-    s->offset = 0.5;
+    lfo_reset_remap(s);
     adsr_init(&s->adsr);
     s->is_sustain_on = 0;
     glide_init(&s->glide);
@@ -63,26 +68,30 @@ static void sfx_synth_init(struct sfx_synth_state *s) {
 
 static void lfo_note_on(struct sfx_synth_state *s) {
     for (int i = 0; i < SYNTH_LFOS; i++) {
-        lfo_reset(&s->lfo[i]);
+        lfo_reset(&s->lfos[i]);
     }
 }
 
 static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, double val) {
     (void) elem;
     switch (param) {
+    case ZV_OSC_TYPE:
+        s->osc.type = val;
+        break;
+    case ZV_OSC:
+        elem = limit(elem, 0, OSC_PARAMS - 1);
+        s->osc.params[elem] = val;
+        break;
     case ZV_NOTE_ON:
-        s->freq = val;
+        s->osc.params[OSC_FREQ] = val;
         adsr_note_on(&s->adsr, 0);
         lfo_note_on(s);
-        break;
-    case ZV_FREQ:
-        s->freq = val;
         break;
     case ZV_NOTE_OFF:
         adsr_note_off(&s->adsr);
         break;
     case ZV_SET_GLIDE:
-        glide_set_source(&s->glide, s->freq);
+        glide_set_source(&s->glide, s->osc.params[OSC_FREQ]);
         s->is_glide_on = val;
         break;
     case ZV_GLIDE_RATE:
@@ -103,121 +112,113 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
     case ZV_SET_SUSTAIN:
         s->is_sustain_on = val;
         break;
-    case ZV_FREQ_MUL:
-        s->freq_mul = val;
+    case ZV_REMAP:
+        lfo_reset_remap(s);
+        int source = limit(elem, 0, OSC_PARAMS - 1);
+        int target = limit(val, 0, OSC_PARAMS - 1);
+        int old = s->lfo_remap[target];
+        s->lfo_remap[target] = source;
+        s->lfo_remap[source] = old;
         break;
-    case ZV_MODE:
-        s->osc.mode = val;
-        break;
-    case ZV_AMP:
-        s->amp = val;
-        break;
-    case ZV_WIDTH:
-        s->width = val;
-        break;
-    case ZV_OFFSET:
-        s->offset = val;
-        break;
-    case ZV_LFO_FUNC:
+    case ZV_LFO_TYPE:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
-        lfo_set_func(&s->lfo[elem], val);
+        lfo_set_type(&s->lfos[elem], val);
         break;
     case ZV_LFO_FREQ:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
-        lfo_set_freq(&s->lfo[elem], val);
+        lfo_set_freq(&s->lfos[elem], val);
         break;
     case ZV_LFO_LOW:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
-        lfo_set_low(&s->lfo[elem], val);
+        lfo_set_low(&s->lfos[elem], val);
         break;
     case ZV_LFO_HIGH:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
-        lfo_set_high(&s->lfo[elem], val);
+        lfo_set_high(&s->lfos[elem], val);
         break;
     case ZV_LFO_SET_LOOP:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
-        lfo_set_loop(&s->lfo[elem], val);
+        lfo_set_loop(&s->lfos[elem], val);
         break;
     case ZV_LFO_SET_RESET:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
-        lfo_set_reset(&s->lfo[elem], val);
+        lfo_set_reset(&s->lfos[elem], val);
         break;
     case ZV_LFO_SEQ_POS:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
-        lfo_set_seq_pos(&s->lfo[elem], val);
+        lfo_set_seq_pos(&s->lfos[elem], val);
         break;
     case ZV_LFO_SEQ_VAL:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
-        lfo_set_seq_val(&s->lfo[elem], val);
+        lfo_set_seq_val(&s->lfos[elem], val);
         break;
     case ZV_LFO_SEQ_SIZE:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
-        lfo_set_seq_size(&s->lfo[elem], val);
+        lfo_set_seq_size(&s->lfos[elem], val);
         break;
     case ZV_LFO_SET_LIN_SEQ:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
-        lfo_set_lin_seq(&s->lfo[elem], val);
+        lfo_set_lin_seq(&s->lfos[elem], val);
         break;
     case ZV_LFO_ASSIGN:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
-        s->lfo_target[elem] = limit(val, 0, LFO_TARGETS - 1);
+        s->lfo_targets[elem] = limit(val, 0, OSC_PARAMS - 1);
         break;
     }
 }
 
-static double osc_next(struct osc_state *s, double *lfo_param) {
-    double amp = lfo_param[LFO_TARGET_AMP];
-    double freq = lfo_param[LFO_TARGET_FREQ];
-    double width = lfo_param[LFO_TARGET_WIDTH];
-    double offset = lfo_param[LFO_TARGET_OFFSET];
-    double w = limit(width, 0, 0.9);
-    switch (s->mode) {
+static double osc_noise(struct osc_state *s, double *params, double x) {
+    noise_set_width(&s->noise1, params[OSC_WIDTH]);
+    if (params[OSC_SET_LIN]) {
+        return noise_lin_next(&s->noise1, x);
+    }
+    return noise_next(&s->noise1, x);
+}
+
+static double osc_next(struct osc_state *s, double *params) {
+    double f = params[OSC_FREQ];
+    double w = limit(params[OSC_WIDTH], 0, 0.9);
+    switch (s->type) {
     case OSC_SIN:
-        return amp * sin(phasor_next(&s->phasor1, freq));
+        return sin(phasor_next(&s->phasor1, f));
     case OSC_SAW:
-        return amp * saw(phasor_next(&s->phasor1, freq), w);
+        return saw(phasor_next(&s->phasor1, f), w);
     case OSC_SQUARE:
-        return amp * square(phasor_next(&s->phasor1, freq), w);
+        return square(phasor_next(&s->phasor1, f), w);
     case OSC_DSF:
-        return amp * dsf(phasor_next(&s->phasor1, freq), offset, w);
+        return dsf(phasor_next(&s->phasor1, f), params[OSC_OFFSET], w);
     case OSC_DSF2:
-        return amp * dsf2(phasor_next(&s->phasor1, freq), offset, w);
+        return dsf2(phasor_next(&s->phasor1, f), params[OSC_OFFSET], w);
     case OSC_PWM:
-        return amp * pwm(phasor_next(&s->phasor1, freq), offset, w);
+        return pwm(phasor_next(&s->phasor1, f), params[OSC_OFFSET], w);
     case OSC_NOISE:
-        noise_set_width(&s->noise1, offset);
-        return amp * noise_next(&s->noise1, freq);
-    case OSC_LNOISE:
-        noise_set_width(&s->noise1, offset);
-        return amp * noise_lin_next(&s->noise1, freq);
-    case OSC_RNOISE:
-        noise_set_width(&s->noise1, offset);
-        return amp * sin(phasor_next(&s->phasor1, freq + noise_next(&s->noise1, width)));
-    case OSC_RLNOISE:
-        noise_set_width(&s->noise1, offset);
-        return amp * sin(phasor_next(&s->phasor1, freq + noise_lin_next(&s->noise1, width)));
-    case OSC_SIN_RLNOISE:
-        noise_set_width(&s->noise1, offset);
-        double y1 = sin(phasor_next(&s->phasor1, freq));
-        double y2 = sin(phasor_next(&s->phasor2, amp + noise_lin_next(&s->noise1, width)));
-        return y1 + y2;
+        return osc_noise(s, params, f);
+    case OSC_BAND_NOISE: {
+        double y = osc_noise(s, params, params[OSC_OFFSET]);
+        return sin(phasor_next(&s->phasor1, f + y));
+    }
+    case OSC_SIN_BAND_NOISE: {
+        double y = osc_noise(s, params, params[OSC_OFFSET]);
+        y = sin(phasor_next(&s->phasor1, f + y));
+        return y + sin(phasor_next(&s->phasor2, params[OSC_FREQ2]));
+    }
     }
     return 0;
 }
 
 static double sfx_synth_mono(struct sfx_synth_state *s, double l) {
     (void) l;
-    s->lfo_param[LFO_TARGET_AMP] = s->amp;
-    s->lfo_param[LFO_TARGET_FREQ] = 0;
-    s->lfo_param[LFO_TARGET_FREQ_MUL] = s->freq_mul;
-    s->lfo_param[LFO_TARGET_WIDTH] = s->width;
-    s->lfo_param[LFO_TARGET_OFFSET] = s->offset;
-    for(int i = 0; i < SYNTH_LFOS; i++) {
-        s->lfo_param[s->lfo_target[i]] += lfo_next(&s->lfo[i]);
+    for(int i = 0; i < OSC_PARAMS; i++) {
+        s->lfo_params[s->lfo_remap[i]] = s->osc.params[i];
     }
-    double freq = s->is_glide_on ? glide_next(&s->glide, s->freq) : s->freq;
-    s->lfo_param[LFO_TARGET_FREQ] += freq * s->lfo_param[LFO_TARGET_FREQ_MUL];
-    double y = osc_next(&s->osc, s->lfo_param);
+    if (s->is_glide_on) {
+        s->lfo_params[OSC_FREQ] = glide_next(&s->glide, s->lfo_params[OSC_FREQ]);
+    }
+    for(int i = 0; i < SYNTH_LFOS; i++) {
+        s->lfo_params[s->lfo_targets[i]] += lfo_next(&s->lfos[i]);
+    }
+    s->lfo_params[OSC_FREQ] *= s->lfo_params[OSC_FMUL];
+    double y = s->lfo_params[OSC_AMP] * osc_next(&s->osc, s->lfo_params);
     return y * adsr_next(&s->adsr, s->is_sustain_on);
 }
 

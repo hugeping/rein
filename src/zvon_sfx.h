@@ -9,21 +9,19 @@ void sfx_box_change(struct sfx_box *box, int param, int elem, double val);
 
 enum {
     ZV_VOLUME,
+    ZV_OSC_TYPE,
+    ZV_OSC,
     ZV_NOTE_ON,
     ZV_NOTE_OFF,
-    ZV_FREQ,
     ZV_SET_GLIDE,
     ZV_GLIDE_RATE,
-    ZV_FREQ_MUL,
     ZV_ATTACK,
     ZV_DECAY,
     ZV_SUSTAIN,
     ZV_RELEASE,
     ZV_SET_SUSTAIN,
-    ZV_AMP,
-    ZV_WIDTH,
-    ZV_OFFSET,
-    ZV_LFO_FUNC,
+    ZV_REMAP,
+    ZV_LFO_TYPE,
     ZV_LFO_FREQ,
     ZV_LFO_LOW,
     ZV_LFO_HIGH,
@@ -39,6 +37,7 @@ enum {
     ZV_FEEDBACK,
     ZV_GAIN,
     ZV_MODE,
+    ZV_WIDTH,
     ZV_HIGHPASS,
     ZV_LOWPASS,
     ZV_END
@@ -52,22 +51,22 @@ enum {
     OSC_DSF2,
     OSC_PWM,
     OSC_NOISE,
-    OSC_LNOISE,
-    OSC_RNOISE,
-    OSC_RLNOISE,
-    OSC_SIN_RLNOISE
+    OSC_BAND_NOISE,
+    OSC_SIN_BAND_NOISE
+};
+
+enum {
+    OSC_FREQ,
+    OSC_FMUL,
+    OSC_AMP,
+    OSC_WIDTH,
+    OSC_OFFSET,
+    OSC_SET_LIN,
+    OSC_FREQ2,
+    OSC_PARAMS
 };
 
 #define SYNTH_LFOS 4
-
-enum {
-    LFO_TARGET_AMP,
-    LFO_TARGET_FREQ,
-    LFO_TARGET_FREQ_MUL,
-    LFO_TARGET_WIDTH,
-    LFO_TARGET_OFFSET,
-    LFO_TARGETS
-};
 
 extern struct sfx_proto sfx_synth;
 extern struct sfx_proto sfx_delay;

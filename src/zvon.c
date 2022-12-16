@@ -257,7 +257,7 @@ void lfo_init(struct lfo_state *s) {
     s->edit_pos = 0;
     lfo_set_seq_size(s, 0);
     lfo_set_lin_seq(s, 0);
-    lfo_set_func(s, LFO_ZERO);
+    lfo_set_type(s, LFO_ZERO);
     lfo_set_freq(s, 0);
     lfo_set_low(s, 0);
     lfo_set_high(s, 0);
@@ -276,7 +276,7 @@ void lfo_set_reset(struct lfo_state *s, int is_reset_on) {
     s->is_reset_on = is_reset_on;
 }
 
-void lfo_set_func(struct lfo_state *s, int func) {
+void lfo_set_type(struct lfo_state *s, int func) {
     s->func = func;
 }
 
