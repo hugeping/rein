@@ -271,8 +271,14 @@ static struct {
 } constants[] = {
 	{ "VOLUME", ZV_VOLUME },
 	/* synth */
-	{ "OSC_TYPE", ZV_OSC_TYPE },
-	{ "OSC", ZV_OSC },
+	{ "TYPE", ZV_TYPE },
+	{ "FREQ", ZV_FREQ },
+	{ "FMUL", ZV_FMUL },
+	{ "AMP", ZV_AMP },
+	{ "WIDTH", ZV_WIDTH },
+	{ "OFFSET", ZV_OFFSET },
+	{ "SET_LIN", ZV_SET_LIN },
+	{ "FREQ2", ZV_FREQ2 },
 	{ "NOTE_ON", ZV_NOTE_ON },
 	{ "NOTE_OFF", ZV_NOTE_OFF },
 	{ "SET_GLIDE", ZV_SET_GLIDE },
@@ -301,8 +307,6 @@ static struct {
 	/* dist */
 	{ "GAIN", ZV_GAIN },
 	/* filter */
-	{ "MODE", ZV_MODE },
-	{ "WIDTH", ZV_WIDTH },
 	{ "LOWPASS", ZV_LOWPASS },
 	{ "HIGHPASS", ZV_HIGHPASS },
 	/* values */
@@ -322,13 +326,6 @@ static struct {
 	{ "LFO_TRIANGLE", LFO_TRIANGLE },
 	{ "LFO_SEQ", LFO_SEQ },
 
-	{ "OSC_FREQ", OSC_FREQ },
-	{ "OSC_FMUL", OSC_FMUL },
-	{ "OSC_AMP", OSC_AMP },
-	{ "OSC_WIDTH", OSC_WIDTH },
-	{ "OSC_OFFSET", OSC_OFFSET },
-	{ "OSC_SET_LIN", OSC_SET_LIN },
-	{ "OSC_FREQ2", OSC_FREQ2 },
 	{ NULL }
 };
 

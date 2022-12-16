@@ -239,21 +239,24 @@ end
 local boxes = {
   { nam = 'synth',
     { "volume", synth.VOLUME, def = 0.5 },
-    { 'mode', synth.MODE,
+    { 'type', synth.TYPE,
       def = 'sin',
       choice = { 'sin', 'saw', 'square', 'dsf',
         'dsf2', 'pwm',
-        'rnoise', 'rlnoise', 'sin_rlnoise',
-        'lnoise', 'noise'},
+        'noise', 'band_noise', 'sin_band_noise',
+      },
       vals = { synth.OSC_SIN, synth.OSC_SAW, synth.OSC_SQUARE, synth.OSC_DSF,
         synth.OSC_DSF2, synth.OSC_PWM,
-        synth.OSC_RNOISE, synth.OSC_RLNOISE, synth.OSC_SIN_RLNOISE,
-        synth.OSC_LNOISE, synth.OSC_NOISE },
+        synth.OSC_NOISE, synth.OSC_BAND_NOISE, synth.OSC_SIN_BAND_NOISE
+      },
     },
+    { 'freq', synth.FREQ, def = 0 },
+    { 'fmul', synth.FMUL, def = 1 },
     { 'amp', synth.AMP, def = 1.0 },
-    { 'freq_mul', synth.FREQ_MUL, def = 1 },
     { 'width', synth.WIDTH, def = 0.5 },
-    { 'offset', synth.OFFSET, def = 0.5 },
+    { 'offset', synth.OFFSET, def = 1 },
+    { 'set_lin', synth.SET_LIN, def = 1 },
+    { 'freq2', synth.FREQ2, def = 0 },
     { 'attack', synth.ATTACK, def = 0.01 },
     { 'decay', synth.DECAY, def = 0.1 },
     { 'sustain', synth.SUSTAIN, def = 0.5 },
@@ -261,7 +264,26 @@ local boxes = {
     { 'set_sustain', synth.SET_SUSTAIN, def = 0 },
     { 'set_glide', synth.SET_GLIDE, def = 0 },
     { 'glide_rate', synth.GLIDE_RATE, def = 0 },
-    { 'lfo_func', synth.LFO_FUNC,
+    { 'remap', synth.REMAP,
+      array = {
+        'freq', 'fmul', 'width', 'offset', 'set_lin', 'freq2',
+      },
+      array_vals = {
+        synth.FREQ, synth.FMUL,
+        synth.WIDTH, synth.OFFSET,
+        synth.SET_LIN, synth.FREQ2
+      },
+      def = 'freq',
+      choice = {
+        'freq', 'fmul', 'amp', 'width', 'offset', 'set_lin', 'freq2'
+      },
+      vals = {
+        synth.FREQ, synth.FMUL,
+        synth.WIDTH, synth.OFFSET,
+        synth.SET_LIN, synth.FREQ2
+      },
+    },
+    { 'lfo_type', synth.LFO_TYPE,
       array = { 0, 1, 2, 3 },
       def = 'zero',
       choice = { 'zero', 'sin', 'saw', 'square', 'triangle', 'seq' },
@@ -292,11 +314,13 @@ local boxes = {
     },
     { 'lfo_assign', synth.LFO_ASSIGN,
       array = { 0, 1, 2, 3 },
-      choice = { 'amp', 'freq', 'freq_mul', 'width', 'offset' },
-      def = 'amp',
-      vals = { synth.LFO_TARGET_AMP, synth.LFO_TARGET_FREQ,
-        synth.LFO_TARGET_FREQ_MUL, synth.LFO_TARGET_WIDTH,
-        synth.LFO_TARGET_OFFSET },
+      choice = {
+        'freq', 'fmul', 'amp', 'width', 'offset', 'set_lin', 'freq2'
+      },
+      def = 'freq',
+      vals = { synth.FREQ, synth.FMUL,
+        synth.WIDTH, synth.OFFSET,
+        synth.SET_LIN, synth.FREQ2 },
     },
     { 'lfo_seq_pos', synth.LFO_SEQ_POS,
       array = { 0, 1, 2, 3 },
@@ -328,7 +352,7 @@ local boxes = {
   },
   { nam = 'filter' ,
     { 'volume', synth.VOLUME,  def = 0.5 },
-    { 'mode', synth.MODE, def = 'lowpass',
+    { 'type', synth.TYPE, def = 'lowpass',
       choice = { 'lowpass', 'highpass' },
       vals = { synth.LOWPASS, synth.HIGHPASS },
     },
@@ -425,7 +449,7 @@ function sfx.compile_par(nam, l)
       return false, string.format("Param:%s", a[1])
     end
     if not p[2] then
-      return false, string.format("Internal error:%s", a[1])
+      return false, string.format("Internal error:%s", l)
     end
     table.insert(cmd, p[2])
     if p.array then
