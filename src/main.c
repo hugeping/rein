@@ -55,19 +55,6 @@ base_path(char *base, size_t size, const char *exepath, const char *file)
 }
 #endif
 
-void unix_path(char *path)
-{
-	char *p = path;
-	if (!path)
-		return;
-	while (*p) { /* bad Windows!!! */
-		if (*p == '\\')
-			*p = '/';
-		p ++;
-	}
-	return;
-}
-
 static int
 dostring(lua_State *L, const char *s)
 {
@@ -114,24 +101,26 @@ void_cycle(void)
 int
 main(int argc, char **argv)
 {
-	char *exepath;
+	char *exepath, *exedir;
+	const char *exefile;
 	static char base[4096];
 	int i;
 
-	exepath = strdup(GetExePath(argv[0]));
-	unix_path(exepath);
+	exefile = GetExePath(argv[0]);
+	exepath = strdup(exefile);
+	exedir = dirname(exepath);
 
 	lua_State *L = luaL_newstate();
 	if (!L)
 		return 1;
-#ifdef __ANDROID__
-	snprintf(base, sizeof(base), "%s", SDL_AndroidGetInternalStoragePath());
-#else
-	snprintf(base, sizeof(base), "%s/%s", dirname((char*)exepath), "data");
-#endif
 #ifdef DATADIR
 	lua_pushstring(L, DATADIR);
 #else
+	#ifdef __ANDROID__
+	snprintf(base, sizeof(base), "%s", SDL_AndroidGetInternalStoragePath());
+	#else
+	snprintf(base, sizeof(base), "%s/%s", exedir, "data");
+	#endif
 	lua_pushstring(L, base);
 #endif
 	lua_setglobal(L, "DATADIR");
@@ -143,9 +132,9 @@ main(int argc, char **argv)
 	#else
 	if (1) {
 	#endif
-		base_path(base, sizeof(base), exepath, "log.txt");
+		base_path(base, sizeof(base), exedir, "log.txt");
 		reopen_stdout(base);
-		base_path(base, sizeof(base), exepath, "err.txt");
+		base_path(base, sizeof(base), exedir, "err.txt");
 		reopen_stderr(base);
 	}
 #endif
