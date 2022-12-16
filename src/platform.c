@@ -401,6 +401,20 @@ WindowCreate(void)
 	return 0;
 }
 
+static void
+unix_path(char *path)
+{
+	char *p = path;
+	if (!path)
+		return;
+	while (*p) { /* bad Windows!!! */
+		if (*p == '\\')
+			*p = '/';
+		p ++;
+	}
+	return;
+}
+
 const char *
 GetExePath(const char *progname)
 {
@@ -421,6 +435,7 @@ GetExePath(const char *progname)
 	strncpy(path, progname, sizeof(path));
 #endif
 	path[sizeof(path) - 1] = 0;
+	unix_path(path);
 	return path;
 }
 
