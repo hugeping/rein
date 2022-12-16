@@ -44,6 +44,15 @@ reopen_stdout(const char *fname)
 		exit(1);
 	}
 }
+static void
+base_path(char *base, size_t size, const char *file)
+{
+	#ifdef __ANDROID__
+	snprintf(base, size, "%s/%s", SDL_AndroidGetInternalStoragePath(), file);
+	#else
+	snprintf(base, size, "%s/%s", exepath, file);
+	#endif
+}
 #endif
 
 void unix_path(char *path)
@@ -129,19 +138,15 @@ main(int argc, char **argv)
 	lua_pushstring(L, VERSION);
 	lua_setglobal(L, "VERSION");
 #if defined(_WIN32) || defined(__ANDROID__)
-	#ifdef __ANDROID__
-	snprintf(base, sizeof(base), "%s/%s", SDL_AndroidGetInternalStoragePath(), "log.txt");
-	#else
-	snprintf(base, sizeof(base), "%s/%s", exepath, "log.txt");
-	#endif
-
 	#if defined(_WIN32)
 	if (GetStdHandle(STD_OUTPUT_HANDLE) == NULL) {
 	#else
 	if (1) {
 	#endif
-		reopen_stderr(base);
+		base_path(base, sizeof(base), "log.txt");
 		reopen_stdout(base);
+		base_path(base, sizeof(base), "err.txt");
+		reopen_stderr(base);
 	}
 #endif
 
