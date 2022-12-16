@@ -884,7 +884,10 @@ end
 win:with { w_prev, w_voice, w_next, w_boxes, w_volume, w_stack, w_conf, w_play,
   w_poly, w_info, w_rem, w_bypass, w_file }
 
-print(load(FILE))
+local r, e = load(FILE)
+if not r then
+  print("Error loading voices: ".. tostring(e))
+end
 
 while true do
   win:event(sys.input())
