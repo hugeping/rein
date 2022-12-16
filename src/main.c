@@ -45,7 +45,7 @@ reopen_stdout(const char *fname)
 	}
 }
 static void
-base_path(char *base, size_t size, const char *file)
+base_path(char *base, size_t size, const char *exepath, const char *file)
 {
 	#ifdef __ANDROID__
 	snprintf(base, size, "%s/%s", SDL_AndroidGetInternalStoragePath(), file);
@@ -143,9 +143,9 @@ main(int argc, char **argv)
 	#else
 	if (1) {
 	#endif
-		base_path(base, sizeof(base), "log.txt");
+		base_path(base, sizeof(base), exepath, "log.txt");
 		reopen_stdout(base);
-		base_path(base, sizeof(base), "err.txt");
+		base_path(base, sizeof(base), exepath, "err.txt");
 		reopen_stderr(base);
 	}
 #endif
