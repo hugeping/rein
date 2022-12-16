@@ -151,7 +151,7 @@ function editarea:show()
       if px >= self.w then
         break
       end
-      local g = self:glyph(l[i]) or glyph("?")
+      local g = self:glyph(l[i]) or self:glyph("?")
       local w, _ = g:size()
       g:blend(screen, px, py)
       px = px + w
