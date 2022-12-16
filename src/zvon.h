@@ -127,7 +127,7 @@ struct lfo_state {
 void lfo_init(struct lfo_state *s);
 void lfo_reset(struct lfo_state *s);
 void lfo_set_reset(struct lfo_state *s, int is_reset_on);
-void lfo_set_func(struct lfo_state *s, int func);
+void lfo_set_type(struct lfo_state *s, int func);
 void lfo_set_freq(struct lfo_state *s, double freq);
 void lfo_set_low(struct lfo_state *s, double low);
 void lfo_set_high(struct lfo_state *s, double high);

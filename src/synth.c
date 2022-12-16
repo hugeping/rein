@@ -271,6 +271,8 @@ static struct {
 } constants[] = {
 	{ "VOLUME", ZV_VOLUME },
 	/* synth */
+	{ "OSC_TYPE", ZV_OSC_TYPE },
+	{ "OSC", ZV_OSC },
 	{ "NOTE_ON", ZV_NOTE_ON },
 	{ "NOTE_OFF", ZV_NOTE_OFF },
 	{ "SET_GLIDE", ZV_SET_GLIDE },
@@ -280,13 +282,8 @@ static struct {
 	{ "SUSTAIN", ZV_SUSTAIN },
 	{ "RELEASE", ZV_RELEASE },
 	{ "SET_SUSTAIN", ZV_SET_SUSTAIN },
-	{ "FREQ_MUL", ZV_FREQ_MUL },
-	{ "FREQ", ZV_FREQ },
-	{ "MODE", ZV_MODE }, /* +filter */
-	{ "AMP", ZV_AMP },
-	{ "WIDTH", ZV_WIDTH }, /* +fliter */
-	{ "OFFSET", ZV_OFFSET },
-	{ "LFO_FUNC", ZV_LFO_FUNC },
+	{ "REMAP", ZV_REMAP },
+	{ "LFO_TYPE", ZV_LFO_TYPE },
 	{ "LFO_FREQ", ZV_LFO_FREQ },
 	{ "LFO_LOW", ZV_LFO_LOW },
 	{ "LFO_HIGH", ZV_LFO_HIGH },
@@ -304,6 +301,8 @@ static struct {
 	/* dist */
 	{ "GAIN", ZV_GAIN },
 	/* filter */
+	{ "MODE", ZV_MODE },
+	{ "WIDTH", ZV_WIDTH },
 	{ "LOWPASS", ZV_LOWPASS },
 	{ "HIGHPASS", ZV_HIGHPASS },
 	/* values */
@@ -314,21 +313,22 @@ static struct {
 	{ "OSC_DSF2", OSC_DSF2 },
 	{ "OSC_PWM", OSC_PWM },
 	{ "OSC_NOISE", OSC_NOISE },
-	{ "OSC_RNOISE", OSC_RNOISE },
-	{ "OSC_LNOISE", OSC_LNOISE },
-	{ "OSC_RLNOISE", OSC_RLNOISE },
-	{ "OSC_SIN_RLNOISE", OSC_SIN_RLNOISE },
+	{ "OSC_BAND_NOISE", OSC_BAND_NOISE },
+	{ "OSC_SIN_BAND_NOISE", OSC_SIN_BAND_NOISE },
 	{ "LFO_ZERO", LFO_ZERO },
 	{ "LFO_SIN", LFO_SIN },
 	{ "LFO_SAW", LFO_SAW },
 	{ "LFO_SQUARE", LFO_SQUARE },
 	{ "LFO_TRIANGLE", LFO_TRIANGLE },
 	{ "LFO_SEQ", LFO_SEQ },
-	{ "LFO_TARGET_AMP", LFO_TARGET_AMP },
-	{ "LFO_TARGET_FREQ", LFO_TARGET_FREQ },
-	{ "LFO_TARGET_FREQ_MUL", LFO_TARGET_FREQ_MUL },
-	{ "LFO_TARGET_WIDTH", LFO_TARGET_WIDTH },
-	{ "LFO_TARGET_OFFSET", LFO_TARGET_OFFSET },
+
+	{ "OSC_FREQ", OSC_FREQ },
+	{ "OSC_FMUL", OSC_FMUL },
+	{ "OSC_AMP", OSC_AMP },
+	{ "OSC_WIDTH", OSC_WIDTH },
+	{ "OSC_OFFSET", OSC_OFFSET },
+	{ "OSC_SET_LIN", OSC_SET_LIN },
+	{ "OSC_FREQ2", OSC_FREQ2 },
 	{ NULL }
 };
 
