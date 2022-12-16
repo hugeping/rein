@@ -266,7 +266,7 @@ local boxes = {
     { 'glide_rate', synth.GLIDE_RATE, def = 0 },
     { 'remap', synth.REMAP,
       array = {
-        'freq', 'fmul', 'width', 'offset', 'set_lin', 'freq2',
+        'freq', 'fmul', 'amp', 'width', 'offset', 'set_lin', 'freq2',
       },
       array_vals = {
         synth.OSC_FREQ, synth.OSC_FMUL,
@@ -318,7 +318,7 @@ local boxes = {
         'freq', 'fmul', 'amp', 'width', 'offset', 'set_lin', 'freq2'
       },
       def = 'freq',
-      vals = { synth.OSC_FREQ, synth.OSC_FMUL,
+      vals = { synth.OSC_FREQ, synth.OSC_FMUL, synth.OSC_AMP,
         synth.OSC_WIDTH, synth.OSC_OFFSET,
         synth.OSC_SET_LIN, synth.OSC_FREQ2 },
     },
