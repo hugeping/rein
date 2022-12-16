@@ -334,7 +334,7 @@ snd.voices(__voices__)
 
 local over_mus = [[
 @temp 12
-@volume -1 0.3
+@volume -1 0.2
 @voice 1 violin
 a-2 b6
 g-2 b6
