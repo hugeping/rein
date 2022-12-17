@@ -379,7 +379,7 @@ end
 
 function editarea:paste()
   local s = self
-  local text = s.clipboard or sys.clipboard() or ''
+  local text = sys.clipboard() or s.clipboard or ''
   for l in text:lines() do
     s:input(l)
     s:newline()
