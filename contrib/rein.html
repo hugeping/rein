@@ -1,0 +1,68 @@
+<!doctypehtml>
+  <html lang=en-us>
+    <head>
+      <meta charset=utf-8>
+<!--      <meta name="file" content="aadv.lua"> -->
+      <meta content="text/html; charset=utf-8" http-equiv=Content-Type>
+      <title>REIN</title>
+      <style>
+        body {
+          font-family: arial;
+          margin: 0;
+          padding: none
+        }
+
+        .emscripten {
+          width: 100%;
+          max-width: 100vh;
+          max-height: 100vw
+          text-align: center;
+          padding: 0;
+          margin: auto;
+          display: block
+        }
+
+        div.emscripten {
+          text-align: center
+        }
+
+        canvas.emscripten {
+          border: 0 none;
+          background-color: #000
+        }
+
+        #controls {
+          display: inline-block;
+          float: center;
+          vertical-align: top;
+          margin-top: 30px;
+          margin-right: 20px
+        }
+      </style>
+    </head>
+    <body>
+
+      <div id="emscripten-app" class=emscripten>
+      <div>
+      <canvas id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
+      <div id="controls" class="emscripten">
+        <input type="button" value="Fullscreen" onclick='document.getElementById("canvas").requestFullscreen()'>
+      </div>
+      </div>
+
+      </div>
+      <script>
+          Module = {
+            preRun: [],
+            postRun: [],
+            canvas: function() {
+              var e = document.getElementById("canvas");
+              return e.addEventListener("webglcontextlost", (function(e) {
+                alert("WebGL context lost. You will need to reload the page."), e.preventDefault()
+              }), !1), e
+            }(),
+          };
+      </script> 
+      <script async src=rein.js></script>
+    </body>
+  </html>
