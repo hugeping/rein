@@ -9,6 +9,7 @@ local core = {
   view_y = 0;
   suspended = {};
   scale = false;
+  apps = {};
 }
 
 function core.getopt(args, ops)
@@ -52,10 +53,10 @@ end
 function core.go(fn, env)
   local f, e
   if type(fn) == 'string' then
-    if fn:find("%.[lL][uU][aA]$") then
-      f, e = loadfile(fn, "t", env)
+    if core.apps[fn] then
+      f, e = loadfile(core.apps[fn], "t", env)
     else
-      f, e = loadfile(DATADIR.."/apps/"..fn..'.lua', "t", env)
+      f, e = loadfile(fn, "t", env)
     end
     if not f then
       core.err(e)
@@ -120,6 +121,14 @@ function core.init()
     core.err(err)
     os.exit(1)
   end
+
+  for _, v in ipairs(sys.readdir(DATADIR..'/apps/')) do
+    if v:find("%.[lL][uU][aA]$") then
+      local key = v:lower():gsub("%.[lL][uU][aA]$", "")
+      core.apps[key] = DATADIR..'/apps/'..v
+    end
+  end
+
   env.ARGS = {}
   local f, e, optarg, opts
   local opts, optarg = core.getopt(ARGS, {
