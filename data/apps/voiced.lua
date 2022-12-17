@@ -40,7 +40,8 @@ function win:below(d)
 end
 
 local editarea = win:new { value = '', cur = {x = 1, y = 1},
-  col = 1, line = 1, lines = {}, sph = 10, spw = 7, glyph_cache = {} }
+  col = 1, line = 1, lines = {}, sph = 10, spw = 7, glyph_cache = {},
+  sel = {}, hl = { 0, 0, 0, 32 } }
 
 function editarea:set(text)
   self.lines = {}
@@ -135,6 +136,104 @@ function editarea:glyph(t)
   return self.glyph_cache[key]
 end
 
+function editarea:selection()
+  local s = self
+  local x1, y1 = s.sel.x, s.sel.y
+  local x2, y2 = s.sel.endx, s.sel.endy
+
+  if not x2 or (y1 == y2 and x1 == x2) then
+    return
+  end
+  if y1 > y2 then
+    y1, y2 = y2, y1
+    x1, x2 = x2, x1
+  end
+  if y1 == y2 and x1 > x2 then x1, x2 = x2, x1 end
+  return x1, y1, x2, y2
+end
+
+function editarea:selected(x, nr)
+  local s = self
+  local x1, y1, x2, y2 = s:selection()
+  if not x1 or not s.lines[nr] then return end
+  if nr < y1 or nr > y2 then return end -- fast path
+  if nr > y1 and nr < y2 then -- full line
+    return true
+  end
+  if nr == y1 then
+    if x < x1 then return end
+    if y2 == nr and x >= x2 then return end
+    return true
+  end
+  if nr == y2 then
+    if x >= x2 then return end
+    if y2 == nr and x < x2 then return end
+    return true
+  end
+end
+
+function editarea:unselect()
+  local s = self
+  s.sel.x, s.sel.endx, s.sel.start = false, false, false
+end
+
+function editarea:select(on)
+  local s = self
+  if on == true then
+    if not s.sel.start then
+      s.sel.x, s.sel.y = s.cur.x, s.cur.y
+    end
+    s.sel.endx, s.sel.endy = s.cur.x, s.cur.y
+    s.sel.start = true
+    return
+  elseif on == false then
+    s.sel.start = false
+    return
+  end
+  if s.sel.start then
+    s.sel.endx, s.sel.endy = s.cur.x, s.cur.y
+  end
+end
+
+function editarea:cut(copy, clip)
+  local s = self
+  local x1, y1, x2, y2 = s:selection()
+
+  local clipboard = ''
+  if not x1 then return end
+  local yy = y1
+  for y=y1, y2 do
+    local nl = {}
+    if y ~= y1 and y ~= y2 then -- full line
+      clipboard = clipboard .. table.concat(s.lines[yy])..'\n'
+    else
+      for x=1, #s.lines[yy] do
+        if s:selected(x, yy) then
+          clipboard = clipboard .. s.lines[yy][x]
+          if x == #s.lines[yy] then
+            clipboard = clipboard .. '\n'
+          end
+        else
+          table.insert(nl, s.lines[yy][x])
+        end
+      end
+    end
+    if #nl == 0 and not copy then
+      table.remove(s.lines, yy)
+    else
+      s.lines[yy] = copy and s.lines[yy] or nl
+      yy = yy + 1
+    end
+  end
+  if not copy then
+    s.cur.x, s.cur.y = x1, y1
+    s:unselect()
+  end
+  sys.clipboard(clipboard)
+  s.clipboard = clipboard
+  return clipboard
+end
+
 function editarea:show()
   if self.hidden then return end
   win.show(self)
@@ -152,6 +251,10 @@ function editarea:show()
         break
       end
       local g = self:glyph(l[i]) or self:glyph("?")
+      if self:selected(i, nr) then
+        local sw, sh = g:size()
+        screen:fill_rect(px, py, px + sw-1, py + sh-1, self.hl)
+      end
       local w, _ = g:size()
       g:blend(screen, px, py)
       px = px + w
@@ -164,6 +267,20 @@ function editarea:show()
   self:cursor()
   screen:noclip()
   screen:nooffset()
+end
+
+function editarea:delete()
+  local s = self
+  if s.cur.x <= #s.lines[s.cur.y] then
+    table.remove(s.lines[s.cur.y], s.cur.x)
+  elseif s.cur.x > #s.lines[s.cur.y] and s.lines[s.cur.y+1] then
+    s.cur.y = s.cur.y + 1
+    local l = table.remove(s.lines, s.cur.y)
+    s.cur.y = s.cur.y - 1
+    for _, v in ipairs(l) do
+      table.insert(s.lines[s.cur.y], v)
+    end
+  end
 end
 
 function editarea:newline()
@@ -192,17 +309,9 @@ function editarea:backspace()
   end
 end
 
-function editarea:copy()
-  local text = ''
-  for _, l in ipairs(self.lines) do
-    text = text..table.concat(l)..'\n'
-  end
-  sys.clipboard(text)
-end
-
 function editarea:paste()
   local s = self
-  local text = sys.clipboard() or ''
+  local text = s.clipboard or sys.clipboard() or ''
   for l in text:lines() do
     s:input(l)
     s:newline()
@@ -253,15 +362,28 @@ function editarea:event(r, v, ...)
     elseif v == 'y' and input.keydown 'ctrl' then
       table.remove(self.lines, self.cur.y)
     elseif v == 'c' and input.keydown 'ctrl' then
-      self:copy()
+      self:cut(true)
     elseif v == 'v' and input.keydown 'ctrl' then
       self:paste()
     elseif v == 'd' and input.keydown 'ctrl' then
       if not w_conf.hidden then
         w_conf:set(sfx.box_defs(w_conf.nam))
       end
+    elseif v == 'x' and input.keydown 'ctrl' or v == 'delete' then
+      if v == 'delete' and not self:selection() then
+        self:delete()
+      else
+        self:cut()
+      end
+    elseif v:find 'shift' then
+       self:select(true)
     end
     self:scroll()
+    self:select()
+  elseif r == 'keyup' then
+    if v:find 'shift' then
+      self:select(false)
+    end
   end
   return win.event(self, r, v, ...)
 end
