@@ -41,7 +41,7 @@ end
 
 local editarea = win:new { value = '', cur = {x = 1, y = 1},
   col = 1, line = 1, lines = {}, sph = 10, spw = 7, glyph_cache = {},
-  sel = {}, hl = { 0, 0, 0, 32 } }
+  sel = {}, hl = { 0, 0, 0, 32 }, hist = {} }
 
 function editarea:set(text)
   self.lines = {}
@@ -103,6 +103,7 @@ end
 function editarea:input(t)
   local s = self
   local c = utf.chars(t)
+  s:history()
   for _, v in ipairs(c) do
     table.insert(s.lines[s.cur.y], s.cur.x, v)
     s.cur.x = s.cur.x + 1
@@ -136,6 +137,63 @@ function editarea:glyph(t)
   return self.glyph_cache[key]
 end
 
+local function clone(t)
+  local l = {}
+  for _, v in ipairs(t) do
+    table.insert(l, v)
+  end
+  return l
+end
+
+function editarea:history(op, x1, y1, x2, y2)
+  local s = self
+  y1 = y1 or s.cur.y
+  y2 = y2 or s.cur.y
+  local h = { op = op, x = s.cur.x, y = s.cur.y,
+    nr = y1, rem = 0 }
+  if op == 'cut' then
+    if y1 == y2 then
+      h.rem = x2 - x1 < #s.lines[y1] and 1 or 0
+    else
+      h.rem = x1 > 1 and 1 or 0
+      if x2 < #s.lines[y2] then
+        h.rem = h.rem + 1
+      end
+      h.rem = h.rem + y2 - y1 - 1
+    end
+  end
+  for i = 1, y2 - y1 + 1 do
+    table.insert(h, clone(s.lines[y1 + i - 1]))
+  end
+  table.insert(s.hist, h)
+  if #s.hist > 1024 then
+    table.remove(s.hist, 1)
+  end
+end
+
+function editarea:undo()
+  local s = self
+  if #s.hist == 0 then return end
+  local h = table.remove(s.hist, #s.hist)
+  if h.op == 'cut' then
+    for i=1, h.rem do
+      table.remove(s.lines, h.nr)
+    end
+    for k, l in ipairs(h) do
+      table.insert(s.lines, h.nr + k - 1, l)
+    end
+  else
+    for k, l in ipairs(h) do
+      s.lines[h.nr + k - 1] = l
+    end
+    if h.op == 'newline' then
+      table.remove(s.lines, h.nr + 1)
+    end
+  end
+  s.cur.x = h.x
+  s.cur.y = h.y
+end
+
 function editarea:selection()
   local s = self
   local x1, y1 = s.sel.x, s.sel.y
@@ -167,7 +225,7 @@ function editarea:selected(x, nr)
   end
   if nr == y2 then
     if x >= x2 then return end
-    if y2 == nr and x < x2 then return end
+    if y2 == nr and x > x2 then return end
     return true
   end
 end
@@ -202,13 +260,16 @@ function editarea:cut(copy, clip)
   local clipboard = ''
   if not x1 then return end
   local yy = y1
+  if not copy then
+    s:history('cut', x1, y1, x2, y2)
+  end
   for y=y1, y2 do
     local nl = {}
     if y ~= y1 and y ~= y2 then -- full line
       clipboard = clipboard .. table.concat(s.lines[yy])..'\n'
     else
       for x=1, #s.lines[yy] do
-        if s:selected(x, yy) then
+        if s:selected(x, y) then
           clipboard = clipboard .. s.lines[yy][x]
           if x == #s.lines[yy] then
             clipboard = clipboard .. '\n'
@@ -272,9 +333,12 @@ end
 function editarea:delete()
   local s = self
   if s.cur.x <= #s.lines[s.cur.y] then
+    s:history()
     table.remove(s.lines[s.cur.y], s.cur.x)
   elseif s.cur.x > #s.lines[s.cur.y] and s.lines[s.cur.y+1] then
+    s:history()
     s.cur.y = s.cur.y + 1
+    s:history()
     local l = table.remove(s.lines, s.cur.y)
     s.cur.y = s.cur.y - 1
     for _, v in ipairs(l) do
@@ -286,6 +350,7 @@ end
 function editarea:newline()
   local s = self
   local l = s.lines[s.cur.y]
+  s:history('newline')
   table.insert(s.lines, s.cur.y + 1, {})
   for k=s.cur.x, #l do
     table.insert(s.lines[s.cur.y+1], table.remove(l, s.cur.x))
@@ -297,12 +362,15 @@ end
 function editarea:backspace()
   local s = self
   if s.cur.x > 1 then
+    s:history()
     table.remove(s.lines[s.cur.y], s.cur.x - 1)
     s.cur.x = s.cur.x - 1
   elseif s.cur.y > 1 then
+    s:history()
     local l = table.remove(s.lines, s.cur.y)
     s.cur.y = s.cur.y - 1
     s.cur.x = #s.lines[s.cur.y] + 1
+    s:history()
     for _, v in ipairs(l) do
       table.insert(s.lines[s.cur.y], v)
     end
@@ -375,6 +443,8 @@ function editarea:event(r, v, ...)
       else
         self:cut()
       end
+    elseif v == 'z' and input.keydown 'ctrl' then
+      self:undo()
     elseif v:find 'shift' then
        self:select(true)
     end
