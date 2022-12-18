@@ -209,7 +209,7 @@ static __inline void
 pixel_textured(img_t *img, unsigned char *d, int x, int y)
 {
 	unsigned char *src = img->ptr;
-	src += (((y % img->h) * img->w + (x % img->w)) << 2);
+	src += (((y % img->h) * img->w + (x % img->w)) * 4);
 	pixel(src, d);
 }
 
@@ -232,7 +232,7 @@ pixels_value(lua_State *L)
 		return 0;
 
 	ptr = hdr->img.ptr;
-	ptr += ((y * hdr->img.w + x) << 2);
+	ptr += ((y * hdr->img.w + x) * 4);
 	if (get) {
 		lua_pushinteger(L, *(ptr ++));
 		lua_pushinteger(L, *(ptr ++));
@@ -270,7 +270,7 @@ pixels_pixel(lua_State *L)
 		return 0;
 
 	ptr = hdr->img.ptr;
-	ptr += ((y * hdr->img.w + x) << 2);
+	ptr += ((y * hdr->img.w + x) * 4);
 	if (get) {
 		lua_pushinteger(L, *(ptr ++));
 		lua_pushinteger(L, *(ptr ++));
@@ -493,7 +493,7 @@ skip:
 		dy += h;
 		while (dy >= hh) {
 			dy -= hh;
-			ptr += (w << 2);
+			ptr += (w * 4);
 			optr = NULL;
 		}
 	}
@@ -616,7 +616,7 @@ _fill(img_t *src, int x, int y, int w, int h,
 		h = src->clip_y2 - y;
 
 	ptr1 = src->ptr;
-	ptr1 += (y * src->w + x) << 2;
+	ptr1 += (y * src->w + x) * 4;
 	for (cy = 0; cy < h; cy ++) {
 		unsigned char *p1 = ptr1;
 		for (cx = 0; cx < w; cx ++) {
@@ -845,7 +845,7 @@ line0(img_t *hdr, int x1, int y1, int dx, int dy, int xd, unsigned char *col, im
 	if (dx < 0)
 		return;
 	ptr = hdr->ptr;
-	ptr += (y1 * hdr->w + x1) << 2;
+	ptr += (y1 * hdr->w + x1) * 4;
 
 	pixel(col, ptr);
 	while (dx --) {
@@ -890,7 +890,7 @@ line1(img_t *hdr, int x1, int y1, int dx, int dy, int xd, unsigned char *col, im
 		return;
 
 	ptr = hdr->ptr;
-	ptr += (y1 * hdr->w + x1) << 2;
+	ptr += (y1 * hdr->w + x1) * 4;
 
 	pixel(col, ptr);
 
@@ -1038,7 +1038,7 @@ lineAA(img_t *src, int x0, int y0, int x1, int y1,
 		return;
 
 	ptr = (src->ptr);
-	ptr += (y0 * src->w + x0) << 2;
+	ptr += (y0 * src->w + x0) * 4;
 
 	while (1) {
 		unsigned char *optr = ptr;
@@ -1221,7 +1221,7 @@ fill_circle(img_t *src, int xc, int yc, int radius, color_t *color, img_t *pat)
 		return;
 
 	ptr = src->ptr;
-	ptr += (w * yc + xc) << 2;
+	ptr += (w * yc + xc) * 4;
 
 	if (radius == 1) {
 		pat?pixel_textured(pat, ptr, xc, yc):pixel(col, ptr);
@@ -1238,7 +1238,7 @@ fill_circle(img_t *src, int xc, int yc, int radius, color_t *color, img_t *pat)
 	if (yc + radius >= y2)
 		yy2 = y2 - yc - 1;
 	for (y = yy1; y <= yy2; y ++) {
-		unsigned char *ptrl = ptr + ((y * w + xx1) << 2);
+		unsigned char *ptrl = ptr + ((y * w + xx1) * 4);
 		for (x = xx1; x <= xx2; x++) {
 			if (x*x + y*y < r2 - 1) {
 				pat?pixel_textured(pat, ptrl, xc + x, yc + y):pixel(col, ptrl);
@@ -1449,7 +1449,7 @@ fill_poly(img_t *src, struct lua_point *v, int nr, unsigned char *col, img_t *pa
 		xmax = src->clip_x2;
 	if (ymax >= src->clip_y2)
 		ymax = src->clip_y2;
-	ptr += (ymin * src->w) << 2;
+	ptr += (ymin * src->w) * 4;
 	for (y = ymin; y < ymax; y ++) {
 		nodes = 0; j = nr - 1;
 		for (i = 0; i < nr; i++) {
