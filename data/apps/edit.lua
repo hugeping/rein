@@ -1,3 +1,4 @@
+local editor = require "editor"
 gfx.win(385, 380)
 --local sfont = gfx.font('demo/iosevka.ttf',12)
 local idle_mode
@@ -49,10 +50,10 @@ function glyph(t, col)
 end
 
 function buff.new(fname, x, y, w, h)
-  local b = { text = { }, cur = { x = 1, y = 1 },
-    line = 1, col = 1, fname = fname, hist = {},
-    sel = { }, x = x or 0, y = y or 0, w = w or W, h = h or H }
+  local b = { edit = editor.new(), fname = fname,
+    x = x or 0, y = y or 0, w = w or W, h = h or H }
   local f = fname and io.open(fname, "rb")
+  b.text = b.edit.lines
   if f then
     for l in f:lines() do
       l = l:gsub("\t", "  ")
@@ -61,8 +62,9 @@ function buff.new(fname, x, y, w, h)
     f:close()
   end
   b.spw, b.sph = sfont:size(" ")
-  b.lines = math.floor(b.h / b.sph) - 1 -- status line
   b.columns = math.floor(b.w / b.spw)
+  b.lines = math.floor(b.h / b.sph) - 1 -- status line
+  b.edit:size(b.columns, b.lines)
   setmetatable(b, buff)
   return b
 end
@@ -170,7 +172,8 @@ function buff:cursor()
   if math.floor(sys.time()*4) % 2 == 1 then
     return
   end
-  local px, py = (s.cur.x - s.col)*s.spw, (s.cur.y - s.line)*s.sph
+  local px, py = s.edit:coord(s.edit:cursor())
+  px, py = (px - 1)*s.spw, (py - 1) * s.sph
   for y=py, py + s.sph-1 do
     for x=px, px + s.spw-1 do
       local r, g, b = screen:val(s.x + x, s.y + y)
@@ -184,141 +187,15 @@ end
 
 function buff:status()
   local s = self
+  local cx, cy = self.edit:cursor()
   local info = string.format("%s%s %2d:%-2d",
-    s.dirty and '*' or '', s.fname, s.cur.x, s.cur.y)
+    s.dirty and '*' or '', s.fname, cx, cy)
   screen:fill_rect(0, H - s.sph, W, H, conf.status)
   sfont:text(info, conf.fg):blend(screen, 0, H - s.sph)
 end
 
 function buff:selected()
-  local s = self
-  local is = s.sel.x and s.sel.endx and
-    (s.sel.x ~= s.sel.endx or s.sel.y ~= s.sel.endy)
-  if not is then
-    return false
-  end
-  local x1, x2 = s.sel.x, s.sel.endx
-  if x1 > x2 then x1, x2 = s.sel.endx, s.sel.x end
-  local t = ''
-  for x=x1, x2-1 do
-    t = t .. s.text[s.sel.y][x]
-  end
-  return t
-end
-
-function buff:unselect()
-  local s = self
-  s.sel.x, s.sel.endx, s.sel.start = false, false, false
-end
-
-function buff:paste(what)
-  local s = self
-  local text = what or sys.clipboard() or s.clipboard or ''
-  for l in text:lines() do
-    s:input(l)
-    s:newline(false)
-  end
-end
-
-function buff:cut(copy, clip)
-  local s = self
-  local x1, y1 = s.sel.x, s.sel.y
-  local x2, y2 = s.sel.endx, s.sel.endy
-
-  local clipboard = ''
-
-  if not x1 or not x2 or y1 == y2 and x1 == x2 then return end
-  if y1 > y2 then
-    y1, y2 = y2, y1
-    x1, x2 = x2, x1
-  end
-  if y1 == y2 and x1 > x2 then x1, x2 = x2, x1 end
-  if not copy then
-    s:history('cut', x1, y1, x2, y2)
-  end
-  local yy = y1
-
-  for y=y1, y2 do
-    if y ~= y1 and y ~= y2 then -- full line
-      clipboard = clipboard .. table.concat(s.text[yy])..'\n'
-      if not copy then
-        s.text[yy] = {}
-      end
-    elseif y == y1 then
-      for x=x1, y == y2 and x2-1 or #s.text[yy] do
-        clipboard = clipboard .. s.text[yy][x]
-      end
-      clipboard = clipboard .. '\n'
-      if not copy then
-        for x=x1, y == y2 and x2-1 or #s.text[yy] do
-          table.remove(s.text[yy], x1)
-        end
-      end
-    elseif y == y2 then
-      local xx = y == y1 and x1 or 1
-      for x = xx, x2-1 do
-        clipboard = clipboard .. s.text[yy][x]
-      end
-      clipboard = clipboard .. '\n'
-      if not copy then
-        for x = xx, x2-1 do
-          table.remove(s.text[yy], xx)
-        end
-      end
-    end
-    if #s.text[yy] == 0 and not copy then
-      table.remove(s.text, yy)
-    else
-      yy = yy + 1
-    end
-  end
-  if not copy then
-    s.cur.x, s.cur.y = x1, y1
-    s:unselect()
-  end
-  if clip ~= false then
-    sys.clipboard(clipboard)
-    s.clipboard = clipboard
-  end
-  return clipboard
-end
-
-function buff:hlight(nr, py)
-  local s = self
-  local x1, y1 = s.sel.x, s.sel.y
-  local x2, y2 = s.sel.endx, s.sel.endy
-  if not x1 or not x2 then return end
-  if not s.text[nr] then return end
-  if y1 == y2 and x1 == x2 then return end
-  if y1 > y2 then
-    y1, y2 = y2, y1
-    x1, x2 = x2, x1
-  end
-  if nr < y1 or nr > y2 then return end
-  if nr > y1 and nr < y2 then -- full line
-    local len = #s.text[nr]
-    screen:offset(-(s.col-1)*s.spw, 0)
-    screen:fill_rect(s.x, py, s.x + len*s.spw-1,
-      py + s.sph - 1, conf.hl)
-    screen:nooffset()
-    return
-  end
-  if nr == y1 then
-    if y2 ~= nr then x2 = #s.text[nr] + 1 end
-    screen:offset(-(s.col-1)*s.spw, 0)
-    screen:fill_rect(s.x + (x1-1)*s.spw, py,
-      s.x + (x2-1)*s.spw, py + s.sph - 1, conf.hl)
-    screen:nooffset()
-    return
-  end
-  if nr == y2 then
-    if y1 ~= nr then x1 = 1 end
-    screen:offset(-(s.col-1)*s.spw, 0)
-    screen:fill_rect(s.x + (x1-1)*s.spw, py,
-      s.x + (x2-1)*s.spw, py + s.sph - 1, conf.hl)
-    screen:nooffset()
-    return
-  end
+  return self.edit:selected()
 end
 
 local kwd = {
@@ -435,220 +312,44 @@ function buff:colorize(l)
 end
 
 function buff:show()
-  local s = self
-  screen:clear(s.x, s.y, s.w, s.h, conf.bg)
-  screen:clip(s.x, s.y, s.w, s.h)
-  local l, words
-  local px, py = s.x, s.y
-  local cols
-  for nr=s.line, s.line + s.lines - 1 do
-    l = s.text[nr] or {}
-    cols = s:colorize(l)
+  screen:clear(self.x, self.y, self.w, self.h, conf.bg)
+  screen:clip(self.x, self.y, self.w, self.h)
+
+  local px, py = 0, 0
+  local cols, g
+  for nl, s, e in self.edit:visible_lines() do
+    local l = self.edit.lines[nl]
     px = 0
-    s:hlight(nr, py)
-    for i=s.col,#l do
-      if px > W then
-        break
+    cols = self:colorize(l)
+    for i=s, e do
+      g = glyph(l[i], cols[i]) or glyph('?', cols[i])
+      if self.edit:insel(i, nl) then
+        screen:fill_rect(self.x + px, self.y + py,
+          self.x + px + self.spw - 1,
+          self.y + py + self.sph - 1, conf.hl)
       end
-      local g = glyph(l[i], cols[i])
-      if not g then g = glyph("?") end
-      local w, _ = g:size()
-      g:blend(screen, px, py)
-      px = px + w
+      g:blend(screen, self.x + px, self.y + py)
+      px = px + self.spw
     end
-    py = py + s.sph
+    py = py + self.sph
   end
+  self:cursor()
   screen:noclip()
-  if s.status then
-    s:status()
+  if self.status then
+    self:status()
   end
-  s:cursor()
-end
-
-function buff:scroll()
-  local s = self
-  if #s.text == 0 then s.text[1] = {} end
-  if s.cur.x < 1 then s.cur.x = 1 end
-  if s.cur.y < 1 then s.cur.y = 1 end
-  if s.cur.y > #s.text then
-    s.cur.y = #s.text
-    if #s.text[s.cur.y] ~= 0 then
-      s.cur.y = s.cur.y + 1
-      s.cur.x = 1
-      s.text[s.cur.y] = {}
-    end
-  end
-  if s.cur.x > #s.text[s.cur.y] then s.cur.x = #s.text[s.cur.y] + 1 end
-  if s.cur.y >= s.line and s.cur.y <= s.line + s.lines - 1
-    and s.cur.x >= s.col and s.cur.x < s.columns then
-    return
-  end
-  if s.cur.x < s.col then
-    s.col = s.cur.x
-  elseif s.cur.x > s.col + s.columns - 1 then
-    s.col = s.cur.x - s.columns + 1
-  end
-  if s.cur.y < s.line then
-    s.line = s.cur.y
-  elseif s.cur.y > s.line + s.lines - 1 then
-    s.line = s.cur.y - s.lines + 1
-  end
-end
-
-function buff:input(t)
-  local s = self
-  local c = utf.chars(t)
-  s:history()
-  for _, v in ipairs(c) do
-    table.insert(s.text[s.cur.y], s.cur.x, v)
-    s.cur.x = s.cur.x + 1
-  end
-  s:scroll()
-end
-
-function buff:history(op, a, b, c, d)
-  local s = self
-  local h = { op = op, x = s.cur.x, y = s.cur.y }
-  if op == 'cut' then
-    h.op = 'cut'
-    h.nr = b
-    h.endn = d
-    h.edita = a > 1
-    h.editb = c <= #s.text[b]
-    for y=b,d do
-      table.insert(h, clone(s.text[y]))
-    end
-  else
-    h.nr = s.cur.y
-    h.line = clone(s.text[s.cur.y])
-  end
-  table.insert(s.hist, h)
-  if #s.hist > 1024 then
-    table.remove(s.hist, 1)
-  end
-  s.dirty = true
-end
-
-function buff:undo()
-  local s = self
-  if #s.hist == 0 then return end
-  local h = table.remove(s.hist, #s.hist)
-  if h.op == 'cut' then
-    for k, l in ipairs(h) do
-      if k == 1 and h.edita then table.remove(s.text, h.nr)
-      elseif k == #h and h.editb then table.remove(s.text, h.nr + k - 1) end
-      table.insert(s.text, h.nr + k - 1, l)
-    end
-  else
-    s.text[h.nr] = h.line
-    if h.op == 'newline' then
-      table.remove(s.text, h.nr + 1)
-    end
-  end
-  s.cur.x = h.x
-  s.cur.y = h.y
-  s.dirty = #s.hist ~= 0
-end
-
-function buff:select(on)
-  local s = self
-  if on == true then
-    if not s.sel.start then
-      s.sel.x, s.sel.y = s.cur.x, s.cur.y
-    end
-    s.sel.endx, s.sel.endy = s.cur.x, s.cur.y
-    s.sel.start = true
-    return
-  elseif on == false then
-    s.sel.start = false
-    return
-  end
-  if s.sel.start then
-    s.sel.endx, s.sel.endy = s.cur.x, s.cur.y
-  end
-end
-
-function buff:delete()
-  local s = self
-  if s.cur.x <= #s.text[s.cur.y] then
-    s:history()
-    table.remove(s.text[s.cur.y], s.cur.x)
-  elseif s.cur.x > #s.text[s.cur.y] and s.text[s.cur.y+1] then
-    s:history()
-    s.cur.y = s.cur.y + 1
-    s:history()
-    local l = table.remove(s.text, s.cur.y)
-    s.cur.y = s.cur.y - 1
-    for _, v in ipairs(l) do
-      table.insert(s.text[s.cur.y], v)
-    end
-  end
-end
-
-function buff:backspace()
-  local s = self
-  s:unselect()
-  if s.cur.x > 1 then
-    s:history()
-    table.remove(s.text[s.cur.y], s.cur.x - 1)
-    s.cur.x = s.cur.x - 1
-  elseif s.cur.y > 1 then
-    s:history()
-    local l = table.remove(s.text, s.cur.y)
-    s.cur.y = s.cur.y - 1
-    s.cur.x = #s.text[s.cur.y] + 1
-    s:history()
-    for _, v in ipairs(l) do
-      table.insert(s.text[s.cur.y], v)
-    end
-  end
-end
-
-function buff:newline(indent)
-  local s = self
-  s.text[s.cur.y] = s.text[s.cur.y] or {}
-  local l = s.text[s.cur.y]
-  local ind, ind2 = 0, 0
-  if s.cur.x > 1 and indent ~= false then
-    ind = s:getind(s.cur.y)
-    ind2 = s:getind(s.cur.y+1)
-    ind = ind > ind2 and ind or ind2
-  end
-  s:history('newline')
-  table.insert(s.text, s.cur.y + 1, {})
-  for i=1,ind do
-    table.insert(s.text[s.cur.y + 1], 1, ' ')
-  end
-  for k=s.cur.x, #l do
-    table.insert(s.text[s.cur.y+1], table.remove(l, s.cur.x))
-  end
-  s.cur.y = s.cur.y + 1
-  s.cur.x = ind + 1
-  s.col = 1
-  s:unselect()
 end
 
 function buff:jump(nr)
   local s = self
-  s.cur.y = nr
-  s:unselect()
-  s:scroll()
-end
-
-function buff:getind(nr)
-  local s = self
-  local l = s.text[nr] or {}
-  local ind = 0
-  for i=1, #l do
-    if l[i] == ' ' then ind = ind + 1 else break end
-  end
-  return ind
+  s.edit:unselect()
+  s.edit:move(false, nr)
 end
 
 function buff:keyup(k)
   local s = self
   if k:find 'shift' then
-    s:select(false)
+    s.edit:select(false)
   end
 end
 
@@ -680,48 +381,45 @@ end
 function buff:readsel(fname)
   local s = self
   local w = readfile(fname)
-  s:cut(false, false)
-  s:paste(w)
+  s.edit:cut(false, false)
+  s.edit:paste(w)
 end
 
 function buff:writesel(fname)
   local s = self
-  local clip = s:cut(true, false)
+  local clip = s.edit:cut(true, false)
   writefile(fname, clip)
 end
 
 function buff:keydown(k)
   local s = self
+  local cx, cy = s.edit:cursor()
   if k:find 'shift' then
-    s:select(true)
+    s.edit:select(true)
   elseif k == 'up' then
-    s.cur.y = s.cur.y - 1
+    s.edit:move(false, cy - 1)
   elseif k == 'down' then
-    s.cur.y = s.cur.y + 1
+    s.edit:move(false, cy + 1)
   elseif k == 'right' then
-    s.cur.x = s.cur.x + 1
+    s.edit:move(cx + 1)
   elseif k == 'left' then
-    s.cur.x = s.cur.x - 1
+    s.edit:move(cx - 1)
   elseif k == 'home' or k == 'keypad 7' or
     (k == 'a' and input.keydown 'ctrl') then
-    s.cur.x = 1
+    s.edit:move(1)
   elseif k == 'end' or k == 'keypad 1' or
     (k == 'e' and input.keydown 'ctrl') then
-    s.cur.x = #s.text[s.cur.y] + 1
+    s.edit:move(#s.text[cy] + 1)
   elseif k == 'pagedown' or k == 'keypad 3' then
-    s.cur.y = s.cur.y + s.lines
-    s:scroll()
-    s.line = s.cur.y
+    s.edit:move(false, cy + s.lines)
   elseif k == 'pageup' or k == 'keypad 9' then
-    s.cur.y = s.cur.y - s.lines
-    s:scroll()
-    s.line = s.cur.y
+    s.edit:move(false, cy - s.lines)
   elseif k == 'return' or k == 'keypad enter' then
-    s:newline()
+    s.edit:newline(true)
   elseif k == 'backspace' then
-    s:backspace()
+    s.edit:backspace()
   elseif k == 'tab' then
-    s:input("  ")
+    s.edit:input("  ")
   elseif k == 'f2' or (k == 's' and input.keydown'ctrl') then
     s:write()
   elseif k == 'f8' then
@@ -751,19 +449,19 @@ function buff:keydown(k)
   elseif k == 'f1' then
     help_mode = not help_mode
   elseif (k == 'u' or k == 'z') and input.keydown 'ctrl' then
-    s:undo()
+    s.edit:undo()
   elseif k == 'keypad .' then
-    s:delete()
+    s.edit:delete()
   elseif k == 'x' and input.keydown 'ctrl' or k == 'delete' then
     if k == 'delete' and not s:selected() then
-      s:delete()
+      s.edit:delete()
     else
-      s:cut()
+      s.edit:cut()
     end
   elseif k == 'c' and input.keydown 'ctrl' then
-    s:cut(true)
+    s.edit:cut(true)
   elseif k == 'v' and input.keydown 'ctrl' then
-    s:paste()
+    s.edit:paste()
   elseif k== 'f4' then
     inp_mode = not inp_mode
     if inp_mode then
@@ -786,62 +484,40 @@ function buff:keydown(k)
       inp_mode = 'goto'
     end
   end
-  s:scroll()
-  s:select()
+  s.edit:select()
 end
 
 function buff:search(t)
-  local s = self
-  for y = s.cur.y, #s.text do
-    local l = table.concat(s.text[y], '')
-    local start = 0
-    if y == s.cur.y then
-      local chars = s.text[y]
-      for i=1,s.cur.x+1 do
-        start = start + (chars[i] or ' '):len()
-      end
-    end
-    if l:find(t, start, true) then
-      local b, e = l:find(t, start, true)
-      local pos = 1
-      for i=1,#s.text[y] do
-        if pos == b then
-          s.cur.x = pos
-        end
-        if pos == e then
-          s.sel.endx = pos + 1
-          break
-        end
-        pos = pos + s.text[y][i]:len()
-      end
-      s.cur.y = y
-      s.sel.x = s.cur.x
-      s.sel.y = y
-      s.sel.endy = y
-      s:scroll()
-      return true
-    end
+  local x1, y1, x2, y2 = self.edit:search(t)
+  if x1 then
+    self.edit:select(x1, y1, x2, y2)
+    self.edit:move(x1, y1)
+    return true
   end
-  return false
 end
 
 local b = buff.new(FILE)
 local inp = buff.new(false, 0, H - b.sph, W, b.sph)
 inp.status = false
 inp.lines = 1
+inp.edit:size(W, b.sph)
 
-function inp:newline()
+function inp.edit:newline()
   local s = self
   if inp_mode == 'search' then
-    b:search(table.concat(s.text[1] or {}, ''))
+    b:search(table.concat(s.lines[1] or {}, ''))
   elseif inp_mode == 'goto' then
-    b:jump(tonumber(table.concat(s.text[1] or {}, '')) or 1)
+    b:jump(tonumber(table.concat(s.lines[1] or {}, '')) or 1)
   elseif inp_mode == 'open' then
-    FILE = table.concat(s.text[1] or {}, '')
-    FILE = FILE == '' and 'main.lua' or FILE
-    b = buff.new(FILE)
+    local f = table.concat(s.lines[1] or {}, '')
+    if f ~= '' then
+      FILE = f
+      b = buff.new(FILE)
+    end
   end
-  s.text = {}
+  s:set ''
+  s:move(1, 1)
+  inp.text = s.lines
   inp_mode = false
 end
 
@@ -875,6 +551,7 @@ while true do
   if idle_mode then -- resume?
     gfx.border(conf.brd)
     mixer.done()
+    sys.hidemouse(false)
     screen:nooffset()
     screen:noclip()
     sys.input(true) -- clear input
@@ -910,8 +587,8 @@ while true do
   elseif r == 'keyup' then
     get_buff():keyup(v)
   elseif r == 'text' then
-    get_buff():unselect()
-    get_buff():input(v)
+    get_buff().edit:unselect()
+    get_buff().edit:input(v)
   end
   if not idle_mode then
     if not gfx.framedrop() then

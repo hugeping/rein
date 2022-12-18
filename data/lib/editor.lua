@@ -73,6 +73,7 @@ function editor:input(t)
   local s = self
   local c = utf.chars(t)
   s:history()
+  s.lines[s.cur.y] = s.lines[s.cur.y] or {}
   for _, v in ipairs(c) do
     table.insert(s.lines[s.cur.y], s.cur.x, v)
     s.cur.x = s.cur.x + 1
@@ -83,7 +84,7 @@ end
 
 local function clone(t)
   local l = {}
-  for _, v in ipairs(t) do
+  for _, v in ipairs(t or {}) do
     table.insert(l, v)
   end
   return l
@@ -154,6 +155,24 @@ function editor:selection()
   return x1, y1, x2, y2
 end
 
+function editor:selected()
+  local x1, y1, x2, y2 = self:selection()
+  if not x1 then return end
+  local txt = ''
+  for y=y1, y2 do
+    local l = self.lines[y]
+    for x=1, #l do
+      if self:insel(x, y) then
+        txt = txt .. l[x]
+      end
+    end
+    if y ~= y2 then
+      txt = txt .. '\n'
+    end
+  end
+  return txt
+end
+
 function editor:insel(x, nr)
   local s = self
   local x1, y1, x2, y2 = s:selection()
@@ -179,8 +198,13 @@ function editor:unselect()
   s.sel.x, s.sel.endx, s.sel.start = false, false, false
 end
 
-function editor:select(on)
+function editor:select(on, y1, x2, y2)
   local s = self
+  if y1 and x2 and y2 then
+    s.sel.x, s.sel.y, s.sel.endx, s.sel.endy = on, y1, x2, y2
+    s.sel.start = false
+    return
+  end
   if on == true then
     if not s.sel.start then
       s.sel.x, s.sel.y = s.cur.x, s.cur.y
@@ -197,7 +221,7 @@ function editor:select(on)
   end
 end
 
-function editor:cut(copy)
+function editor:cut(copy, clip)
   local s = self
   local x1, y1, x2, y2 = s:selection()
 
@@ -234,11 +258,12 @@ function editor:cut(copy)
     s.cur.x, s.cur.y = x1, y1
     s:unselect()
   end
-  sys.clipboard(clipboard)
-  s.clipboard = clipboard
+  if clip ~= false then
+    sys.clipboard(clipboard)
+    s.clipboard = clipboard
+  end
   return clipboard
 end
-
 
 function editor:delete()
   local s = self
@@ -257,16 +282,35 @@ function editor:delete()
   end
 end
 
-function editor:newline()
+local function getind(l)
+  if not l then return 0 end
+  local ind = 0
+  for i=1, #l do
+    if l[i] ~= ' ' then break end
+    ind = ind + 1
+  end
+  return ind
+end
+
+function editor:newline(indent)
   local s = self
+  local ind, ind2 = 0, 0
   local l = s.lines[s.cur.y]
+  if s.cur.x > 1 and indent then
+    ind, ind2 = getind(l), getind(s.lines[s.cur.y + 1])
+    ind = ind > ind2 and ind or ind2
+  end
   s:history('newline')
   table.insert(s.lines, s.cur.y + 1, {})
+  for i=1, ind do
+    table.insert(s.lines[s.cur.y + 1], 1, ' ')
+  end
   for k=s.cur.x, #l do
     table.insert(s.lines[s.cur.y+1], table.remove(l, s.cur.x))
   end
-  s.cur.y = s.cur.y + 1
-  s.cur.x = 1
+  s:unselect()
+  s.col = 1
+  s:move(ind + 1, s.cur.y + 1)
 end
 
 function editor:backspace()
@@ -287,12 +331,12 @@ function editor:backspace()
   end
 end
 
-function editor:paste()
+function editor:paste(clip)
   local s = self
-  local text = sys.clipboard() or s.clipboard or ''
+  local text = clip or sys.clipboard() or s.clipboard or ''
   for l in text:lines() do
     s:input(l)
-    s:newline()
+    s:newline(false)
   end
 end
 
@@ -313,6 +357,40 @@ function editor:cutline()
   table.remove(self.lines, self.cur.y)
 end
 
+function editor:search(t)
+  local s = self
+  local cx, cy = s:cursor()
+  local x1, x2
+  for y = cy, #s.lines do
+    local l = table.concat(s.lines[y], '')
+    local start = 0
+    if y == cy then
+      local chars = s.lines[y]
+      for i=1,cx + 1 do
+        start = start + (chars[i] or ' '):len()
+      end
+    end
+    if l:find(t, start, true) then
+      local b, e = l:find(t, start, true)
+      local pos = 1
+      for i=1,#s.lines[y] do
+        if pos == b then
+          x1 = i
+        end
+        pos = pos + s.lines[y][i]:len()
+        if pos - 1 == e then
+          x2 = i + 1
+          break
+        end
+      end
+      if x1 and x2 then
+        return x1, y, x2, y
+      end
+    end
+  end
+  return false
+end
+
 function editor:visible_lines()
   local columns, lines = self:size()
   local nr = 0
@@ -326,7 +404,7 @@ function editor:visible_lines()
       return
     end
     local n = columns + self.col - 1
-    return nr, self.col, n > #l and #l or n
+    return nr + self.line - 1, self.col, n > #l and #l or n
   end
 end
 

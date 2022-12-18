@@ -49,6 +49,7 @@ local conf = {
 }
 
 local env = {
+  package = package,
   type = type,
   rawset = rawset,
   rawget = rawget,
@@ -573,8 +574,8 @@ function api.event(e, v, a, b, c)
     api.running = false
     input.fifo  = {}
     mixer.done()
-  elseif e == 'keydown' and (v == 'f10'
-    or v == 'escape' and input.kbd.ctrl) then
+  elseif e == 'keydown' and (v == 'escape' and input.kbd.ctrl)
+    and #core.suspended > 0 then
     mixer.done()
     core.stop()
     return true
