@@ -1,7 +1,6 @@
 #include "external.h"
 #include "platform.h"
 #include "gfx.h"
-#include "tinymt32.h"
 
 static int
 sys_sleep(lua_State *L)
@@ -125,20 +124,56 @@ sys_log(lua_State *L)
 	return 0;
 }
 
+/*  Written in 2018 by David Blackman and Sebastiano Vigna (vigna@acm.org)
+
+To the extent possible under law, the author has dedicated all copyright
+and related and neighboring rights to this software to the public domain
+worldwide. This software is distributed without any warranty.
+
+See <http://creativecommons.org/publicdomain/zero/1.0/>. */
+
+static inline uint32_t rotl(const uint32_t x, int k) {
+	return (x << k) | (x >> (32 - k));
+}
+
+static uint32_t rnd_next(uint32_t *s) {
+	const uint32_t result = rotl(s[1] * 5, 7) * 9;
+
+	const uint32_t t = s[1] << 9;
+
+	s[2] ^= s[0];
+	s[3] ^= s[1];
+	s[1] ^= s[2];
+	s[0] ^= s[3];
+
+	s[2] ^= t;
+
+	s[3] = rotl(s[3], 11);
+
+	return result;
+}
+/* end of xoshiro code */
+
 static int
 sys_srandom(lua_State *L)
 {
 	int seed;
-	tinymt32_t *mt;
+	uint32_t *ctx;
 	if (lua_isnumber(L, 1))
 		seed = luaL_checknumber(L, 1);
 	else
 		seed = rand();
-	mt = lua_newuserdata(L, sizeof(tinymt32_t));
-	if (!mt)
+	ctx = lua_newuserdata(L, sizeof(uint32_t)*4);
+	if (!ctx)
 		return 0;
-	memset(mt, 0, sizeof(*mt));
-	tinymt32_init(mt, seed);
+	memset(ctx, 0, sizeof(uint32_t)*4);
+	ctx[0] = seed;
+	seed ^= seed >> 12;
+	ctx[1] = seed;
+	seed ^= seed << 25;
+	ctx[2] = seed;
+	seed ^= seed >> 27;
+	ctx[3] = seed;
 	luaL_getmetatable(L, "mt metatable");
 	lua_setmetatable(L, -2);
 	return 1;
@@ -147,15 +182,15 @@ sys_srandom(lua_State *L)
 static int
 sys_random(lua_State *L)
 {
-	tinymt32_t *mt = (tinymt32_t *)luaL_checkudata(L, 1, "mt metatable");
+	uint32_t *ctx = (uint32_t *)luaL_checkudata(L, 1, "mt metatable");
 	unsigned int r = 0;
 	long a = luaL_optnumber(L, 2, -1);
 	long b = luaL_optnumber(L, 3, -1);
 	if (a == -1 && b == -1) {
-		lua_pushnumber(L, tinymt32_generate_32double(mt));
+		lua_pushnumber(L, rnd_next(ctx) * (1.0 / 4294967296.0));
 		return 1;
 	}
-	r = tinymt32_generate_uint32(mt);
+	r = rnd_next(ctx);
 	if (a >= 0 && b > a)
 		r = a + (r % (b - a + 1));
 	else if (a > 0 && b == -1)
