@@ -38,8 +38,7 @@ CFILES= \
 	src/zvon.c \
 	src/zvon_mixer.c \
 	src/zvon_sfx.c \
-	src/synth.c \
-	src/tinymt32.c
+	src/synth.c
 
 OFILES  := $(patsubst %.c, %.o, $(CFILES))
 
