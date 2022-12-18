@@ -33,4 +33,3 @@
 #include "emscripten/html5.h"
 #endif
 #include <fcntl.h>
-#include <stdint.h>

@@ -132,14 +132,14 @@ worldwide. This software is distributed without any warranty.
 
 See <http://creativecommons.org/publicdomain/zero/1.0/>. */
 
-static inline uint32_t rotl(const uint32_t x, int k) {
+static inline unsigned int rotl(const unsigned int x, int k) {
 	return (x << k) | (x >> (32 - k));
 }
 
-static uint32_t rnd_next(uint32_t *s) {
-	const uint32_t result = rotl(s[1] * 5, 7) * 9;
+static unsigned int rnd_next(unsigned int *s) {
+	const unsigned int result = rotl(s[1] * 5, 7) * 9;
 
-	const uint32_t t = s[1] << 9;
+	const unsigned int t = s[1] << 9;
 
 	s[2] ^= s[0];
 	s[3] ^= s[1];
@@ -158,15 +158,15 @@ static int
 sys_srandom(lua_State *L)
 {
 	int seed;
-	uint32_t *ctx;
+	unsigned int *ctx;
 	if (lua_isnumber(L, 1))
 		seed = luaL_checknumber(L, 1);
 	else
 		seed = rand();
-	ctx = lua_newuserdata(L, sizeof(uint32_t)*4);
+	ctx = lua_newuserdata(L, sizeof(unsigned int)*4);
 	if (!ctx)
 		return 0;
-	memset(ctx, 0, sizeof(uint32_t)*4);
+	memset(ctx, 0, sizeof(unsigned int)*4);
 	ctx[0] = seed;
 	seed ^= seed >> 12;
 	ctx[1] = seed;
@@ -182,7 +182,7 @@ sys_srandom(lua_State *L)
 static int
 sys_random(lua_State *L)
 {
-	uint32_t *ctx = (uint32_t *)luaL_checkudata(L, 1, "mt metatable");
+	unsigned int *ctx = (unsigned int *)luaL_checkudata(L, 1, "mt metatable");
 	unsigned int r = 0;
 	long a = luaL_optnumber(L, 2, -1);
 	long b = luaL_optnumber(L, 3, -1);
