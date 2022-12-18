@@ -53,6 +53,29 @@ static struct sfx_proto *boxes[] = { &empty_box, &bypass_box, &sfx_delay, &sfx_d
 static struct chan_state channels[CHANNELS_MAX];
 
 static int
+synth_chan_change(lua_State *L)
+{
+	const int chan = luaL_checkinteger(L, 1);
+	const int param = luaL_checkinteger(L, 2);
+	int elem = 0;
+	double val;
+
+	if (chan < 0 || chan >= CHANNELS_MAX)
+		return luaL_error(L, "Wrong channel number");
+
+	if (lua_isnumber(L, 4)) {
+		elem = luaL_checkinteger(L, 3);
+		val = luaL_checknumber(L, 4);
+	} else
+		val = luaL_checknumber(L, 3);
+	MutexLock(mutex);
+	chan_change(&channels[chan], param, elem, val);
+	MutexUnlock(mutex);
+	return 0;
+}
+
+
+static int
 synth_change(lua_State *L)
 {
 	const int chan = luaL_checkinteger(L, 1);
@@ -259,6 +282,7 @@ synth_lib[] = {
 	{ "mul_vol", synth_mul_vol },
 	{ "pan", synth_set_pan },
 	{ "change", synth_change },
+	{ "chan_change", synth_chan_change },
 //	{ "peek", synth_peek },
 	{ "mix", synth_mix },
 	{ "stop", synth_stop },

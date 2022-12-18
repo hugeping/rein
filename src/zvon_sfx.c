@@ -3,18 +3,6 @@
 #include <math.h>
 #include "zvon_sfx.h"
 
-void sfx_box_change(struct sfx_box *box, int param, int elem, double val) {
-    switch (param) {
-    case ZV_VOLUME:
-        sfx_box_set_vol(box, val);
-        break;
-    default:
-        if (box->state) {
-            box->proto->change(box->state, param, elem, val);
-        }
-    }
-}
-
 struct osc_state {
     int type;
     double params[OSC_PARAMS];
@@ -109,7 +97,7 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
         adsr_note_off(&s->adsr);
         break;
     case ZV_SET_GLIDE:
-        glide_set_source(&s->glide, s->osc.params[OSC_FREQ]);
+        glide_set_source(&s->glide, s->lfo_params[OSC_FREQ]);
         s->is_glide_on = val;
         break;
     case ZV_GLIDE_RATE:
@@ -225,7 +213,6 @@ static double osc_next(struct osc_state *s, double *params) {
 }
 
 static double sfx_synth_mono(struct sfx_synth_state *s, double l) {
-    (void) l;
     for(int i = 0; i < OSC_PARAMS; i++) {
         s->lfo_params[s->remap[i]] = s->osc.params[i];
     }
@@ -234,12 +221,12 @@ static double sfx_synth_mono(struct sfx_synth_state *s, double l) {
         s->lfo_params[s->lfo_targets[i]] += lfo_next(&s->lfos[i]);
     }
     double f = s->osc.params[OSC_FREQ];
-    if (s->is_glide_on) {
-        f = glide_next(&s->glide, f);
-    }
     s->lfo_params[OSC_FREQ] += f * s->lfo_params[OSC_FMUL];
+    if (s->is_glide_on) {
+        s->lfo_params[OSC_FREQ] = glide_next(&s->glide, s->lfo_params[OSC_FREQ]);
+    }
     double y = s->lfo_params[OSC_AMP] * osc_next(&s->osc, s->lfo_params);
-    return y * adsr_next(&s->adsr, s->is_sustain_on);
+    return y * adsr_next(&s->adsr, s->is_sustain_on) + l;
 }
 
 struct sfx_proto sfx_synth = {

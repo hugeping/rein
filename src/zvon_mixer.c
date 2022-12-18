@@ -87,3 +87,21 @@ void mix_process(struct chan_state *chans, int num_chans, double vol, float *sam
         samps[1] = vol * right;
     }
 }
+
+void sfx_box_change(struct sfx_box *box, int param, int elem, double val) {
+    switch (param) {
+    case SFX_BOX_VOLUME:
+        sfx_box_set_vol(box, val);
+        break;
+    default:
+        if (box->state) {
+            box->proto->change(box->state, param, elem, val);
+        }
+    }
+}
+
+void chan_change(struct chan_state *c, int param, int elem, double val) {
+    for (int i = 0; i < c->stack_size; i++) {
+        sfx_box_change(&c->stack[i], param, elem, val);
+    }
+}

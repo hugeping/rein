@@ -205,9 +205,9 @@ function sfx.play_song_once(chans, tracks, temp)
       local freq, vol = r[1], r[2]
       if freq then
         if freq == 0 then
-          synth.change(chans[i], 0, synth.NOTE_OFF, 0)
+          synth.chan_change(chans[i], synth.NOTE_OFF, 0)
         else
-          synth.change(chans[i], 0, synth.NOTE_ON, freq)
+          synth.chan_change(chans[i], synth.NOTE_ON, freq)
         end
       end
       if vol then
