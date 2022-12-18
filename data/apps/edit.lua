@@ -163,7 +163,7 @@ function buff:write()
     end
   end
   f:close()
-  s.dirty = false
+  s.edit.dirty = false
   print(string.format("%s written", s.fname))
 end
 
@@ -189,7 +189,7 @@ function buff:status()
   local s = self
   local cx, cy = self.edit:cursor()
   local info = string.format("%s%s %2d:%-2d",
-    s.dirty and '*' or '', s.fname, cx, cy)
+    s.edit.dirty and '*' or '', s.fname, cx, cy)
   screen:fill_rect(0, H - s.sph, W, H, conf.status)
   sfont:text(info, conf.fg):blend(screen, 0, H - s.sph)
 end
@@ -458,6 +458,8 @@ function buff:keydown(k)
     else
       s.edit:cut()
     end
+  elseif k == 'y' and input.keydown 'ctrl' then
+    s.edit:cutline()
   elseif k == 'c' and input.keydown 'ctrl' then
     s.edit:cut(true)
   elseif k == 'v' and input.keydown 'ctrl' then

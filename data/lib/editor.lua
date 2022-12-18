@@ -94,6 +94,7 @@ function editor:history(op, x1, y1, x2, y2)
   local s = self
   y1 = y1 or s.cur.y
   y2 = y2 or s.cur.y
+  s.dirty = true
   local h = { op = op, x = s.cur.x, y = s.cur.y,
     nr = y1, rem = 0 }
   if op == 'cut' then
@@ -137,6 +138,7 @@ function editor:undo()
   end
   s.cur.x = h.x
   s.cur.y = h.y
+  s.dirty = #s.hist ~= 0
 end
 
 function editor:selection()
