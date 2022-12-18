@@ -791,7 +791,7 @@ function w_play:event(r, v, ...)
     chans[c] = v
     chans.notes[c] = note
     chans.times[c] = sys.time()
-    synth.change(c, 0, synth.NOTE_ON, hz)
+    synth.chan_change(c, synth.NOTE_ON, hz)
 --    synth.change(c, 0, synth.VOLUME, 0.5)
     return true
   elseif r == 'keyup' then
@@ -799,7 +799,7 @@ function w_play:event(r, v, ...)
       v = tonumber(v) or v
       if chans[c] == v then
         chans[c] = false
-        synth.change(c, 0, synth.NOTE_OFF, 0)
+        synth.chan_change(c, synth.NOTE_OFF, 0)
         break
       end
     end
