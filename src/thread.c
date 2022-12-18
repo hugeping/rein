@@ -393,11 +393,13 @@ thread_new(lua_State *L)
 		goto err2;
 	}
 	lua_getglobal(L, "package");
-	lua_getfield(L, -1, "path");
-	lua_getglobal(nL, "package");
-	lua_pushstring(nL, lua_tostring(L, -1));
-	lua_pop(L, 2);
-	lua_setfield(nL, -2, "path");
+	if (lua_istable(L, -1)) {
+		lua_getfield(L, -1, "path");
+		lua_getglobal(nL, "package");
+		lua_pushstring(nL, lua_tostring(L, -1));
+		lua_pop(L, 2);
+		lua_setfield(nL, -2, "path");
+	}
 	lua_pop(nL, 1);
 	thr->tid = Thread(thread, thr);
 
