@@ -1,7 +1,7 @@
 local sfx = require 'sfx'
 local editor = require 'editor'
 
-local w_conf, w_rem, w_bypass
+local w_conf, w_rem, w_bypass, w_voice
 
 gfx.win(384, 384)
 mixer.volume(0.5)
@@ -160,7 +160,7 @@ function editarea:event(r, v, ...)
 --        w_conf.edit:set(sfx.box_defs(w_conf.nam))
 --      end
     elseif v == 'x' and input.keydown 'ctrl' or v == 'delete' then
-      if v == 'delete' and not self:selection() then
+      if v == 'delete' and not self.edit:selection() then
         self.edit:delete()
       else
         self.edit:cut()
@@ -223,16 +223,20 @@ function edit:event(r, v, ...)
   end
 end
 
+function win:fmt(s)
+  return s
+end
+
 function edit:show()
   win.show(self)
-  local w, h = self.font:size(self.value .. (self.edit and '|' or ''))
+  local w, h = self.font:size(self:fmt(self.value) .. (self.edit and '|' or ''))
   local x, y = self:realpos()
   screen:offset(x, y)
   if not tostring(self.value):empty() or self.edit then
     screen:clip(x, y, self.w, self.h)
     local xoff = (self.w - w)/2
     if xoff < 0 then xoff = self.w - w end
-    self.font:text(self.value ..
+    self.font:text(self:fmt(self.value) ..
       (self.edit and '|' or ''), self.fg):
         blend(screen, xoff, (self.h -h)/2)
     screen:noclip()
@@ -532,10 +536,9 @@ function build_stack()
     wb.onclick = config_box
     w_stack:with { wb }
   end
+  w_voice.value = voices[cur_voice].nam
   apply_boxes()
 end
-
-build_stack()
 
 function save(fname)
   local txt = ''
@@ -583,8 +586,15 @@ end
 local w_prev = button:new { text = "<" ,
   x = 0, y = 0, w = 10, h = 12, border = true}
 
-local w_voice = edit:new { border = false, value = voices[cur_voice].nam,
+w_voice = edit:new { border = false, value = voices[cur_voice].nam,
   x = w_prev:after(1), y = 0, w = 14*7-8, h = 12, lev = -2.1,
+  fmt = function(s, str)
+    if s.edit then return str end
+    if cur_voice == tonumber(str) then
+      return string.format("%d", cur_voice)
+    end
+    return string.format("%d:%s", cur_voice, str)
+  end,
   onedit = function(s)
     for k, v in ipairs(voices) do
       if v.nam == s.value or k == tonumber(s.value) then
@@ -610,7 +620,6 @@ function w_prev:onclick(s)
   cur_voice = cur_voice - 1
   if cur_voice < 1 then cur_voice = 1 end
   stack = voices[cur_voice]
-  w_voice.value = voices[cur_voice].nam
   build_stack()
 end
 
@@ -623,7 +632,6 @@ function w_next:onclick(s)
     voices[cur_voice] = { nam = tostring(cur_voice) }
   end
   stack = voices[cur_voice]
-  w_voice.value = voices[cur_voice].nam
   build_stack()
 end
 
@@ -805,6 +813,8 @@ local r, e = load(FILE)
 if not r then
   print("Error loading voices: ".. tostring(e))
 end
+
+build_stack()
 
 while true do
   win:event(sys.input())
