@@ -586,6 +586,14 @@ local w_prev = button:new { text = "<" ,
 local w_voice = edit:new { border = false, value = voices[cur_voice].nam,
   x = w_prev:after(1), y = 0, w = 14*7-8, h = 12, lev = -2.1,
   onedit = function(s)
+    for k, v in ipairs(voices) do
+      if v.nam == s.value or k == tonumber(s.value) then
+        cur_voice = k
+        stack = voices[cur_voice]
+        build_stack()
+        return
+      end
+    end
     if s.value:empty() then s.value = tostring(cur_voice) end
     voices[cur_voice].nam = s.value
   end

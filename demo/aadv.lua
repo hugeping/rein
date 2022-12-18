@@ -328,6 +328,51 @@ lfo_low 0 0
 lfo_high 0 -260
 lfo_set_loop 0 0
 lfo_assign 0 freq
+
+voice take
+box synth
+# synth
+volume 0.5
+type pwm
+freq 0
+fmul 1
+amp 1
+width 0.5
+offset 1
+set_lin 1
+freq2 0
+attack 0.01
+decay 0.1
+sustain 0.5
+release 0.1
+set_sustain 0
+set_glide 0
+glide_rate 0
+remap freq freq
+lfo_type 0 seq
+lfo_freq 0 60
+lfo_low 0 0
+lfo_high 0 100
+lfo_set_loop 0 0
+lfo_set_reset 0 1
+lfo_assign 0 freq
+lfo_seq_pos 0 0
+lfo_seq_val 0 2
+
+lfo_seq_pos 0 1
+lfo_seq_val 0 3
+
+lfo_seq_pos 0 2
+lfo_seq_val 0 4
+
+lfo_seq_pos 0 3
+lfo_seq_val 0 6
+
+lfo_seq_pos 0 4
+lfo_seq_val 0 10
+
+lfo_seq_size 0 5
+lfo_set_lin_seq 0 0
 ]]
 
 snd.voices(__voices__)
@@ -593,9 +638,9 @@ end
 local border_nr = false
 
 mixer.reserve(8)
-for i=1, 6 do
+for i=1, 7 do
   synth.on(i, true)
-  synth.vol(i, 1)
+  synth.vol(i, 0.8)
 end
 snd.apply(1, 'engine')
 snd.apply(2, 'boom')
@@ -603,6 +648,7 @@ snd.apply(3, 'flash')
 snd.apply(4, 'water')
 snd.apply(5, 'boom2')
 snd.apply(6, 'takedown')
+snd.apply(7, 'take')
 
 function engine()
   if plane.t <= 0.5 or plane.sink==1 or plane.stp then
@@ -634,6 +680,10 @@ function sfx(nr)
   end
   if nr == 5 then
     synth.change(3, 0, synth.NOTE_ON, 220 + rnd(400))
+    return
+  end
+  if nr == 6 then
+    synth.change(7, 0, synth.NOTE_ON, 320)
     return
   end
 end
