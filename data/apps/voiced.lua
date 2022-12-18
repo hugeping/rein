@@ -53,11 +53,11 @@ function editarea:new(w)
 end
 
 function editarea:size(w, h)
-  self.w, self.h = w, h
   if not w then
     return self.edit:size()
   end
-  self.edit:size(math.floor(w / self.spw), math.floor(h / self.sph))
+  self.w, self.h = w, h
+  self.edit:size(math.floor(w / self.spw), math.floor(h / self.sph)-1)
 end
 
 function editarea:cursor(px, py)
