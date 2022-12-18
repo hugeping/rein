@@ -1,4 +1,5 @@
 local sfx = require 'sfx'
+local editor = require 'editor'
 
 local w_conf, w_rem, w_bypass
 
@@ -39,84 +40,31 @@ function win:below(d)
   return self.y + self.h + (d or 0)
 end
 
-local editarea = win:new { value = '', cur = {x = 1, y = 1},
-  col = 1, line = 1, lines = {}, sph = 10, spw = 7, glyph_cache = {},
-  sel = {}, hl = { 0, 0, 0, 32 }, hist = {} }
+local editarea = win:new { value = '', hl = { 0, 0, 0, 32 } }
 
-function editarea:set(text)
-  self.lines = {}
-  for l in text:lines() do
-    table.insert(self.lines, utf.chars(l))
-  end
+function editarea:new(w)
+  w.childs = {}
+  w.edit = editor.new()
+  w.glyph_cache = {}
+  setmetatable(w, self)
+  self.__index = self
+  w.spw, w.sph = w.font:size(" ")
+  return w
 end
 
-function editarea:get()
-  local text = ''
-  for _, l in ipairs(self.lines) do
-    text = text .. table.concat(l) .. '\n'
+function editarea:size(w, h)
+  self.w, self.h = w, h
+  if not w then
+    return self.edit:size()
   end
-  return text
+  self.edit:size(math.floor(w / self.spw), math.floor(h / self.sph))
 end
 
-function editarea:size()
-  local s = self
-  local columns = math.floor((s.w-2) / s.spw)
-  local lines = math.floor(s.h / s.sph) - 1
-  return columns, lines
-end
-
-function editarea:scroll()
-  local s = self
-  if #s.lines == 0 then
-    s.cur.x, s.cur.y = 1, 1
-    s.lines[1] = {}
-    return
-  end
-  if s.cur.x < 1 then s.cur.x = 1 end
-  if s.cur.y < 1 then s.cur.y = 1 end
-  if s.cur.y > #s.lines then
-    s.cur.y = #s.lines
-    if #s.lines[s.cur.y] ~= 0 then
-      s.cur.y = s.cur.y + 1
-      s.cur.x = 1
-      s.lines[s.cur.y] = {}
-    end
-  end
-  if s.cur.x > #s.lines[s.cur.y] then s.cur.x = #s.lines[s.cur.y] + 1 end
-  local columns, lines = self:size()
-  if s.cur.y >= s.line and s.cur.y <= s.line + lines - 1
-    and s.cur.x >= s.col and s.cur.x < columns then
-    return
-  end
-  if s.cur.x < s.col then
-    s.col = s.cur.x
-  elseif s.cur.x > s.col + columns - 1 then
-    s.col = s.cur.x - columns + 1
-  end
-  if s.cur.y < s.line then
-    s.line = s.cur.y
-  elseif s.cur.y > s.line + lines - 1 then
-    s.line = s.cur.y - lines + 1
-  end
-end
-
-function editarea:input(t)
-  local s = self
-  local c = utf.chars(t)
-  s:history()
-  for _, v in ipairs(c) do
-    table.insert(s.lines[s.cur.y], s.cur.x, v)
-    s.cur.x = s.cur.x + 1
-  end
-  s:scroll()
-end
-
-function editarea:cursor()
+function editarea:cursor(px, py)
   local s = self
   if math.floor(sys.time()*4) % 2 == 1 then
     return
   end
-  local px, py = (s.cur.x - s.col)*s.spw, (s.cur.y - s.line)*s.sph
   for y=py, py + s.sph-1 do
     for x=px, px + s.spw-1 do
       local r, g, b = screen:pixel(x, y)
@@ -128,171 +76,17 @@ function editarea:cursor()
   end
 end
 
-function editarea:glyph(t)
+function editarea:glyph(t, x, y, sel)
   local key = t
-  if self.glyph_cache[key] then
-    return self.glyph_cache[key]
+  local g
+  if not self.glyph_cache[key] then
+    self.glyph_cache[key] = self.font:text(t, self.fg) or self.font:text("?", self.fg)
   end
-  self.glyph_cache[key] = self.font:text(t, self.fg)
-  return self.glyph_cache[key]
-end
-
-local function clone(t)
-  local l = {}
-  for _, v in ipairs(t) do
-    table.insert(l, v)
+  g = self.glyph_cache[key]
+  if sel then
+    screen:fill_rect(x, y, x + self.spw-1, y + self.sph-1, self.hl)
   end
-  return l
-end
-
-function editarea:history(op, x1, y1, x2, y2)
-  local s = self
-  y1 = y1 or s.cur.y
-  y2 = y2 or s.cur.y
-  local h = { op = op, x = s.cur.x, y = s.cur.y,
-    nr = y1, rem = 0 }
-  if op == 'cut' then
-    if y1 == y2 then
-      h.rem = x2 - x1 < #s.lines[y1] and 1 or 0
-    else
-      h.rem = x1 > 1 and 1 or 0
-      if x2 < #s.lines[y2] then
-        h.rem = h.rem + 1
-      end
-      h.rem = h.rem + y2 - y1 - 1
-    end
-  end
-  for i = 1, y2 - y1 + 1 do
-    table.insert(h, clone(s.lines[y1 + i - 1]))
-  end
-  table.insert(s.hist, h)
-  if #s.hist > 1024 then
-    table.remove(s.hist, 1)
-  end
-end
-
-function editarea:undo()
-  local s = self
-  if #s.hist == 0 then return end
-  local h = table.remove(s.hist, #s.hist)
-  if h.op == 'cut' then
-    for i=1, h.rem do
-      table.remove(s.lines, h.nr)
-    end
-    for k, l in ipairs(h) do
-      table.insert(s.lines, h.nr + k - 1, l)
-    end
-  else
-    for k, l in ipairs(h) do
-      s.lines[h.nr + k - 1] = l
-    end
-    if h.op == 'newline' then
-      table.remove(s.lines, h.nr + 1)
-    end
-  end
-  s.cur.x = h.x
-  s.cur.y = h.y
-end
-
-function editarea:selection()
-  local s = self
-  local x1, y1 = s.sel.x, s.sel.y
-  local x2, y2 = s.sel.endx, s.sel.endy
-
-  if not x2 or (y1 == y2 and x1 == x2) then
-    return
-  end
-  if y1 > y2 then
-    y1, y2 = y2, y1
-    x1, x2 = x2, x1
-  end
-  if y1 == y2 and x1 > x2 then x1, x2 = x2, x1 end
-  return x1, y1, x2, y2
-end
-
-function editarea:selected(x, nr)
-  local s = self
-  local x1, y1, x2, y2 = s:selection()
-  if not x1 or not s.lines[nr] then return end
-  if nr < y1 or nr > y2 then return end -- fast path
-  if nr > y1 and nr < y2 then -- full line
-    return true
-  end
-  if nr == y1 then
-    if x < x1 then return end
-    if y2 == nr and x >= x2 then return end
-    return true
-  end
-  if nr == y2 then
-    if x >= x2 then return end
-    if y2 == nr and x > x2 then return end
-    return true
-  end
-end
-
-function editarea:unselect()
-  local s = self
-  s.sel.x, s.sel.endx, s.sel.start = false, false, false
-end
-
-function editarea:select(on)
-  local s = self
-  if on == true then
-    if not s.sel.start then
-      s.sel.x, s.sel.y = s.cur.x, s.cur.y
-    end
-    s.sel.endx, s.sel.endy = s.cur.x, s.cur.y
-    s.sel.start = true
-    return
-  elseif on == false then
-    s.sel.start = false
-    return
-  end
-  if s.sel.start then
-    s.sel.endx, s.sel.endy = s.cur.x, s.cur.y
-  end
-end
-
-function editarea:cut(copy, clip)
-  local s = self
-  local x1, y1, x2, y2 = s:selection()
-
-  local clipboard = ''
-  if not x1 then return end
-  local yy = y1
-  if not copy then
-    s:history('cut', x1, y1, x2, y2)
-  end
-  for y=y1, y2 do
-    local nl = {}
-    if y ~= y1 and y ~= y2 then -- full line
-      clipboard = clipboard .. table.concat(s.lines[yy])..'\n'
-    else
-      for x=1, #s.lines[yy] do
-        if s:selected(x, y) then
-          clipboard = clipboard .. s.lines[yy][x]
-          if x == #s.lines[yy] then
-            clipboard = clipboard .. '\n'
-          end
-        else
-          table.insert(nl, s.lines[yy][x])
-        end
-      end
-    end
-    if #nl == 0 and not copy then
-      table.remove(s.lines, yy)
-    else
-      s.lines[yy] = copy and s.lines[yy] or nl
-      yy = yy + 1
-    end
-  end
-  if not copy then
-    s.cur.x, s.cur.y = x1, y1
-    s:unselect()
-  end
-  sys.clipboard(clipboard)
-  s.clipboard = clipboard
-  return clipboard
+  g:blend(screen, x, y)
 end
 
 function editarea:show()
@@ -301,89 +95,21 @@ function editarea:show()
   local x, y = self:realpos()
   screen:offset(x + 1, self.title and (y + 10) or y)
   screen:clip(x, y, self.w, self.h)
-  local px, py, l
-  py = 0
-  local columns, lines = self:size()
-  for nr=self.line, #self.lines do
-    l = self.lines[nr]
+  local px, py = 0, 0
+  for nl, s, e in self.edit:visible_lines() do
+    local l = self.edit.lines[nl]
     px = 0
-    for i=self.col,#l do
-      if px >= self.w then
-        break
-      end
-      local g = self:glyph(l[i]) or self:glyph("?")
-      if self:selected(i, nr) then
-        local sw, sh = g:size()
-        screen:fill_rect(px, py, px + sw-1, py + sh-1, self.hl)
-      end
-      local w, _ = g:size()
-      g:blend(screen, px, py)
-      px = px + w
+    for i=s, e do
+      self:glyph(l[i], px, py, self.edit:insel(i, nl))
+      px = px + self.spw
     end
     py = py + self.sph
-    if py >= lines * self.sph then
-      break
-    end
   end
-  self:cursor()
+  local cx, cy = self.edit:coord(self.edit:cursor())
+  px, py = (cx - 1)*self.spw, (cy - 1)*self.sph
+  self:cursor(px, py)
   screen:noclip()
   screen:nooffset()
-end
-
-function editarea:delete()
-  local s = self
-  if s.cur.x <= #s.lines[s.cur.y] then
-    s:history()
-    table.remove(s.lines[s.cur.y], s.cur.x)
-  elseif s.cur.x > #s.lines[s.cur.y] and s.lines[s.cur.y+1] then
-    s:history()
-    s.cur.y = s.cur.y + 1
-    s:history()
-    local l = table.remove(s.lines, s.cur.y)
-    s.cur.y = s.cur.y - 1
-    for _, v in ipairs(l) do
-      table.insert(s.lines[s.cur.y], v)
-    end
-  end
-end
-
-function editarea:newline()
-  local s = self
-  local l = s.lines[s.cur.y]
-  s:history('newline')
-  table.insert(s.lines, s.cur.y + 1, {})
-  for k=s.cur.x, #l do
-    table.insert(s.lines[s.cur.y+1], table.remove(l, s.cur.x))
-  end
-  s.cur.y = s.cur.y + 1
-  s.cur.x = 1
-end
-
-function editarea:backspace()
-  local s = self
-  if s.cur.x > 1 then
-    s:history()
-    table.remove(s.lines[s.cur.y], s.cur.x - 1)
-    s.cur.x = s.cur.x - 1
-  elseif s.cur.y > 1 then
-    s:history()
-    local l = table.remove(s.lines, s.cur.y)
-    s.cur.y = s.cur.y - 1
-    s.cur.x = #s.lines[s.cur.y] + 1
-    s:history()
-    for _, v in ipairs(l) do
-      table.insert(s.lines[s.cur.y], v)
-    end
-  end
-end
-
-function editarea:paste()
-  local s = self
-  local text = sys.clipboard() or s.clipboard or ''
-  for l in text:lines() do
-    s:input(l)
-    s:newline()
-  end
 end
 
 function editarea:event(r, v, ...)
@@ -392,67 +118,63 @@ function editarea:event(r, v, ...)
   if m and r == 'mousedown' and y >= 10 then
     y = math.floor((y - 10)/self.sph)
     x = math.floor(x/self.spw)
-    self.cur.y = y + self.line
-    self.cur.x = x + self.col
-    self:scroll()
+    self.edit:move(x + self.edit.col, y + self.edit.line)
     return true
   end
   if r == 'text' then
-    self:input(v)
+    self.edit:input(v)
     return true
   elseif r == 'keydown' then
     if v == 'backspace' then
-      self:backspace()
+      self.edit:backspace()
     elseif v == 'return' or v == 'keypad enter' then
-      self:newline()
+      self.edit:newline()
     elseif v == 'up' then
-      self.cur.y = self.cur.y - 1
+      self.edit:move(false, self.edit.cur.y - 1)
     elseif v == 'down' then
-      self.cur.y = self.cur.y + 1
+      self.edit:move(false, self.edit.cur.y + 1)
     elseif v == 'right' then
-      self.cur.x = self.cur.x + 1
+      self.edit:move(self.edit.cur.x + 1)
     elseif v == 'left' then
-      self.cur.x = self.cur.x - 1
+      self.edit:move(self.edit.cur.x - 1)
     elseif v == 'home' or v == 'keypad 7' or
       (v == 'a' and input.keydown 'ctrl') then
-      self.cur.x = 1
+      self.edit:move(1)
     elseif v == 'end' or v == 'keypad 1' or
       (v == 'e' and input.keydown 'ctrl') then
-      self.cur.x = #self.lines[self.cur.y] + 1
+      self.edit:toend()
     elseif v == 'pagedown' or v == 'keypad 3' then
       local _, lines = self:size()
-      self.cur.y = self.cur.y + lines
-      self:scroll()
+      self.edit:move(false, self.edit.cur.y + lines)
     elseif v == 'pageup' or v == 'keypad 9' then
       local _, lines = self:size()
-      self.cur.y = self.cur.y - lines
-      self:scroll()
+      self.edit:move(false, self.edit.cur.y - lines)
     elseif v == 'y' and input.keydown 'ctrl' then
-      table.remove(self.lines, self.cur.y)
+      self.edit:cutline()
     elseif v == 'c' and input.keydown 'ctrl' then
-      self:cut(true)
+      self.edit:cut(true)
     elseif v == 'v' and input.keydown 'ctrl' then
-      self:paste()
-    elseif v == 'd' and input.keydown 'ctrl' then
-      if not w_conf.hidden then
-        w_conf:set(sfx.box_defs(w_conf.nam))
-      end
+      self.edit:paste()
+--    elseif v == 'd' and input.keydown 'ctrl' then
+--      if not w_conf.hidden then
+--        w_conf.edit:set(sfx.box_defs(w_conf.nam))
+--      end
     elseif v == 'x' and input.keydown 'ctrl' or v == 'delete' then
       if v == 'delete' and not self:selection() then
-        self:delete()
+        self.edit:delete()
       else
-        self:cut()
+        self.edit:cut()
       end
     elseif v == 'z' and input.keydown 'ctrl' then
-      self:undo()
+      self.edit:undo()
     elseif v:find 'shift' then
-       self:select(true)
+       self.edit:select(true)
     end
-    self:scroll()
-    self:select()
+    self.edit:move()
+    self.edit:select()
   elseif r == 'keyup' then
     if v:find 'shift' then
-      self:select(false)
+      self.edit:select(false)
     end
   end
   return win.event(self, r, v, ...)
@@ -671,10 +393,9 @@ end
 
 w_conf = editarea:new { title = 'Settings',
     hidden = true,
-    w = 38 * 7 + 5,
     y = 13,
-    h = H - 13 - 20 + 7,
     border = true }
+w_conf:size(38 * 7 + 5, H - 13 - 20 + 7)
 
 w_rem = button:new { hidden = true, text = 'Remove',
   w = 8 * 7, h = 12, lev = -1, y = H - 12, x = H - 8*7, border = true,
@@ -724,34 +445,31 @@ function config_check()
     return true
   end
   local lines = {}
-  for _, l in ipairs(w_conf.lines) do
+  for _, l in ipairs(w_conf.edit.lines) do
     if l[1] ~= '#' or l[2] ~= 'e' or l[3] ~= 'r' or l[4] ~= 'r' or l[5] ~= ' ' then
       table.insert(lines, l)
     end
   end
-  w_conf.lines = lines
+  w_conf.edit.lines = lines
 
-  local r, e, line = sfx.compile_box(w_conf.nam, w_conf:get())
+  local r, e, line = sfx.compile_box(w_conf.nam, w_conf.edit:get())
   if r then
-    if stack[w_conf.id].conf ~= w_conf:get() then
+    if stack[w_conf.id].conf ~= w_conf.edit:get() then
       dirty(true)
     end
-    stack[w_conf.id].conf = w_conf:get()
+    stack[w_conf.id].conf = w_conf.edit:get()
     return true
   end
-  w_conf.cur.y = line
-  w_conf.cur.x = #w_conf.lines[line] + 1
-  local width = w_conf:size()
+  w_conf.edit:move(#w_conf.edit.lines[line] + 1, line)
+  local width = w_conf.edit:size()
   for l in e:lines() do
     for _, ll in ipairs(l:wrap(width-2)) do
-      w_conf:newline()
-      w_conf:input('#err '..ll)
+      w_conf.edit:newline()
+      w_conf.edit:input('#err '..ll)
     end
   end
-  w_conf.cur.y = line
-  w_conf.cur.x = #w_conf.lines[line] + 1
-  w_conf.col = 1
-  w_conf:scroll()
+  w_conf.edit.col = 1
+  w_conf.edit:move(#w_conf.lines[line] + 1, line)
   return false, e, line
 end
 
@@ -770,10 +488,9 @@ function config_box(s)
   w_conf.id = s.id
   w_conf.nam = b.nam
   local text = stack[s.id].conf
-  w_conf:set(text or sfx.box_defs(b.nam))
+  w_conf.edit:set(text or sfx.box_defs(b.nam))
   w_conf.x = w_stack.x + w_stack.w + 1
-  w_conf.cur.x = 1
-  w_conf.cur.y = 1
+  w_conf.edit:move(1, 1)
   conf_show(true)
   w_rem.id = s.id
 end
