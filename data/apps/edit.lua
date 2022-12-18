@@ -509,7 +509,7 @@ function inp.edit:newline()
   if inp_mode == 'search' then
     b:search(table.concat(s.lines[1] or {}, ''))
   elseif inp_mode == 'goto' then
-    b:jump(tonumber(table.concat(s.lines[1] or {}, '')) or 1)
+    b:jump(math.floor(tonumber(table.concat(s.lines[1] or {}, '')) or 1))
   elseif inp_mode == 'open' then
     local f = table.concat(s.lines[1] or {}, '')
     if f ~= '' then

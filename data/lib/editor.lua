@@ -34,8 +34,8 @@ end
 
 function editor:move(x, y)
   local s = self
-  if x then s.cur.x = math.abs(math.floor(x)) end
-  if y then s.cur.y = math.abs(math.floor(y)) end
+  if x then s.cur.x = x end
+  if y then s.cur.y = y end
   if #s.lines == 0 then
     s.cur.x, s.cur.y = 1, 1
     s.lines[1] = {}
