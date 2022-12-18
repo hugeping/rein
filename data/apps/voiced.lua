@@ -469,7 +469,7 @@ function config_check()
     end
   end
   w_conf.edit.col = 1
-  w_conf.edit:move(#w_conf.lines[line] + 1, line)
+  w_conf.edit:move(#w_conf.edit.lines[line] + 1, line)
   return false, e, line
 end
 
