@@ -250,7 +250,7 @@ local boxes = {
         synth.OSC_NOISE, synth.OSC_BAND_NOISE, synth.OSC_SIN_BAND_NOISE
       },
     },
-    { 'freq', synth.FREQ, def = 0 },
+--    { 'freq', synth.FREQ, def = 0 },
     { 'fmul', synth.FMUL, def = 1 },
     { 'amp', synth.AMP, def = 1.0 },
     { 'width', synth.WIDTH, def = 0.5 },
