@@ -361,34 +361,19 @@ function buff:exec(prog, ...)
   sys.suspend()
 end
 
-function writefile(fname, data)
-  local f, e = io.open(fname, "wb")
-  if not f then error(e) end
-  f:write(data)
-  f:flush()
-  f:close()
-end
-
-function readfile(fname, data)
-  local r
-  local f, e = io.open(fname, "rb")
-  if not f then return false, e end
-  local r, e = f:read("*all")
-  f:close()
-  return r, e
-end
-
 function buff:readsel(fname)
   local s = self
-  local w = readfile(fname)
-  s.edit:cut(false, false)
-  s.edit:paste(w)
+  local w = io.file(fname)
+  if w then
+    s.edit:cut(false, false)
+    s.edit:paste(w)
+  end
 end
 
 function buff:writesel(fname)
   local s = self
   local clip = s.edit:cut(true, false)
-  writefile(fname, clip)
+  io.file(fname, clip)
 end
 
 function buff:keydown(k)
