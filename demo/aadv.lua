@@ -43,7 +43,7 @@ set_sustain 1
 set_glide 0
 glide_rate 0
 
-lfo_type 0 seq
+lfo_type 0 lin_seq
 lfo_freq 0 100
 lfo_low 0 0
 lfo_high 0 1
@@ -55,7 +55,6 @@ lfo_seq_pos 0 0
 lfo_seq_val 0 1
 
 lfo_seq_size 0 10
-lfo_set_lin_seq 0 1
 
 voice boom
 box synth
@@ -244,7 +243,6 @@ lfo_assign 0 fmul
 lfo_seq_pos 0 0
 lfo_seq_val 0 0
 lfo_seq_size 0 0
-lfo_set_lin_seq 0 0
 
 box delay
 # delay
@@ -371,7 +369,6 @@ lfo_seq_pos 0 4
 lfo_seq_val 0 10
 
 lfo_seq_size 0 5
-lfo_set_lin_seq 0 0
 ]]
 
 snd.voices(__voices__)
