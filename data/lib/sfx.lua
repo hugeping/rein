@@ -94,6 +94,8 @@ function sfx.parse_row(text, mus)
     end
     ret.cmd = r
     return ret
+  elseif text:startswith("|") then
+    text = text:sub(2)
   end
   for _, v in ipairs(text:split("|")) do
     v, e = sfx.parse_data(v:strip(), mus)
@@ -557,6 +559,7 @@ function sfx.apply(chan, voice)
       synth.change(chan, -1, table.unpack(p))
     end
   end
+  return true
 end
 
 function sfx.box_defs(nam)

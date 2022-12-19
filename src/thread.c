@@ -429,8 +429,8 @@ thread_wait(lua_State *L)
 	int status = ThreadWait(thr->tid);
 	chan->peers[1].L = NULL;
 	chan->used = 0;
-	chan_free(chan);
-	thr->chan = NULL;
+//	chan_free(chan);
+//	thr->chan = NULL;
 	lua_pushboolean(L, status);
 	return 1;
 }
@@ -451,6 +451,8 @@ thread_stop(lua_State *L)
 		SemPost(chan->peers[1].sem);
 		thread_wait(L);
 	}
+	chan_free(chan);
+	thr->chan = NULL;
 	if (thr->err)
 		free(thr->err);
 	return 0;

@@ -157,6 +157,7 @@ local env_ro = {
     icon = gfx.icon,
   };
   sys = {
+    running = sys.running,
     time = sys.time,
     title = sys.title,
     log = sys.log,
@@ -534,6 +535,10 @@ function env_ro.sys.yield(...)
 end
 
 local api = { running = true }
+
+function env_ro.sys.running()
+  return api.running
+end
 
 function api.init(core_mod)
   math.randomseed(os.time())
