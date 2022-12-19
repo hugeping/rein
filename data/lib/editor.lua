@@ -300,6 +300,7 @@ end
 function editor:newline(indent)
   local s = self
   local ind, ind2 = 0, 0
+  s.lines[s.cur.y] = s.lines[s.cur.y] or {}
   local l = s.lines[s.cur.y]
   if s.cur.x > 1 and indent then
     ind, ind2 = getind(l), getind(s.lines[s.cur.y + 1])
@@ -320,6 +321,10 @@ end
 
 function editor:backspace()
   local s = self
+  if s:selection() then
+    s:cut()
+    return
+  end
   if s.cur.x > 1 then
     s:history()
     table.remove(s.lines[s.cur.y], s.cur.x - 1)

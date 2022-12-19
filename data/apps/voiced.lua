@@ -750,6 +750,7 @@ local play_stop_keys = {
   down = true;
   up = true;
 }
+
 function w_play:event(r, v, ...)
   if self.selected and not w_conf.hidden and
     ((w_conf:mevent(r, v, ...) and r == 'mousedown') or
