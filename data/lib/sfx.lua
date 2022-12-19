@@ -65,7 +65,7 @@ function sfx.parse_cmd(cmd, mus)
   elseif cmd[1] == '@pan' then
     local pan = tonumber(cmd[3]) or 0
     ret.args = { pan }
-  elseif cmd[1] == '@volume' then
+  elseif cmd[1] == '@vol' then
     ret.args = { tonumber(cmd[3]) or 0 }
   else
     return false, "Wrong command: "..tostring(cmd[1])
@@ -177,7 +177,7 @@ function sfx.proc.pan(chans, mus,...)
   synth.pan(...)
 end
 
-function sfx.proc.volume(chans, mus, ...)
+function sfx.proc.vol(chans, mus, ...)
   synth.vol(...)
 end
 
