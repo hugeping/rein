@@ -113,7 +113,7 @@ function editor:history(op, x1, y1, x2, y2)
   for i = 1, y2 - y1 + 1 do
     table.insert(h, clone(s.lines[y1 + i - 1]))
   end
-  if #h > 0 and #h[#h] == 0 then table.remove(h, #h) end
+  if #h > 1 and #h[#h] == 0 then table.remove(h, #h) end
   table.insert(s.hist, h)
   if #s.hist > 1024 then
     table.remove(s.hist, 1)
