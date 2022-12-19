@@ -313,6 +313,7 @@ static struct {
 	{ "RELEASE", ZV_RELEASE },
 	{ "SET_SUSTAIN", ZV_SET_SUSTAIN },
 	{ "REMAP", ZV_REMAP },
+	{ "SET_FM", ZV_SET_FM },
 	{ "LFO_TYPE", ZV_LFO_TYPE },
 	{ "LFO_FREQ", ZV_LFO_FREQ },
 	{ "LFO_LOW", ZV_LFO_LOW },
@@ -323,7 +324,6 @@ static struct {
 	{ "LFO_SEQ_SIZE", ZV_LFO_SEQ_SIZE },
 	{ "LFO_ASSIGN", ZV_LFO_ASSIGN },
 	{ "LFO_SET_RESET", ZV_LFO_SET_RESET },
-	{ "LFO_SET_LIN_SEQ", ZV_LFO_SET_LIN_SEQ },
 	/* delay */
 	{ "TIME", ZV_TIME },
 	{ "LEVEL", ZV_LEVEL },
@@ -356,6 +356,7 @@ static struct {
 	{ "LFO_SQUARE", LFO_SQUARE },
 	{ "LFO_TRIANGLE", LFO_TRIANGLE },
 	{ "LFO_SEQ", LFO_SEQ },
+	{ "LFO_LIN_SEQ", LFO_LIN_SEQ },
 	{ NULL }
 };
 
