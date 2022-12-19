@@ -145,6 +145,12 @@ function mixer.req_stop(id, fo)
   return true
 end
 
+function mixer.req_status(id)
+  local r = mixer.ids[id]
+  if not r then return false, "No such sfx" end
+  return r.args[2].row or 1
+end
+
 function mixer.req_reserve(nr)
   mixer.res = nr or 0
   return true
@@ -210,6 +216,8 @@ function mixer.thread()
       mixer.answer(mixer.req_reserve(v))
     elseif r == 'voices' then
       mixer.answer(mixer.req_voices(v))
+    elseif r == 'status' then
+      mixer.answer(mixer.req_status(v))
     end
     r, v = coroutine.resume(mixer.sched)
     if not r then
@@ -290,6 +298,10 @@ end
 
 function mixer.stop(nr, fade)
   return mixer.clireq("stop", nr, fade)
+end
+
+function mixer.status(nr)
+  return mixer.clireq("status", nr)
 end
 
 function mixer.init()
