@@ -128,7 +128,7 @@ local song = [[
 @voice 2 snare
 @voice 3 square
 @voice 4 saw
-@volume -1 0.8
+@vol -1 0.8
 @pan -1 0
 @pan 3 -0.75
 @pan 4 0.75

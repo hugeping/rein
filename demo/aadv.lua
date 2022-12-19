@@ -378,7 +378,7 @@ snd.voices(__voices__)
 
 local over_mus = [[
 @tempo 12
-@volume -1 0.2
+@vol -1 0.2
 @voice 1 violin
 a-2 b6
 g-2 b6
@@ -1800,13 +1800,13 @@ function run()
 end
 
 local main_mus = [[
-@volume -1 0.25
+@vol -1 0.25
 @voice 1 square
-@volume 2 0.10
+@vol 2 0.10
 @voice 2 violin
-@volume 3 0.4
+@vol 3 0.4
 @voice 3 bass
-@volume 4 0.2
+@vol 4 0.2
 @voice 4 zip
 @tempo 11
 c-3 91 | ... .. | ... .. | ... ..
