@@ -35,6 +35,7 @@ struct sfx_synth_state {
     int is_sustain_on;
     struct glide_state glide;
     int is_glide_on;
+    int is_fm_on;
 };
 
 static void lfo_reset_remap(struct sfx_synth_state *s) {
@@ -53,6 +54,7 @@ static void sfx_synth_init(struct sfx_synth_state *s) {
     s->is_sustain_on = 0;
     glide_init(&s->glide);
     s->is_glide_on = 0;
+    s->is_fm_on = 0;
 }
 
 static void lfo_note_on(struct sfx_synth_state *s) {
@@ -162,13 +164,12 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
         elem = limit(elem, 0, SYNTH_LFOS - 1);
         lfo_set_seq_size(&s->lfos[elem], val);
         break;
-    case ZV_LFO_SET_LIN_SEQ:
-        elem = limit(elem, 0, SYNTH_LFOS - 1);
-        lfo_set_lin_seq(&s->lfos[elem], val);
-        break;
     case ZV_LFO_ASSIGN:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
         s->lfo_targets[elem] = limit(val, 0, OSC_PARAMS - 1);
+        break;
+    case ZV_SET_FM:
+        s->is_fm_on = val;
         break;
     }
 }
@@ -222,11 +223,15 @@ static double sfx_synth_mono(struct sfx_synth_state *s, double l) {
     }
     double f = s->osc.params[OSC_FREQ];
     s->lfo_params[OSC_FREQ] += f * s->lfo_params[OSC_FMUL];
+    if (s->is_fm_on) {
+        s->lfo_params[OSC_FREQ] += l;
+    }
     if (s->is_glide_on) {
         s->lfo_params[OSC_FREQ] = glide_next(&s->glide, s->lfo_params[OSC_FREQ]);
     }
     double y = s->lfo_params[OSC_AMP] * osc_next(&s->osc, s->lfo_params);
-    return y * adsr_next(&s->adsr, s->is_sustain_on) + l;
+    y *= adsr_next(&s->adsr, s->is_sustain_on);
+    return s->is_fm_on ? y : y + l;
 }
 
 struct sfx_proto sfx_synth = {

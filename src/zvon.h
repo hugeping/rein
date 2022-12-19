@@ -103,7 +103,8 @@ enum {
     LFO_SAW,
     LFO_SQUARE,
     LFO_TRIANGLE,
-    LFO_SEQ
+    LFO_SEQ,
+    LFO_LIN_SEQ
 };
 
 #define LFO_MAX_SEQ_STEPS 128
@@ -116,7 +117,6 @@ struct lfo_state {
     double seq[LFO_MAX_SEQ_STEPS];
     int edit_pos;
     int seq_size;
-    int is_lin_seq;
     double prev;
     int pos;
     double low;
@@ -135,7 +135,6 @@ void lfo_set_loop(struct lfo_state *s, int is_loop);
 void lfo_set_seq_pos(struct lfo_state *s, int pos);
 void lfo_set_seq_val(struct lfo_state *s, double val);
 void lfo_set_seq_size(struct lfo_state *s, int size);
-void lfo_set_lin_seq(struct lfo_state *s, int is_lin_seq);
 double lfo_next(struct lfo_state *s);
 
 #endif
