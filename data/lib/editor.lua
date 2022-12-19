@@ -69,12 +69,17 @@ function editor:move(x, y)
   end
 end
 
-function editor:input(t)
+function editor:input(t, replace)
   local s = self
   local c = utf.chars(t)
-  s:cut(false, false)
---  s:unselect()
-  s:history()
+  if replace then
+    s:history('start')
+    s:cut(false, false)
+    s:history('end')
+  else
+    s:unselect()
+    s:history()
+  end
   s.lines[s.cur.y] = s.lines[s.cur.y] or {}
   for _, v in ipairs(c) do
     table.insert(s.lines[s.cur.y], s.cur.x, v)
@@ -123,24 +128,32 @@ end
 function editor:undo()
   local s = self
   if #s.hist == 0 then return end
-  local h = table.remove(s.hist, #s.hist)
-  if h.op == 'cut' then
-    for i=1, h.rem do
-      table.remove(s.lines, h.nr)
+  local h
+  local sect = 0
+  while true do
+    h = table.remove(s.hist, #s.hist)
+    if h.op == 'cut' then
+      for i=1, h.rem do
+        table.remove(s.lines, h.nr)
+      end
+      for k, l in ipairs(h) do
+        table.insert(s.lines, h.nr + k - 1, l)
+      end
+    elseif h.op == 'end' then
+      sect = sect + 1
+    elseif h.op == 'start' then
+      sect = sect - 1
+    else
+      for k, l in ipairs(h) do
+        s.lines[h.nr + k - 1] = l
+      end
+      if h.op == 'newline' then
+        table.remove(s.lines, h.nr + 1)
+      end
     end
-    for k, l in ipairs(h) do
-      table.insert(s.lines, h.nr + k - 1, l)
-    end
-  else
-    for k, l in ipairs(h) do
-      s.lines[h.nr + k - 1] = l
-    end
-    if h.op == 'newline' then
-      table.remove(s.lines, h.nr + 1)
-    end
+    if sect <= 0 then break end
   end
-  s.cur.x = h.x
-  s.cur.y = h.y
+  s:move(h.x, h.y)
   s.dirty = #s.hist ~= 0
 end
 
@@ -344,10 +357,12 @@ end
 function editor:paste(clip)
   local s = self
   local text = clip or sys.clipboard() or s.clipboard or ''
+  s:history 'start'
   for l in text:lines() do
     s:input(l)
     s:newline(false)
   end
+  s:history 'end'
 end
 
 function editor:toend()
