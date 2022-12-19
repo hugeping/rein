@@ -65,9 +65,9 @@ function sfx.parse_cmd(cmd, mus)
     if not voice then
       return false, "No voice"
     end
-    if not sfx.voices_bank[voice] then
-      return false, "Unknown voice:"..tostring(voice)
-    end
+--    if not sfx.voices_bank[voice] then
+--      return false, "Unknown voice:"..tostring(voice)
+--    end
     ret.args = { voice }
   elseif cmd[1] == '@pan' then
     local pan = tonumber(cmd[3]) or 0
