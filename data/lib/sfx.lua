@@ -29,6 +29,7 @@ function sfx.get_note(name)
     return 0
   end
   local n, o = name:sub(1, 2):lower(), tonumber(name:sub(3))
+  if not n or not o then return false, "Wrong note:"..tostring(name)  end
   return sfx.get_midi_note(NOTES[n] + 12 * (o + 2))
 end
 
@@ -61,6 +62,12 @@ function sfx.parse_cmd(cmd, mus)
   ret.chan = chan
   if cmd[1] == '@voice' then
     local voice = cmd[3]
+    if not voice then
+      return false, "No voice"
+    end
+    if not sfx.voices_bank[voice] then
+      return false, "Unknown voice:"..tostring(voice)
+    end
     ret.args = { voice }
   elseif cmd[1] == '@pan' then
     local pan = tonumber(cmd[3]) or 0
@@ -75,11 +82,18 @@ end
 
 function sfx.parse_data(text, mus)
   local cols = text:split(" ")
-  local data = { not cols[1]:startswith "." and sfx.get_note(cols[1])
-             or false }
+  local n, e
+  if not cols[1]:startswith "." then
+    n, e = sfx.get_note(cols[1])
+    if not n then return n, e end
+  end
+  local data = { n or false }
   for i = 2, #cols do
-    table.insert(data, not cols[i]:startswith "." and
-           tonumber(cols[i], 16) or false)
+    n = tonumber(cols[i], 16)
+    if not cols[i]:startswith "." and not n then
+      return false, "Wrong number:"..tostring(cols[i])
+    end
+    table.insert(data, n or false)
   end
   return data
 end
@@ -108,6 +122,7 @@ function sfx.parse_row(text, mus)
 end
 
 function sfx.parse_song(text)
+  local line = 0
   if not tostring(text):find("\n") then
     local song = sfx.sfx_bank[text]
     if not song then
@@ -118,15 +133,16 @@ function sfx.parse_song(text)
   local ret = { tracks = 0 }
   text = text:strip()
   for row in text:lines() do
+    line = line + 1
     local r, e = sfx.parse_row(row:strip(), ret)
     if not r then
-      return r, e
+      return r, e, line
     end
     table.insert(ret, r)
     ret.tracks = #r > ret.tracks and #r or ret.tracks
   end
   if ret.tracks == 0 then
-    return false, "Wrong sfx format"
+    return false, "Wrong sfx format", 1
   end
   ret.tempo = ret.tempo or 1
   return ret
