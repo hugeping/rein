@@ -163,7 +163,7 @@ function sfx.proc.pop(chans, mus)
 end
 
 function sfx.proc.play(chans, mus, song)
-  sfx.play_song(chans, sfx.sfx_bank[song], mus.temp)
+  sfx.play_song(chans, sfx.sfx_bank[song], mus.tempo)
 end
 
 function sfx.proc.voice(chans, mus,...)
@@ -178,8 +178,8 @@ function sfx.proc.volume(chans, mus, ...)
   synth.vol(...)
 end
 
-function sfx.proc.tempo(chans, mus, temp)
-  mus.temp = temp
+function sfx.proc.tempo(chans, mus, tempo)
+  mus.tempo = tempo
 end
 
 function sfx.proc_cmd(chans, mus, cmd)
@@ -193,8 +193,8 @@ function sfx.proc_cmd(chans, mus, cmd)
   end
 end
 
-function sfx.play_song_once(chans, tracks, temp)
-  tracks.temp = temp
+function sfx.play_song_once(chans, tracks, tempo)
+  tracks.tempo = tempo
   local row
   tracks.row = 1
   while tracks.row <= #tracks do
@@ -215,7 +215,7 @@ function sfx.play_song_once(chans, tracks, temp)
       end
     end
     if #row > 0 then
-      for i = 1, tracks.temp do
+      for i = 1, tracks.tempo do
         coroutine.yield()
       end
     end
@@ -223,12 +223,12 @@ function sfx.play_song_once(chans, tracks, temp)
   end
 end
 
-function sfx.play_song(chans, tracks, temp, nr)
+function sfx.play_song(chans, tracks, tempo, nr)
   nr = nr or 1
-  temp = temp or 1
+  tempo = tempo or 1
   while nr == -1 or nr > 0 do
     if nr ~= -1 then nr = nr - 1 end
-    sfx.play_song_once(chans, tracks, temp)
+    sfx.play_song_once(chans, tracks, tempo)
   end
 end
 
