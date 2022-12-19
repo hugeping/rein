@@ -256,7 +256,6 @@ void lfo_init(struct lfo_state *s) {
     }
     s->edit_pos = 0;
     lfo_set_seq_size(s, 0);
-    lfo_set_lin_seq(s, 0);
     lfo_set_type(s, LFO_ZERO);
     lfo_set_freq(s, 0);
     lfo_set_low(s, 0);
@@ -308,10 +307,6 @@ void lfo_set_seq_size(struct lfo_state *s, int size) {
     s->seq_size = limit(size, 0, LFO_MAX_SEQ_STEPS);
 }
 
-void lfo_set_lin_seq(struct lfo_state *s, int is_lin_seq) {
-    s->is_lin_seq = is_lin_seq;
-}
-
 static double lfo_func(struct lfo_state *s) {
     double x = s->phase;
     switch (s->func) {
@@ -324,10 +319,9 @@ static double lfo_func(struct lfo_state *s) {
     case LFO_TRIANGLE:
         return 2 * (x - floor(2 * x) * (2 * x - 1));
     case LFO_SEQ:
-        if (s->is_lin_seq) {
-            return lerp(s->prev, s->seq[s->pos], x);
-        }
         return s->seq[s->pos];
+    case LFO_LIN_SEQ:
+        return lerp(s->prev, s->seq[s->pos], x);
     default:
         return 0;
     }
@@ -346,7 +340,7 @@ double lfo_next(struct lfo_state *s) {
     double y = s->low + (s->high - s->low) * lfo_func(s);
     s->phase += s->freq * (1. / SR);
     if (s->phase >= 1) {
-        if (s->func == LFO_SEQ) {
+        if (s->func >= LFO_SEQ) {
             lfo_seq_next(s);
         } else {
             s->phase = s->is_loop ? s->phase - 1 : 1;
