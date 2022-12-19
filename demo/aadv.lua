@@ -1787,11 +1787,7 @@ function draw()
 end
 
 function run()
-  while true do
-    if sys.input() == 'quit' then
-      dprint "quit"
-      break
-    end
+  while sys.running() do
     update_border()
     update()
     engine()
