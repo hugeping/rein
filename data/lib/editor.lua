@@ -72,6 +72,8 @@ end
 function editor:input(t)
   local s = self
   local c = utf.chars(t)
+--  s:cut(false, false)
+  s:unselect()
   s:history()
   s.lines[s.cur.y] = s.lines[s.cur.y] or {}
   for _, v in ipairs(c) do
