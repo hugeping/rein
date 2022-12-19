@@ -179,7 +179,7 @@ end
 function editor:insel(x, nr)
   local s = self
   local x1, y1, x2, y2 = s:selection()
-  if not x1 or not s.lines[nr] then return end
+  if not x1 then return end
   if nr < y1 or nr > y2 then return end -- fast path
   if nr > y1 and nr < y2 then -- full line
     return true
@@ -191,7 +191,7 @@ function editor:insel(x, nr)
   end
   if nr == y2 then
     if x >= x2 then return end
-    if y2 == nr and x > x2 then return end
+    if y1 == nr and x < x1 then return end
     return true
   end
 end
