@@ -123,7 +123,7 @@ mixer.voices [[
 ]]
 
 local song = [[
-@temp 16
+@tempo 16
 @voice 1 bass
 @voice 2 snare
 @voice 3 square
