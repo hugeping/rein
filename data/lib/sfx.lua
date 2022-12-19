@@ -300,9 +300,9 @@ local boxes = {
     { 'lfo_type', synth.LFO_TYPE,
       array = { 0, 1, 2, 3 },
       def = 'zero',
-      choice = { 'zero', 'sin', 'saw', 'square', 'triangle', 'seq' },
+      choice = { 'zero', 'sin', 'saw', 'square', 'triangle', 'seq', 'lin_seq' },
       vals = { synth.LFO_ZERO, synth.LFO_SIN, synth.LFO_SAW,
-        synth.LFO_SQUARE, synth.LFO_TRIANGLE, synth.LFO_SEQ },
+        synth.LFO_SQUARE, synth.LFO_TRIANGLE, synth.LFO_SEQ, synth.LFO_LIN_SEQ }
     },
     { 'lfo_freq', synth.LFO_FREQ,
       array = { 0, 1, 2, 3 },
@@ -347,12 +347,7 @@ local boxes = {
     { 'lfo_seq_size', synth.LFO_SEQ_SIZE,
       array = { 0, 1, 2, 3 },
       def = 0, min = 0, max = 129,
-    },
-    { 'lfo_set_lin_seq', synth.LFO_SET_LIN_SEQ,
-      array = { 0, 1, 2, 3 },
-      choice = { 0, 1 },
-      def = 0
-    },
+    }
   },
   { nam = 'dist',
     { "volume", synth.VOLUME, def = 0.5 },
@@ -371,7 +366,7 @@ local boxes = {
       vals = { synth.LOWPASS, synth.HIGHPASS },
     },
     { 'width', synth.WIDTH, def = 0.5 },
-  }
+  },
 }
 
 function sfx.box_info(nam)
