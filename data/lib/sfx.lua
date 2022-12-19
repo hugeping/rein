@@ -128,6 +128,7 @@ function sfx.parse_song(text)
   if ret.tracks == 0 then
     return false, "Wrong sfx format"
   end
+  ret.tempo = ret.tempo or 1
   return ret
 end
 
@@ -195,8 +196,7 @@ function sfx.proc_cmd(chans, mus, cmd)
   end
 end
 
-function sfx.play_song_once(chans, tracks, tempo)
-  tracks.tempo = tempo
+function sfx.play_song_once(chans, tracks)
   local row
   tracks.row = 1
   while tracks.row <= #tracks do
@@ -225,12 +225,11 @@ function sfx.play_song_once(chans, tracks, tempo)
   end
 end
 
-function sfx.play_song(chans, tracks, tempo, nr)
+function sfx.play_song(chans, tracks, nr)
   nr = nr or 1
-  tempo = tempo or 1
   while nr == -1 or nr > 0 do
     if nr ~= -1 then nr = nr - 1 end
-    sfx.play_song_once(chans, tracks, tempo)
+    sfx.play_song_once(chans, tracks)
   end
 end
 

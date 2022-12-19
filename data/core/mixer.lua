@@ -104,7 +104,7 @@ function mixer.proc(tick)
   until tick == 0
 end
 
-function mixer.req_play(text, nr, temp)
+function mixer.req_play(text, nr)
   local song, e = sfx.parse_song(text)
   if not song then
     return false, e
@@ -119,7 +119,7 @@ function mixer.req_play(text, nr, temp)
   end
   mixer.req_nextid()
   local r = { id = mixer.id, fn = f, chans = chans,
-    args = { chans, song, temp or 1, nr or 1 } }
+    args = { chans, song, nr or 1 } }
   table.insert(mixer.fn, r)
   mixer.ids[mixer.id] = r
   return mixer.id

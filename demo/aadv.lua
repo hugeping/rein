@@ -1796,6 +1796,7 @@ function run()
     end
     flip(1/30)
   end
+  dprint "quit"
 end
 
 local main_mus = [[
