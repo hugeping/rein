@@ -265,6 +265,7 @@ local boxes = {
       },
     },
 --    { 'freq', synth.FREQ, def = 0 },
+    { 'set_fm', synth.SET_FM, def = 0 },
     { 'fmul', synth.FMUL, def = 1 },
     { 'amp', synth.AMP, def = 1.0 },
     { 'width', synth.WIDTH, def = 0.5 },
