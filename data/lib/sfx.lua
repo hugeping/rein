@@ -121,9 +121,9 @@ function sfx.parse_row(text, mus)
   return ret
 end
 
-function sfx.parse_song(text)
+function sfx.parse_song(text, data)
   local line = 0
-  if not tostring(text):find("\n") then
+  if not data and not tostring(text):find("\n") then
     local song = sfx.sfx_bank[text]
     if not song then
       return false, "No such sfx:"..tostring(text)
@@ -140,9 +140,6 @@ function sfx.parse_song(text)
     end
     table.insert(ret, r)
     ret.tracks = #r > ret.tracks and #r or ret.tracks
-  end
-  if ret.tracks == 0 then
-    return false, "Wrong sfx format", 1
   end
   ret.tempo = ret.tempo or 1
   return ret
