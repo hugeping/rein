@@ -334,7 +334,6 @@ box synth
 # synth
 volume 0.5
 type pwm
-freq 0
 fmul 1
 amp 1
 width 0.5
@@ -378,7 +377,7 @@ lfo_set_lin_seq 0 0
 snd.voices(__voices__)
 
 local over_mus = [[
-@temp 12
+@tempo 12
 @volume -1 0.2
 @voice 1 violin
 a-2 b6
@@ -1812,7 +1811,7 @@ local main_mus = [[
 @voice 3 bass
 @volume 4 0.2
 @voice 4 zip
-@temp 11
+@tempo 11
 c-3 91 | ... .. | ... .. | ... ..
 === .. | ... .. | ... .. | ... ..
 g-3 91 | ... .. | ... .. | ... ..

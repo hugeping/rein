@@ -44,7 +44,7 @@ function sfx.parse_cmd(cmd, mus)
     if song.tracks > mus.tracks then mus.tracks = song.tracks end
     ret.args = { cmd[2] }
     return ret
-  elseif cmd[1] == '@temp' then
+  elseif cmd[1] == '@tempo' then
     ret.args = { tonumber(cmd[2]) or 1 }
     return ret
   elseif cmd[1] == '@push' then
@@ -178,7 +178,7 @@ function sfx.proc.volume(chans, mus, ...)
   synth.vol(...)
 end
 
-function sfx.proc.temp(chans, mus, temp)
+function sfx.proc.tempo(chans, mus, temp)
   mus.temp = temp
 end
 
