@@ -842,9 +842,10 @@ local voice_mode = { w_prev, w_voice, w_next, w_boxes, w_volume, w_stack, w_conf
 
 win:with(voice_mode)
 
-
 local w_edit = editarea:new { x = 0, y = 13, border = false, lev = w_play.lev - 1 }
 w_edit:size(W, H - 13)
+
+local songs = { {} }
 
 local w_song_prev = button:new { text = "<" , x = 0, y = 0, w = 10, h = 12, border = true}
 local w_song = edit:new { border = false, value = '1', x = w_prev:after(1), y = 0, w = 12*7, h = 12 }
@@ -1101,9 +1102,27 @@ function switch(m)
   end
 end
 
+function load_songs(file)
+  local r, e = sfx.parse_songs(file)
+  if not r then
+    return r, e
+  end
+  songs = r
+  if #r == 0 then
+    table.insert(r, { })
+  end
+  w_song.value = r[1].nam or '1'
+  w_edit.edit:set(r[1].text or '')
+  return true
+end
+
 local r, e = load(FILE)
 if not r then
    print("Error loading voices: ".. tostring(e))
+end
+local r, e = load_songs(FILE2 or 'songs.syn')
+if not r then
+   print("Error loading songs: ".. tostring(e))
 end
 build_stack()
 --print(sfx.songs("music.txt"))
