@@ -14,7 +14,13 @@ end
 
 function string.strip(str)
   if not str then return str end
-  str = str:gsub("^[ \t\n]+",""):gsub("[ \t\n]+$","")
+  str = str:gsub("^[ \t\n\r]+",""):gsub("[ \t\n\r]+$","")
+  return str
+end
+
+function string.stripnl(str)
+  if not str then return str end
+  str = str:gsub("^[\n\r]+",""):gsub("[\r\n]+$","")
   return str
 end
 

@@ -849,7 +849,7 @@ win:with(voice_mode)
 local w_edit = editarea:new { x = 0, y = 13, border = false, lev = 1 }
 w_edit:size(W, H - 13)
 
-local songs = { {} }
+local songs = { { text = '' } }
 
 local w_song_prev = button:new { text = "<" , x = 0, y = 0, w = 10, h = 12, border = true}
 local w_song = edit:new { current = 1, border = false, value = '1', x = w_prev:after(1), y = 0, w = 12*7, h = 12 }
@@ -920,9 +920,8 @@ function w_song_prev:onclick()
   w_song.current = w_song.current - 1
   if w_song.current < 1 then
     w_song.current = 1
-    return
   end
-  w_song.value = songs[w_song.current].nam or '1'
+  w_song.value = songs[w_song.current].nam or tostring(w_song.current)
   w_edit.edit:set(songs[w_song.current].text or '')
 end
 
@@ -1035,31 +1034,23 @@ function song_check()
     edit_err(w_edit.edit, line, e)
     return false, e, line
   end
-  for i=1,r.tracks do
-    if not get_voice(i) then
-      edit_err(w_edit.edit, 1, "No voice on track:"..tostring(i))
-      return false, e, line
-    end
-  end
-  for line, l in ipairs(r) do
-    if l.cmd and l.cmd.fn == 'voice' then
-      if not sfx.voices_bank[l.cmd.args[1]] then
-        edit_err(w_edit.edit, line, "No voice:"..tostring(l.cmd.args[1]))
-        return false, e, line
-      end
-    end
-  end
+
   local t = w_edit.edit:get()
   if songs[w_song.current].text:strip() ~= t then
     songs[w_song.current].text = t
     w_file:dirty(true)
   end
-  r, e = sfx.songs(songs)
+
+  local t = get_songs():stripnl()..'\n'
+  r, e = sfx.songs(t)
   if not r then
+    edit_err(w_edit.edit, 1, e)
     return false, e
   end
-  r, e = mixer.songs(get_songs())
+
+  r, e = mixer.songs(t)
   if not r then
+    edit_err(w_edit.edit, 1, e)
     return false, e
   end
   return true

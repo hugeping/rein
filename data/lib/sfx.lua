@@ -39,14 +39,14 @@ function sfx.parse_cmd(cmd, mus)
   ret.fn = cmd[1]:sub(2):strip()
   if cmd[1] == '@play' then
     local song = sfx.sfx_bank[tonumber(cmd[2]) or cmd[2]]
---    if not song then
---      return false, "No such sfx: "..tostring(cmd[2])
---    end
---    if song.tracks > mus.tracks then mus.tracks = song.tracks end
     ret.args = { tonumber(cmd[2]) or cmd[2] }
     return ret
   elseif cmd[1] == '@tempo' then
     ret.args = { tonumber(cmd[2]) or 1 }
+    return ret
+  elseif cmd[1] == '@tracks' then
+    ret.args = { tonumber(cmd[2]) or 1 }
+    mus.tracks = ret.args[1]
     return ret
   elseif cmd[1] == '@push' then
     ret.args = { tonumber(cmd[2]) or -1 }
@@ -129,7 +129,7 @@ function sfx.parse_song(text)
   if not tostring(text):find("\n") then
     local song = sfx.sfx_bank[text]
     if not song then
-      return false, "No such sfx:"..tostring(text)
+      return false, "No sfx:"..tostring(text)
     end
     return song
   end
@@ -155,24 +155,6 @@ function sfx.new(nam, song)
     snd, e, l = sfx.parse_song(song)
     if not snd then return snd, e, l end
   end
-  for line, l in ipairs(snd) do
-    if l.cmd then
-      local par = l.cmd.args[1]
-      if l.cmd.fn == 'voice' then
-        if not sfx.voices_bank[par] then
-          e = "No voice:"..tostring(par)
-          return false, e, line
-        end
-      elseif l.cmd.fn == 'play' then
-        local s = sfx.sfx_bank[par]
-        if not s then
-          e = "No sfx:"..tostring(par)
-          return false, e, line
-        end
-        if s.tracks > snd.tracks then snd.tracks = s.tracks end
-      end
-    end
-  end
   sfx.sfx_bank[nam] = snd
   return true
 end
@@ -196,7 +178,7 @@ function sfx.parse_songs(text)
   local function newsong(song, txt)
     local r, e
     if song then
-      r, e = sfx.parse_song(txt)
+      r, e = sfx.parse_song(txt:stripnl()..'\n')
       if not r then
         close()
         return r, e
@@ -262,6 +244,10 @@ end
 
 sfx.proc = {}
 
+function sfx.proc.tracks(chans, mus, nr)
+  return true
+end
+
 function sfx.proc.push(chans, mus, nr)
   if not mus.stack then mus.stack = {} end
   table.insert(mus.stack, 1, { mus.row + 1, nr } )
@@ -275,19 +261,21 @@ function sfx.proc.pop(chans, mus)
 end
 
 function sfx.proc.play(chans, mus, song)
-  sfx.play_song(chans, sfx.sfx_bank[song], mus.tempo)
+  return sfx.play_song(chans, sfx.sfx_bank[song], mus.tempo)
 end
 
 function sfx.proc.voice(chans, mus,...)
-  sfx.apply(...)
+  return sfx.apply(...)
 end
 
 function sfx.proc.pan(chans, mus,...)
   synth.pan(...)
+  return true
 end
 
 function sfx.proc.vol(chans, mus, ...)
   synth.vol(...)
+  return true
 end
 
 function sfx.proc.tempo(chans, mus, tempo)
@@ -295,33 +283,39 @@ function sfx.proc.tempo(chans, mus, tempo)
 end
 
 function sfx.proc_cmd(chans, mus, cmd)
-  if not cmd then return end
+  if not cmd then return true end
   if not cmd.chan then
-    sfx.proc[cmd.fn](chans, mus, table.unpack(cmd.args))
-    return
+    return sfx.proc[cmd.fn](chans, mus, table.unpack(cmd.args))
   end
+  local r, v
   for _, c in ipairs(chan_par(chans, cmd.chan)) do
-    sfx.proc[cmd.fn](chans, mus, c, table.unpack(cmd.args))
+    r, v = sfx.proc[cmd.fn](chans, mus, c, table.unpack(cmd.args))
+    if not r then return r, v end
   end
+  return true
 end
 
 function sfx.play_song_once(chans, tracks)
-  local row
+  local row, r, e
   tracks.row = 1
   while tracks.row <= #tracks do
     row = tracks[tracks.row]
-    sfx.proc_cmd(chans, tracks, row.cmd)
+    r, e = sfx.proc_cmd(chans, tracks, row.cmd)
+    if not r then
+      print(e)
+      return r, e
+    end
     row = tracks[tracks.row]
     for i, r in ipairs(row) do
       local freq, vol = r[1], r[2]
-      if freq then
+      if freq and chans[i] then
         if freq == 0 then
           synth.chan_change(chans[i], synth.NOTE_OFF, 0)
         else
           synth.chan_change(chans[i], synth.NOTE_ON, freq)
         end
       end
-      if vol then
+      if vol and chans[i] then
         synth.change(chans[i], 0, synth.VOLUME, vol/255)
       end
     end
@@ -332,14 +326,18 @@ function sfx.play_song_once(chans, tracks)
     end
     tracks.row = tracks.row + 1
   end
+  return true
 end
 
 function sfx.play_song(chans, tracks, nr)
+  local r, e
   nr = nr or 1
   while nr == -1 or nr > 0 do
     if nr ~= -1 then nr = nr - 1 end
-    sfx.play_song_once(chans, tracks)
+    r, e = sfx.play_song_once(chans, tracks)
+    if not r then return r, e end
   end
+  return true
 end
 
 local function par_choice(...)
@@ -472,7 +470,7 @@ function sfx.box_info(nam)
       return v
     end
   end
-  error ("No such sfx box:".. tostring(nam), 2)
+  error ("No sfx box:".. tostring(nam), 2)
 end
 
 local function par_lookup(info, nam)
@@ -654,7 +652,7 @@ end
 function sfx.apply(chan, voice)
   local vo = sfx.voices_bank[voice]
   if not vo then
-    error("Unknown voice: "..tostring(voice), 2)
+    return false, "Unknown voice: "..tostring(voice)
   end
   synth.drop(chan)
   for i, b in ipairs(vo) do
