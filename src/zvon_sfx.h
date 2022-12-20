@@ -14,7 +14,6 @@ enum {
     ZV_WIDTH,
     ZV_OFFSET,
     ZV_SET_LIN,
-    ZV_FREQ2,
     ZV_NOTE_ON,
     ZV_NOTE_OFF,
     ZV_SET_GLIDE,
@@ -53,8 +52,7 @@ enum {
     OSC_DSF2,
     OSC_PWM,
     OSC_NOISE,
-    OSC_BAND_NOISE,
-    OSC_SIN_BAND_NOISE
+    OSC_BAND_NOISE
 };
 
 enum {
@@ -64,7 +62,6 @@ enum {
     OSC_WIDTH,
     OSC_OFFSET,
     OSC_SET_LIN,
-    OSC_FREQ2,
     OSC_PARAMS
 };
 

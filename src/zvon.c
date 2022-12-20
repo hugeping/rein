@@ -43,7 +43,7 @@ double pwm(double phase, double offset, double width) {
     return saw(phase, width) - saw(phase + offset, width);
 }
 
-static unsigned int xorshift(unsigned int x) {
+static double xorshift(unsigned int x) {
     x ^= x << 13;
     x ^= x >> 17;
     x ^= x << 5;
@@ -218,12 +218,11 @@ void noise_init(struct noise_state *s) {
     s->state = 1;
     s->old_y = 0;
     s->y = 0;
-    noise_set_width(s, 2);
+    noise_set_width(s, 1);
 }
 
-void noise_set_width(struct noise_state *s, unsigned int width) {
-    width++;
-    s->width = MAX(2, width);
+void noise_set_width(struct noise_state *s, double width) {
+    s->width = width;
 }
 
 double noise_lin_next(struct noise_state *s, double freq) {
@@ -232,9 +231,9 @@ double noise_lin_next(struct noise_state *s, double freq) {
         s->phase -= 1;
         s->state = xorshift(s->state);
         s->old_y = s->y;
-        s->y = s->state % s->width;
+        s->y = s->width * (s->state * (1. / 4294967296));
     }
-    return lerp(s->old_y, s->y, s->phase) - s->width / 2;
+    return lerp(s->old_y, s->y, s->phase) - s->width * 0.5;
 }
 
 double noise_next(struct noise_state *s, double freq) {
@@ -242,9 +241,9 @@ double noise_next(struct noise_state *s, double freq) {
     if (s->phase >= 1) {
         s->phase -= 1;
         s->state = xorshift(s->state);
-        s->y = s->state % s->width;
+        s->y = s->width * (s->state * (1. / 4294967296));
     }
-    return (double) s->y - s->width / 2;
+    return s->y - s->width * 0.5;
 }
 
 void lfo_init(struct lfo_state *s) {

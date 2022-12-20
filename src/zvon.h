@@ -87,13 +87,13 @@ double glide_next(struct glide_state *s, double target);
 struct noise_state {
     double phase;
     unsigned int state;
-    unsigned int old_y;
-    unsigned int y;
-    unsigned int width;
+    double old_y;
+    double y;
+    double width;
 };
 
 void noise_init(struct noise_state *s);
-void noise_set_width(struct noise_state *s, unsigned int width);
+void noise_set_width(struct noise_state *s, double width);
 double noise_lin_next(struct noise_state *s, double freq);
 double noise_next(struct noise_state *s, double freq);
 

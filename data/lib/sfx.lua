@@ -251,6 +251,7 @@ end
 function sfx.proc.push(chans, mus, nr)
   if not mus.stack then mus.stack = {} end
   table.insert(mus.stack, 1, { mus.row + 1, nr } )
+  return true
 end
 
 function sfx.proc.pop(chans, mus)
@@ -258,6 +259,7 @@ function sfx.proc.pop(chans, mus)
   if not r or r[2] == 0 then return end
   mus.row = r[1]
   if r[2] and r[2] > 0 then r[2] = r[2] - 1 end
+  return true
 end
 
 function sfx.proc.play(chans, mus, song)
@@ -280,6 +282,7 @@ end
 
 function sfx.proc.tempo(chans, mus, tempo)
   mus.tempo = tempo
+  return true
 end
 
 function sfx.proc_cmd(chans, mus, cmd)
@@ -351,11 +354,11 @@ local boxes = {
       def = 'sin',
       choice = { 'sin', 'saw', 'square', 'dsf',
         'dsf2', 'pwm',
-        'noise', 'band_noise', 'sin_band_noise',
+        'noise', 'band_noise',
       },
       vals = { synth.OSC_SIN, synth.OSC_SAW, synth.OSC_SQUARE, synth.OSC_DSF,
         synth.OSC_DSF2, synth.OSC_PWM,
-        synth.OSC_NOISE, synth.OSC_BAND_NOISE, synth.OSC_SIN_BAND_NOISE
+        synth.OSC_NOISE, synth.OSC_BAND_NOISE,
       },
     },
 --    { 'freq', synth.FREQ, def = 0 },
@@ -365,7 +368,6 @@ local boxes = {
     { 'width', synth.WIDTH, def = 0.5 },
     { 'offset', synth.OFFSET, def = 1 },
     { 'set_lin', synth.SET_LIN, def = 1 },
-    { 'freq2', synth.FREQ2, def = 0 },
     { 'attack', synth.ATTACK, def = 0.01 },
     { 'decay', synth.DECAY, def = 0.1 },
     { 'sustain', synth.SUSTAIN, def = 0.5 },
@@ -375,21 +377,21 @@ local boxes = {
     { 'glide_rate', synth.GLIDE_RATE, def = 0 },
     { 'remap', synth.REMAP,
       array = {
-        'freq', 'fmul', 'amp', 'width', 'offset', 'set_lin', 'freq2',
+        'freq', 'fmul', 'amp', 'width', 'offset', 'set_lin',
       },
       array_vals = {
         synth.OSC_FREQ, synth.OSC_FMUL, synth.OSC_AMP,
         synth.OSC_WIDTH, synth.OSC_OFFSET,
-        synth.OSC_SET_LIN, synth.OSC_FREQ2
+        synth.OSC_SET_LIN,
       },
       def = 'freq',
       choice = {
-        'freq', 'fmul', 'amp', 'width', 'offset', 'set_lin', 'freq2'
+        'freq', 'fmul', 'amp', 'width', 'offset', 'set_lin',
       },
       vals = {
         synth.OSC_FREQ, synth.OSC_FMUL, synth.OSC_AMP,
         synth.OSC_WIDTH, synth.OSC_OFFSET,
-        synth.OSC_SET_LIN, synth.OSC_FREQ2
+        synth.OSC_SET_LIN,
       },
     },
     { 'lfo_type', synth.LFO_TYPE,
@@ -424,12 +426,12 @@ local boxes = {
     { 'lfo_assign', synth.LFO_ASSIGN,
       array = { 0, 1, 2, 3 },
       choice = {
-        'freq', 'fmul', 'amp', 'width', 'offset', 'set_lin', 'freq2'
+        'freq', 'fmul', 'amp', 'width', 'offset', 'set_lin',
       },
       def = 'freq',
       vals = { synth.OSC_FREQ, synth.OSC_FMUL, synth.OSC_AMP,
         synth.OSC_WIDTH, synth.OSC_OFFSET,
-        synth.OSC_SET_LIN, synth.OSC_FREQ2 },
+        synth.OSC_SET_LIN, },
     },
     { 'lfo_seq_pos', synth.LFO_SEQ_POS,
       array = { 0, 1, 2, 3 },

@@ -19,7 +19,6 @@ static void osc_init(struct osc_state *s) {
     s->params[OSC_WIDTH] = 0.5;
     s->params[OSC_OFFSET] = 1;
     s->params[OSC_SET_LIN] = 1;
-    s->params[OSC_FREQ2] = 0;
     phasor_init(&s->phasor1);
     phasor_init(&s->phasor2);
     noise_init(&s->noise1);
@@ -87,9 +86,6 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
     case ZV_SET_LIN:
         s->osc.params[OSC_SET_LIN] = val;
         break;
-    case ZV_FREQ2:
-        s->osc.params[OSC_FREQ2] = val;
-        break;
     case ZV_NOTE_ON:
         s->osc.params[OSC_FREQ] = val;
         adsr_note_on(&s->adsr, 0);
@@ -99,7 +95,6 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
         adsr_note_off(&s->adsr);
         break;
     case ZV_SET_GLIDE:
-        glide_set_source(&s->glide, s->lfo_params[OSC_FREQ]);
         s->is_glide_on = val;
         break;
     case ZV_GLIDE_RATE:
@@ -204,11 +199,6 @@ static double osc_next(struct osc_state *s, double *params) {
         double y = osc_noise(s, params, params[OSC_OFFSET]);
         return sin(phasor_next(&s->phasor1, f + y));
     }
-    case OSC_SIN_BAND_NOISE: {
-        double y = osc_noise(s, params, params[OSC_OFFSET]);
-        y = sin(phasor_next(&s->phasor1, f + y));
-        return y + sin(phasor_next(&s->phasor2, params[OSC_FREQ2]));
-    }
     }
     return 0;
 }
@@ -217,18 +207,15 @@ static double sfx_synth_mono(struct sfx_synth_state *s, double l) {
     for(int i = 0; i < OSC_PARAMS; i++) {
         s->lfo_params[s->remap[i]] = s->osc.params[i];
     }
-    s->lfo_params[OSC_FREQ] = 0;
+    double f = s->lfo_params[OSC_FREQ];
+    if (s->is_glide_on) {
+        f = glide_next(&s->glide, f);
+    }
+    s->lfo_params[OSC_FREQ] = s->is_fm_on ? l : 0;
     for(int i = 0; i < SYNTH_LFOS; i++) {
         s->lfo_params[s->lfo_targets[i]] += lfo_next(&s->lfos[i]);
     }
-    double f = s->osc.params[OSC_FREQ];
     s->lfo_params[OSC_FREQ] += f * s->lfo_params[OSC_FMUL];
-    if (s->is_fm_on) {
-        s->lfo_params[OSC_FREQ] += l;
-    }
-    if (s->is_glide_on) {
-        s->lfo_params[OSC_FREQ] = glide_next(&s->glide, s->lfo_params[OSC_FREQ]);
-    }
     double y = s->lfo_params[OSC_AMP] * osc_next(&s->osc, s->lfo_params);
     y *= adsr_next(&s->adsr, s->is_sustain_on);
     return s->is_fm_on ? y : y + l;
