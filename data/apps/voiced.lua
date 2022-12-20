@@ -982,6 +982,8 @@ function song_check()
   return true
 end
 
+local last_cur
+
 function w_edit:event(r, v, ...)
   if self.hidden then return end
   local m, mb, x, y = self:mevent(r, v, ...)
@@ -1013,54 +1015,13 @@ function w_edit:event(r, v, ...)
         if song_check() then
           local t, delta = tune_part(w_edit.edit:get())
           tune_delta = delta
+          last_cur = { self.edit:cursor() }
           tune = mixer.play(t)
         end
       end
-    elseif v == 'return' or v == 'keypad enter' then
-      self.edit:newline()
-    elseif v == 'up' then
-      self.edit:move(false, self.edit.cur.y - 1)
-    elseif v == 'down' then
-      self.edit:move(false, self.edit.cur.y + 1)
-    elseif v == 'right' then
-      self.edit:move(self.edit.cur.x + 1)
-    elseif v == 'left' then
-      self.edit:move(self.edit.cur.x - 1)
-    elseif v == 'home' or v == 'keypad 7' or
-      (v == 'a' and input.keydown 'ctrl') then
-      self.edit:move(1)
-    elseif v == 'end' or v == 'keypad 1' or
-      (v == 'e' and input.keydown 'ctrl') then
-      self.edit:toend()
-    elseif v == 'pagedown' or v == 'keypad 3' then
-      local _, lines = self:size()
-      self.edit:move(false, self.edit.cur.y + lines)
-    elseif v == 'pageup' or v == 'keypad 9' then
-      local _, lines = self:size()
-      self.edit:move(false, self.edit.cur.y - lines)
-    elseif v == 'y' and input.keydown 'ctrl' then
-      self.edit:cutline()
-    elseif v == 'c' and input.keydown 'ctrl' then
-      self.edit:cut(true)
-    elseif v == 'v' and input.keydown 'ctrl' then
-      self.edit:paste()
---    elseif v == 'd' and input.keydown 'ctrl' then
---      if not w_conf.hidden then
---        w_conf.edit:set(sfx.box_defs(w_conf.nam))
---      end
-    elseif v == 'x' and input.keydown 'ctrl' or v == 'delete' then
-      if v == 'delete' and not self.edit:selection() then
-        self.edit:delete()
-      else
-        self.edit:cut()
-      end
-    elseif v == 'z' and input.keydown 'ctrl' then
-      self.edit:undo()
-    elseif v:find 'shift' then
-       self.edit:select(true)
+    else
+      return editarea.event(self, r, v, ...)
     end
-    self.edit:move()
-    self.edit:select()
   elseif r == 'keyup' then
     synth.chan_change(1, synth.NOTE_OFF, 0)
     if v:find 'shift' then
@@ -1144,7 +1105,10 @@ build_stack()
 while sys.running() do
   if tune then
     local st = mixer.status(tune)
-    if not st then tune = false else
+    if not st then
+      tune = false
+      w_edit.edit:move(table.unpack(last_cur))
+    else
       w_edit.edit:move(1, st + tune_delta)
     end
   end
