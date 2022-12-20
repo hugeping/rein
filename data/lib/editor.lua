@@ -11,6 +11,7 @@ end
 
 function editor:set(text)
   self.lines = {}
+  self:unselect()
   for l in text:lines() do
     table.insert(self.lines, utf.chars(l))
   end
