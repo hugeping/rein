@@ -195,7 +195,7 @@ function sfx.parse_songs(text)
   for l in text:lines() do
     line = line + 1
 --    l = l:strip()
-    local cmd = l:split()
+    local cmd = l:strip():split()
     if cmd[1] == 'song' then
       if song then
         r, e = newsong(song, txt)
@@ -650,11 +650,12 @@ function sfx.voices(voices)
 end
 
 function sfx.apply(chan, voice)
-  local vo = sfx.voices_bank[voice]
+  local vo = sfx.voices_bank[voice] or sfx.voices_bank[tonumber(voice)]
+  synth.drop(chan)
   if not vo then
+    for k, v in pairs(sfx.voices_bank) do print (k, v) end
     return false, "Unknown voice: "..tostring(voice)
   end
-  synth.drop(chan)
   for i, b in ipairs(vo) do
     synth.push(chan, b.nam)
     for _, p in ipairs(b) do

@@ -734,6 +734,16 @@ function w_poly:onclick()
   end
 end
 
+function w_play:apply_voice()
+  local v = get_voice()
+  if not v then return end
+  if v == self.voice then return end
+  for c = 1, chans.max do
+    sfx.apply(c, v)
+  end
+  self.voice = v
+end
+
 function w_play:onclick()
   if not config_check() then
     return
@@ -744,14 +754,7 @@ function w_play:onclick()
     if mode == 'voiced' then
       apply_boxes()
     else
-      local v = get_voice()
-      for c = 1, chans.max do
-        if sfx.voices_bank[v] then
-          sfx.apply(c, v)
-        else
-          synth.drop(c)
-        end
-      end
+      self:apply_voice()
     end
   else
     for i=1, chans.max do
@@ -799,9 +802,10 @@ function w_play:event(r, v, ...)
       self:onclick()
       return true
     end
+    local _, celln, cellv
     if mode == 'tracked' then
-      local _, n = note_edit()
-      if not n then return end
+      _, celln, cellv = note_edit()
+      if not celln then return end
     end
     if v:find("^f[1-5]$") then
       self.octave = tonumber(v:sub(2))
@@ -812,6 +816,7 @@ function w_play:event(r, v, ...)
     if not m then
       return mode == 'voiced'
     end
+    self:apply_voice()
     if #stack == 0 then return true end
     local note = note2sym[m%12 + 1]
     note = string.format("%s%d", note, w_play.octave + math.floor(m/12))
@@ -827,7 +832,9 @@ function w_play:event(r, v, ...)
     chans.notes[c] = note
     chans.times[c] = sys.time()
     synth.chan_change(c, synth.NOTE_ON, hz)
---    synth.change(c, 0, synth.VOLUME, 0.5)
+--    if cellv and celln then
+--      synth.change(c, 0, synth.VOLUME, 0)
+--    end
     return mode == 'voiced'
   elseif r == 'keyup' then
     for c = 1, chans.max do
@@ -876,9 +883,9 @@ function get_songs()
     else
       txt = txt .. "song\n"
     end
-    txt = txt .. v.text:strip()..'\n\n'
+    txt = txt .. v.text:stripnl()..'\n\n'
   end
-  return txt:strip()
+  return txt:stripnl()
 end
 
 function songs_save(fname)
@@ -934,11 +941,18 @@ end
 
 function note_edit()
   local cx, cy = w_edit.edit:cursor()
-  local l = line(w_edit.edit.lines[cy])
+  local l = w_edit.edit.lines[cy] or {}
+--  local l = line(w_edit.edit.lines[cy])
   local x = cx % CELLW
-  if l:startswith('|') then
-    return true, x >= 3 and x <=5, x >= 7 and x <=8
-  end
+  local pos = math.floor(cx / CELLW) * CELLW
+  if l[pos+1] ~= '|' then return end
+  if l[pos+10] ~= '|' and l[pos+10] then return end
+  if l[pos+2] ~= ' ' or l[pos+9] ~= ' ' then return end
+  local n = x >= 3 and x <= 5 and l[pos+3] and l[pos+4] and l[pos+5]
+  local v = x >= 7 and x <= 8 and l[pos+7] and l[pos+8]
+  v = v and tonumber(l[pos+7]..l[pos+8], 16) or 0
+  n = n and l[pos+3]..l[pos+4]..l[pos+5]
+  return n or v, n, v
 end
 
 function get_voice(nr)
@@ -1029,14 +1043,14 @@ end
 
 function song_check()
   edit_err(w_edit.edit)
-  local r, e, line = sfx.parse_song(w_edit.edit:get():strip()..'\n')
+  local r, e, line = sfx.parse_song(w_edit.edit:get():stripnl()..'\n')
   if not r then
     edit_err(w_edit.edit, line, e)
     return false, e, line
   end
 
-  local t = w_edit.edit:get()
-  if songs[w_song.current].text:strip() ~= t then
+  local t = w_edit.edit:get():stripnl()
+  if songs[w_song.current].text:stripnl() ~= t then
     songs[w_song.current].text = t
     w_file:dirty(true)
   end
@@ -1112,12 +1126,8 @@ function w_del:onclick()
   w_edit.edit:history 'start'
   for idx, l in ipairs(w_edit.edit.lines) do
     local s = line(l):strip()
-    local sx = pos
     if not s:startswith("@") and not s:startswith("#") then
---      if w_edit.edit.lines[idx][pos - 1] == '|' and pos > 1 then
---        sx = sx - 1
---      end
-      w_edit.edit:select(sx, idx, sx + CELLW, idx)
+      w_edit.edit:select(pos, idx, pos + CELLW, idx)
       w_edit.edit:cut(false, false)
     end
   end
@@ -1137,14 +1147,7 @@ function w_add:onclick()
     if not s:startswith("@") and not s:startswith("#") then
       w_edit.edit:move(pos, idx)
       col = math.floor(w_edit.edit:cursor() / CELLW) + 1
-      local t = CELL
---      if col > 1 then
---        t = '|' .. CELL
---      end
---      if col < math.floor((#l + CELLW -1)/ CELLW) + 1 then
---        t = CELL .. '|'
---      end
-      w_edit.edit:input(t)
+      w_edit.edit:input(CELL)
     end
   end
   w_edit.edit:history 'end'
