@@ -263,6 +263,9 @@ function sfx.proc.pop(chans, mus)
 end
 
 function sfx.proc.play(chans, mus, song)
+  if not sfx.sfx_bank[song] then
+    return false, "No sfx:"..tostring(song)
+  end
   return sfx.play_song(chans, sfx.sfx_bank[song], mus.tempo)
 end
 
