@@ -1101,7 +1101,7 @@ if not r then
    print("Error loading voices: ".. tostring(e))
 end
 build_stack()
-
+--print(sfx.songs("music.txt"))
 while sys.running() do
   if tune then
     local st = mixer.status(tune)
