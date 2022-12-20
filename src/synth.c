@@ -347,7 +347,6 @@ static struct {
 	{ "OSC_WIDTH", OSC_WIDTH },
 	{ "OSC_OFFSET", OSC_OFFSET },
 	{ "OSC_SET_LIN", OSC_SET_LIN },
-	{ "OSC_FREQ2", OSC_FREQ2 },
 	{ "LFO_ZERO", LFO_ZERO },
 	{ "LFO_SIN", LFO_SIN },
 	{ "LFO_SAW", LFO_SAW },
