@@ -655,7 +655,6 @@ function sfx.apply(chan, voice)
   local vo = sfx.voices_bank[voice] or sfx.voices_bank[tonumber(voice)]
   synth.drop(chan)
   if not vo then
-    for k, v in pairs(sfx.voices_bank) do print (k, v) end
     return false, "Unknown voice: "..tostring(voice)
   end
   for i, b in ipairs(vo) do
