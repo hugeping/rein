@@ -15,6 +15,7 @@ function editor:set(text)
   for l in text:lines() do
     table.insert(self.lines, utf.chars(l))
   end
+  self:move()
 end
 
 function editor:get()
