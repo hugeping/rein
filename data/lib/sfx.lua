@@ -55,7 +55,7 @@ function sfx.parse_cmd(cmd, mus)
     ret.args = { }
     return ret
   end
-  local chan = tonumber(cmd[2])
+  local chan = (cmd[2] == '*' and -1) or tonumber(cmd[2])
   if not chan then
     return false, "No channel arg in command: "..tostring(cmd[1])
   end

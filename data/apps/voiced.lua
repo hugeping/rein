@@ -786,6 +786,9 @@ local play_stop_keys = {
 }
 
 function w_play:event(r, v, ...)
+  if self.disabled then
+    return
+  end
   if self.selected and not w_conf.hidden and
     ((w_conf:mevent(r, v, ...) and r == 'mousedown') or
     (r == 'keydown' and play_stop_keys[v]))
@@ -1095,16 +1098,18 @@ function w_edit:event(r, v, ...)
       else
         note_bs()
       end
-    elseif v == 'tab' then
+    elseif v == 'tab' or (tune and v == 'escape') then
       if tune then
         mixer.stop(tune)
         tune = false
+        w_play.disabled = false
       else
         if song_check() then
           local t, delta = tune_part(w_edit.edit:get())
           tune_delta = delta
           last_cur = { self.edit:cursor() }
           tune = mixer.play(t)
+          w_play.disabled = tune
         end
       end
       return true
@@ -1112,7 +1117,6 @@ function w_edit:event(r, v, ...)
       return editarea.event(self, r, v, ...)
     end
   elseif r == 'keyup' then
-    synth.chan_change(1, synth.NOTE_OFF, 0)
     if v:find 'shift' then
       self.edit:select(false)
     end
