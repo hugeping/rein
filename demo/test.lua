@@ -75,7 +75,7 @@ mixer.voices [[
 
   voice snare
   box synth
-  type sin_band_noise
+  type band_noise
   set_lin 1
   amp 1
   offset 10000
@@ -84,19 +84,24 @@ mixer.voices [[
   decay 0.15
   sustain 0
   release 0
-  remap freq freq2
-  lfo_assign 0 freq2
-  lfo_type 0 saw
-  lfo_freq 0 5
-  lfo_low 0 150
-  lfo_high 0 0
-  lfo_set_loop 0 0
   lfo_assign 1 freq
   lfo_type 1 saw
   lfo_freq 1 5
-  lfo_low 1 10000
+  lfo_low 1 9500
   lfo_high 1 5000
   lfo_set_loop 1 0
+
+  box synth
+  type sin
+  decay 0.15
+  sustain 0
+  release 0
+  lfo_assign 0 freq
+  lfo_type 0 saw
+  lfo_freq 0 10
+  lfo_low 0 200
+  lfo_high 0 -70
+  lfo_set_loop 0 0
 
   voice square
   box synth

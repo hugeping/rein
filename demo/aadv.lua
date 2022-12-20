@@ -337,7 +337,6 @@ amp 1
 width 0.5
 offset 1
 set_lin 1
-freq2 0
 attack 0.01
 decay 0.1
 sustain 0.5
