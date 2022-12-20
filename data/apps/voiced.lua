@@ -846,10 +846,15 @@ win:with(voice_mode)
 local w_edit = editarea:new { x = 0, y = 13, border = false, lev = w_play.lev - 1 }
 w_edit:size(W, H - 13)
 
-local w_add = button:new { x = 0, y = 0, h = 12, w = 28, text = "Add", border = true }
-local w_del = button:new { x = 30, y = 0, h = 12, w = 28, text = "Del", border = true }
+local w_song_prev = button:new { text = "<" , x = 0, y = 0, w = 10, h = 12, border = true}
+local w_song = edit:new { border = false, value = '1', x = w_prev:after(1), y = 0, w = 12*7, h = 12 }
+local w_song_next = button:new { text = ">", x = w_song:after(1), y = 0, w = 10, h = 12, border = true }
+local w_add = button:new { x = w_song_next:after(1), y = 0, h = 12, w = 28, text = "Add", border = true }
+local w_del = button:new { x = w_add:after(1), y = 0, h = 12, w = 28, text = "Del", border = true }
 local w_voiced = button:new { x = w_del:after(1), y = 0, h = 12, w = 7*7, text = "Voices", border = true }
-local tracker_mode = { w_edit, w_add, w_del, w_play, w_poly, w_voiced }
+
+local tracker_mode = { w_song_prev, w_song, w_song_next,
+  w_edit, w_add, w_del, w_play, w_poly, w_voiced }
 
 function w_voiced:onclick()
   if song_check() then

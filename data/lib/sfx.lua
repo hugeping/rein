@@ -156,7 +156,7 @@ function sfx.new(nam, song)
   return true
 end
 
-function sfx.songs(text)
+function sfx.parse_songs(text)
   local r, e
   local res = {}
   if not text:find("\n") then
@@ -165,10 +165,7 @@ function sfx.songs(text)
       return false, e
     end
   end
-  local cmd
-  local line = 0
-  local song
-  local txt
+
   local function close()
     if type(text) ~= 'string' then
       text:close()
@@ -188,10 +185,14 @@ function sfx.songs(text)
     return true
   end
 
+  local line = 0
+  local song
+  local txt
+
   for l in text:lines() do
     line = line + 1
     l = l:strip()
-    cmd = l:split()
+    local cmd = l:split()
     if cmd[1] == 'song' then
       if song then
         r, e = newsong(song, txt)
@@ -212,6 +213,17 @@ function sfx.songs(text)
     if not r then return r, e end
   end
   close()
+  return ret
+end
+
+function sfx.songs(text)
+  local res, e, r
+  if type(text) == 'string' then
+    res, e = sfx.parse_songs(text)
+  else
+    res = text
+  end
+  if not res then return res, e end
   for _, v in ipairs(res) do
     r, e = sfx.new(v.nam, v.sfx)
     if not r then error(e) end
