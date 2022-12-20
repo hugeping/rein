@@ -8,6 +8,7 @@ gfx.win(384, 384)
 mixer.volume(0.5)
 
 local FILE = ARGS[2] or 'voices.syn'
+local FILE2 = ARGS[3] or 'songs.syn'
 
 local cur_voice = 1
 
@@ -413,11 +414,11 @@ w_bypass = button:new { hidden = true, text = 'Bypass',
 local w_file = button:new { text = FILE, w = 22*7, bg = 7,
   h = 12, y = H - 12, x = 113 }
 
-function dirty(flag)
+function w_file:dirty(flag)
   if flag then
-    w_file.bg = 8
+    self.bg = 8
   else
-    w_file.bg = 7
+    self.bg = 7
   end
 end
 
@@ -432,7 +433,7 @@ function w_file:onclick()
   if not config_check() then
     return
   end
-  if save(FILE) then dirty(false) end
+  if save(FILE) then w_file:dirty(false) end
 end
 
 function box_info(nam)
@@ -476,7 +477,7 @@ function config_check()
   local r, e, line = sfx.compile_box(w_conf.nam, w_conf.edit:get())
   if r then
     if stack[w_conf.id].conf ~= w_conf.edit:get() then
-      dirty(true)
+      w_file:dirty(true)
     end
     stack[w_conf.id].conf = w_conf.edit:get()
     return true
@@ -848,19 +849,78 @@ w_edit:size(W, H - 13)
 local songs = { {} }
 
 local w_song_prev = button:new { text = "<" , x = 0, y = 0, w = 10, h = 12, border = true}
-local w_song = edit:new { border = false, value = '1', x = w_prev:after(1), y = 0, w = 12*7, h = 12 }
+local w_song = edit:new { current = 1, border = false, value = '1', x = w_prev:after(1), y = 0, w = 12*7, h = 12 }
 local w_song_next = button:new { text = ">", x = w_song:after(1), y = 0, w = 10, h = 12, border = true }
 local w_add = button:new { x = w_song_next:after(1), y = 0, h = 12, w = 28, text = "Add", border = true }
 local w_del = button:new { x = w_add:after(1), y = 0, h = 12, w = 28, text = "Del", border = true }
 local w_voiced = button:new { x = w_del:after(1), y = 0, h = 12, w = 7*7, text = "Voices", border = true }
+local w_file = button:new { text = FILE2, w = 14*7, bg = 7,
+  h = 12, x = w_voiced:after(1), y = 0 }
+
+function w_file:dirty(flag)
+  if flag then
+    self.bg = 8
+  else
+    self.bg = 7
+  end
+end
+
+function get_songs()
+  local txt = ''
+  for _, v in ipairs(songs) do
+    if v.nam then
+      txt = txt .. string.format("song %s\n", tostring(v.nam):gsub(" ", "_"))
+    else
+      txt = txt .. "song\n"
+    end
+    txt = txt .. v.text:strip()..'\n\n'
+  end
+  return txt:strip()
+end
+
+function songs_save(fname)
+  return io.file(fname, get_songs()..'\n')
+end
+
+function w_file:onclick()
+  if not song_check() then
+    return
+  end
+  if songs_save(FILE2) then w_file:dirty(false) end
+end
 
 local tracker_mode = { w_song_prev, w_song, w_song_next,
-  w_edit, w_add, w_del, w_play, w_poly, w_voiced }
+  w_edit, w_add, w_del, w_play, w_poly, w_voiced, w_file }
 
 function w_voiced:onclick()
   if song_check() then
     switch 'voiced'
   end
+end
+
+function w_song_next:onclick()
+  if not song_check() then
+    return
+  end
+  w_song.current = w_song.current + 1
+  if w_song.current > #songs then
+    table.insert(songs, { text = '' })
+  end
+  w_song.value = songs[w_song.current].nam or tostring(w_song.current)
+  w_edit.edit:set(songs[w_song.current].text or '')
+end
+
+function w_song_prev:onclick()
+  if not song_check() then
+    return
+  end
+  w_song.current = w_song.current - 1
+  if w_song.current < 1 then
+    w_song.current = 1
+    return
+  end
+  w_song.value = songs[w_song.current].nam or '1'
+  w_edit.edit:set(songs[w_song.current].text or '')
 end
 
 local CELLW = 9
@@ -984,6 +1044,11 @@ function song_check()
         return false, e, line
       end
     end
+  end
+  local t = w_edit.edit:get():strip()
+  if songs[w_song.current].text:strip() ~= t then
+    songs[w_song.current].text = t
+    w_file:dirty(true)
   end
   return true
 end
@@ -1111,6 +1176,7 @@ function load_songs(file)
   if #r == 0 then
     table.insert(r, { })
   end
+  w_song.current = 1
   w_song.value = r[1].nam or '1'
   w_edit.edit:set(r[1].text or '')
   return true
