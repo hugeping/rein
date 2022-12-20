@@ -213,7 +213,7 @@ function sfx.songs(text)
   end
   close()
   for _, v in ipairs(res) do
-    r, e = sfx.new(v.nam, v.sfx:strip()..'\n')
+    r, e = sfx.new(v.nam, v.sfx)
     if not r then error(e) end
   end
   return true
