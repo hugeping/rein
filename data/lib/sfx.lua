@@ -38,12 +38,12 @@ function sfx.parse_cmd(cmd, mus)
   local ret = {}
   ret.fn = cmd[1]:sub(2):strip()
   if cmd[1] == '@play' then
-    local song = sfx.sfx_bank[cmd[2]]
-    if not song then
-      return false, "No such sfx: "..tostring(cmd[2])
-    end
-    if song.tracks > mus.tracks then mus.tracks = song.tracks end
-    ret.args = { cmd[2] }
+    local song = sfx.sfx_bank[tonumber(cmd[2]) or cmd[2]]
+--    if not song then
+--      return false, "No such sfx: "..tostring(cmd[2])
+--    end
+--    if song.tracks > mus.tracks then mus.tracks = song.tracks end
+    ret.args = { tonumber(cmd[2]) or cmd[2] }
     return ret
   elseif cmd[1] == '@tempo' then
     ret.args = { tonumber(cmd[2]) or 1 }
@@ -83,6 +83,9 @@ end
 function sfx.parse_data(text, mus)
   local cols = text:split(" ")
   local n, e
+  if #cols == 0 then
+    return false, "Syntax error"
+  end
   if not cols[1]:startswith "." then
     n, e = sfx.get_note(cols[1])
     if not n then return n, e end
@@ -152,6 +155,24 @@ function sfx.new(nam, song)
     snd, e, l = sfx.parse_song(song)
     if not snd then return snd, e, l end
   end
+  for line, l in ipairs(snd) do
+    if l.cmd then
+      local par = l.cmd.args[1]
+      if l.cmd.fn == 'voice' then
+        if not sfx.voices_bank[par] then
+          e = "No voice:"..tostring(par)
+          return false, e, line
+        end
+      elseif l.cmd.fn == 'play' then
+        local s = sfx.sfx_bank[par]
+        if not s then
+          e = "No sfx:"..tostring(par)
+          return false, e, line
+        end
+        if s.tracks > snd.tracks then snd.tracks = s.tracks end
+      end
+    end
+  end
   sfx.sfx_bank[nam] = snd
   return true
 end
@@ -191,14 +212,14 @@ function sfx.parse_songs(text)
 
   for l in text:lines() do
     line = line + 1
-    l = l:strip()
+--    l = l:strip()
     local cmd = l:split()
     if cmd[1] == 'song' then
       if song then
         r, e = newsong(song, txt)
         if not r then return r, e end
       end
-      song = cmd[2] or (#res + 1)
+      song = tonumber(cmd[2]) or cmd[2] or (#res + 1)
       txt = ''
     elseif not l:startswith('#') and not l:empty() then
       if not song then
@@ -224,8 +245,8 @@ function sfx.songs(text)
     res = text
   end
   if not res then return res, e end
-  for _, v in ipairs(res) do
-    r, e = sfx.new(v.nam, v.sfx)
+  for k, v in ipairs(res) do
+    r, e = sfx.new(v.nam or k, v.sfx)
     if not r then error(e) end
   end
   return true

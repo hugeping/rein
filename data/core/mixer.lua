@@ -133,6 +133,10 @@ function mixer.req_new(nam, snd)
   return sfx.new(nam, snd)
 end
 
+function mixer.req_songs(songs)
+  return sfx.songs(songs)
+end
+
 function mixer.req_stop(id, fo)
   local r = mixer.ids[id]
   if not r then return false, "No such sfx" end
@@ -218,6 +222,8 @@ function mixer.thread()
       mixer.answer(mixer.req_voices(v))
     elseif r == 'status' then
       mixer.answer(mixer.req_status(v))
+    elseif r == 'songs' then
+      mixer.answer(mixer.req_songs(v))
     end
     r, v = coroutine.resume(mixer.sched)
     if not r then
@@ -290,6 +296,14 @@ function mixer.new(nam, text)
     return r, e
   end
   return mixer.clireq("new", nam, r)
+end
+
+function mixer.songs(text)
+  local r, e = sfx.parse_songs(text)
+  if not r then
+    return r, e
+  end
+  return mixer.clireq("songs", r)
 end
 
 function mixer.reserve(nr)

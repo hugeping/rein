@@ -790,15 +790,18 @@ function w_play:event(r, v, ...)
     self:onclick()
     return
   end
-
   if button.event(self, r, v, ...) then return true end
   if v ~= 'escape' and not self.play then return end
   if r == 'text' then
-    return true
+    return mode == 'voiced'
   elseif r == 'keydown' then
     if v == 'escape' then
       self:onclick()
       return true
+    end
+    if mode == 'tracked' then
+      local _, n = note_edit()
+      if not n then return end
     end
     if v:find("^f[1-5]$") then
       self.octave = tonumber(v:sub(2))
@@ -807,7 +810,7 @@ function w_play:event(r, v, ...)
     v = tonumber(v) or v
     local m = key2note[v]
     if not m then
-      return true
+      return mode == 'voiced'
     end
     if #stack == 0 then return true end
     local note = note2sym[m%12 + 1]
@@ -816,7 +819,7 @@ function w_play:event(r, v, ...)
     local hz = 440 * 2 ^ ((m - 69) / 12) -- sfx.get_note(m..'3')
     for c = 1, chans.max do
       if chans[c] == v then
-        return true
+        return mode == 'voiced'
       end
     end
     local c = find_free_channel()
@@ -825,7 +828,7 @@ function w_play:event(r, v, ...)
     chans.times[c] = sys.time()
     synth.chan_change(c, synth.NOTE_ON, hz)
 --    synth.change(c, 0, synth.VOLUME, 0.5)
-    return true
+    return mode == 'voiced'
   elseif r == 'keyup' then
     for c = 1, chans.max do
       v = tonumber(v) or v
@@ -843,7 +846,7 @@ local voice_mode = { w_prev, w_voice, w_next, w_boxes, w_volume, w_stack, w_conf
 
 win:with(voice_mode)
 
-local w_edit = editarea:new { x = 0, y = 13, border = false, lev = w_play.lev - 1 }
+local w_edit = editarea:new { x = 0, y = 13, border = false, lev = 1 }
 w_edit:size(W, H - 13)
 
 local songs = { {} }
@@ -930,11 +933,12 @@ local function line(l)
   return l and table.concat(l) or ''
 end
 
-local function note_edit()
+function note_edit()
   local cx, cy = w_edit.edit:cursor()
   local l = line(w_edit.edit.lines[cy])
+  local x = cx % CELLW
   if l:startswith('|') then
-    return true
+    return true, x >= 3 and x <=5, x >= 7 and x <=8
   end
 end
 
@@ -1045,10 +1049,18 @@ function song_check()
       end
     end
   end
-  local t = w_edit.edit:get():strip()
+  local t = w_edit.edit:get()
   if songs[w_song.current].text:strip() ~= t then
     songs[w_song.current].text = t
     w_file:dirty(true)
+  end
+  r, e = sfx.songs(songs)
+  if not r then
+    return false, e
+  end
+  r, e = mixer.songs(get_songs())
+  if not r then
+    return false, e
   end
   return true
 end
@@ -1090,6 +1102,7 @@ function w_edit:event(r, v, ...)
           tune = mixer.play(t)
         end
       end
+      return true
     else
       return editarea.event(self, r, v, ...)
     end
