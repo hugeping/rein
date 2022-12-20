@@ -121,7 +121,7 @@ function sfx.parse_row(text, mus)
   return ret
 end
 
-function sfx.parse_song(text, data)
+function sfx.parse_song(text)
   local line = 0
   if not data and not tostring(text):find("\n") then
     local song = sfx.sfx_bank[text]

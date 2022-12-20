@@ -960,7 +960,7 @@ end
 
 function song_check()
   edit_err(w_edit.edit)
-  local r, e, line = sfx.parse_song(w_edit.edit:get(), true)
+  local r, e, line = sfx.parse_song(w_edit.edit:get():strip()..'\n')
   if not r then
     edit_err(w_edit.edit, line, e)
     return false, e, line
