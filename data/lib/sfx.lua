@@ -38,8 +38,8 @@ function sfx.parse_cmd(cmd, mus)
   local ret = {}
   ret.fn = cmd[1]:sub(2):strip()
   if cmd[1] == '@play' then
-    local song = sfx.sfx_bank[tonumber(cmd[2]) or cmd[2]]
-    ret.args = { tonumber(cmd[2]) or cmd[2] }
+    local song = sfx.sfx_bank[cmd[2]]
+    ret.args = { cmd[2] }
     return ret
   elseif cmd[1] == '@tempo' then
     ret.args = { tonumber(cmd[2]) or 1 }
@@ -201,7 +201,7 @@ function sfx.parse_songs(text)
         r, e = newsong(song, txt)
         if not r then return r, e end
       end
-      song = tonumber(cmd[2]) or cmd[2] or (#res + 1)
+      song = cmd[2] or tostring(#res + 1)
       txt = ''
     elseif not l:startswith('#') and not l:empty() then
       if not song then
@@ -662,7 +662,7 @@ function sfx.voices(voices)
 end
 
 function sfx.apply(chan, voice)
-  local vo = sfx.voices_bank[voice] or sfx.voices_bank[tonumber(voice)]
+  local vo = sfx.voices_bank[voice]
   synth.drop(chan)
   if not vo then
     return false, "Unknown voice: "..tostring(voice)
