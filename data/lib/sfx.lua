@@ -180,7 +180,7 @@ function sfx.parse_songs(text)
         close()
         return r, e
       end
-      table.insert(res, { nam = song, sfx = r })
+      table.insert(res, { nam = song, sfx = r, text = txt })
     end
     return true
   end
@@ -213,7 +213,7 @@ function sfx.parse_songs(text)
     if not r then return r, e end
   end
   close()
-  return ret
+  return res
 end
 
 function sfx.songs(text)
