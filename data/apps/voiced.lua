@@ -1,6 +1,7 @@
 local sfx = require 'sfx'
 local editor = require 'editor'
 
+local mode = 'voiced'
 local w_conf, w_rem, w_bypass, w_voice
 
 gfx.win(384, 384)
@@ -444,18 +445,34 @@ local w_stack = win:new { title = 'Stack',
   w = 16*7,
   border = true }
 
+function edit_err(ed, line, e)
+  if not line then -- clear
+    local lines = {}
+    for _, l in ipairs(ed.lines) do
+      if l[1] ~= '#' or l[2] ~= 'e' or l[3] ~= 'r' or l[4] ~= 'r' or l[5] ~= ' ' then
+        table.insert(lines, l)
+      end
+    end
+    ed.lines = lines
+    return true
+  end
+  ed:move(#ed.lines[line] + 1, line)
+  local width = ed:size()
+  for l in e:lines() do
+    for _, ll in ipairs(l:wrap(width-2)) do
+      ed:newline()
+      ed:input('#err '..ll)
+    end
+  end
+  ed.col = 1
+  ed:move(#ed.lines[line] + 1, line)
+end
+
 function config_check()
   if w_conf.hidden then
     return true
   end
-  local lines = {}
-  for _, l in ipairs(w_conf.edit.lines) do
-    if l[1] ~= '#' or l[2] ~= 'e' or l[3] ~= 'r' or l[4] ~= 'r' or l[5] ~= ' ' then
-      table.insert(lines, l)
-    end
-  end
-  w_conf.edit.lines = lines
-
+  edit_err(w_conf.edit)
   local r, e, line = sfx.compile_box(w_conf.nam, w_conf.edit:get())
   if r then
     if stack[w_conf.id].conf ~= w_conf.edit:get() then
@@ -464,16 +481,7 @@ function config_check()
     stack[w_conf.id].conf = w_conf.edit:get()
     return true
   end
-  w_conf.edit:move(#w_conf.edit.lines[line] + 1, line)
-  local width = w_conf.edit:size()
-  for l in e:lines() do
-    for _, ll in ipairs(l:wrap(width-2)) do
-      w_conf.edit:newline()
-      w_conf.edit:input('#err '..ll)
-    end
-  end
-  w_conf.edit.col = 1
-  w_conf.edit:move(#w_conf.edit.lines[line] + 1, line)
+  edit_err(w_conf.edit, line, e)
   return false, e, line
 end
 
@@ -540,7 +548,7 @@ function build_stack()
   apply_boxes()
 end
 
-function save(fname)
+function get_voices()
   local txt = ''
   for _, v in ipairs(voices) do
     txt = txt .. string.format("voice %s\n", v.nam:gsub(" ", "_"))
@@ -550,8 +558,11 @@ function save(fname)
     end
     txt = txt .. conf:strip() .. '\n\n'
   end
-  print(txt:strip())
-  return io.file(fname, txt:strip()..'\n')
+  return txt:strip()
+end
+
+function save(fname)
+  return io.file(fname, get_voices()..'\n')
 end
 
 
@@ -571,6 +582,14 @@ local w_volume = win:new { title = 'Mix vol.',
     end
   }
 }
+
+local w_tracker = button:new { text = 'Tracker',
+  w = 16 * 7, h = 12, x = 0, y = w_volume:below(1),
+  border = true }
+
+function w_tracker:onclick()
+  switch 'tracked'
+end
 
 w_boxes.x = 0 -- W - w_boxes.w
 w_boxes.y = 12 + 1
@@ -721,7 +740,18 @@ function w_play:onclick()
   self.play = not self.play
   self.selected = self.play
   if self.play then
-    apply_boxes()
+    if mode == 'voiced' then
+      apply_boxes()
+    else
+      local v = get_voice()
+      for c = 1, chans.max do
+        if sfx.voices_bank[v] then
+          sfx.apply(c, v)
+        else
+          synth.drop(c)
+        end
+      end
+    end
   else
     for i=1, chans.max do
       synth.drop(i)
@@ -807,17 +837,317 @@ function w_play:event(r, v, ...)
   end
 end
 
-win:with { w_prev, w_voice, w_next, w_boxes, w_volume, w_stack, w_conf, w_play,
-  w_poly, w_info, w_rem, w_bypass, w_file }
+local voice_mode = { w_prev, w_voice, w_next, w_boxes, w_volume, w_stack, w_conf, w_play,
+  w_poly, w_info, w_rem, w_bypass, w_file, w_tracker }
+
+win:with(voice_mode)
+
+
+local w_edit = editarea:new { x = 0, y = 13, border = false, lev = w_play.lev - 1 }
+w_edit:size(W, H - 13)
+
+local w_add = button:new { x = 0, y = 0, h = 12, w = 28, text = "Add", border = true }
+local w_del = button:new { x = 30, y = 0, h = 12, w = 28, text = "Del", border = true }
+local w_voiced = button:new { x = w_del:after(1), y = 0, h = 12, w = 7*7, text = "Voices", border = true }
+local tracker_mode = { w_edit, w_add, w_del, w_play, w_poly, w_voiced }
+
+function w_voiced:onclick()
+  if song_check() then
+    switch 'voiced'
+  end
+end
+
+local CELLW = 9
+local CELL = '| ... .. '
+
+local function line(l)
+  return l and table.concat(l) or ''
+end
+
+local function note_edit()
+  local cx, cy = w_edit.edit:cursor()
+  local l = line(w_edit.edit.lines[cy])
+  if l:startswith('|') then
+    return true
+  end
+end
+
+function get_voice(nr)
+  local cx, cy = w_edit.edit:cursor()
+  local nr = nr or math.floor(cx / CELLW) + 1
+  local l, cmd, chan, voice
+  local name
+  for i=1, cy do
+    l = line(w_edit.edit.lines[i]):strip()
+    if l:startswith('@voice ') then
+      cmd = l:split()
+      chan = tonumber(cmd[2])
+      voice = cmd[3]
+      if chan == -1 or chan == nr then
+        name = voice
+      end
+    end
+  end
+  return name
+end
+
+local function keynote(v)
+  v = tonumber(v) or v
+  local m = key2note[v]
+  if not m then return end
+  local note = note2sym[m%12 + 1]
+  note = string.format("%s%d", note, w_play.octave + math.floor(m/12))
+  return note
+end
+
+local function note_text(v)
+  local cx, cy = w_edit.edit:cursor()
+  local pos = math.floor(cx / CELLW) * CELLW
+  x = cx % CELLW
+  local l = w_edit.edit.lines[cy]
+  if x >= 3 and x <= 5 then
+    if v == '=' then
+      v = '==='
+    else
+      v = keynote(v)
+      if not v then
+        return
+      end
+    end
+    w_edit.edit:select(pos + 3, cy, pos + 6, cy)
+    w_edit.edit:input(v, true)
+  elseif x >= 7 and x <= 8 and v:find("[0-9a-fA-F]") then
+    local t = ((l[pos+8] and l[pos+8] ~= '.') and l[pos+8] or '0') .. v
+    w_edit.edit:select(pos + 7, cy, pos + 9, cy)
+    w_edit.edit:input(t, true)
+  end
+  w_edit.edit:move(cx, cy)
+end
+
+local function note_bs()
+  local cx, cy = w_edit.edit:cursor()
+  local pos = math.floor(cx / CELLW) * CELLW
+  cx = cx % CELLW
+  local l = w_edit.edit.lines[cy]
+  if cx >= 3 and cx <= 5 then
+    l[pos+3] = '.'
+    l[pos+4] = '.'
+    l[pos+5] = '.'
+  elseif cx >= 7 and cx <= 8 then
+    l[pos+7] = '.'
+    l[pos+8] = '.'
+  end
+end
+local tune, tune_delta
+
+local function tune_part()
+  local text = w_edit.edit:get()
+  local t = ''
+  local y = 0
+  local _, cy = w_edit.edit:cursor()
+  local delta = cy - 1
+  for l in text:lines() do
+    y = y + 1
+    if y >= cy or l:strip():startswith('@') then
+      if y < cy then
+        delta = delta - 1
+      end
+      t = t .. l .. '\n'
+    end
+  end
+  return t, delta
+end
+
+function song_check()
+  edit_err(w_edit.edit)
+  local r, e, line = sfx.parse_song(w_edit.edit:get(), true)
+  if not r then
+    edit_err(w_edit.edit, line, e)
+    return false, e, line
+  end
+  for i=1,r.tracks do
+    if not get_voice(i) then
+      edit_err(w_edit.edit, 1, "No voice on track:"..tostring(i))
+      return false, e, line
+    end
+  end
+  for line, l in ipairs(r) do
+    if l.cmd and l.cmd.fn == 'voice' then
+      if not sfx.voices_bank[l.cmd.args[1]] then
+        edit_err(w_edit.edit, line, "No voice:"..tostring(l.cmd.args[1]))
+        return false, e, line
+      end
+    end
+  end
+  return true
+end
+
+function w_edit:event(r, v, ...)
+  if self.hidden then return end
+  local m, mb, x, y = self:mevent(r, v, ...)
+  if m and r == 'mousedown' then
+    y = math.floor(y/self.sph)
+    x = math.floor(x/self.spw)
+    self.edit:move(x + self.edit.col, y + self.edit.line)
+    return true
+  end
+  if r == 'text' then
+    if note_edit() then
+      note_text(v)
+    else
+      self.edit:input(v)
+    end
+    return true
+  elseif r == 'keydown' then
+    if v == 'backspace' then
+      if not note_edit() then
+        self.edit:backspace()
+      else
+        note_bs()
+      end
+    elseif v == 'tab' then
+      if tune then
+        mixer.stop(tune)
+        tune = false
+      else
+        if song_check() then
+          local t, delta = tune_part(w_edit.edit:get())
+          tune_delta = delta
+          tune = mixer.play(t)
+        end
+      end
+    elseif v == 'return' or v == 'keypad enter' then
+      self.edit:newline()
+    elseif v == 'up' then
+      self.edit:move(false, self.edit.cur.y - 1)
+    elseif v == 'down' then
+      self.edit:move(false, self.edit.cur.y + 1)
+    elseif v == 'right' then
+      self.edit:move(self.edit.cur.x + 1)
+    elseif v == 'left' then
+      self.edit:move(self.edit.cur.x - 1)
+    elseif v == 'home' or v == 'keypad 7' or
+      (v == 'a' and input.keydown 'ctrl') then
+      self.edit:move(1)
+    elseif v == 'end' or v == 'keypad 1' or
+      (v == 'e' and input.keydown 'ctrl') then
+      self.edit:toend()
+    elseif v == 'pagedown' or v == 'keypad 3' then
+      local _, lines = self:size()
+      self.edit:move(false, self.edit.cur.y + lines)
+    elseif v == 'pageup' or v == 'keypad 9' then
+      local _, lines = self:size()
+      self.edit:move(false, self.edit.cur.y - lines)
+    elseif v == 'y' and input.keydown 'ctrl' then
+      self.edit:cutline()
+    elseif v == 'c' and input.keydown 'ctrl' then
+      self.edit:cut(true)
+    elseif v == 'v' and input.keydown 'ctrl' then
+      self.edit:paste()
+--    elseif v == 'd' and input.keydown 'ctrl' then
+--      if not w_conf.hidden then
+--        w_conf.edit:set(sfx.box_defs(w_conf.nam))
+--      end
+    elseif v == 'x' and input.keydown 'ctrl' or v == 'delete' then
+      if v == 'delete' and not self.edit:selection() then
+        self.edit:delete()
+      else
+        self.edit:cut()
+      end
+    elseif v == 'z' and input.keydown 'ctrl' then
+      self.edit:undo()
+    elseif v:find 'shift' then
+       self.edit:select(true)
+    end
+    self.edit:move()
+    self.edit:select()
+  elseif r == 'keyup' then
+    synth.chan_change(1, synth.NOTE_OFF, 0)
+    if v:find 'shift' then
+      self.edit:select(false)
+    end
+  end
+  return win.event(self, r, v, ...)
+end
+
+function w_del:onclick()
+  local cx, cy = w_edit.edit:cursor()
+  local pos = math.floor(cx / CELLW)*CELLW + 1
+  w_edit.edit:history 'start'
+  for idx, l in ipairs(w_edit.edit.lines) do
+    local s = line(l):strip()
+    local sx = pos
+    if not s:startswith("@") and not s:startswith("#") then
+--      if w_edit.edit.lines[idx][pos - 1] == '|' and pos > 1 then
+--        sx = sx - 1
+--      end
+      w_edit.edit:select(sx, idx, sx + CELLW, idx)
+      w_edit.edit:cut(false, false)
+    end
+  end
+  w_edit.edit:history 'end'
+  w_edit.edit:move(cx, cy)
+end
+
+function w_add:onclick()
+  local cx, cy = w_edit.edit:cursor()
+  local col = math.floor(cx / CELLW) + 1
+  local pos = (col - 1)*CELLW + 1
+  local nr = cy + 31
+  w_edit.edit:history 'start'
+  for idx=cy, nr do
+    local l = w_edit.edit.lines[idx] or {}
+    local s = line(l):strip()
+    if not s:startswith("@") and not s:startswith("#") then
+      w_edit.edit:move(pos, idx)
+      col = math.floor(w_edit.edit:cursor() / CELLW) + 1
+      local t = CELL
+--      if col > 1 then
+--        t = '|' .. CELL
+--      end
+--      if col < math.floor((#l + CELLW -1)/ CELLW) + 1 then
+--        t = CELL .. '|'
+--      end
+      w_edit.edit:input(t)
+    end
+  end
+  w_edit.edit:history 'end'
+  w_edit.edit:move(cx, cy)
+end
+
+function switch(m)
+  if mode == m then return end
+  if mode == 'voiced' and not config_check() then
+    return
+  end
+  if m == 'tracked' then
+    win.childs = tracker_mode
+    for c = 1, chans.max do
+      synth.drop(c)
+    end
+    if sfx.voices(get_voices()) then
+      mixer.voices(get_voices())
+    end
+    mode = m
+  elseif m == 'voiced' then
+    win.childs = voice_mode
+    mode = m
+  end
+end
 
 local r, e = load(FILE)
 if not r then
-  print("Error loading voices: ".. tostring(e))
+   print("Error loading voices: ".. tostring(e))
 end
-
 build_stack()
 
-while true do
+while sys.running() do
+  if tune then
+    local st = mixer.status(tune)
+    if not st then tune = false else
+      w_edit.edit:move(1, st + tune_delta)
+    end
+  end
   win:event(sys.input())
   win:show()
   gfx.flip(1/20, true)
