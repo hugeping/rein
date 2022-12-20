@@ -911,6 +911,10 @@ function w_voiced:onclick()
   end
 end
 
+function w_song:onedit()
+  songs[w_song.current].nam = self.value
+end
+
 function w_song_next:onclick()
   if not song_check() then
     return
