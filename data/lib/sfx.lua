@@ -237,7 +237,7 @@ end
 local function chan_par(chans, ch)
   ch = ch or 1
   if ch ~= -1 then
-    return { chans[ch] or 0 }
+    return chans[ch] and { chans[ch] } or { }
   end
   return chans
 end
@@ -266,8 +266,14 @@ function sfx.proc.play(chans, mus, song)
   return sfx.play_song(chans, sfx.sfx_bank[song], mus.tempo)
 end
 
-function sfx.proc.voice(chans, mus,...)
-  return sfx.apply(...)
+function sfx.proc.voice(chans, mus, c, v, ...)
+  for k, n in ipairs(chans) do
+    if n == c then
+      mus.voices[k] = v
+      break
+    end
+  end
+  return sfx.apply(c, v, ...)
 end
 
 function sfx.proc.pan(chans, mus,...)
@@ -301,6 +307,7 @@ end
 function sfx.play_song_once(chans, tracks)
   local row, r, e
   tracks.row = 1
+  tracks.voices = {}
   while tracks.row <= #tracks do
     row = tracks[tracks.row]
     r, e = sfx.proc_cmd(chans, tracks, row.cmd)
@@ -311,14 +318,14 @@ function sfx.play_song_once(chans, tracks)
     row = tracks[tracks.row]
     for i, r in ipairs(row) do
       local freq, vol = r[1], r[2]
-      if freq and chans[i] then
+      if freq and chans[i] and tracks.voices[i] then
         if freq == 0 then
           synth.chan_change(chans[i], synth.NOTE_OFF, 0)
         else
           synth.chan_change(chans[i], synth.NOTE_ON, freq)
         end
       end
-      if vol and chans[i] then
+      if vol and chans[i] and tracks.voices[i] then
         synth.change(chans[i], 0, synth.VOLUME, vol/255)
       end
     end
