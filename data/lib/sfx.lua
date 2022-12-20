@@ -123,7 +123,7 @@ end
 
 function sfx.parse_song(text)
   local line = 0
-  if not data and not tostring(text):find("\n") then
+  if not tostring(text):find("\n") then
     local song = sfx.sfx_bank[text]
     if not song then
       return false, "No such sfx:"..tostring(text)
@@ -147,12 +147,75 @@ end
 
 function sfx.new(nam, song)
   local snd = song
-  local e
+  local e, l
   if type(song) == 'string' then
-    snd, e = sfx.parse_song(song)
-    if not snd then return snd, e end
+    snd, e, l = sfx.parse_song(song)
+    if not snd then return snd, e, l end
   end
   sfx.sfx_bank[nam] = snd
+  return true
+end
+
+function sfx.songs(text)
+  local r, e
+  local res = {}
+  if not text:find("\n") then
+    text, e = io.open(text, "rb")
+    if not text then
+      return false, e
+    end
+  end
+  local cmd
+  local line = 0
+  local song
+  local txt
+  local function close()
+    if type(text) ~= 'string' then
+      text:close()
+    end
+  end
+
+  local function newsong(song, txt)
+    local r, e
+    if song then
+      r, e = sfx.parse_song(txt)
+      if not r then
+        close()
+        return r, e
+      end
+      table.insert(res, { nam = song, sfx = r })
+    end
+    return true
+  end
+
+  for l in text:lines() do
+    line = line + 1
+    l = l:strip()
+    cmd = l:split()
+    if cmd[1] == 'song' then
+      if song then
+        r, e = newsong(song, txt)
+        if not r then return r, e end
+      end
+      song = cmd[2] or (#res + 1)
+      txt = ''
+    elseif not l:startswith('#') and not l:empty() then
+      if not song then
+        close()
+        return false, "No song defined", line
+      end
+      txt = txt .. l .. '\n'
+    end
+  end
+  if song then
+    r, e = newsong(song, txt)
+    if not r then return r, e end
+  end
+  close()
+  for _, v in ipairs(res) do
+    r, e = sfx.new(v.nam, v.sfx:strip()..'\n')
+    if not r then error(e) end
+  end
   return true
 end
 
