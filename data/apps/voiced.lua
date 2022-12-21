@@ -880,7 +880,13 @@ local w_info = label:new { x = 0, y = H - 10, bg = 6, w = W, h = 10, left = true
 
 function w_info:fmt()
   local cx, cy = w_edit.edit:cursor()
-  return string.format("[%d] %2d:%-2d %s", w_play.octave, cx, cy, w_play.voice or '')
+  local n = ''
+  for i = 1, chans.max do
+    if chans[i] then
+      n = n .. ' '..chans.notes[i]
+    end
+  end
+  return string.format("[%d] %2d:%-2d %s%s", w_play.octave, cx, cy, w_play.voice or '', n)
 end
 
 function w_file:dirty(flag)
@@ -1003,6 +1009,7 @@ local function keynote(v)
 end
 
 local function note_text(v)
+  if w_play.selected then return end
   local cx, cy = w_edit.edit:cursor()
   local pos = math.floor(cx / CELLW) * CELLW
   x = cx % CELLW
@@ -1096,6 +1103,7 @@ local function song_stop()
   tune = false
   w_edit.lev = 1
   w_play.disabled = false
+  w_edit.edit:move(table.unpack(last_cur))
 end
 
 function w_edit:event(r, v, ...)
@@ -1236,7 +1244,6 @@ while sys.running() do
     local st = mixer.status(tune)
     if not st then
       song_stop()
-      w_edit.edit:move(table.unpack(last_cur))
     else
       w_edit.edit:move(1, st + tune_delta)
     end
