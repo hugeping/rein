@@ -1037,7 +1037,14 @@ local function note_text(v)
     w_edit.edit:select(pos + 3, cy, pos + 6, cy)
     w_edit.edit:input(v, true)
   elseif x >= 7 and x <= 8 and v:find("[0-9a-fA-F]") then
-    local t = ((l[pos+8] and l[pos+8] ~= '.') and l[pos+8] or '0') .. v
+    local t
+    if x == 7 then
+      t = v .. ((l[pos+8] and l[pos+8] ~= '.') and l[pos+8] or '0')
+      cx = cx + 1
+    elseif x == 8 then
+      t = ((l[pos+7] and l[pos+7] ~= '.') and l[pos+7] or '0') .. v
+    end
+--    local t = ((l[pos+8] and l[pos+8] ~= '.') and l[pos+8] or '0') .. v
     w_edit.edit:select(pos + 7, cy, pos + 9, cy)
     w_edit.edit:input(t, true)
   end
