@@ -133,10 +133,10 @@ function core.init()
   local f, e, optarg, opts
   local opts, optarg = core.getopt(ARGS, {
     s = true,
-    q = true,
+    nosound = true,
   })
   core.scale = opts.s
-  core.nosound = opts.q
+  core.nosound = opts.nosound
   if optarg then
     for i=optarg,#ARGS do
       table.insert(env.ARGS, ARGS[i])
