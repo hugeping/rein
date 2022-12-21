@@ -20,6 +20,18 @@ local NOTES = {
   ['b-'] = 11
 }
 
+local note2sym = { 'c-', 'c#', 'd-', 'd#', 'e-', 'f-', 'f#', 'g-', 'g#', 'a-', 'a#', 'b-' }
+
+function sfx.midi_to_note(m)
+    if m == 0 then return '===' end
+    if not m then return '...' end
+    local note = note2sym[m%12 + 1]
+    local o = math.floor(m/12)-2
+    if o < 0 then o = 0 end
+    note = string.format("%s%d", note, o)
+    return note
+end
+
 function sfx.get_midi_note(m)
   return 440 * 2 ^ ((m - 69) / 12)
 end
@@ -30,7 +42,7 @@ function sfx.get_note(name)
   end
   local n, o = name:sub(1, 2):lower(), tonumber(name:sub(3))
   if not n or not o then return false, "Wrong note:"..tostring(name)  end
-  return sfx.get_midi_note(NOTES[n] + 12 * (o + 2))
+  return NOTES[n] + 12 * (o + 2) -- sfx.get_midi_note(NOTES[n] + 12 * (o + 2))
 end
 
 function sfx.parse_cmd(cmd, mus)
@@ -80,7 +92,7 @@ function sfx.parse_cmd(cmd, mus)
   return ret
 end
 
-function sfx.parse_data(text, mus)
+function sfx.parse_data(text)
   local cols = text:split(" ")
   local n, e
   if #cols == 0 then
@@ -115,7 +127,7 @@ function sfx.parse_row(text, mus)
     text = text:sub(2)
   end
   for _, v in ipairs(text:split("|")) do
-    v, e = sfx.parse_data(v:strip(), mus)
+    v, e = sfx.parse_data(v:strip())
     if not v then
       return v, e
     end
@@ -159,6 +171,27 @@ function sfx.new(nam, song)
   return true
 end
 
+local function norm_song(txt)
+  local t = ''
+  for l in txt:lines() do
+    local col, e = sfx.parse_row(l, {})
+    if not col then
+      return txt
+    end
+    if #col > 0 then
+      for _, r in ipairs(col) do
+        local vol = r[2] and string.format("%2x", r[2]) or '..'
+        t = t .. string.format('| %s %s ',
+          sfx.midi_to_note(r[1]), vol)
+      end
+      t = t .. '\n'
+    else
+      t = t .. l .. '\n'
+    end
+  end
+  return t
+end
+
 function sfx.parse_songs(text)
   local r, e
   local res = {}
@@ -183,7 +216,7 @@ function sfx.parse_songs(text)
         close()
         return r, e
       end
-      table.insert(res, { nam = song, sfx = r, text = txt })
+      table.insert(res, { nam = song, sfx = r, text = norm_song(txt) })
     end
     return true
   end
@@ -325,7 +358,7 @@ function sfx.play_song_once(chans, tracks)
         if freq == 0 then
           synth.chan_change(chans[i], synth.NOTE_OFF, 0)
         else
-          synth.chan_change(chans[i], synth.NOTE_ON, freq)
+          synth.chan_change(chans[i], synth.NOTE_ON, sfx.get_midi_note(freq))
         end
       end
       if vol and chans[i] and tracks.voices[i] then
