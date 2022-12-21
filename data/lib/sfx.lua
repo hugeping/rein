@@ -313,18 +313,25 @@ function sfx.proc.play(chans, mus, song)
   return sfx.play_song(chans, sfx.sfx_bank[song], mus.tempo)
 end
 
-function sfx.proc.voice(chans, mus, c, v, ...)
+local function chan2track(chans, c)
   for k, n in ipairs(chans) do
     if n == c then
-      mus.voices[k] = v
-      break
+      return k
     end
   end
+  return 1
+end
+
+function sfx.proc.voice(chans, mus, c, v, ...)
+  mus.voices[chan2track(chans, c)] = v
   return sfx.apply(c, v, ...)
 end
 
-function sfx.proc.synth(chans, mus, ...)
-  synth.chan_change(...)
+function sfx.proc.synth(chans, mus, c, ...)
+  if not mus.voices[chan2track(chans, c)] then
+    return true
+  end
+  synth.change(c, 0, ...)
   return true
 end
 
