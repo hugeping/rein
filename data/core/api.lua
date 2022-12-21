@@ -362,6 +362,9 @@ function env_ro.sys.getopt(...)
 end
 
 function env_ro.sys.input(reset)
+  if reset == false then
+    return #input.fifo ~= 0
+  end
   if #input.fifo == 0 then
     return
   end

@@ -109,6 +109,8 @@ gfx.printf(x, y, цвет, "форматная строка", ...)
 # sys
 
 sys.input() -- возвращает события ввода. первое значение - тип события, остальные - аргументы.
+sys.input(false) -- возвращает true если есть события ввода
+sys.input(true) -- обнуляет очередь ввода
 
 Типы: mousedown, mouseup, mousemotion, keydown, keyup, mousewheel, quit...
 
