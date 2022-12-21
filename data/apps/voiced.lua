@@ -897,7 +897,9 @@ function w_info:fmt()
       n = n .. ' '..chans.notes[i]
     end
   end
-  return string.format("[%d] %2d:%-2d %s%s", w_play.octave, cx, cy, w_play.selected and w_play.voice or '', n)
+  return string.format("[%d] %s%2d:%-2d %s%s",
+    w_play.octave, tune and 'Playing:' or '', cx, cy,
+    w_play.selected and w_play.voice or '', n)
 end
 
 function w_file:dirty(flag)
