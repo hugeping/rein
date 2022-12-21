@@ -533,7 +533,8 @@ ctrl-z       - undo
 F4           - open another file (no save!)
 F5           - run!
 F8           - run sprite editor
-F10          - exit from running prog
+F9           - run synth editor
+ctrl-esc     - return to editor (from F5/F8/F9 mode)
 ]]
 
 while true do
