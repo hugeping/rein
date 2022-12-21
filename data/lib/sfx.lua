@@ -23,7 +23,7 @@ local NOTES = {
 local note2sym = { 'c-', 'c#', 'd-', 'd#', 'e-', 'f-', 'f#', 'g-', 'g#', 'a-', 'a#', 'b-' }
 
 function sfx.midi_to_note(m)
-    if m == 0 then return '===' end
+    if m == -1 then return '===' end
     if not m then return '...' end
     local note = note2sym[m%12 + 1]
     local o = math.floor(m/12) - 1
@@ -38,7 +38,7 @@ end
 
 function sfx.get_note(name)
   if name:find("[=]+") then
-    return 0
+    return -1
   end
   local n, o = name:sub(1, 2):lower(), tonumber(name:sub(3))
   if not n or not o or not NOTES[n] then return false, "Wrong note:"..tostring(name)  end
@@ -355,7 +355,7 @@ function sfx.play_song_once(chans, tracks)
     for i, r in ipairs(row) do
       local freq, vol = r[1], r[2]
       if freq and chans[i] and tracks.voices[i] then
-        if freq == 0 then
+        if freq < 0 then
           synth.chan_change(chans[i], synth.NOTE_OFF, 0)
         else
           synth.chan_change(chans[i], synth.NOTE_ON, sfx.get_midi_note(freq))
