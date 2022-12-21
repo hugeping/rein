@@ -695,8 +695,14 @@ local w_play = button:new { w = 5*7, h = 12,
   x = W - 5*7, y = 0, text = "PLAY", border = true, lev = -2 }
 local w_poly = button:new { w = 5*7, h = 12,
   x = W - 10*7 - 1, y = 0, text = "POLY", border = true, lev = -2, selected = true }
-local w_info = label:new { w = 28*7, h = 12,
+local w_info = label:new { w = 27*7, h = 12,
   x = w_next:after(1), y = w_play.y, text = "", border = false, left = true }
+local w_help = button:new { text = '?',
+  w = 9, h = 12, lev = -1, y = 0, x = W - 11*7 - 3, border = false, bg = 6 }
+
+function w_help:onclick()
+  help_mode = not help_mode
+end
 
 local key2note = {
   z = 0, s = 1, x = 2, d = 3, c = 4, v = 5, g = 6, b = 7, h = 8, n = 9, j = 10, m = 11,
@@ -869,7 +875,7 @@ function w_play:event(r, v, ...)
 end
 
 local voice_mode = { w_prev, w_voice, w_next, w_boxes, w_volume, w_stack, w_conf, w_play,
-  w_poly, w_info, w_rem, w_bypass, w_file, w_tracker }
+  w_poly, w_info, w_rem, w_bypass, w_file, w_tracker, w_help }
 
 win:with(voice_mode)
 
@@ -880,7 +886,7 @@ w_edit.edit.height = w_edit.edit.height + 1
 local songs = { { text = '' } }
 
 local w_song_prev = button:new { text = "<" , x = 0, y = 0, w = 10, h = 12, border = true}
-local w_song = edit:new { current = 1, border = false, value = '1', x = w_prev:after(1), y = 0, w = 12*7, h = 12 }
+local w_song = edit:new { current = 1, border = false, value = '1', x = w_prev:after(1), y = 0, w = 10*7 + 3, h = 12 }
 local w_song_next = button:new { text = ">", x = w_song:after(1), y = 0, w = 10, h = 12, border = true }
 local w_add = button:new { x = w_song_next:after(1), y = 0, h = 12, w = 28, text = "Add", border = true }
 local w_del = button:new { x = w_add:after(1), y = 0, h = 12, w = 28, text = "Del", border = true }
@@ -935,7 +941,7 @@ function w_file:onclick()
 end
 
 local tracker_mode = { w_song_prev, w_song, w_song_next,
-  w_edit, w_add, w_del, w_play, w_poly, w_voiced, w_file, w_info }
+  w_edit, w_add, w_del, w_play, w_poly, w_voiced, w_file, w_info, w_help }
 
 function w_voiced:onclick()
   if song_check() then
@@ -1261,7 +1267,46 @@ if not r then
 end
 build_stack()
 --print(sfx.songs("music.txt"))
+HELP = [[VOICES EDITOR
+
+escape        Toggle PLAY mode
+f1-f6,f10     Switch octaves in PLAY mode
+ctrl-x        Cut
+ctrl-v        Paste
+ctrl-c        Copy
+shift+cursor  Select
+]]
+HELP2 = [[TRACKER
+
+esc           Toggle PLAY mode
+tab/esc       Start/stop playing
+f1-f6,f10     Switch octaves
+backspace     Delete note/volume
+zsxdcvgbhnjm  Input note
+,l.;/q2w3er5  (cursor must be inside
+t6y7ui9o0p[=] track)
+
+Commands (chan can be set as *):
+
+@tempo <tempo>         Set tempo
+@tracks <nr>           Set number of channels/tracks
+@play <sfx>            Play pattern
+@voice <chan> <voice>  Select voice
+@vol <chan> <volume>   Set chan volume
+@pan <chan> <pan>      Set chan pan
+]]
+
 while sys.running() do
+  while help_mode do
+    screen:clear(16)
+    gfx.print(mode == 'voiced' and HELP or HELP2, 0, 0, 0, true)
+    if sys.input() == 'keydown' then
+      help_mode = false
+      break
+    end
+    coroutine.yield()
+  end
+
   if tune then
     local st, e = mixer.status(tune)
     if not st then
@@ -1272,6 +1317,7 @@ while sys.running() do
       w_edit.edit:move(false, st + tune_delta)
     end
   end
+
   win:event(sys.input())
   win:show()
   gfx.flip(1/20, true)
