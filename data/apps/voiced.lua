@@ -12,7 +12,8 @@ local FILE2 = ARGS[3] or 'songs.syn'
 
 local cur_voice = 1
 
-local chans = { notes = {}, times = {}, max = 10 } -- number of fingers :)
+local chans = { notes = {}, times = {}, max = 8 }
+mixer.reserve(8)
 
 local W, H = screen:size()
 
@@ -59,7 +60,7 @@ function editarea:size(w, h)
     return self.edit:size()
   end
   self.w, self.h = w, h
-  self.edit:size(math.floor(w / self.spw), math.floor(h / self.sph)-1)
+  self.edit:size(math.floor(w / self.spw), math.floor(h / self.sph) - 1)
 end
 
 function editarea:cursor(px, py)
@@ -231,20 +232,20 @@ function edit:event(r, v, ...)
   end
 end
 
-function win:fmt(s)
-  return s
+function edit:fmt()
+  return self.value
 end
 
 function edit:show()
   win.show(self)
-  local w, h = self.font:size(self:fmt(self.value) .. (self.edit and '|' or ''))
+  local w, h = self.font:size(self:fmt() .. (self.edit and '|' or ''))
   local x, y = self:realpos()
   screen:offset(x, y)
   if not tostring(self.value):empty() or self.edit then
     screen:clip(x, y, self.w, self.h)
     local xoff = (self.w - w)/2
     if xoff < 0 then xoff = self.w - w end
-    self.font:text(self:fmt(self.value) ..
+    self.font:text(self:fmt() ..
       (self.edit and '|' or ''), self.fg):
         blend(screen, xoff, (self.h -h)/2)
     screen:noclip()
@@ -262,14 +263,16 @@ end
 
 function label:show()
   win.show(self)
-  local w, h = self.font:size(self.text)
+  local t = self.text
+  if self.fmt then t = self:fmt() end
+  local w, h = self.font:size(t)
   local x, y = self:realpos()
   if w == 0 then return end
   screen:offset(x, y)
   screen:clip(x, y, self.w, self.h)
   local xoff, yoff = (self.w - w)/2, (self.h - h)/2
   if self.left then xoff = 0 end
-  self.font:text(self.text or ' ', self.fg):
+  self.font:text(t or ' ', self.fg):
   blend(screen, xoff, yoff)
   screen:noclip()
   screen:nooffset()
@@ -615,11 +618,11 @@ local w_prev = button:new { text = "<" ,
 w_voice = edit:new { border = false, value = voices[cur_voice].nam,
   x = w_prev:after(1), y = 0, w = 14*7-8, h = 12, lev = -2.1,
   fmt = function(s, str)
-    if s.edit then return str end
+    if s.edit then return s.value end
     if cur_voice == tonumber(str) then
       return string.format("%d", cur_voice)
     end
-    return string.format("%d:%s", cur_voice, str)
+    return string.format("%d:%s", cur_voice, s.value)
   end,
   onedit = function(s)
     for k, v in ipairs(voices) do
@@ -809,10 +812,10 @@ function w_play:event(r, v, ...)
       self:onclick()
       return true
     end
-    local _, celln, cellv
+    local ned, celln, cellv
     if mode == 'tracked' then
-      _, celln, cellv = note_edit()
-      if not celln then return end
+      ned, celln, cellv = note_edit()
+      if not ned then return end
     end
     if v:find("^f[1-5]$") then
       self.octave = tonumber(v:sub(2))
@@ -859,8 +862,9 @@ local voice_mode = { w_prev, w_voice, w_next, w_boxes, w_volume, w_stack, w_conf
 
 win:with(voice_mode)
 
-local w_edit = editarea:new { x = 0, y = 13, border = false, lev = 1 }
-w_edit:size(W, H - 13)
+local w_edit = editarea:new { x = 0, y = 12, border = false, lev = 1 }
+w_edit:size(W, H - 12 - 11)
+w_edit.edit.height = w_edit.edit.height + 1
 
 local songs = { { text = '' } }
 
@@ -872,6 +876,12 @@ local w_del = button:new { x = w_add:after(1), y = 0, h = 12, w = 28, text = "De
 local w_voiced = button:new { x = w_del:after(1), y = 0, h = 12, w = 7*7, text = "Voices", border = true }
 local w_file = button:new { text = FILE2, w = 14*7, bg = 7,
   h = 12, x = w_voiced:after(1), y = 0 }
+local w_info = label:new { x = 0, y = H - 10, bg = 6, w = W, h = 10, left = true }
+
+function w_info:fmt()
+  local cx, cy = w_edit.edit:cursor()
+  return string.format("[%d] %2d:%-2d %s", w_play.octave, cx, cy, w_play.voice or '')
+end
 
 function w_file:dirty(flag)
   if flag then
@@ -906,7 +916,7 @@ function w_file:onclick()
 end
 
 local tracker_mode = { w_song_prev, w_song, w_song_next,
-  w_edit, w_add, w_del, w_play, w_poly, w_voiced, w_file }
+  w_edit, w_add, w_del, w_play, w_poly, w_voiced, w_file, w_info }
 
 function w_voiced:onclick()
   if song_check() then
@@ -962,7 +972,7 @@ function note_edit()
   local v = x >= 7 and x <= 8 and l[pos+7] and l[pos+8]
   v = v and tonumber(l[pos+7]..l[pos+8], 16) or 0
   n = n and l[pos+3]..l[pos+4]..l[pos+5]
-  return n or v, n, v
+  return true, n, v
 end
 
 function get_voice(nr)
@@ -1081,6 +1091,13 @@ end
 
 local last_cur
 
+local function song_stop()
+  mixer.stop(tune)
+  tune = false
+  w_edit.lev = 1
+  w_play.disabled = false
+end
+
 function w_edit:event(r, v, ...)
   if self.hidden then return end
   local m, mb, x, y = self:mevent(r, v, ...)
@@ -1104,30 +1121,33 @@ function w_edit:event(r, v, ...)
       else
         note_bs()
       end
+    elseif v:find("^f[1-5]$") then
+      w_play.octave = tonumber(v:sub(2))
+      return true
     elseif v == 'tab' or (tune and v == 'escape') then
       if tune then
-        mixer.stop(tune)
-        tune = false
-        w_edit.lev = 1
-        w_play.disabled = false
+        song_stop()
       else
         if song_check() then
           local t, delta = tune_part(w_edit.edit:get())
           tune_delta = delta
           last_cur = { self.edit:cursor() }
           tune = mixer.play(t)
-          w_play.disabled = tune
+          -- w_play.disabled = tune
           w_edit.lev = -100
         end
       end
       return true
     else
-      return tune or editarea.event(self, r, v, ...)
+      editarea.event(self, r, v, ...)
+      return not tune
+      --return tune or editarea.event(self, r, v, ...)
     end
   elseif r == 'keyup' then
     if v:find 'shift' then
       self.edit:select(false)
     end
+    return not tune
   end
   return tune or win.event(self, r, v, ...)
 end
@@ -1215,7 +1235,7 @@ while sys.running() do
   if tune then
     local st = mixer.status(tune)
     if not st then
-      tune = false
+      song_stop()
       w_edit.edit:move(table.unpack(last_cur))
     else
       w_edit.edit:move(1, st + tune_delta)
