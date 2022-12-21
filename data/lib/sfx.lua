@@ -81,14 +81,13 @@ function sfx.parse_cmd(cmd, mus)
 --      return false, "Unknown voice:"..tostring(voice)
 --    end
     ret.args = { voice }
-  elseif cmd[1] == '@box' then
+  elseif cmd[1] == '@synth' then
     table.remove(cmd, 1) -- cmd
     table.remove(cmd, 1) -- chan
-    local nam = table.remove(cmd, 1) -- box type
-    if not nam then
-      return false, "No box name"
+    if #cmd == 0 then
+      return false, "No arguments"
     end
-    local r, e = sfx.compile_par(nam, table.concat(cmd, ' '))
+    local r, e = sfx.compile_par('synth', table.concat(cmd, ' '))
     if not r then
       return false, e
     end
@@ -324,7 +323,7 @@ function sfx.proc.voice(chans, mus, c, v, ...)
   return sfx.apply(c, v, ...)
 end
 
-function sfx.proc.box(chans, mus, ...)
+function sfx.proc.synth(chans, mus, ...)
   synth.chan_change(...)
   return true
 end
