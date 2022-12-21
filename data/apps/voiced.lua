@@ -1082,13 +1082,13 @@ local last_cur
 function w_edit:event(r, v, ...)
   if self.hidden then return end
   local m, mb, x, y = self:mevent(r, v, ...)
-  if m and r == 'mousedown' then
+  if m and r == 'mousedown' and not tune then
     y = math.floor(y/self.sph)
     x = math.floor(x/self.spw)
     self.edit:move(x + self.edit.col, y + self.edit.line)
     return true
   end
-  if r == 'text' then
+  if r == 'text' and not tune then
     if note_edit() then
       note_text(v)
     else
@@ -1106,6 +1106,7 @@ function w_edit:event(r, v, ...)
       if tune then
         mixer.stop(tune)
         tune = false
+        w_edit.lev = 1
         w_play.disabled = false
       else
         if song_check() then
@@ -1114,18 +1115,19 @@ function w_edit:event(r, v, ...)
           last_cur = { self.edit:cursor() }
           tune = mixer.play(t)
           w_play.disabled = tune
+          w_edit.lev = -100
         end
       end
       return true
     else
-      return editarea.event(self, r, v, ...)
+      return tune or editarea.event(self, r, v, ...)
     end
   elseif r == 'keyup' then
     if v:find 'shift' then
       self.edit:select(false)
     end
   end
-  return win.event(self, r, v, ...)
+  return tune or win.event(self, r, v, ...)
 end
 
 function w_del:onclick()
