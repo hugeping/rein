@@ -300,7 +300,12 @@ end
 
 function sfx.proc.pop(chans, mus)
   local r = mus.stack and mus.stack[1]
-  if not r or r[2] == 0 then return end
+  if not r or r[2] == 0 then
+    if r and r[2] == 0 then
+      table.remove(mus.stack, 1)
+    end
+    return true
+  end
   mus.row = r[1]
   if r[2] and r[2] > 0 then r[2] = r[2] - 1 end
   return true
