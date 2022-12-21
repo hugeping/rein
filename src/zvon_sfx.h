@@ -23,7 +23,7 @@ enum {
     ZV_SUSTAIN,
     ZV_RELEASE,
     ZV_SET_SUSTAIN,
-    ZV_REMAP,
+    ZV_REMAP_FREQ,
     ZV_LFO_TYPE,
     ZV_LFO_FREQ,
     ZV_LFO_LOW,

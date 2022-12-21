@@ -311,7 +311,7 @@ static struct {
 	{ "SUSTAIN", ZV_SUSTAIN },
 	{ "RELEASE", ZV_RELEASE },
 	{ "SET_SUSTAIN", ZV_SET_SUSTAIN },
-	{ "REMAP", ZV_REMAP },
+	{ "REMAP_FREQ", ZV_REMAP_FREQ },
 	{ "SET_FM", ZV_SET_FM },
 	{ "LFO_TYPE", ZV_LFO_TYPE },
 	{ "LFO_FREQ", ZV_LFO_FREQ },

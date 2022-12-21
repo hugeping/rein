@@ -225,13 +225,15 @@ void noise_set_width(struct noise_state *s, double width) {
     s->width = width;
 }
 
+#define INV2_32 (1. / 4294967296)
+
 double noise_lin_next(struct noise_state *s, double freq) {
     s->phase += freq * (1. / SR);
     if (s->phase >= 1) {
         s->phase -= 1;
         s->state = xorshift(s->state);
         s->old_y = s->y;
-        s->y = s->width * (s->state * (1. / 4294967296));
+        s->y = s->width * (s->state * INV2_32);
     }
     return lerp(s->old_y, s->y, s->phase) - s->width * 0.5;
 }
@@ -241,7 +243,7 @@ double noise_next(struct noise_state *s, double freq) {
     if (s->phase >= 1) {
         s->phase -= 1;
         s->state = xorshift(s->state);
-        s->y = s->width * (s->state * (1. / 4294967296));
+        s->y = s->width * (s->state * INV2_32);
     }
     return s->y - s->width * 0.5;
 }
@@ -339,10 +341,13 @@ double lfo_next(struct lfo_state *s) {
     double y = s->low + (s->high - s->low) * lfo_func(s);
     s->phase += s->freq * (1. / SR);
     if (s->phase >= 1) {
-        if (s->func >= LFO_SEQ) {
-            lfo_seq_next(s);
-        } else {
-            s->phase = s->is_loop ? s->phase - 1 : 1;
+        switch (s->func) {
+            case LFO_SEQ: case LFO_LIN_SEQ:
+                lfo_seq_next(s);
+                break;
+            default:
+                s->phase = s->is_loop ? s->phase - 1 : 1;
+                break;
         }
     }
     return y;

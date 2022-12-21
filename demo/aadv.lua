@@ -287,7 +287,7 @@ decay 0.15
 sustain 0
 release 0
 
-remap freq width
+remap_freq width 1
 
 lfo_assign 0 freq
 lfo_type 0 saw
@@ -344,7 +344,6 @@ release 0.1
 set_sustain 0
 set_glide 0
 glide_rate 0
-remap freq freq
 lfo_type 0 seq
 lfo_freq 0 60
 lfo_low 0 0
