@@ -446,7 +446,7 @@ local boxes = {
     { 'set_sustain', synth.SET_SUSTAIN, def = 0 },
     { 'set_glide', synth.SET_GLIDE, def = 0 },
     { 'glide_rate', synth.GLIDE_RATE, def = 0 },
-    { 'remap', synth.REMAP,
+    { 'remap_freq', synth.REMAP_FREQ,
       array = {
         'freq', 'fmul', 'amp', 'width', 'offset', 'set_lin',
       },
@@ -455,15 +455,7 @@ local boxes = {
         synth.OSC_WIDTH, synth.OSC_OFFSET,
         synth.OSC_SET_LIN,
       },
-      def = 'freq',
-      choice = {
-        'freq', 'fmul', 'amp', 'width', 'offset', 'set_lin',
-      },
-      vals = {
-        synth.OSC_FREQ, synth.OSC_FMUL, synth.OSC_AMP,
-        synth.OSC_WIDTH, synth.OSC_OFFSET,
-        synth.OSC_SET_LIN,
-      },
+      def = 1,
     },
     { 'lfo_type', synth.LFO_TYPE,
       array = { 0, 1, 2, 3 },

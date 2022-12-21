@@ -30,6 +30,7 @@ struct sfx_synth_state {
     int lfo_targets[SYNTH_LFOS];
     double lfo_params[OSC_PARAMS];
     int remap[OSC_PARAMS];
+    double remap_mul;
     struct adsr_state adsr;
     int is_sustain_on;
     struct glide_state glide;
@@ -49,6 +50,7 @@ static void sfx_synth_init(struct sfx_synth_state *s) {
         lfo_init(&s->lfos[i]);
     }
     lfo_reset_remap(s);
+    s->remap_mul = 1;
     adsr_init(&s->adsr);
     s->is_sustain_on = 0;
     glide_init(&s->glide);
@@ -69,7 +71,7 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
         s->osc.type = val;
         break;
     case ZV_FREQ:
-        s->osc.params[OSC_FREQ] = val;
+        s->osc.params[OSC_FREQ] = val * s->remap_mul;
         break;
     case ZV_FMUL:
         s->osc.params[OSC_FMUL] = val;
@@ -87,7 +89,7 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
         s->osc.params[OSC_SET_LIN] = val;
         break;
     case ZV_NOTE_ON:
-        s->osc.params[OSC_FREQ] = val;
+        s->osc.params[OSC_FREQ] = val * s->remap_mul;
         adsr_note_on(&s->adsr, 0);
         lfo_note_on(s);
         break;
@@ -115,13 +117,13 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
     case ZV_SET_SUSTAIN:
         s->is_sustain_on = val;
         break;
-    case ZV_REMAP:
+    case ZV_REMAP_FREQ:
         lfo_reset_remap(s);
-        int source = limit(elem, 0, OSC_PARAMS - 1);
-        int target = limit(val, 0, OSC_PARAMS - 1);
+        int target = limit(elem, 0, OSC_PARAMS - 1);
+        s->remap_mul = val;
         int old = s->remap[target];
-        s->remap[target] = source;
-        s->remap[source] = old;
+        s->remap[target] = OSC_FREQ;
+        s->remap[OSC_FREQ] = old;
         break;
     case ZV_LFO_TYPE:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
