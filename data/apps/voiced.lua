@@ -1274,6 +1274,7 @@ f1-f6,f10     Switch octaves in PLAY mode
 ctrl-x        Cut
 ctrl-v        Paste
 ctrl-c        Copy
+ctrl-z        Undo
 shift+cursor  Select
 
 zsxdcvgbhnjm  Play note
@@ -1289,6 +1290,8 @@ backspace     Delete note/volume
 zsxdcvgbhnjm  Input note
 ,l.;/q2w3er5  (cursor must be inside
 t6y7ui9o0p[=] track)
+=             Note off
+ctrl-z        Undo
 
 Commands (chan can be set as *):
 
