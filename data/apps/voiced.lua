@@ -147,9 +147,15 @@ function editarea:event(r, v, ...)
       self.edit:toend()
     elseif v == 'pagedown' or v == 'keypad 3' then
       local _, lines = self:size()
+      if input.keydown 'ctrl' then
+        lines = #self.edit.lines
+      end
       self.edit:move(false, self.edit.cur.y + lines)
     elseif v == 'pageup' or v == 'keypad 9' then
       local _, lines = self:size()
+      if input.keydown 'ctrl' then
+        lines = #self.edit.lines
+      end
       self.edit:move(false, self.edit.cur.y - lines)
     elseif v == 'y' and input.keydown 'ctrl' then
       self.edit:cutline()
@@ -968,9 +974,9 @@ function get_voice(nr)
     l = line(w_edit.edit.lines[i]):strip()
     if l:startswith('@voice ') then
       cmd = l:split()
-      chan = tonumber(cmd[2])
+      chan = cmd[2] == '*' and cmd[2] or tonumber(cmd[2])
       voice = cmd[3]
-      if chan == -1 or chan == nr then
+      if chan == -1 or chan == nr or chan == '*' then
         name = voice
       end
     end
