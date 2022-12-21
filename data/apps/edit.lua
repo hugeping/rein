@@ -537,7 +537,7 @@ F9           - run synth editor
 ctrl-esc     - return to editor (from F5/F8/F9 mode)
 ]]
 
-while true do
+while sys.running() do
   if idle_mode then -- resume?
     gfx.border(conf.brd)
     mixer.done()
