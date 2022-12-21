@@ -1,5 +1,3 @@
-
-
 -- fast and dirty port from pico-8
 require "tiny"
 require "std"

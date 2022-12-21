@@ -2,7 +2,7 @@ local editor = {}
 editor.__index = editor
 function editor.new()
   local ed = { cur = {x = 1, y = 1},
-    col = 1, line = 1, lines = {{}},
+    col = 1, line = 1, lines = {},
     sel = {}, hl = { 0, 0, 0, 32 }, hist = {},
   }
   setmetatable(ed, editor)
