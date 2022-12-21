@@ -703,7 +703,7 @@ local key2note = {
   i = 24, [9] = 25, o = 26, [0] = 27, p = 28, ['['] = 29, ['='] = 30, [']'] = 31,
 }
 
-w_play.octave = 2
+w_play.octave = 3
 
 function apply_change(id, par, val)
   if not w_play.play then
