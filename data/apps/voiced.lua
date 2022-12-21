@@ -1267,7 +1267,7 @@ if not r then
 end
 build_stack()
 --print(sfx.songs("music.txt"))
-HELP = [[VOICES EDITOR
+HELP = [[VOICE EDITOR
 
 escape        Toggle PLAY mode
 f1-f6,f10     Switch octaves in PLAY mode
@@ -1275,6 +1275,10 @@ ctrl-x        Cut
 ctrl-v        Paste
 ctrl-c        Copy
 shift+cursor  Select
+
+zsxdcvgbhnjm  Play note
+,l.;/q2w3er5  in PLAY mode
+t6y7ui9o0p[=]
 ]]
 HELP2 = [[TRACKER
 
@@ -1294,6 +1298,7 @@ Commands (chan can be set as *):
 @voice <chan> <voice>  Select voice
 @vol <chan> <volume>   Set chan volume
 @pan <chan> <pan>      Set chan pan
+@push/@pop             Begin/end of loop
 ]]
 
 while sys.running() do
