@@ -1245,7 +1245,7 @@ while sys.running() do
     if not st then
       song_stop()
     else
-      w_edit.edit:move(1, st + tune_delta)
+      w_edit.edit:move(false, st + tune_delta)
     end
   end
   win:event(sys.input())
