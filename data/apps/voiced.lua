@@ -1298,7 +1298,7 @@ Commands (chan can be set as *):
 @voice <chan> <voice>  Select voice
 @vol <chan> <volume>   Set chan volume
 @pan <chan> <pan>      Set chan pan
-@push/@pop             Begin/end of loop
+@push [nr]/@pop        Begin/end of loop
 ]]
 
 while sys.running() do
