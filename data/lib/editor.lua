@@ -275,7 +275,7 @@ function editor:cut(copy, clip)
     end
   end
   if not copy then
-    s.cur.x, s.cur.y = x1, y1
+    s:move(x1, y1)
     s:unselect()
   end
   if clip ~= false then
