@@ -741,10 +741,10 @@ function w_poly:onclick()
   end
 end
 
-function w_play:apply_voice()
+function w_play:apply_voice(force)
   local v = get_voice()
   if not v then return end
-  if v == self.voice then return end
+  if v == self.voice and not force then return end
   for c = 1, chans.max do
     sfx.apply(c, v)
   end
@@ -761,7 +761,7 @@ function w_play:onclick()
     if mode == 'voiced' then
       apply_boxes()
     else
-      self:apply_voice()
+      self:apply_voice(true)
     end
   else
     for i=1, chans.max do
@@ -807,7 +807,7 @@ function w_play:event(r, v, ...)
   if v ~= 'escape' and not self.play then return end
   if r == 'text' then
     return mode == 'voiced'
-  elseif r == 'keydown' then
+  elseif r == 'keydown' and (not input.keydown 'ctrl' and not input.keydown 'alt') then
     if v == 'escape' then
       self:onclick()
       return true
