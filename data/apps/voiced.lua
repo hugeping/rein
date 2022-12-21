@@ -1228,6 +1228,7 @@ function switch(m)
   elseif m == 'voiced' then
     win.childs = voice_mode
     mode = m
+    apply_boxes()
   end
 end
 
