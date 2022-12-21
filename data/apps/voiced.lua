@@ -694,8 +694,6 @@ local key2note = {
   i = 24, [9] = 25, o = 26, [0] = 27, p = 28, ['['] = 29, ['='] = 30, [']'] = 31,
 }
 
-local note2sym = { 'c-', 'c#', 'd-', 'd#', 'e-', 'f-', 'f#', 'g-', 'g#', 'a-', 'a#', 'b-' }
-
 w_play.octave = 2
 
 function apply_change(id, par, val)
@@ -821,9 +819,8 @@ function w_play:event(r, v, ...)
     end
     self:apply_voice()
     if #stack == 0 then return true end
-    local note = note2sym[m%12 + 1]
-    note = string.format("%s%d", note, w_play.octave + math.floor(m/12))
     m = m + 12 * (w_play.octave + 2)
+    local note = sfx.midi_to_note(m)
     local hz = 440 * 2 ^ ((m - 69) / 12) -- sfx.get_note(m..'3')
     for c = 1, chans.max do
       if chans[c] == v then
@@ -985,8 +982,7 @@ local function keynote(v)
   v = tonumber(v) or v
   local m = key2note[v]
   if not m then return end
-  local note = note2sym[m%12 + 1]
-  note = string.format("%s%d", note, w_play.octave + math.floor(m/12))
+  local note = sfx.midi_to_note((w_play.octave + 2)*12 + m)
   return note
 end
 
