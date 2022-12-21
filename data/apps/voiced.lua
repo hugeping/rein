@@ -1256,9 +1256,11 @@ build_stack()
 --print(sfx.songs("music.txt"))
 while sys.running() do
   if tune then
-    local st = mixer.status(tune)
+    local st, e = mixer.status(tune)
     if not st then
       song_stop()
+      local _, cy = w_edit.edit:cursor()
+      edit_err(w_edit.edit, cy, e)
     else
       w_edit.edit:move(false, st + tune_delta)
     end

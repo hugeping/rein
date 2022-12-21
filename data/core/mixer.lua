@@ -86,7 +86,7 @@ function mixer.change()
   end
   local i = 1
   while i <= #mixer.fn do -- clean dead coroutines and free chans
-    if mixer.fn[i].dead then
+    if mixer.fn[i].dead and not mixer.fn[i].status then
       r = table.remove(mixer.fn, i)
       mixer.release(r)
     else
@@ -113,15 +113,22 @@ function mixer.req_play(text, nr)
   if not chans then
     return false, "No free channels"
   end
-  local f, e = coroutine.create(sfx.play_song)
+  local state
+  local f, e = coroutine.create(function(...)
+    local r, err = sfx.play_song(...)
+    if not r then
+      state.status = err
+    end
+    return r, err
+  end)
   if not f then
     error(e)
   end
   mixer.req_nextid()
-  local r = { id = mixer.id, fn = f, chans = chans,
+  state = { id = mixer.id, fn = f, chans = chans,
     args = { chans, song, nr or 1 } }
-  table.insert(mixer.fn, r)
-  mixer.ids[mixer.id] = r
+  table.insert(mixer.fn, state)
+  mixer.ids[mixer.id] = state
   return mixer.id
 end
 
@@ -140,9 +147,11 @@ end
 function mixer.req_stop(id, fo)
   local r = mixer.ids[id]
   if not r then return false, "No such sfx" end
-  if not fo or fo == 0 then
+  if not fo or fo == 0 or r.dead then
     r.dead = true
-    return true
+    local e = r.status
+    r.status = nil
+    return true, e
   end
   r.fadeout = 1
   r.fade_delta = mixer.freq / fo
@@ -152,6 +161,11 @@ end
 function mixer.req_status(id)
   local r = mixer.ids[id]
   if not r then return false, "No such sfx" end
+  if r.dead then
+    local e = r.status
+    r.status = nil
+    return false, e or "Sfx is canceled"
+  end
   return r.args[2].row or 1
 end
 
