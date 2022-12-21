@@ -1,6 +1,8 @@
 local sfx = require 'sfx'
 local editor = require 'editor'
 
+local tune, tune_delta
+
 local mode = 'voiced'
 local w_conf, w_rem, w_bypass, w_voice
 
@@ -792,6 +794,14 @@ local play_stop_keys = {
   up = true;
 }
 
+function w_play:switch_octave(v)
+  if v:find("^f[1-6]$") or v == 'f10' then
+    if v == 'f10' then v = 'f0' end
+    self.octave = tonumber(v:sub(2))
+    return true
+  end
+end
+
 function w_play:event(r, v, ...)
   if self.disabled then
     return
@@ -817,8 +827,7 @@ function w_play:event(r, v, ...)
       ned, celln, cellv = note_edit()
       if not ned then return end
     end
-    if v:find("^f[1-6]$") then
-      self.octave = tonumber(v:sub(2))
+    if self:switch_octave(v) then
       return true
     end
     v = tonumber(v) or v
@@ -826,7 +835,9 @@ function w_play:event(r, v, ...)
     if not m then
       return mode == 'voiced'
     end
-    self:apply_voice()
+    if not self.voice then -- or not tune then
+      self:apply_voice()
+    end
     if #stack == 0 then return true end
     m = m + 12 * (w_play.octave + 1)
     local note = sfx.midi_to_note(m)
@@ -886,7 +897,7 @@ function w_info:fmt()
       n = n .. ' '..chans.notes[i]
     end
   end
-  return string.format("[%d] %2d:%-2d %s%s", w_play.octave, cx, cy, w_play.voice or '', n)
+  return string.format("[%d] %2d:%-2d %s%s", w_play.octave, cx, cy, w_play.selected and w_play.voice or '', n)
 end
 
 function w_file:dirty(flag)
@@ -1047,8 +1058,6 @@ local function note_bs()
     l[pos+8] = '.'
   end
 end
-local tune, tune_delta
-
 local function tune_part()
   local text = w_edit.edit:get()
   local t = ''
@@ -1129,8 +1138,7 @@ function w_edit:event(r, v, ...)
       else
         note_bs()
       end
-    elseif v:find("^f[1-6]$") then
-      w_play.octave = tonumber(v:sub(2))
+    elseif w_play:switch_octave(v) then
       return true
     elseif v == 'tab' or (tune and v == 'escape') then
       if tune then
