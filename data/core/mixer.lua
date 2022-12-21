@@ -265,6 +265,7 @@ function mixer.clireq(...)
 end
 
 function mixer.volume(vol)
+  if core.nosound then vol = 0 end
   return mixer.clireq("volume", vol)
 end
 
@@ -334,6 +335,7 @@ function mixer.init()
   end
   mixer.thr = t
   mixer.co = core.go(mixer.coroutine)
+  if core.nosound then mixer.volume(0) end
 end
 
 return mixer
