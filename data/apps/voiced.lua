@@ -817,7 +817,7 @@ function w_play:event(r, v, ...)
       ned, celln, cellv = note_edit()
       if not ned then return end
     end
-    if v:find("^f[1-5]$") then
+    if v:find("^f[1-6]$") then
       self.octave = tonumber(v:sub(2))
       return true
     end
@@ -1129,7 +1129,7 @@ function w_edit:event(r, v, ...)
       else
         note_bs()
       end
-    elseif v:find("^f[1-5]$") then
+    elseif v:find("^f[1-6]$") then
       w_play.octave = tonumber(v:sub(2))
       return true
     elseif v == 'tab' or (tune and v == 'escape') then
