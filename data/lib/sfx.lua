@@ -81,6 +81,18 @@ function sfx.parse_cmd(cmd, mus)
 --      return false, "Unknown voice:"..tostring(voice)
 --    end
     ret.args = { voice }
+  elseif cmd[1] == '@box' then
+    table.remove(cmd, 1) -- cmd
+    table.remove(cmd, 1) -- chan
+    local nam = table.remove(cmd, 1) -- box type
+    if not nam then
+      return false, "No box name"
+    end
+    local r, e = sfx.compile_par(nam, table.concat(cmd, ' '))
+    if not r then
+      return false, e
+    end
+    ret.args = r
   elseif cmd[1] == '@pan' then
     local pan = tonumber(cmd[3]) or 0
     ret.args = { pan }
@@ -310,6 +322,11 @@ function sfx.proc.voice(chans, mus, c, v, ...)
     end
   end
   return sfx.apply(c, v, ...)
+end
+
+function sfx.proc.box(chans, mus, ...)
+  synth.chan_change(...)
+  return true
 end
 
 function sfx.proc.pan(chans, mus,...)
