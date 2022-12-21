@@ -26,7 +26,7 @@ function sfx.midi_to_note(m)
     if m == 0 then return '===' end
     if not m then return '...' end
     local note = note2sym[m%12 + 1]
-    local o = math.floor(m/12)-2
+    local o = math.floor(m/12) - 1
     if o < 0 then o = 0 end
     note = string.format("%s%d", note, o)
     return note
@@ -41,8 +41,8 @@ function sfx.get_note(name)
     return 0
   end
   local n, o = name:sub(1, 2):lower(), tonumber(name:sub(3))
-  if not n or not o then return false, "Wrong note:"..tostring(name)  end
-  return NOTES[n] + 12 * (o + 2) -- sfx.get_midi_note(NOTES[n] + 12 * (o + 2))
+  if not n or not o or not NOTES[n] then return false, "Wrong note:"..tostring(name)  end
+  return NOTES[n] + 12 * (o + 1) -- sfx.get_midi_note(NOTES[n] + 12 * (o + 2))
 end
 
 function sfx.parse_cmd(cmd, mus)

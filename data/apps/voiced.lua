@@ -828,7 +828,7 @@ function w_play:event(r, v, ...)
     end
     self:apply_voice()
     if #stack == 0 then return true end
-    m = m + 12 * (w_play.octave + 2)
+    m = m + 12 * (w_play.octave + 1)
     local note = sfx.midi_to_note(m)
     local hz = 440 * 2 ^ ((m - 69) / 12) -- sfx.get_note(m..'3')
     for c = 1, chans.max do
@@ -1004,7 +1004,7 @@ local function keynote(v)
   v = tonumber(v) or v
   local m = key2note[v]
   if not m then return end
-  local note = sfx.midi_to_note((w_play.octave + 2)*12 + m)
+  local note = sfx.midi_to_note((w_play.octave + 1)*12 + m)
   return note
 end
 
