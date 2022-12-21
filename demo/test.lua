@@ -245,16 +245,16 @@ while true do
   spr[math.floor(frames/10)%2+1]:blend(screen, 240, 0)
 
   local mx, my, mb = input.mouse()
-  local a, b = sys.input()
-
-  if a == 'text' then
-    txt = txt .. b
-  elseif a == 'keydown' and b == 'return' then
-    txt = txt .. '\n'
-  elseif a == 'keydown' and b == 'backspace' then
-    txt = ''
+  while sys.input(false) do
+    local a, b = sys.input()
+    if a == 'text' then
+      txt = txt .. b
+    elseif a == 'keydown' and b == 'return' then
+      txt = txt .. '\n'
+    elseif a == 'keydown' and b == 'backspace' then
+      txt = ''
+    end
   end
-
   gfx.printf(0, 0, 15, "FPS:%d\nMouse:%d,%d %s\nKeys:%s\nInp:%s",
     fps, mx, my, mb.left and 'left' or '',
     showkeys(), txt..'\1')
