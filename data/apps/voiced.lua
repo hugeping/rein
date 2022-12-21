@@ -1059,14 +1059,17 @@ local function note_bs()
   cx = cx % CELLW
   local l = w_edit.edit.lines[cy]
   if cx >= 3 and cx <= 5 then
+    w_edit.edit:history()
     l[pos+3] = '.'
     l[pos+4] = '.'
     l[pos+5] = '.'
   elseif cx >= 7 and cx <= 8 then
+    w_edit.edit:history()
     l[pos+7] = '.'
     l[pos+8] = '.'
   end
 end
+
 local function tune_part()
   local text = w_edit.edit:get()
   local t = ''
@@ -1147,6 +1150,7 @@ function w_edit:event(r, v, ...)
       else
         note_bs()
       end
+      return true
     elseif w_play:switch_octave(v) then
       return true
     elseif v == 'tab' or (tune and v == 'escape') then
