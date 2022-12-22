@@ -933,8 +933,8 @@ function w_info:fmt()
       n = n .. ' '..chans.notes[i]
     end
   end
-  return string.format("[%d] %s%2d:%-2d %s%s",
-    w_play.octave, tune and 'Playing:' or '', cx, cy,
+  return string.format("[%d]%s%s%2d:%-2d %s%s",
+    w_play.octave, ins_mode and "[ins] " or " ", tune and 'Playing:' or '', cx, cy,
     w_play.selected and w_play.voice or '', n)
 end
 
@@ -1049,6 +1049,32 @@ function get_voice(nr)
   return name
 end
 
+local is_note = {
+  c = true;
+  d = true;
+  e = true;
+  f = true;
+  g = true;
+  h = true;
+  a = true;
+  b = true;
+}
+
+local function keynote_ins(v, l, x)
+  local n, d, o = l[3], l[4], l[5]
+  if x == 3 and is_note[v] then
+    if not d or d ~= '#' then
+      d = '-'
+    end
+    if not tonumber(o) then o = w_play.octave end
+    return v .. d .. tostring(o)
+  elseif x == 4 and v == '-' or v == '#' then
+    return (n or 'c') .. v .. tostring(o or w_play.octave)
+  elseif x == 5 and tonumber(v) then
+    return (n or 'c') .. (d or '-') .. v
+  end
+end
+
 local function keynote(v)
   v = tonumber(v) or v
   local m = key2note[v]
@@ -1066,12 +1092,13 @@ local function note_text(v)
   if x >= 3 and x <= 5 then
     if v == '=' then
       v = '==='
+    elseif ins_mode then
+      v = keynote_ins(v, l, x)
+      if v then cx = cx + 1 + (x == 5 and 1 or 0) end
     else
-      v = keynote(v)
-      if not v then
-        return
-      end
+      v = keynote(v, l)
     end
+    if not v then return end
     w_edit.edit:select(pos + 3, cy, pos + 6, cy)
     w_edit.edit:input(v, true)
   elseif x >= 7 and x <= 8 and v:find("[0-9a-fA-F]") then
@@ -1081,6 +1108,7 @@ local function note_text(v)
       cx = cx + 1
     elseif x == 8 then
       t = ((l[pos+7] and l[pos+7] ~= '.') and l[pos+7] or '0') .. v
+      cx = cx + 1
     end
 --    local t = ((l[pos+8] and l[pos+8] ~= '.') and l[pos+8] or '0') .. v
     w_edit.edit:select(pos + 7, cy, pos + 9, cy)
@@ -1185,6 +1213,8 @@ function w_edit:event(r, v, ...)
       return true
     elseif w_play:switch_octave(v) then
       return true
+    elseif v == 'insert' then
+      ins_mode = not ins_mode
     elseif v == 'tab' or (tune and v == 'escape') then
       if tune then
         song_stop(v == 'tab')
@@ -1318,6 +1348,7 @@ zsxdcvgbhnjm  Input note
 t6y7ui9o0p[=] track)
 =             Note off
 ctrl-z        Undo
+Ins           Direct input mode (notes)
 
 Commands (chan can be set as *):
 
