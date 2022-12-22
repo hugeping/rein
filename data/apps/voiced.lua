@@ -1060,8 +1060,11 @@ local is_note = {
   b = true;
 }
 
-local function keynote_ins(v, l, x)
-  local n, d, o = l[3], l[4], l[5]
+local function keynote_ins(v, l, pos, x)
+  local n, d, o = l[pos+3], l[pos+4], l[pos+5]
+  if n == '.' then n = false end
+  if d == '.' then d = false end
+  if o == '.' then o = false end
   if x == 3 and is_note[v] then
     if not d or d ~= '#' then
       d = '-'
@@ -1093,8 +1096,8 @@ local function note_text(v)
     if v == '=' then
       v = '==='
     elseif ins_mode then
-      v = keynote_ins(v, l, x)
-      if v then cx = cx + 1 + (x == 5 and 1 or 0) end
+      v = keynote_ins(v, l, pos, x)
+      if v then cx = cx + 1 end
     else
       v = keynote(v, l)
     end
@@ -1213,7 +1216,7 @@ function w_edit:event(r, v, ...)
       return true
     elseif w_play:switch_octave(v) then
       return true
-    elseif v == 'insert' then
+    elseif v == 'insert' or v == 'keypad 0' then
       ins_mode = not ins_mode
     elseif v == 'tab' or (tune and v == 'escape') then
       if tune then
