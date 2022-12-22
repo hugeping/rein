@@ -45,9 +45,23 @@ https://hugeping.ru
 Peter Sovietov
 (Sound system)]], VERSION)
 
-gfx.printf(8, 64, 0,
-  [[Usage:
-    rein <lua file>]])
+gfx.printf(1, 64, 0,
+[[Usage:
+  rein edit [file] - edit file
+  rein sprited     - gfx editor
+  rein voiced      - sfx editor
+  rein irc         - irc client
+  rein <lua file>
+
+Try:
+  rein demo/aadv.lua - run&play
+Or:
+  rein edit demo/aadv.lua
+  then press F1 for help
+
+Chat with community:
+  rein irc]])
+
 
 gfx.border(7)
 
