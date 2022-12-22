@@ -571,6 +571,7 @@ end
 
 function build_stack()
   w_stack:for_childs(function(w) w.selected = false end)
+  local show = not w_conf.hidden
   w_conf.hidden = true
   w_rem.hidden = true
   w_stack.h = (#stack + 2)*10
@@ -587,6 +588,9 @@ function build_stack()
     w_stack:with { wb }
   end
   w_voice.value = voices[cur_voice].nam
+  if #w_stack.childs > 0 and show then
+    config_box(w_stack.childs[#w_stack.childs])
+  end
   apply_boxes()
 end
 
