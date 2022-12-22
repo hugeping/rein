@@ -437,14 +437,10 @@ function buff:keydown(k)
     help_mode = not help_mode
   elseif (k == 'u' or k == 'z') and input.keydown 'ctrl' then
     s.edit:undo()
-  elseif k == 'keypad .' then
+  elseif k == 'keypad .' or k == 'delete' then
     s.edit:delete()
-  elseif k == 'x' and input.keydown 'ctrl' or k == 'delete' then
-    if k == 'delete' and not s:selected() then
-      s.edit:delete()
-    else
-      s.edit:cut()
-    end
+  elseif k == 'x' and input.keydown 'ctrl' then
+    s.edit:cut()
   elseif k == 'y' and input.keydown 'ctrl' then
     s.edit:cutline()
   elseif k == 'c' and input.keydown 'ctrl' then

@@ -287,6 +287,10 @@ end
 
 function editor:delete()
   local s = self
+  if s:selection() then
+    s:cut(false, false)
+    return
+  end
   if s.cur.x <= #s.lines[s.cur.y] then
     s:history()
     table.remove(s.lines[s.cur.y], s.cur.x)
@@ -337,7 +341,7 @@ end
 function editor:backspace()
   local s = self
   if s:selection() then
-    s:cut()
+    s:cut(false, false)
     return
   end
   if s.cur.x > 1 then

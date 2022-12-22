@@ -170,12 +170,10 @@ function editarea:event(r, v, ...)
 --      if not w_conf.hidden then
 --        w_conf.edit:set(sfx.box_defs(w_conf.nam))
 --      end
-    elseif v == 'x' and input.keydown 'ctrl' or v == 'delete' then
-      if v == 'delete' and not self.edit:selection() then
-        self.edit:delete()
-      else
-        self.edit:cut()
-      end
+    elseif v == 'keypad .' or v == 'delete' then
+      self.edit:delete()
+    elseif v == 'x' and input.keydown 'ctrl' then
+      self.edit:cut()
     elseif v == 'z' and input.keydown 'ctrl' then
       self.edit:undo()
     elseif v:find 'shift' then
