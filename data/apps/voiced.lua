@@ -254,6 +254,7 @@ function edit:event(r, v, ...)
     if self.min and self.value < self.min then self.value = self.min end
     if self.max and self.value > self.max then self.value = self.max end
     self.value = tostring(self.value)
+    if self.onedit then self:onedit() end
   end
 end
 
