@@ -30,7 +30,7 @@ box synth
 volume 0.25
 type band_noise
 amp 0
-fmul 1
+fmul freq 1
 offset 20000
 width 10000
 
@@ -62,7 +62,7 @@ box synth
 volume 0.6
 type noise
 amp 1
-fmul 0
+fmul freq 1
 offset 3
 width 0.5
 attack 0.01
@@ -78,7 +78,7 @@ lfo_low 0 13
 lfo_high 0 1
 lfo_set_loop 0 1
 lfo_set_reset 0 1
-lfo_assign 0 fmul
+lfo_assign 0 fmul freq
 
 voice flash
 box synth
@@ -86,7 +86,7 @@ box synth
 volume 0.25
 type band_noise
 amp 1
-fmul 1
+fmul freq 1
 offset 3000
 width 3000
 attack 0.01
@@ -110,7 +110,7 @@ box synth
 volume 0.5
 type band_noise
 amp 1
-fmul 1
+fmul freq 1
 offset 20000
 width 0
 attack 0.01
@@ -135,7 +135,7 @@ volume 0.5
 type square
 
 amp 1
-fmul 1
+fmul freq 1
 width 0
 offset 3.5
 
@@ -150,7 +150,7 @@ lfo_freq 0 6
 lfo_low 0 -0.01
 lfo_high 0 0.01
 lfo_set_loop 0 1
-lfo_assign 0 fmul
+lfo_assign 0 fmul freq
 
 lfo_type 1 saw
 lfo_freq 1 35
@@ -165,7 +165,7 @@ box synth
 volume 0.1
 type band_noise
 amp 1
-fmul 0
+fmul freq 1
 offset 20000
 width 10000
 attack 0.01
@@ -189,7 +189,7 @@ box synth
 volume 0.5
 type saw
 amp 1
-fmul 1
+fmul freq 1
 width 0.5
 offset 0.5
 attack 0.01
@@ -211,7 +211,7 @@ lfo_type 1 sin
 lfo_freq 1 100
 lfo_low 1 0
 lfo_high 1 0.5
-lfo_assign 1 fmul
+lfo_assign 1 fmul freq
 
 voice violin
 box synth
@@ -219,7 +219,7 @@ box synth
 volume 0.1
 type saw
 amp 1
-fmul 1
+fmul freq 1
 width 0.75
 offset 0.5
 
@@ -238,7 +238,7 @@ lfo_low 0 -0.007
 lfo_high 0 0.007
 lfo_set_loop 0 1
 lfo_set_reset 0 1
-lfo_assign 0 fmul
+lfo_assign 0 fmul freq
 
 lfo_seq_pos 0 0
 lfo_seq_val 0 0
@@ -253,7 +253,7 @@ feedback 0.2
 
 voice bass
 box synth
-fmul 0.5
+fmul freq 0.5
 type square
 width 0
 decay 0.2
@@ -281,13 +281,11 @@ amp 1.2
 offset 10000
 
 width 100
-fmul 18
+fmul freq 18
 
 decay 0.15
 sustain 0
 release 0
-
-remap_freq width 1
 
 lfo_assign 0 freq
 lfo_type 0 saw
@@ -310,7 +308,7 @@ volume 0.5
 type saw
 
 amp 1
-fmul 1
+fmul freq 1
 width 0.9
 offset 0
 
@@ -332,7 +330,7 @@ box synth
 # synth
 volume 0.5
 type pwm
-fmul 1
+fmul freq 1
 amp 1
 width 0.5
 offset 1

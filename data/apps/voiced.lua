@@ -1153,12 +1153,14 @@ end
 
 local last_cur
 
-local function song_stop()
+local function song_stop(restore)
   mixer.stop(tune)
   tune = false
   w_edit.lev = 1
   w_play.disabled = false
-  w_edit.edit:move(table.unpack(last_cur))
+  if restore then
+    w_edit.edit:move(table.unpack(last_cur))
+  end
 end
 
 function w_edit:event(r, v, ...)
@@ -1183,7 +1185,7 @@ function w_edit:event(r, v, ...)
       return true
     elseif v == 'tab' or (tune and v == 'escape') then
       if tune then
-        song_stop()
+        song_stop(v == 'tab')
       else
         if song_check() then
           local t, delta = tune_part(w_edit.edit:get())
@@ -1340,7 +1342,7 @@ while sys.running() do
   if tune then
     local st, e = mixer.status(tune)
     if not st then
-      song_stop()
+      song_stop(true)
       if e then
         local _, cy = w_edit.edit:cursor()
         edit_err(w_edit.edit, cy, e)

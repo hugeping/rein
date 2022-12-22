@@ -311,7 +311,6 @@ static struct {
 	{ "SUSTAIN", ZV_SUSTAIN },
 	{ "RELEASE", ZV_RELEASE },
 	{ "SET_SUSTAIN", ZV_SET_SUSTAIN },
-	{ "REMAP_FREQ", ZV_REMAP_FREQ },
 	{ "SET_FM", ZV_SET_FM },
 	{ "LFO_TYPE", ZV_LFO_TYPE },
 	{ "LFO_FREQ", ZV_LFO_FREQ },
@@ -324,14 +323,16 @@ static struct {
 	{ "LFO_ASSIGN", ZV_LFO_ASSIGN },
 	{ "LFO_SET_RESET", ZV_LFO_SET_RESET },
 	/* delay */
-	{ "TIME", ZV_TIME },
-	{ "LEVEL", ZV_LEVEL },
-	{ "FEEDBACK", ZV_FEEDBACK },
+	{ "DELAY_TIME", ZV_DELAY_TIME },
+	{ "DELAY_LEVEL", ZV_DELAY_LEVEL },
+	{ "DELAY_FB", ZV_DELAY_FB },
 	/* dist */
-	{ "GAIN", ZV_GAIN },
+	{ "DIST_GAIN", ZV_DIST_GAIN },
 	/* filter */
-	{ "LOWPASS", ZV_LOWPASS },
-	{ "HIGHPASS", ZV_HIGHPASS },
+	{ "FILTER_MODE", ZV_FILTER_MODE },
+	{ "FILTER_WIDTH", ZV_FILTER_WIDTH },
+	{ "FILTER_LP", ZV_FILTER_LP },
+	{ "FILTER_HP", ZV_FILTER_HP },
 	/* values */
 	{ "OSC_SIN", OSC_SIN },
 	{ "OSC_SAW", OSC_SAW },
