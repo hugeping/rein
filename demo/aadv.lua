@@ -275,8 +275,7 @@ lfo_set_loop 1 0
 
 voice snare
 box synth
-type band_noise
-set_lin 1
+type lin_band_noise
 amp 2
 offset 10000
 
@@ -334,7 +333,6 @@ fmul freq 1
 amp 1
 width 0.5
 offset 1
-set_lin 1
 attack 0.01
 decay 0.1
 sustain 0.5
