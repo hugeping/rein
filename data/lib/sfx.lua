@@ -336,7 +336,7 @@ function sfx.proc.synth(chans, mus, c, ...)
   if not mus.voices[chan2track(chans, c)] then
     return true
   end
-  synth.change(c, 0, ...)
+  synth.chan_change(c, ...)
   return true
 end
 
