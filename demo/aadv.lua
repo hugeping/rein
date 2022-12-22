@@ -277,12 +277,12 @@ voice snare
 box synth
 type band_noise
 set_lin 1
-amp 1.2
+amp 1
 offset 10000
 
 width 100
-fmul freq 18
-
+fmul freq 40
+fmul width 10
 decay 0.15
 sustain 0
 release 0
