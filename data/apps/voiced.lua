@@ -844,7 +844,7 @@ function w_play:event(r, v, ...)
   end
   if self.selected and not w_conf.hidden and
     ((w_conf:mevent(r, v, ...) and r == 'mousedown') or
-    (r == 'keydown' and play_stop_keys[v]))
+    (r == 'keydown' and play_stop_keys[v] and mode == 'voiced'))
     and self.selected then
     self:onclick()
     return
@@ -871,7 +871,7 @@ function w_play:event(r, v, ...)
     if not m then
       return mode == 'voiced'
     end
-    if not self.voice then -- or not tune then
+    if not self.voice and mode == 'tracked' then -- or not tune then
       self:apply_voice()
     end
     if #stack == 0 then return true end

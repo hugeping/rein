@@ -41,6 +41,7 @@ function editor:move(x, y)
   if #s.lines == 0 then
     s.cur.x, s.cur.y = 1, 1
     s.lines[1] = {}
+    s.line = 1
     return
   end
   if s.cur.x < 1 then s.cur.x = 1 end
