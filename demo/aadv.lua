@@ -277,11 +277,11 @@ voice snare
 box synth
 type band_noise
 set_lin 1
-amp 1
+amp 2
 offset 10000
 
 width 100
-fmul freq 40
+fmul freq 20
 fmul width 10
 decay 0.15
 sustain 0
@@ -1778,7 +1778,7 @@ song main
 @voice 1 square
 @vol 2 0.10
 @voice 2 violin
-@vol 3 0.4
+@vol 3 0.5
 @voice 3 bass
 @vol 4 0.2
 @voice 4 zip
