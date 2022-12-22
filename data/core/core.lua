@@ -216,7 +216,7 @@ function core.run()
       break
     end
     if not api.event(r, v, a, b, c) then
-      return false
+      break
     end
   end
 
@@ -259,7 +259,7 @@ function core.run()
   if core.render() then
     sys.sleep(fps)
   end
-  return true
+  return api.event() -- check is running
 end
 
 return core
