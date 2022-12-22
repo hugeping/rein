@@ -777,9 +777,14 @@ end
 function w_poly:onclick()
   self.selected = not self.selected
   if not self.selected then
+    for i=1, chans.max do
+      chans[i] = false
+      synth.chan_change(i, synth.NOTE_OFF, 0)
+    end
     chans.max = 1
   else
     chans.max = 10
+    apply_boxes()
   end
 end
 
