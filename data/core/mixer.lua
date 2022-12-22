@@ -8,12 +8,13 @@ local mixer = {
   res = 0;
   ids = {};
   vol = 0.5;
-  req = { };
+  srv = { };
   ack = { };
   fn = { };
   chans = { size = 32 };
   freq = 1/100;
   hz = 44100;
+  req = {};
 }
 mixer.tick = mixer.hz * mixer.freq
 
@@ -104,7 +105,7 @@ function mixer.proc(tick)
   until tick == 0
 end
 
-function mixer.req_play(text, nr)
+function mixer.srv.play(text, nr)
   local song, e = sfx.parse_song(text)
   if not song then
     return false, e
@@ -132,19 +133,19 @@ function mixer.req_play(text, nr)
   return mixer.id
 end
 
-function mixer.req_voices(vo)
+function mixer.srv.voices(vo)
   return sfx.voices(vo)
 end
 
-function mixer.req_new(nam, snd)
+function mixer.srv.new(nam, snd)
   return sfx.new(nam, snd)
 end
 
-function mixer.req_songs(songs)
+function mixer.srv.songs(songs)
   return sfx.songs(songs)
 end
 
-function mixer.req_stop(id, fo)
+function mixer.srv.stop(id, fo)
   local r = mixer.ids[id]
   if not r then return false, "No such sfx" end
   if not fo or fo == 0 or r.dead then
@@ -158,7 +159,7 @@ function mixer.req_stop(id, fo)
   return true
 end
 
-function mixer.req_status(id)
+function mixer.srv.status(id)
   local r = mixer.ids[id]
   if not r then return false end
   if r.dead then
@@ -169,9 +170,14 @@ function mixer.req_status(id)
   return r.args[2].row or 1
 end
 
-function mixer.req_reserve(nr)
+function mixer.srv.reserve(nr)
   mixer.res = nr or 0
   return true
+end
+
+function mixer.srv.volume(v)
+  local oval = mixer.vol
+  mixer.vol = v or oval
 end
 
 function mixer.getreq()
@@ -213,31 +219,17 @@ end)
 
 function mixer.thread()
   print "mixer start"
-  local r, v, a, b, c
+  local r, v
   mixer.reset()
   while true do
-    r, v, a = mixer.getreq()
+    r, v = mixer.getreq()
     if r == 'quit' then -- stop thread
       mixer.answer()
       break
-    elseif r == 'volume' then -- set/get master volume
-      local oval = mixer.vol
-      mixer.vol = v or oval
-      mixer.answer(oval)
-    elseif r == 'play' then
-      mixer.answer(mixer.req_play(table.unpack(v)))
-    elseif r == 'new' then
-      mixer.answer(mixer.req_new(v, a))
-    elseif r == 'stop' then
-      mixer.answer(mixer.req_stop(v, a))
-    elseif r == 'reserve' then
-      mixer.answer(mixer.req_reserve(v))
-    elseif r == 'voices' then
-      mixer.answer(mixer.req_voices(v))
-    elseif r == 'status' then
-      mixer.answer(mixer.req_status(v))
-    elseif r == 'songs' then
-      mixer.answer(mixer.req_songs(v))
+    elseif r and mixer.srv[r] then
+      mixer.answer(mixer.srv[r](table.unpack(v)))
+    elseif r then
+      mixer.answer(false, "Unknown method")
     end
     r, v = coroutine.resume(mixer.sched)
     if not r then
@@ -280,7 +272,7 @@ end
 
 function mixer.volume(vol)
   if core.nosound then vol = 0 end
-  return mixer.clireq("volume", vol)
+  return mixer.clireq("volume", { vol })
 end
 
 function mixer.done()
@@ -302,7 +294,7 @@ function mixer.voices(text)
   if not r then
     return r, e
   end
-  return mixer.clireq("voices", r)
+  return mixer.clireq("voices", { r })
 end
 
 function mixer.new(nam, text)
@@ -310,7 +302,7 @@ function mixer.new(nam, text)
   if not r then
     return r, e
   end
-  return mixer.clireq("new", nam, r)
+  return mixer.clireq("new", { nam, r })
 end
 
 function mixer.songs(text)
@@ -318,19 +310,19 @@ function mixer.songs(text)
   if not r then
     return r, e
   end
-  return mixer.clireq("songs", r)
+  return mixer.clireq("songs", { r })
 end
 
 function mixer.reserve(nr)
-  return mixer.clireq("reserve", nr)
+  return mixer.clireq("reserve", { nr })
 end
 
 function mixer.stop(nr, fade)
-  return mixer.clireq("stop", nr, fade)
+  return mixer.clireq("stop", { nr, fade })
 end
 
 function mixer.status(nr)
-  return mixer.clireq("status", nr)
+  return mixer.clireq("status", { nr })
 end
 
 function mixer.init()
