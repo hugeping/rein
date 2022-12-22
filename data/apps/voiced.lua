@@ -494,6 +494,7 @@ function edit_err(ed, line, e)
       end
     end
     ed.lines = lines
+    ed:move()
     return true
   end
   ed:move(#ed.lines[line] + 1, line)
