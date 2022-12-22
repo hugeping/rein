@@ -465,6 +465,8 @@ function buff:keydown(k)
     s:write()
     idle_mode = 'run'
     s:exec(FILE)
+  elseif k == 'escape' and inp_mode then
+    inp_mode = false
   elseif k == 'f1' then
     help_mode = not help_mode
   elseif (k == 'u' or k == 'z') and input.keydown 'ctrl' then
