@@ -1,0 +1,253 @@
+voice FM-bass
+box synth
+# synth
+volume 0.5
+type sin
+set_fm 0
+fmul freq 1
+amp 2500
+attack 0.01
+decay 0.01
+sustain 0.5
+release 0.3
+set_sustain 1
+
+box synth
+# synth
+volume 0.5
+type sin
+set_fm 0
+fmul freq 7
+amp 6500
+attack 0.001
+decay 0.01
+sustain 0
+release 0.1
+set_sustain 0
+
+box synth
+# synth
+volume 0.5
+type sin
+set_fm 1
+fmul freq 1
+amp 1
+width 0.5
+offset 1
+attack 0.01
+decay 0.5
+sustain 0.5
+release 0.3
+set_sustain 1
+set_glide 0
+glide_rate 0
+lfo_type 0 zero
+lfo_freq 0 0
+lfo_low 0 0
+lfo_high 0 0
+lfo_set_loop 0 1
+lfo_set_reset 0 1
+lfo_assign 0 freq
+lfo_seq_pos 0 0
+lfo_seq_val 0 0
+lfo_seq_size 0 0
+
+voice Ch.organ
+box synth
+# synth
+volume 0.5
+type saw
+fmul freq 1
+amp 1
+width 0.8
+offset 1
+attack 0.02
+decay 0.01
+sustain 0.5
+release 0.01
+set_sustain 1
+set_glide 0
+glide_rate 0
+lfo_type 0 zero
+lfo_freq 0 0
+lfo_low 0 0
+lfo_high 0 0
+lfo_set_loop 0 1
+lfo_set_reset 0 1
+lfo_assign 0 freq
+lfo_seq_pos 0 0
+lfo_seq_val 0 0
+lfo_seq_size 0 0
+
+box synth
+# synth
+volume 0.5
+type saw
+fmul freq 2
+amp 0.5
+width 0.5
+offset 1
+attack 0.02
+decay 0.01
+sustain 0.5
+release 0.01
+set_sustain 1
+set_glide 0
+glide_rate 0
+lfo_type 0 zero
+lfo_freq 0 0
+lfo_low 0 0
+lfo_high 0 0
+lfo_set_loop 0 1
+lfo_set_reset 0 1
+lfo_assign 0 freq
+lfo_seq_pos 0 0
+lfo_seq_val 0 0
+lfo_seq_size 0 0
+
+box synth
+# synth
+volume 0.5
+type saw
+fmul freq 6
+amp 0.3
+width 0.2
+offset 1
+attack 0.02
+decay 0.01
+sustain 0.5
+release 0.01
+set_sustain 1
+set_glide 0
+glide_rate 0
+lfo_type 0 zero
+lfo_freq 0 0
+lfo_low 0 0
+lfo_high 0 0
+lfo_set_loop 0 1
+lfo_set_reset 0 1
+lfo_assign 0 freq
+lfo_seq_pos 0 0
+lfo_seq_val 0 0
+lfo_seq_size 0 0
+
+box synth
+# synth
+volume 0.5
+type saw
+fmul freq 0.5
+amp 0.4
+width 0.5
+offset 1
+attack 0.02
+decay 0.01
+sustain 0.5
+release 0.01
+set_sustain 1
+set_glide 0
+glide_rate 0
+lfo_type 0 zero
+lfo_freq 0 0
+lfo_low 0 0
+lfo_high 0 0
+lfo_set_loop 0 1
+lfo_set_reset 0 1
+lfo_assign 0 freq
+lfo_seq_pos 0 0
+lfo_seq_val 0 0
+lfo_seq_size 0 0
+
+box synth
+# synth
+volume 0.5
+type saw
+fmul freq 8.01
+amp 0.3
+width 0.3
+offset 1
+attack 0.02
+decay 0.01
+sustain 0.5
+release 0.01
+set_sustain 1
+set_glide 0
+glide_rate 0
+lfo_type 0 zero
+lfo_freq 0 0
+lfo_low 0 0
+lfo_high 0 0
+lfo_set_loop 0 1
+lfo_set_reset 0 1
+lfo_assign 0 freq
+lfo_seq_pos 0 0
+lfo_seq_val 0 0
+lfo_seq_size 0 0
+
+box delay
+# delay
+volume 1
+time 0.15
+level 0.2
+feedback 0.6
+
+voice Moog
+box synth
+# synth
+volume 0.5
+type saw
+set_fm 0
+fmul freq 1
+amp 0.9
+width 0
+offset 1
+attack 0.01
+decay 0.1
+sustain 0.5
+release 0.2
+set_sustain 1
+set_glide 1
+glide_rate 70
+lfo_type 0 saw
+lfo_freq 0 20
+lfo_low 0 0.75
+lfo_high 0 0.7
+lfo_set_loop 0 0
+lfo_set_reset 0 1
+lfo_assign 0 width
+lfo_seq_pos 0 0
+lfo_seq_val 0 0
+lfo_seq_size 0 0
+
+box synth
+# synth
+volume 0.5
+type square
+set_fm 0
+fmul freq 1.001
+amp 0.6
+width 0
+offset 1
+attack 0.01
+decay 0.1
+sustain 0.5
+release 0.2
+set_sustain 1
+set_glide 1
+glide_rate 90
+lfo_type 0 saw
+lfo_freq 0 20
+lfo_low 0 0.6
+lfo_high 0 0.5
+lfo_set_loop 0 0
+lfo_set_reset 0 1
+lfo_assign 0 width
+lfo_seq_pos 0 0
+lfo_seq_val 0 0
+lfo_seq_size 0 0
+
+box delay
+# delay
+volume 1
+time 0.25
+level 0.2
+feedback 0.5
