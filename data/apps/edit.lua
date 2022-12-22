@@ -555,7 +555,7 @@ F4           - open another file (no save!)
 F5           - run!
 F8           - run sprite editor
 F9           - run synth editor
-ctrl-esc     - return to editor (from F5/F8/F9 mode)
+shift-esc    - return to editor (from F5/F8/F9 mode)
 ]]
 
 while sys.running() do
