@@ -379,7 +379,7 @@ end
 function buff:mouse(r, v)
   local s = self
   local mx, my, mb = input.mouse()
-  if mx < s.x or mx < s.y or mx >= s.x + s.w or
+  if mx < s.x or my < s.y or mx >= s.x + s.w or
     my >= s.y + s.h then
     return
   end
