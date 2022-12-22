@@ -924,9 +924,10 @@ local w_song = edit:new { current = 1, border = false, value = '1', x = w_prev:a
 local w_song_next = button:new { text = ">", x = w_song:after(1), y = 0, w = 10, h = 12, border = true }
 local w_add = button:new { x = w_song_next:after(1), y = 0, h = 12, w = 28, text = "Add", border = true }
 local w_del = button:new { x = w_add:after(1), y = 0, h = 12, w = 28, text = "Del", border = true }
-local w_voiced = button:new { x = w_del:after(1), y = 0, h = 12, w = 7*7, text = "Voices", border = true }
 local w_file = button:new { text = FILE2, w = 14*7, bg = 7,
-  h = 12, x = w_voiced:after(1), y = 0 }
+  h = 12, x = w_del:after(1), y = 0 }
+
+local w_voiced = button:new { x = W - 130, y = 0, h = 12, w = 7*7, text = "Voices", border = true }
 local w_info = label:new { x = 0, y = H - 10, bg = 6, w = W, h = 10, left = true }
 
 function w_info:fmt()
@@ -1338,6 +1339,7 @@ ctrl-x        Cut
 ctrl-v        Paste
 ctrl-c        Copy
 ctrl-z        Undo
+ctrl-y        Delete line
 shift+cursor  Select
 
 zsxdcvgbhnjm  Play note
@@ -1355,6 +1357,7 @@ zsxdcvgbhnjm  Input note
 t6y7ui9o0p[=] track)
 =             Note off
 ctrl-z        Undo
+ctrl-y        Delete line
 Ins           Direct input mode (notes)
 
 Commands (chan can be set as *):
@@ -1366,6 +1369,7 @@ Commands (chan can be set as *):
 @vol <chan> <volume>   Set chan volume
 @pan <chan> <pan>      Set chan pan
 @push [nr]/@pop        Begin/end of loop
+@synth par val         Change synth parameter
 ]]
 
 while sys.running() do
