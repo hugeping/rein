@@ -376,6 +376,31 @@ function buff:writesel(fname)
   io.file(fname, clip)
 end
 
+function buff:mouse(r, v)
+  local s = self
+  local mx, my, mb = input.mouse()
+  if mx < s.x or mx < s.y or mx >= s.x + s.w or
+    my >= s.y + s.h then
+    return
+  end
+  local cx, cy = math.floor((mx - s.x)/s.spw),
+    math.floor((my - s.y)/s.sph)
+  if mb.left then
+    s.edit:move(cx + s.edit.col,
+      cy + s.edit.line)
+  end
+  if r == 'mousedown' then
+    s.edit:select(true)
+  elseif r == 'mouseup' then
+    s.edit:select(false)
+  elseif r == 'mousemotion' and mb.left then
+    s.edit:select()
+  elseif r == 'mousewheel' then
+    local _, y = s.edit:cursor()
+    s.edit:move(false, y - v*1)
+  end
+end
+
 function buff:keydown(k)
   local s = self
   local cx, cy = s.edit:cursor()
@@ -576,6 +601,8 @@ while sys.running() do
   elseif r == 'text' then
     get_buff().edit:unselect()
     get_buff().edit:input(v)
+  elseif r and r:startswith 'mouse' then
+    get_buff():mouse(r, v)
   end
   if not idle_mode then
     if not gfx.framedrop() then
