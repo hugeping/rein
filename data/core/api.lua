@@ -581,7 +581,7 @@ function api.event(e, v, a, b, c)
     api.running = false
     input.fifo  = {}
     mixer.done()
-  elseif e == 'keydown' and (v == 'escape' and input.kbd.ctrl)
+  elseif e == 'keydown' and (v == 'escape' and input.kbd.shift)
     and #core.suspended > 0 then
     mixer.done()
     core.stop()
