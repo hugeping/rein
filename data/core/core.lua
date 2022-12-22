@@ -247,13 +247,13 @@ function core.run()
           table.remove(core.fn, i)
         elseif e == 'stop' then
           table.remove(core.fn, i)
+          collectgarbage("collect")
         else
           i = i + 1
         end
       else
         table.remove(core.fn, i)
       end
-      collectgarbage("collect")
     end
   end
 
