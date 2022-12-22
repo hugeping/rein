@@ -1341,8 +1341,10 @@ while sys.running() do
     local st, e = mixer.status(tune)
     if not st then
       song_stop()
-      local _, cy = w_edit.edit:cursor()
-      edit_err(w_edit.edit, cy, e)
+      if e then
+        local _, cy = w_edit.edit:cursor()
+        edit_err(w_edit.edit, cy, e)
+      end
     else
       w_edit.edit:move(false, st + tune_delta)
     end
