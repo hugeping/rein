@@ -117,15 +117,40 @@ function editarea:show()
   screen:nooffset()
 end
 
+function editarea:mouse(r, v)
+  local s = self
+  if not r or not r:startswith 'mouse' then
+    return false
+  end
+  local mx, my, mb = input.mouse()
+  local sx, sy = self:realpos()
+  local delta = self.title and 10 or 0
+  if mx < sx or my < sy + delta  or mx >= sx + s.w or
+    my >= sy + s.h then
+    return
+  end
+  local cx, cy = math.floor((mx - sx)/s.spw),
+    math.floor((my - sy - delta)/s.sph)
+  if mb.left then
+    s.edit:move(cx + s.edit.col,
+      cy + s.edit.line)
+  end
+  if r == 'mousedown' then
+    s.edit:select(true)
+  elseif r == 'mouseup' then
+    s.edit:select(false)
+  elseif r == 'mousemotion' and mb.left then
+    s.edit:select()
+  elseif r == 'mousewheel' then
+    local _, y = s.edit:cursor()
+    s.edit:move(false, y - v*1)
+  end
+  return true
+end
+
 function editarea:event(r, v, ...)
   if self.hidden then return end
-  local m, mb, x, y = self:mevent(r, v, ...)
-  if m and r == 'mousedown' and y >= 10 then
-    y = math.floor((y - 10)/self.sph)
-    x = math.floor(x/self.spw)
-    self.edit:move(x + self.edit.col, y + self.edit.line)
-    return true
-  end
+  if self:mouse(r, v) then return true end
   if r == 'text' then
     self.edit:input(v)
     return true
@@ -349,6 +374,9 @@ function win:show()
 end
 
 function win:mevent(r, mb, x, y)
+  if r == 'mousemotion' then
+    x, y = mb, x
+  end
   if r == 'mousewheel' then x, y = input.mouse() end
   if not r:startswith 'mouse' then
     return false
@@ -367,7 +395,9 @@ function win:event(r, ...)
   if not r then return end
   table.sort(self.childs, function(a, b) return a.lev < b.lev end)
   for _, w in ipairs(self.childs) do
-    if w:event(r, ...) then return true end
+    if w:event(r, ...) then
+      return true
+    end
   end
 end
 
@@ -1133,13 +1163,7 @@ end
 
 function w_edit:event(r, v, ...)
   if self.hidden then return end
-  local m, mb, x, y = self:mevent(r, v, ...)
-  if m and r == 'mousedown' and not tune then
-    y = math.floor(y/self.sph)
-    x = math.floor(x/self.spw)
-    self.edit:move(x + self.edit.col, y + self.edit.line)
-    return true
-  end
+  if not tune and editarea.mouse(self, r, v) then return true end
   if r == 'text' and not tune then
     if note_edit() then
       note_text(v)
@@ -1323,7 +1347,6 @@ while sys.running() do
       w_edit.edit:move(false, st + tune_delta)
     end
   end
-
   win:event(sys.input())
   win:show()
   gfx.flip(1/20, true)
