@@ -53,11 +53,10 @@ function buff.new(fname, x, y, w, h)
   local b = { edit = editor.new(), fname = fname,
     x = x or 0, y = y or 0, w = w or W, h = h or H }
   local f = fname and io.open(fname, "rb")
-  b.text = b.edit.lines
   if f then
     for l in f:lines() do
       l = l:gsub("\t", "  ")
-      table.insert(b.text, utf.chars(l))
+      table.insert(b.edit.lines, utf.chars(l))
     end
     f:close()
   end
@@ -73,7 +72,7 @@ function buff:lookuptag(tag)
   local s = self
   local insect
   local y1, y2
-  for k, l in ipairs(s.text) do
+  for k, l in ipairs(s.edit.lines) do
     local str = table.concat(l, '')
     if insect then
       if str:find("]]") then
@@ -103,7 +102,7 @@ function buff:export(tag, fname)
     return false, e
   end
   for y=y1, y2 do
-    local str = table.concat(s.text[y], ""):gsub("%]%]$", ""):gsub("^.[^%[]*%[%[", "")
+    local str = table.concat(s.edit.lines[y], ""):gsub("%]%]$", ""):gsub("^.[^%[]*%[%[", "")
     if (y~=y1 and y~=y2) or not str:empty() then
       f:write(str..'\n')
       lines = lines + 1
@@ -126,14 +125,14 @@ function buff:import(tag, fname)
     return false, e
   end
   for y=y1, y2 do
-    table.remove(s.text, y1)
+    table.remove(s.edit.lines, y1)
   end
-  table.insert(s.text, y1, utf.chars(string.format("local %s = [[", tag)))
+  table.insert(s.edit.lines, y1, utf.chars(string.format("local %s = [[", tag)))
   for l in f:lines() do
     lines = lines + 1
-    table.insert(s.text, y1 + lines, utf.chars(l))
+    table.insert(s.edit.lines, y1 + lines, utf.chars(l))
   end
-  table.insert(s.text, y1 + lines + 1, utf.chars "]]")
+  table.insert(s.edit.lines, y1 + lines + 1, utf.chars "]]")
   f:close()
   print(string.format("%s: imported %d line(s) at line %d", fname, lines, y1))
   return true
@@ -148,14 +147,14 @@ function buff:write()
   if not f then
     return
   end
-  local eof = #s.text
-  for k=#s.text,1,-1 do
-    if #s.text[k] ~= 0 then
+  local eof = #s.edit.lines
+  for k=#s.edit.lines,1,-1 do
+    if #s.edit.lines[k] ~= 0 then
       eof = k
       break
     end
   end
-  for k, l in ipairs(s.text) do
+  for k, l in ipairs(s.edit.lines) do
     l = table.concat(l, ''):gsub("[ \t]+$", "") -- strip
     f:write(l.."\n")
     if k == eof then
@@ -407,9 +406,17 @@ function buff:keydown(k)
   if k:find 'shift' then
     s.edit:select(true)
   elseif k == 'up' then
-    s.edit:move(false, cy - 1)
+    if inp_mode then
+      s:hprev()
+    else
+      s.edit:move(false, cy - 1)
+    end
   elseif k == 'down' then
-    s.edit:move(false, cy + 1)
+    if inp_mode then
+      s:hnext()
+    else
+      s.edit:move(false, cy + 1)
+    end
   elseif k == 'right' then
     s.edit:move(cx + 1)
   elseif k == 'left' then
@@ -419,7 +426,7 @@ function buff:keydown(k)
     s.edit:move(1)
   elseif k == 'end' or k == 'keypad 1' or
     (k == 'e' and input.keydown 'ctrl') then
-    s.edit:move(#s.text[cy] + 1)
+    s.edit:move(#s.edit.lines[cy] + 1)
   elseif k == 'pagedown' or k == 'keypad 3' then
     s.edit:move(false, cy + s.lines)
   elseif k == 'pageup' or k == 'keypad 9' then
@@ -512,22 +519,56 @@ inp.status = false
 inp.lines = 1
 inp.edit:size(W, b.sph)
 
+function inp:history(t)
+  if t == '' then return end
+  self.hist = self.hist or { }
+  self.hist[inp_mode] = self.hist[inp_mode] or {}
+  local h = self.hist[inp_mode]
+  if #h == 0 or h[#h] ~= t then
+    table.insert(h, t)
+  end
+  if #t > 128 then table.remove(t, 1) end
+  self.hidx = #h + 1
+end
+
+function inp:hprev()
+  self.hist = self.hist or { }
+  local h = self.hist[inp_mode] or {}
+  local idx = self.hidx or #h + 1
+  if idx == 1 then return end
+  self.hidx = idx - 1
+  self.edit:set(h[self.hidx])
+  self.edit:move(false, 1)
+  self.edit:toend()
+end
+
+function inp:hnext()
+  self.hist = self.hist or { }
+  local h = self.hist[inp_mode] or {}
+  local idx = self.hidx or #h + 1
+  if idx > #h then return end
+  self.hidx = idx + 1
+  self.edit:set(h[self.hidx] or '')
+  self.edit:move(false, 1)
+  self.edit:toend()
+end
+
 function inp.edit:newline()
   local s = self
+  local t = s:get() or ''
   if inp_mode == 'search' then
-    b:search(table.concat(s.lines[1] or {}, ''))
+    b:search(t)
   elseif inp_mode == 'goto' then
-    b:jump(math.floor(tonumber(table.concat(s.lines[1] or {}, '')) or 1))
+    b:jump(math.floor(tonumber(t) or 1))
   elseif inp_mode == 'open' then
-    local f = table.concat(s.lines[1] or {}, '')
-    if f ~= '' then
-      FILE = f
+    if not t:empty() then
+      FILE = t
       b = buff.new(FILE)
     end
   end
+  inp:history(t)
   s:set ''
   s:move(1, 1)
-  inp.text = s.lines
   inp_mode = false
 end
 
