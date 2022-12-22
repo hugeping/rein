@@ -18,7 +18,6 @@ static void osc_init(struct osc_state *s) {
     s->params[OSC_AMP] = 1;
     s->params[OSC_WIDTH] = 0.5;
     s->params[OSC_OFFSET] = 1;
-    s->params[OSC_SET_LIN] = 1;
     phasor_init(&s->phasor1);
     phasor_init(&s->phasor2);
     noise_init(&s->noise1);
@@ -82,9 +81,6 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
         break;
     case ZV_OFFSET:
         s->osc.params[OSC_OFFSET] = val;
-        break;
-    case ZV_SET_LIN:
-        s->osc.params[OSC_SET_LIN] = val;
         break;
     case ZV_NOTE_ON:
         s->osc.params[OSC_FREQ] = val;
@@ -158,36 +154,37 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
     }
 }
 
-static double osc_noise(struct osc_state *s, double *params, double x) {
-    noise_set_width(&s->noise1, params[OSC_WIDTH]);
-    if (params[OSC_SET_LIN]) {
-        return noise_lin_next(&s->noise1, x);
+static double osc_noise(struct osc_state *s, int is_lin_on, double width, double freq) {
+    noise_set_width(&s->noise1, width);
+    if (is_lin_on) {
+        return noise_lin_next(&s->noise1, freq);
     }
-    return noise_next(&s->noise1, x);
+    return noise_next(&s->noise1, freq);
 }
 
-static double osc_next(struct osc_state *s, double *params) {
-    double f = params[OSC_FREQ];
-    double w = limit(params[OSC_WIDTH], 0, 0.9);
+static double osc_next(struct osc_state *s, double freq, double width, double offset) {
+    double w = limit(width, 0, 0.9);
     switch (s->type) {
     case OSC_SIN:
-        return sin(phasor_next(&s->phasor1, f));
+        return sin(phasor_next(&s->phasor1, freq));
     case OSC_SAW:
-        return saw(phasor_next(&s->phasor1, f), w);
+        return saw(phasor_next(&s->phasor1, freq), w);
     case OSC_SQUARE:
-        return square(phasor_next(&s->phasor1, f), w);
+        return square(phasor_next(&s->phasor1, freq), w);
     case OSC_DSF:
-        return dsf(phasor_next(&s->phasor1, f), params[OSC_OFFSET], w);
+        return dsf(phasor_next(&s->phasor1, freq), offset, w);
     case OSC_DSF2:
-        return dsf2(phasor_next(&s->phasor1, f), params[OSC_OFFSET], w);
+        return dsf2(phasor_next(&s->phasor1, freq), offset, w);
     case OSC_PWM:
-        return pwm(phasor_next(&s->phasor1, f), params[OSC_OFFSET], w);
+        return pwm(phasor_next(&s->phasor1, freq), offset, w);
     case OSC_NOISE:
-        return osc_noise(s, params, f);
-    case OSC_BAND_NOISE: {
-        double y = osc_noise(s, params, params[OSC_OFFSET]);
-        return sin(phasor_next(&s->phasor1, f + y));
-    }
+        return osc_noise(s, 0, width, freq);
+    case OSC_BAND_NOISE:
+        return sin(phasor_next(&s->phasor1, freq + osc_noise(s, 0, width, offset)));
+    case OSC_LIN_NOISE:
+        return osc_noise(s, 1, width, freq);
+    case OSC_LIN_BAND_NOISE:
+        return sin(phasor_next(&s->phasor1, freq + osc_noise(s, 1, width, offset)));
     }
     return 0;
 }
@@ -209,7 +206,8 @@ static double sfx_synth_mono(struct sfx_synth_state *s, double l) {
     for(int i = 0; i < OSC_PARAMS; i++) {
         params[i] += f * s->fmul[i];
     }
-    double y = params[OSC_AMP] * osc_next(&s->osc, params);
+    double y = params[OSC_AMP] * osc_next(&s->osc,
+        params[OSC_FREQ], params[OSC_WIDTH], params[OSC_OFFSET]);
     y *= adsr_next(&s->adsr, s->is_sustain_on);
     return s->is_fm_on ? y : y + l;
 }
@@ -297,7 +295,7 @@ struct sfx_filter_state {
 
 static void sfx_filter_init(struct sfx_filter_state *s) {
     filter_init(&s->filter1);
-    s->mode = ZV_FILTER_LP;
+    s->mode = FILTER_LP;
     s->width = 0.5;
 }
 
@@ -314,9 +312,9 @@ static void sfx_filter_change(struct sfx_filter_state *s, int param, int elem, d
 }
 
 static double sfx_filter_mono(struct sfx_filter_state *s, double l) {
-    if (s->mode == ZV_FILTER_LP) {
+    if (s->mode == FILTER_LP) {
         return filter_lp_next(&s->filter1, l, s->width);
-    } else if (s->mode == ZV_FILTER_HP) {
+    } else if (s->mode == FILTER_HP) {
         return filter_hp_next(&s->filter1, l, s->width);
     }
     return 0;

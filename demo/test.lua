@@ -75,8 +75,7 @@ local __voices__ = [[
 
   voice snare
   box synth
-  type band_noise
-  set_lin 1
+  type lin_band_noise
   amp 1
   offset 10000
   width 10000

@@ -14,7 +14,6 @@ enum {
     ZV_AMP,
     ZV_WIDTH,
     ZV_OFFSET,
-    ZV_SET_LIN,
     ZV_NOTE_ON,
     ZV_NOTE_OFF,
     ZV_SET_GLIDE,
@@ -40,8 +39,6 @@ enum {
     ZV_DIST_GAIN,
     ZV_FILTER_MODE,
     ZV_FILTER_WIDTH,
-    ZV_FILTER_HP,
-    ZV_FILTER_LP,
     ZV_END
 };
 
@@ -53,7 +50,9 @@ enum {
     OSC_DSF2,
     OSC_PWM,
     OSC_NOISE,
-    OSC_BAND_NOISE
+    OSC_BAND_NOISE,
+    OSC_LIN_NOISE,
+    OSC_LIN_BAND_NOISE
 };
 
 enum {
@@ -62,8 +61,12 @@ enum {
     OSC_AMP,
     OSC_WIDTH,
     OSC_OFFSET,
-    OSC_SET_LIN,
     OSC_PARAMS
+};
+
+enum {
+    FILTER_HP,
+    FILTER_LP
 };
 
 #define SYNTH_LFOS 4
