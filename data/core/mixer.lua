@@ -160,7 +160,7 @@ end
 
 function mixer.req_status(id)
   local r = mixer.ids[id]
-  if not r then return false, "No such sfx" end
+  if not r then return false end
   if r.dead then
     local e = r.status
     r.status = nil
