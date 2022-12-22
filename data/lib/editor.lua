@@ -304,6 +304,7 @@ function editor:delete()
       table.insert(s.lines[s.cur.y], v)
     end
   end
+  s:move()
 end
 
 local function getind(l)
@@ -358,6 +359,7 @@ function editor:backspace()
       table.insert(s.lines[s.cur.y], v)
     end
   end
+  s:move()
 end
 
 function editor:paste(clip)
