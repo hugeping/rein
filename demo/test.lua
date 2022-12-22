@@ -53,7 +53,7 @@ end
 local __voices__ = [[
   voice bass
   box synth
-  fmul 0.5
+  fmul freq 0.5
   type square
   width 0
   decay 0.2
@@ -80,7 +80,7 @@ local __voices__ = [[
   amp 1
   offset 10000
   width 10000
-  fmul 0.4
+  fmul freq 0.4
   decay 0.15
   sustain 0
   release 0
@@ -122,7 +122,7 @@ local __voices__ = [[
   box dist
   gain 1
   box filter
-  type lowpass
+  mode lowpass
   width 0.1
   volume 1
 ]]

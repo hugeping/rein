@@ -8,6 +8,7 @@
 enum {
     ZV_VOLUME = SFX_BOX_VOLUME,
     ZV_TYPE,
+    ZV_SET_FM,
     ZV_FREQ,
     ZV_FMUL,
     ZV_AMP,
@@ -23,7 +24,6 @@ enum {
     ZV_SUSTAIN,
     ZV_RELEASE,
     ZV_SET_SUSTAIN,
-    ZV_REMAP_FREQ,
     ZV_LFO_TYPE,
     ZV_LFO_FREQ,
     ZV_LFO_LOW,
@@ -34,13 +34,14 @@ enum {
     ZV_LFO_SEQ_VAL,
     ZV_LFO_SEQ_SIZE,
     ZV_LFO_ASSIGN,
-    ZV_SET_FM,
-    ZV_TIME,
-    ZV_LEVEL,
-    ZV_FEEDBACK,
-    ZV_GAIN,
-    ZV_HIGHPASS,
-    ZV_LOWPASS,
+    ZV_DELAY_TIME,
+    ZV_DELAY_LEVEL,
+    ZV_DELAY_FB,
+    ZV_DIST_GAIN,
+    ZV_FILTER_MODE,
+    ZV_FILTER_WIDTH,
+    ZV_FILTER_HP,
+    ZV_FILTER_LP,
     ZV_END
 };
 

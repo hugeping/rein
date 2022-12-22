@@ -28,9 +28,7 @@ struct sfx_synth_state {
     struct osc_state osc;
     struct lfo_state lfos[SYNTH_LFOS];
     int lfo_targets[SYNTH_LFOS];
-    double lfo_params[OSC_PARAMS];
-    int remap[OSC_PARAMS];
-    double remap_mul;
+    double fmul[OSC_PARAMS];
     struct adsr_state adsr;
     int is_sustain_on;
     struct glide_state glide;
@@ -38,19 +36,11 @@ struct sfx_synth_state {
     int is_fm_on;
 };
 
-static void lfo_reset_remap(struct sfx_synth_state *s) {
-    for (int i = 0; i < OSC_PARAMS; i++) {
-        s->remap[i] = i;
-    }
-}
-
 static void sfx_synth_init(struct sfx_synth_state *s) {
     osc_init(&s->osc);
     for (int i = 0; i < SYNTH_LFOS; i++) {
         lfo_init(&s->lfos[i]);
     }
-    lfo_reset_remap(s);
-    s->remap_mul = 1;
     adsr_init(&s->adsr);
     s->is_sustain_on = 0;
     glide_init(&s->glide);
@@ -70,11 +60,19 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
     case ZV_TYPE:
         s->osc.type = val;
         break;
+    case ZV_SET_FM:
+        s->is_fm_on = val;
+        break;
     case ZV_FREQ:
-        s->osc.params[OSC_FREQ] = val * s->remap_mul;
+        s->osc.params[OSC_FREQ] = val;
         break;
     case ZV_FMUL:
-        s->osc.params[OSC_FMUL] = val;
+        elem = limit(elem, 0, OSC_PARAMS - 1);
+        if (elem == OSC_FREQ) {
+            s->osc.params[OSC_FMUL] = val;
+        } else {
+            s->fmul[elem] = val;
+        }
         break;
     case ZV_AMP:
         s->osc.params[OSC_AMP] = val;
@@ -89,7 +87,7 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
         s->osc.params[OSC_SET_LIN] = val;
         break;
     case ZV_NOTE_ON:
-        s->osc.params[OSC_FREQ] = val * s->remap_mul;
+        s->osc.params[OSC_FREQ] = val;
         adsr_note_on(&s->adsr, 0);
         lfo_note_on(s);
         break;
@@ -116,14 +114,6 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
         break;
     case ZV_SET_SUSTAIN:
         s->is_sustain_on = val;
-        break;
-    case ZV_REMAP_FREQ:
-        lfo_reset_remap(s);
-        int target = limit(elem, 0, OSC_PARAMS - 1);
-        s->remap_mul = val;
-        int old = s->remap[target];
-        s->remap[target] = OSC_FREQ;
-        s->remap[OSC_FREQ] = old;
         break;
     case ZV_LFO_TYPE:
         elem = limit(elem, 0, SYNTH_LFOS - 1);
@@ -165,9 +155,6 @@ static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, dou
         elem = limit(elem, 0, SYNTH_LFOS - 1);
         s->lfo_targets[elem] = limit(val, 0, OSC_PARAMS - 1);
         break;
-    case ZV_SET_FM:
-        s->is_fm_on = val;
-        break;
     }
 }
 
@@ -206,19 +193,23 @@ static double osc_next(struct osc_state *s, double *params) {
 }
 
 static double sfx_synth_mono(struct sfx_synth_state *s, double l) {
+    double params[OSC_PARAMS];
     for(int i = 0; i < OSC_PARAMS; i++) {
-        s->lfo_params[s->remap[i]] = s->osc.params[i];
+        params[i] = s->osc.params[i];
     }
-    double f = s->lfo_params[OSC_FREQ];
+    double f = params[OSC_FREQ];
     if (s->is_glide_on) {
         f = glide_next(&s->glide, f);
     }
-    s->lfo_params[OSC_FREQ] = s->is_fm_on ? l : 0;
+    params[OSC_FREQ] = s->is_fm_on ? l : 0;
     for(int i = 0; i < SYNTH_LFOS; i++) {
-        s->lfo_params[s->lfo_targets[i]] += lfo_next(&s->lfos[i]);
+        params[s->lfo_targets[i]] += lfo_next(&s->lfos[i]);
     }
-    s->lfo_params[OSC_FREQ] += f * s->lfo_params[OSC_FMUL];
-    double y = s->lfo_params[OSC_AMP] * osc_next(&s->osc, s->lfo_params);
+    s->fmul[OSC_FREQ] = params[OSC_FMUL];
+    for(int i = 0; i < OSC_PARAMS; i++) {
+        params[i] += f * s->fmul[i];
+    }
+    double y = params[OSC_AMP] * osc_next(&s->osc, params);
     y *= adsr_next(&s->adsr, s->is_sustain_on);
     return s->is_fm_on ? y : y + l;
 }
@@ -231,27 +222,27 @@ struct sfx_proto sfx_synth = {
     .state_size = sizeof(struct sfx_synth_state)
 };
 
-#define SFX_DELAY_BUF_SIZE 65536
+#define DELAY_BUF_SIZE 65536
 
 struct sfx_delay_state {
     struct delay_state delay1;
-    double buf[SFX_DELAY_BUF_SIZE];
+    double buf[DELAY_BUF_SIZE];
 };
 
 static void sfx_delay_init(struct sfx_delay_state *s) {
-    delay_init(&s->delay1, s->buf, SFX_DELAY_BUF_SIZE);
+    delay_init(&s->delay1, s->buf, DELAY_BUF_SIZE);
 }
 
 static void sfx_delay_change(struct sfx_delay_state *s, int param, int elem, double val) {
     (void) elem;
     switch (param) {
-    case ZV_TIME:
+    case ZV_DELAY_TIME:
         delay_set_time(&s->delay1, val);
         break;
-    case ZV_LEVEL:
+    case ZV_DELAY_LEVEL:
         delay_set_level(&s->delay1, val);
         break;
-    case ZV_FEEDBACK:
+    case ZV_DELAY_FB:
         delay_set_fb(&s->delay1, val);
         break;
     }
@@ -280,7 +271,7 @@ static void sfx_dist_init(struct sfx_dist_state *s) {
 static void sfx_dist_change(struct sfx_dist_state *s, int param, int elem, double val) {
     (void) elem;
     switch (param) {
-    case ZV_GAIN:
+    case ZV_DIST_GAIN:
         s->gain = val;
         break;
     }
@@ -306,26 +297,26 @@ struct sfx_filter_state {
 
 static void sfx_filter_init(struct sfx_filter_state *s) {
     filter_init(&s->filter1);
-    s->mode = ZV_LOWPASS;
+    s->mode = ZV_FILTER_LP;
     s->width = 0.5;
 }
 
 static void sfx_filter_change(struct sfx_filter_state *s, int param, int elem, double val) {
     (void) elem;
     switch (param) {
-    case ZV_TYPE:
+    case ZV_FILTER_MODE:
         s->mode = val;
         break;
-    case ZV_WIDTH:
+    case ZV_FILTER_WIDTH:
         s->width = val;
         break;
     }
 }
 
 static double sfx_filter_mono(struct sfx_filter_state *s, double l) {
-    if (s->mode == ZV_LOWPASS) {
+    if (s->mode == ZV_FILTER_LP) {
         return filter_lp_next(&s->filter1, l, s->width);
-    } else if (s->mode == ZV_HIGHPASS) {
+    } else if (s->mode == ZV_FILTER_HP) {
         return filter_hp_next(&s->filter1, l, s->width);
     }
     return 0;
