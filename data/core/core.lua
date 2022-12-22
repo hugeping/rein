@@ -253,7 +253,7 @@ function core.run()
       else
         table.remove(core.fn, i)
       end
-      collectgarbage()
+      collectgarbage("collect")
     end
   end
 
