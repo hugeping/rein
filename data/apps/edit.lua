@@ -557,7 +557,7 @@ end
 
 function inp.edit:newline()
   local s = self
-  local t = s:get() or ''
+  local t = s:get():stripnl()
   if inp_mode == 'search' then
     b:search(t)
   elseif inp_mode == 'goto' then
