@@ -443,6 +443,7 @@ thread_stop(lua_State *L)
 	int haschild;
 	if (!chan)
 		return 0;
+	printf("Thread stop\n");
 	MutexLock(chan->m);
 	chan->peers[0].L = NULL;
 	haschild = !!chan->peers[1].L;
