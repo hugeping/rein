@@ -498,16 +498,16 @@ function buff:keydown(k)
     idle_mode = 'spr'
     s:exec("sprited", 'data.spr')
   elseif k == 'f9' then
-    os.remove('voices.syn')
-    os.remove('songs.sng')
+    os.remove('data.syn')
+    os.remove('data.sng')
     if not s:selected() then
-      s:export ('__voices__', 'voices.syn')
-      s:export ('__songs__', 'songs.sng')
+      s:export ('__voices__', 'data.syn')
+      s:export ('__songs__', 'data.sng')
     else
-      s:writesel('voices.syn')
+      s:writesel('data.syn')
     end
     idle_mode = 'voices'
-    s:exec("voiced", 'voices.syn')
+    s:exec("voiced", 'data.syn', 'data.sng')
   elseif k == 'f5' then
     s:write()
     idle_mode = 'run'
@@ -661,10 +661,10 @@ while sys.running() do
     gfx.win(W, H)
     if idle_mode == 'voices' then
       if not b:selected() then
-        b:import('__voices__', 'voices.syn')
-        b:import('__songs__', 'songs.sng')
+        b:import('__voices__', 'data.syn')
+        b:import('__songs__', 'data.sng')
       else
-        b:readsel('voices.syn')
+        b:readsel('data.syn')
       end
     elseif idle_mode == 'spr' then
       if not b:selected() then
