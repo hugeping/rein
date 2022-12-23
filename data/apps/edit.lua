@@ -289,7 +289,7 @@ function buff:colorize(l, nl)
   if not conf.syntax then
     return {}
   end
-  if self.fname:find("%.[mM][dD]$") then
+  if self.fname and self.fname:find("%.[mM][dD]$") then
     return self:colorize_md(l, nl)
   end
   local pre = ' '
