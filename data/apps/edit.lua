@@ -499,10 +499,10 @@ function buff:keydown(k)
     s:exec("sprited", 'data.spr')
   elseif k == 'f9' then
     os.remove('voices.syn')
-    os.remove('songs.syn')
+    os.remove('songs.sng')
     if not s:selected() then
       s:export ('__voices__', 'voices.syn')
-      s:export ('__songs__', 'songs.syn')
+      s:export ('__songs__', 'songs.sng')
     else
       s:writesel('voices.syn')
     end
@@ -662,7 +662,7 @@ while sys.running() do
     if idle_mode == 'voices' then
       if not b:selected() then
         b:import('__voices__', 'voices.syn')
-        b:import('__songs__', 'songs.syn')
+        b:import('__songs__', 'songs.sng')
       else
         b:readsel('voices.syn')
       end
