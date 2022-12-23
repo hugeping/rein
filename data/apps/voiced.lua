@@ -688,6 +688,21 @@ function w_prev:onclick(s)
   build_stack()
 end
 
+function w_next:event(r, v)
+  if r == 'keydown' and v == 'right' and input.keydown'alt' then
+    self:onclick()
+    return true
+  end
+end
+
+function w_prev:event(r, v)
+  if r == 'keydown' and v == 'left' and input.keydown'alt' then
+    self:onclick()
+    return true
+  end
+end
+
+
 function w_next:onclick(s)
   if not config_check() then
     return
@@ -934,6 +949,16 @@ local w_file = button:new { text = FILE2, w = 14*7, bg = 7,
 
 local w_voiced = button:new { x = W - 130, y = 0, h = 12, w = 7*7, text = "Voices", border = true }
 local w_info = label:new { x = 0, y = H - 10, bg = 6, w = W, h = 10, left = true }
+
+w_song_next.event = w_next.event
+w_song_prev.event = w_prev.event
+
+function w_prev:event(r, v)
+  if r == 'keydown' and v == 'left' and input.keydown'alt' then
+    w_prev:onclick()
+    return true
+  end
+end
 
 function w_info:fmt()
   local cx, cy = w_edit.edit:cursor()
@@ -1346,6 +1371,8 @@ ctrl-c        Copy
 ctrl-z        Undo
 ctrl-y        Delete line
 shift+cursor  Select
+alt-left      Prev voice
+alt-right     Next voice
 
 zsxdcvgbhnjm  Play note
 ,l.;/q2w3er5  in PLAY mode
@@ -1364,6 +1391,8 @@ t6y7ui9o0p[=] track)
 ctrl-z        Undo
 ctrl-y        Delete line
 Ins           Direct input mode (notes)
+alt-left      Prev song
+alt-right     Next song
 
 Commands (chan can be set as *):
 
