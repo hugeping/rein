@@ -243,9 +243,33 @@ local delim = {
   ['"'] = conf.delim,
 }
 
-function buff:colorize(l)
+function buff:colorize_md(l, nl)
+  local cols = {}
+  local k = 1
+  local col
+  while k<=#l do
+    local c = l[k]
+    if not col then
+      if c == '-' or c == '*' then
+        col = conf.string
+      elseif c == '#' then
+        col = conf.keyword
+      elseif c ~= ' ' then
+        col = conf.fg
+      end
+    end
+    cols[k] = col or conf.fg
+    k = k + 1
+  end
+  return cols
+end
+
+function buff:colorize(l, nl)
   if not conf.syntax then
     return {}
+  end
+  if self.fname:find("%.[mM][dD]$") then
+    return self:colorize_md(l, nl)
   end
   local pre = ' '
   local start
@@ -319,7 +343,7 @@ function buff:show()
   for nl, s, e in self.edit:visible_lines() do
     local l = self.edit.lines[nl]
     px = 0
-    cols = self:colorize(l)
+    cols = self:colorize(l, nl)
     for i=s, e do
       g = glyph(l[i], cols[i]) or glyph('?', cols[i])
       if self.edit:insel(i, nl) then
