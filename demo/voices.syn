@@ -209,8 +209,8 @@ set_glide 1
 glide_rate 70
 lfo_type 0 saw
 lfo_freq 0 20
-lfo_low 0 0.75
-lfo_high 0 0.7
+lfo_low 0 0.7
+lfo_high 0 0.65
 lfo_set_loop 0 0
 lfo_set_reset 0 1
 lfo_assign 0 width
@@ -248,6 +248,138 @@ lfo_seq_size 0 0
 box delay
 # delay
 volume 1
-time 0.25
-level 0.2
+time 0.35
+level 0.3
+feedback 0.2
+
+voice Strings
+box synth
+# synth
+volume 0.5
+type saw
+set_fm 0
+fmul freq 1.011
+amp 0.5
+width 0
+offset 1
+attack 0.1
+decay 0.1
+sustain 0.5
+release 0.2
+set_sustain 1
+set_glide 0
+glide_rate 0
+lfo_type 0 saw
+lfo_freq 0 2
+lfo_low 0 0.75
+lfo_high 0 0.6
+lfo_set_loop 0 0
+lfo_set_reset 0 1
+lfo_assign 0 width
+lfo_type 1 triangle
+lfo_freq 1 4.2
+lfo_low 1 -0.002
+lfo_high 1 0.002
+lfo_set_loop 1 1
+lfo_set_reset 1 1
+lfo_assign 1 fmul
+
+box synth
+# synth
+volume 0.5
+type saw
+set_fm 0
+fmul freq 1.007
+amp 0.5
+width 0
+offset 1
+attack 0.1
+decay 0.15
+sustain 0.5
+release 0.2
+set_sustain 1
+set_glide 0
+glide_rate 0
+lfo_type 0 saw
+lfo_freq 0 2.5
+lfo_low 0 0.75
+lfo_high 0 0.65
+lfo_set_loop 0 0
+lfo_set_reset 0 1
+lfo_assign 0 width
+lfo_type 1 triangle
+lfo_freq 1 4.5
+lfo_low 1 -0.003
+lfo_high 1 0.003
+lfo_set_loop 1 1
+lfo_set_reset 1 1
+lfo_assign 1 fmul
+
+box synth
+# synth
+volume 0.5
+type saw
+set_fm 0
+fmul freq 1.003
+amp 0.5
+width 0
+offset 1
+attack 0.1
+decay 0.1
+sustain 0.5
+release 0.2
+set_sustain 1
+set_glide 0
+glide_rate 0
+lfo_type 0 saw
+lfo_freq 0 4
+lfo_low 0 0.75
+lfo_high 0 0.72
+lfo_set_loop 0 0
+lfo_set_reset 0 1
+lfo_assign 0 width
+lfo_type 1 triangle
+lfo_freq 1 5
+lfo_low 1 0.003
+lfo_high 1 -0.003
+lfo_set_loop 1 1
+lfo_set_reset 1 1
+lfo_assign 1 fmul
+
+box synth
+# synth
+volume 0.5
+type saw
+set_fm 0
+fmul freq 1
+amp 0.5
+width 0
+offset 0.5
+attack 0.1
+decay 0.1
+sustain 0.5
+release 0.2
+set_sustain 1
+set_glide 0
+glide_rate 0
+lfo_type 0 saw
+lfo_freq 0 3
+lfo_low 0 0.75
+lfo_high 0 0.6
+lfo_set_loop 0 0
+lfo_set_reset 0 1
+lfo_assign 0 width
+lfo_type 1 triangle
+lfo_freq 1 4
+lfo_low 1 0.003
+lfo_high 1 -0.003
+lfo_set_loop 1 1
+lfo_set_reset 1 1
+lfo_assign 1 fmul
+
+box delay
+# delay
+volume 1
+time 0.2
+level 0.5
 feedback 0.5
