@@ -433,6 +433,8 @@ function buff:keydown(k)
     s.edit:move(false, cy - s.lines)
   elseif k == 'return' or k == 'keypad enter' then
     s.edit:newline(true)
+  elseif k == 'w' and input.keydown 'ctrl' then
+    s.edit:wrap()
   elseif k == 'backspace' then
     s.edit:backspace()
   elseif k == 'tab' then
@@ -595,6 +597,7 @@ ctrl-c       - copy selection
 ctrl-v       - paste selection
 ctrl-y       - remove line
 ctrl-z       - undo
+ctrl-w       - wrap text
 F4           - open another file (no save!)
 F5           - run!
 F8           - run sprite editor
@@ -631,7 +634,10 @@ while sys.running() do
   while help_mode do
     screen:clear(conf.bg)
     gfx.print(HELP, 0, 0, conf.fg, true)
-    if sys.input() == 'keydown' then
+    local rr = sys.input()
+    if rr == 'keydown' then
+      help_mode = 1
+    elseif rr == 'keyup' and help_mode == 1 then
       help_mode = false
       break
     end

@@ -242,6 +242,21 @@ function editor:select(on, y1, x2, y2)
   end
 end
 
+function editor:wrap()
+  local s = self
+  local t = s:selected()
+  if not t then return end
+  t = t:gsub("\n", " ")
+  t = t:wrap(s.width)
+  local x1, y1 = s:selection()
+  s:move(x1, y1)
+  s:cut(false, false)
+  for _, l in ipairs(t) do
+    self:input(l)
+    self:newline()
+  end
+end
+
 function editor:cut(copy, clip)
   local s = self
   local x1, y1, x2, y2 = s:selection()
