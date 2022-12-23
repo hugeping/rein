@@ -250,9 +250,7 @@ function buff:colorize_md(l, nl)
   while k<=#l do
     local c = l[k]
     if not col then
-      if c == '-' or c == '*' then
-        col = conf.string
-      elseif c == '#' then
+      if c == '#' then
         col = conf.keyword
       elseif c ~= ' ' then
         col = conf.fg
