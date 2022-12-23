@@ -244,20 +244,43 @@ local delim = {
 }
 
 function buff:colorize_md(l, nl)
+  local function prev_tag(indent)
+    local l
+    for i=nl-1, 1, -1 do
+      l = self.edit.lines[i]
+      if not l then return end
+      local pos = false
+      for k=1,#l do
+        if l[k] ~= ' ' then
+          pos = k
+          break
+        end
+      end
+      if not pos or pos > indent then return end
+      for k=1,indent do
+        if l[k] and l[k] ~= ' ' and k < indent then
+          return l[k]
+        end
+      end
+    end
+  end
   local cols = {}
   local k = 1
   local col
-  while k<=#l do
+  for k=1, #l do
     local c = l[k]
+    local pc = prev_tag(k)
+    c = pc or c
     if not col then
       if c == '#' then
         col = conf.keyword
+      elseif c == '-' or c == '*' then
+        col = conf.string
       elseif c ~= ' ' then
         col = conf.fg
       end
     end
     cols[k] = col or conf.fg
-    k = k + 1
   end
   return cols
 end
