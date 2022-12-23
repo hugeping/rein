@@ -277,6 +277,7 @@ function title:click(x, y, mb, click)
       end
     elseif mb.middle then
       grid.pixels = {}
+      grid.history = {}
       grid.dirty = false
     end
   elseif x < w then
