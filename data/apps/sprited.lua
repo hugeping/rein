@@ -22,7 +22,7 @@ pal = {
   cw = 8;
   ch = 8;
   w = 8*2;
-  h = (HCOLORS + 4)*8;
+  h = (HCOLORS + 5)*8;
   base = 0; -- tiles base
   color = 0;
   lev = -1;
@@ -31,9 +31,9 @@ pal = {
 function pal:mode()
   local s = self
   if map_mode then
-    s.h = (16 + 4)*8;
+    s.h = (16 + 5)*8;
   else
-    s.h = (HCOLORS+4)*8;
+    s.h = (HCOLORS+5)*8;
   end
 end
 
@@ -117,6 +117,11 @@ function pal:show()
   spr.B:blend(screen, s.x + 8, (py+2)*8)
   spr.C:blend(screen, s.x, (py+3)*8)
   spr.F:blend(screen, s.x + 8, (py+3)*8)
+  if map_mode then
+    self:select(0, py+4, 8)
+  end
+  spr.M:blend(screen, s.x, (py+4)*8)
+  spr.H:blend(screen, s.x + 8, (py+4)*8)
 end
 
 function pal:pos2col(x, y)
@@ -191,8 +196,11 @@ function pal:click(x, y, mb, click)
   elseif y == py+3 and x == 1 and click then
     draw_mode = draw_mode ~= 'fill' and 'fill' or false
     sel_mode, grid.sel_x1 = false, false
+  elseif y == py + 4 and x == 0 and not click then
+    switch_mode()
+  elseif y == py + 4 and x == 1 and not click then
+    help_mode = not help_mode
   end
-
   return true
 end
 
@@ -289,6 +297,16 @@ function title:click(x, y, mb, click)
 end
 
 local obj = { pal, grid, title }
+
+function switch_mode()
+  map_mode = not map_mode
+  for _, v in ipairs(obj) do
+    if v.mode then
+      v:mode()
+    end
+  end
+  sys.input(true)
+end
 
 function grid:spr2pos(nr)
   local y = math.floor(nr / 16)*8
@@ -652,7 +670,7 @@ end
 function grid:mode()
   local s = self
   s.history = {}
-  s.cahe = {}
+  s.cache = {}
   s.clipboard = {}
   s.dirty, s.backdirty = s.backdirty, s.dirty
   s.xoff, s.xoffback = s.xoffback or 0, s.xoff
@@ -1040,12 +1058,7 @@ function proc_inp(r, e, a, b, c, d)
     elseif e == 'tab' then
       switch_ui()
     elseif e == 'm' then
-      map_mode = not map_mode
-      for _, v in ipairs(obj) do
-        if v.mode then
-          v:mode()
-        end
-      end
+      switch_mode()
     elseif e == 'f2' then
       grid:save(fname(SPRITE))
     elseif e == 'z' then
@@ -1151,12 +1164,15 @@ mmb - middle mouse button
 ]]
 function run()
   local curw, curh = spr.Cur:size()
-  while true do
+  while sys.running() do
     local r, v, a, b = sys.input()
     local mx, my, mb = input.mouse()
     if help_mode then
       screen:clear {0xff, 0xff, 0xe8, 0xff}
       if r == 'keydown' or r == 'mousedown' then
+        help_mode = 1
+      end
+      if (r == 'keyup' or r == 'mouseup') and help_mode == 1 then
         help_mode = false
       end
       gfx.print(HELP, 0, 0, 0, true) -- warp words
@@ -1181,6 +1197,8 @@ function run()
           end
         end
       end
+    end
+    if not help_mode then
       screen:clear(1)
       table.sort(obj, function(a, b) return a.lev > b.lev end)
       for _, v in ipairs(obj) do
@@ -1314,6 +1332,27 @@ spr.F = gfx.new [[
 -a-666--
 ----6---
 --------
+]]
+
+spr.M = gfx.new [[
+-----------b----
+------
+-b-b-b
+------
+-b-b-b
+------
+-b-b-b
+]]
+
+spr.H = gfx.new [[
+------------c---
+--ccc-
+-c---c
+-----c
+---cc-
+---c--
+------
+---c--
 ]]
 
 run()
