@@ -2,7 +2,7 @@
 require "tiny"
 require "std"
 local snd = require "sfx"
-mixer.volume(1)
+mixer.volume(0.5)
 border(0)
 
 function cos(a)
@@ -28,8 +28,8 @@ voice engine
 box synth
 # synth
 volume 0.25
-type band_noise
 amp 0
+type band_noise
 fmul freq 1
 offset 20000
 width 10000
@@ -61,7 +61,6 @@ box synth
 # synth
 volume 0.6
 type noise
-amp 1
 fmul freq 1
 offset 3
 width 0.5
@@ -85,7 +84,6 @@ box synth
 # synth
 volume 0.25
 type band_noise
-amp 1
 fmul freq 1
 offset 3000
 width 3000
@@ -109,7 +107,6 @@ box synth
 # synth
 volume 0.5
 type band_noise
-amp 1
 fmul freq 1
 offset 20000
 width 0
@@ -134,7 +131,6 @@ box synth
 volume 0.5
 type square
 
-amp 1
 fmul freq 1
 width 0
 offset 3.5
@@ -164,7 +160,6 @@ box synth
 # synth
 volume 0.1
 type band_noise
-amp 1
 fmul freq 1
 offset 20000
 width 10000
@@ -188,7 +183,6 @@ box synth
 # synth
 volume 0.5
 type saw
-amp 1
 fmul freq 1
 width 0.5
 offset 0.5
@@ -216,9 +210,8 @@ lfo_assign 1 fmul freq
 voice violin
 box synth
 # synth
-volume 0.1
+volume 0.3
 type saw
-amp 1
 fmul freq 1
 width 0.75
 offset 0.5
@@ -259,7 +252,7 @@ width 0
 decay 0.2
 sustain 0
 release 0.01
-volume 0.5
+volume 0.9
 lfo_assign 0 freq
 lfo_type 0 saw
 lfo_freq 0 15
@@ -276,7 +269,7 @@ lfo_set_loop 1 0
 voice snare
 box synth
 type lin_band_noise
-amp 2
+volume 2
 offset 10000
 
 width 100
@@ -306,7 +299,6 @@ box synth
 volume 0.5
 type saw
 
-amp 1
 fmul freq 1
 width 0.9
 offset 0
@@ -330,7 +322,6 @@ box synth
 volume 0.5
 type pwm
 fmul freq 1
-amp 1
 width 0.5
 offset 1
 attack 0.01
@@ -1772,11 +1763,9 @@ end
 
 local __songs__ = [[
 song main
-@vol -1 0.25
+@vol -1 0.6
 @voice 1 square
-@vol 2 0.10
 @voice 2 violin
-@vol 3 0.5
 @voice 3 bass
 @vol 4 0.2
 @voice 4 zip
@@ -2162,7 +2151,7 @@ song main
 
 song over
 @tempo 12
-@vol -1 0.2
+@vol -1 0.5
 @voice 1 violin
 | a-3 b6
 | g-3 b6

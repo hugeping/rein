@@ -390,7 +390,7 @@ function sfx.play_song_once(chans, tracks)
         end
       end
       if vol and chans[i] and tracks.voices[i] then
-        synth.change(chans[i], 0, synth.VOLUME, vol/255)
+        synth.chan_change(chans[i], synth.AMP, vol/255)
       end
     end
     if #row > 0 then
