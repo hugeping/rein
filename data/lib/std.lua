@@ -81,14 +81,18 @@ function string.wrap(text, len, delim)
   local res = {}
   local s, e = 1, 1
   local last, done
+  local us
   while text:len() > 0 do
     s, e = text:find(delim, s)
     if not s then
-      s = utf.len(text)
+      us = utf.len(text)
+      s = text:len()
       e = s
       done = true
+    else
+      us = utf.len(text:sub(1, s-1))
     end
-    if s >= len then
+    if us >= len then
       last = last or s
       table.insert(res, text:sub(1, last))
       text = text:sub(last + 1)
