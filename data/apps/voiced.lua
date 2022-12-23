@@ -10,7 +10,7 @@ gfx.win(384, 384)
 mixer.volume(0.5)
 
 local FILE = ARGS[2] or 'voices.syn'
-local FILE2 = ARGS[3] or 'songs.syn'
+local FILE2 = ARGS[3] or 'songs.sng'
 
 local cur_voice = 1
 
@@ -1350,7 +1350,7 @@ local r, e = load(FILE)
 if not r then
    print("Error loading voices: ".. tostring(e))
 end
-local r, e = load_songs(FILE2 or 'songs.syn')
+local r, e = load_songs(FILE2 or 'songs.sng')
 if not r then
    print("Error loading songs: ".. tostring(e))
 end
