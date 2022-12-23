@@ -55,13 +55,15 @@ gfx.printf(4, 64, 0,
 
 Try:
   rein demo/aadv.lua - run&play
-
 Or:
   rein edit demo/aadv.lua
   then press F1 for help
 
-Docs:
+Doc:
   rein edit doc/api-ru.md
+
+Tutorial:
+  Look into doc/tutorial/
 
 Chat with community:
   rein irc
