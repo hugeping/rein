@@ -76,7 +76,7 @@ local __voices__ = [[
   voice snare
   box synth
   type lin_band_noise
-  amp 1
+  volume 0.5
   offset 10000
   width 10000
   fmul freq 0.4
@@ -135,7 +135,7 @@ song title
 @voice 2 snare
 @voice 3 square
 @voice 4 saw
-@vol -1 0.8
+@vol -1 0.5
 @pan -1 0
 @pan 3 -0.75
 @pan 4 0.75
