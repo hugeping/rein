@@ -688,18 +688,20 @@ function w_prev:onclick(s)
   build_stack()
 end
 
-function w_next:event(r, v)
-  if r == 'keydown' and v == 'right' and input.keydown'alt' then
+function w_next:event(r, v, ...)
+  if r == 'keydown' and v == 'right' and input.keydown'alt' and not tune then
     self:onclick()
     return true
   end
+  return button.event(self, r, v, ...)
 end
 
-function w_prev:event(r, v)
-  if r == 'keydown' and v == 'left' and input.keydown'alt' then
+function w_prev:event(r, v, ...)
+  if r == 'keydown' and v == 'left' and input.keydown'alt' and not tune then
     self:onclick()
     return true
   end
+  return button.event(self, r, v, ...)
 end
 
 
@@ -952,13 +954,6 @@ local w_info = label:new { x = 0, y = H - 10, bg = 6, w = W, h = 10, left = true
 
 w_song_next.event = w_next.event
 w_song_prev.event = w_prev.event
-
-function w_prev:event(r, v)
-  if r == 'keydown' and v == 'left' and input.keydown'alt' then
-    w_prev:onclick()
-    return true
-  end
-end
 
 function w_info:fmt()
   local cx, cy = w_edit.edit:cursor()
