@@ -1767,7 +1767,7 @@ song main
 @voice 1 square
 @voice 2 violin
 @voice 3 bass
-@vol 4 0.2
+@vol 4 0.4
 @voice 4 zip
 @tempo 11
 | c-4 91 | ... .. | ... .. | ... ..
