@@ -186,13 +186,17 @@ function core.render(force)
   core.view_w, core.view_h = dw, dh
   core.view_x, core.view_y = math.floor((ww - dw)/2), math.floor((hh - dh)/2)
 
-  local win = gfx.win()
-  win:clip(core.view_x, core.view_y,
-    core.view_w, core.view_h)
-  env.screen:stretch(win,
-    core.view_x, core.view_y,
-    core.view_w, core.view_h)
-  gfx.flip()
+  if false then
+    local win = gfx.win()
+    win:clip(core.view_x, core.view_y,
+      core.view_w, core.view_h)
+    env.screen:stretch(win,
+      core.view_x, core.view_y,
+      core.view_w, core.view_h)
+    gfx.flip()
+  else
+    gfx.expose(env.screen, core.view_x, core.view_y, core.view_w, core.view_h)
+  end
   last_render = start
   return true
 end

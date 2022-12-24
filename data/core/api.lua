@@ -314,7 +314,11 @@ end
 
 function env_ro.gfx.border(col)
   conf.brd = { gfx.pal(col or conf.brd) }
-  gfx.win():clear(conf.brd)
+  if false then
+    gfx.win():clear(conf.brd)
+  else
+    gfx.background(conf.brd)
+  end
 end
 
 function env_ro.gfx.font(fname, ...)
@@ -608,7 +612,7 @@ function api.event(e, v, a, b, c)
   end
 
   if e == 'resized' or e == 'exposed' then
-    gfx.win():clear(conf.brd)
+--    gfx.win():clear(conf.brd)
     return true
   end
 

@@ -24,6 +24,7 @@ tolow(char *p)
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
 static SDL_Texture *texture = NULL;
+static SDL_Texture *expose_texture = NULL;
 static SDL_RendererInfo renderer_info;
 
 void
@@ -371,6 +372,8 @@ PlatformDone(void)
 		SDL_FreeSurface(winbuff);
 	if (texture)
 		SDL_DestroyTexture(texture);
+	if (expose_texture)
+		SDL_DestroyTexture(expose_texture);
 	if (renderer)
 		SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
@@ -449,6 +452,45 @@ WindowResize(int w, int h)
 		SDL_DestroyTexture(texture);
 	texture = NULL;
 	destroyed = 1;
+}
+
+void
+WindowBackground(int r, int g, int b)
+{
+	SDL_SetRenderDrawColor(renderer, r, g, b, 255);
+}
+
+void
+WindowExpose(void *pixels, int w, int h, int dx, int dy, int dw, int dh)
+{
+	SDL_Rect rect;
+	int ww = 0, hh = 0, rc = 1;
+	if (expose_texture) {
+		rc = SDL_QueryTexture(expose_texture, NULL, NULL, &ww, &hh);
+		if (rc || w != hh || h != hh) {
+			SDL_DestroyTexture(expose_texture);
+			rc = 1;
+		}
+	}
+	if (rc) {
+		expose_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888,
+			SDL_TEXTUREACCESS_STREAMING, w, h);
+		if (!expose_texture)
+			return;
+	}
+	SDL_UpdateTexture(expose_texture, NULL, pixels, w*4);
+	SDL_RenderClear(renderer);
+	if (dx || dy || dw > 0 || dh > 0) {
+		rect.x = dx;
+		rect.y = dy;
+		if (dw <= 0 || dh <= 0)
+			SDL_GetWindowSize(window, &dw, &dh);
+		rect.w = dw;
+		rect.h = dh;
+		SDL_RenderCopy(renderer, expose_texture, NULL, &rect);
+	} else
+		SDL_RenderCopy(renderer, expose_texture, NULL, NULL);
+	SDL_RenderPresent(renderer);
 }
 
 void
