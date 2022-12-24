@@ -105,8 +105,8 @@ end
 function titlescreen()
   gfx.print("Snake game", 86, 1, 11)
   gfx.print("by Spline", 90, 13, 3)
-  gfx.print("2022", 112, 25, 5)
-  gfx.print("Press SPACE to start game", 29, 247, 7)
+  gfx.print("2022", 108, 25, 5)
+  gfx.print("Press SPACE to start game", 38, 247, 7)
   local a, b = sys.input()
   if a == "keydown" and b == "space" then
     gamecycle = true
@@ -165,7 +165,7 @@ function gameoverscreen()
   local scoretext = "Your score: " .. tostring(score)
   local w, h = font:size(scoretext)
   gfx.print(scoretext, (256-w)/2, 129, 7)
-  gfx.print("Press SPACE to start game", 29, 247, 7)
+  gfx.print("Press SPACE to start game", 38, 247, 7)
   local a, b = sys.input()
   if a == "keydown" and b == "space" then
     gamecycle = true
@@ -178,7 +178,7 @@ end
 newsnake()
 newapple()
 
-while true do
+while sys.running() do
   screen:clear(0)
 
   if gamecycle then
