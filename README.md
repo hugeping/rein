@@ -38,3 +38,5 @@ See ./make.sh if any problems.
 <img src="contrib/tracked.png" width="50%">
 
 <img src="contrib/voiced.png" width="50%">
+
+<img src="contrib/edit.png" width="50%">
