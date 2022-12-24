@@ -10,6 +10,8 @@ extern int WindowCreate(void);
 extern void WindowResize(int w, int h);
 extern void WindowUpdate(int x, int y, int w, int h);
 extern unsigned char *WindowPixels(int *w, int *h);
+extern void WindowExpose(void *pixels, int pw, int ph, int x, int y, int w, int h);
+extern void WindowBackground(int r, int g, int b);
 
 enum { WIN_NORMAL, WIN_MAXIMIZED, WIN_FULLSCREEN };
 extern void WindowMode(int n);

@@ -570,6 +570,7 @@ gfx_pixels_win(lua_State *L)
 	return 1;
 }
 
+
 static int
 pixels_size(lua_State *L)
 {
@@ -1878,6 +1879,31 @@ pixels_create_meta(lua_State *L)
 	lua_setfield(L, -2, "__index");
 }
 
+static int
+gfx_pixels_expose(lua_State *L)
+{
+	int x, y, w, h;
+	struct lua_pixels *src;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
+	x = luaL_optnumber(L, 2, 0);
+	y = luaL_optnumber(L, 3, 0);
+	w = luaL_optnumber(L, 4, -1);
+	h = luaL_optnumber(L, 5, -1);
+	WindowExpose(src->img.ptr, src->img.w, src->img.h, x, y, w, h);
+	return 0;
+}
+
+static int
+gfx_background(lua_State *L)
+{
+	color_t col;
+	if (checkcolor(L, 1, &col))
+		WindowBackground(col.r, col.g, col.b);
+	else
+		WindowBackground(0, 0, 0);
+	return 0;
+}
+
 int
 gfx_flip(lua_State *L)
 {
@@ -2031,6 +2057,8 @@ gfx_lib[] = {
 	{ "new", gfx_pixels_new },
 	{ "icon", gfx_icon },
 	{ "flip", gfx_flip },
+	{ "expose", gfx_pixels_expose },
+	{ "background", gfx_background },
 	{ "pal", gfx_pal },
 	{ "font", gfx_font },
 	{ NULL, NULL }
