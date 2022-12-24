@@ -51,6 +51,7 @@ local conf = {
 local env = {
   package = package,
   debug = debug,
+  loadfile = loadfile,
   type = type,
   rawset = rawset,
   rawget = rawget,
