@@ -37,6 +37,8 @@ See ./make.sh if any problems.
 
 <img src="contrib/sprited.png" width="50%">
 
+<img src="contrib/sprited2.png" width="50%">
+
 <img src="contrib/tracked.png" width="50%">
 
 <img src="contrib/voiced.png" width="50%">
