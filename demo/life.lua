@@ -99,7 +99,7 @@ local function live_step()
   generation = generation + 1
 end
 
-while true do
+while sys.running() do
   screen:clear(0)
   if not help then
     for x = 1, 64 do
