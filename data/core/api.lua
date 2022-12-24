@@ -44,7 +44,7 @@ local conf = {
   bg = 16;
   brd = { 0xde, 0xde, 0xde };
   font_large = "7x10.fnt",
-  font = "8x8.fnt",
+  font = "7x8.fnt",
   font_tiny = 'pico8.fnt',
 }
 
@@ -615,6 +615,7 @@ function api.event(e, v, a, b, c)
 
   if e == 'resized' or e == 'exposed' then
 --    gfx.win():clear(conf.brd)
+    gfx.background(conf.brd)
     return true
   end
 

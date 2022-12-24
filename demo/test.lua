@@ -239,7 +239,7 @@ local fps = 0
 while true do
   screen:clear(0)
   draw_text("REIN", 70, 100, 4, s)
-  gfx.printf(108, 140, 1, VERSION)
+  gfx.printf(102, 140, 1, VERSION)
   screen:offset(math.floor(math.sin(frames * 0.1)*6), math.floor(math.cos(frames * 0.1)*6))
   spr[math.floor(frames/10)%2+1]:blend(screen, 240, 0)
 
