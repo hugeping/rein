@@ -21,7 +21,7 @@ jobs:
         with:
           path: |
             external
-          key: ${{ runner.os }}-${{ env.luajit_ver }}-${{ env.sdl_ver }}-2
+          key: ${{ runner.os }}-${{ env.luajit_ver }}-${{ env.sdl_ver }}-3
 
       - name: Install Packages
         run: |
