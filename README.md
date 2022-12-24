@@ -30,3 +30,11 @@ See ./make.sh if any problems.
 
 - Join the irc channel #rein on irc.oftc.net;
 - Run: rein irc
+
+------
+
+<img src="contrib/aadv.png" width="50%">
+
+<img src="contrib/tracked.png" width="50%">
+
+<img src="contrib/voiced.png" width="50%">
