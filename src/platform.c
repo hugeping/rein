@@ -395,7 +395,11 @@ WindowCreate(void)
 	SDL_DisplayMode mode;
 	SDL_GetCurrentDisplayMode(0, &mode);
 	if (SDL_CreateWindowAndRenderer(mode.w * 0.5, mode.h * 0.8,
-		SDL_WINDOW_RESIZABLE /*| SDL_WINDOW_ALLOW_HIGHDPI*/, &window, &renderer))
+#ifdef __EMSCRIPTEN__
+		SDL_WINDOW_RESIZABLE, &window, &renderer))
+#else
+		SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI, &window, &renderer))
+#endif
 		return -1;
 	SDL_GetRendererInfo(renderer, &renderer_info);
 	fprintf(stdout, "Video: %s%s\n", renderer_info.name,
