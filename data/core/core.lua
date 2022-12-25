@@ -209,6 +209,7 @@ local function finger_process(old, new)
 end
 
 function core.touch_inp(e, tid, fid, x, y)
+  core.vpad_enabled = core.vpad_enabled or (e == 'fingerdown')
   if not core.vpad_enabled or not vpad.x or
     e ~= 'fingerup' and e ~= 'fingerdown'and
     e ~= 'fingermotion'  then
