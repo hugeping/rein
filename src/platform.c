@@ -5,7 +5,7 @@
 #ifdef __ANDROID__
 #include <jni.h>
 #include <android/log.h>
-#define LOG(s) do { __android_log_print(ANDROID_LOG_VERBOSE, "reinstead", "%s", s); } while(0)
+#define LOG(s) do { __android_log_print(ANDROID_LOG_VERBOSE, "rein", "%s", s); } while(0)
 #else
 #define LOG(s) do { printf("%s\n", (s)); } while(0)
 #endif
