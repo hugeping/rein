@@ -16,8 +16,8 @@
 
         .emscripten {
           width: 100%;
+          height: 100vh;
           max-width: 100vh;
-          max-height: 100vw;
           text-align: center;
           padding: 0;
           margin: auto;
@@ -44,12 +44,13 @@
     </head>
     <body>
 
-      <div id="emscripten-app" class=emscripten>
+      <div id="emscripten-app class=emscripten" class=emscripten>
+
       <div>
       <canvas id="canvas" class="emscripten" oncontextmenu=event.preventDefault() tabindex=-1></canvas>
-      <div id="controls" class="emscripten">
-        <input type="button" value="Fullscreen" onclick='document.getElementById("canvas").requestFullscreen();  document.getElementById("canvas").focus();'>
       </div>
+      <div id="controls" class="emscripten2">
+        <input type="button" value="Fullscreen" onclick='document.getElementById("canvas").requestFullscreen();  document.getElementById("canvas").focus();'>
       </div>
 
       </div>
