@@ -509,7 +509,7 @@ WindowUpdate(int x, int y, int w, int h)
 	psize = winbuff->format->BytesPerPixel;
 	pixels = winbuff->pixels;
 	if (renderer_info.flags & SDL_RENDERER_ACCELERATED)
-	    w = -1;
+		w = -1;
 	if (w > 0 && h > 0) {
 		rect.x = x;
 		rect.y = y;
