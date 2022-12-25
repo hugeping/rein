@@ -7,6 +7,7 @@
  #include <unistd.h>
  #include <arpa/inet.h>
  #include <netdb.h>
+ #include <sys/socket.h>
 #endif
 #ifdef __linux__
  #include <sys/wait.h>
