@@ -36,6 +36,10 @@
         #controls {
           display: inline-block;
           float: center;
+          position: fixed;
+          right: auto;
+          left: auto;
+          top: 0;
           vertical-align: top;
           margin-top: 0.5em;
           margin-right: 0;
@@ -46,11 +50,12 @@
 
       <div id="emscripten-app class=emscripten" class=emscripten>
 
-      <div>
-      <canvas id="canvas" class="emscripten" oncontextmenu=event.preventDefault() tabindex=-1></canvas>
-      </div>
       <div id="controls" class="emscripten2">
         <input type="button" value="Fullscreen" onclick='document.getElementById("canvas").requestFullscreen();  document.getElementById("canvas").focus();'>
+      </div>
+
+      <div>
+      <canvas id="canvas" class="emscripten" oncontextmenu=event.preventDefault() tabindex=-1></canvas>
       </div>
 
       </div>
