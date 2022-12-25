@@ -165,30 +165,32 @@ function core.vpad(x, y, w, h)
     vpad.w == w and vpad.h == h then
     return
   end
+  local win = gfx.win()
+  win:clear(x, y, w, h, { 0, 0, 0, 255 })
   vpad.x, vpad.y, vpad.w, vpad.h = x, y, w, h
   local xc = w/4 + x
   local yc = h/2 + y
   local r = h/4 < w/4 and h/4 or w/4
   vpad.stick = { x = xc, y = yc, r = r }
-  gfx.win():circle(xc, yc, r, {255, 255, 255 })
+  win:circle(xc, yc, r, {255, 255, 255 })
   local d = r/4
-  gfx.win():circle(xc, yc, r / 2, vpad_col)
+  win:circle(xc, yc, r / 2, vpad_col)
   r = r * 0.9
-  gfx.win():fill_poly( {xc, yc - r, xc + d, yc - r + d, xc - d, yc - r + d }, vpad_col)
-  gfx.win():fill_poly( {xc, yc + r, xc + d, yc + r - d, xc - d, yc + r - d }, vpad_col)
-  gfx.win():fill_poly( {xc - r, yc, xc - r + d, yc - d, xc - r + d, yc + d }, vpad_col)
-  gfx.win():fill_poly( {xc + r, yc, xc + r - d, yc - d, xc + r - d, yc + d }, vpad_col)
+  win:fill_poly( {xc, yc - r, xc + d, yc - r + d, xc - d, yc - r + d }, vpad_col)
+  win:fill_poly( {xc, yc + r, xc + d, yc + r - d, xc - d, yc + r - d }, vpad_col)
+  win:fill_poly( {xc - r, yc, xc - r + d, yc - d, xc - r + d, yc + d }, vpad_col)
+  win:fill_poly( {xc + r, yc, xc + r - d, yc - d, xc + r - d, yc + d }, vpad_col)
   r = h/8 < w/8 and h/8 or w/8
   xc = x + 7*w/8
   yc = y + h/2 - r
   vpad.z = { x = xc, y = yc, r = r }
-  gfx.win():circle(xc, yc, r, vpad_col)
-  gfx.win():circle(xc, yc, r/2, vpad_col)
+  win:circle(xc, yc, r, vpad_col)
+  win:circle(xc, yc, r/2, vpad_col)
   xc = x + 6*w/8
   yc = y + h/2 + r
   vpad.x = { x = xc, y = yc, r = r }
-  gfx.win():circle(xc, yc, r, vpad_col)
-  gfx.win():rect(xc - r/2, yc - r/2, xc + r/2, yc + r/2, vpad_col)
+  win:circle(xc, yc, r, vpad_col)
+  win:rect(xc - r/2, yc - r/2, xc + r/2, yc + r/2, vpad_col)
 end
 
 local function finger_process(old, new)
