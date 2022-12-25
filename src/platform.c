@@ -494,7 +494,7 @@ WindowExpose(void *pixels, int w, int h, int dx, int dy, int dw, int dh)
 		SDL_RenderCopy(renderer, expose_texture, NULL, &rect);
 	} else
 		SDL_RenderCopy(renderer, expose_texture, NULL, NULL);
-	SDL_RenderPresent(renderer);
+//	SDL_RenderPresent(renderer);
 }
 
 void
@@ -508,8 +508,8 @@ WindowUpdate(int x, int y, int w, int h)
 	pitch = winbuff->pitch;
 	psize = winbuff->format->BytesPerPixel;
 	pixels = winbuff->pixels;
-	if (renderer_info.flags & SDL_RENDERER_ACCELERATED)
-		w = -1;
+//	if (renderer_info.flags & SDL_RENDERER_ACCELERATED)
+//		w = -1;
 	if (w > 0 && h > 0) {
 		rect.x = x;
 		rect.y = y;
@@ -518,7 +518,7 @@ WindowUpdate(int x, int y, int w, int h)
 		pixels += pitch * y + x * psize;
 		SDL_UpdateTexture(texture, &rect, pixels, pitch);
 		SDL_RenderCopy(renderer, texture, &rect, &rect);
-	} else {
+	} else if (w < 0 || h < 0) {
 		SDL_UpdateTexture(texture, NULL, pixels, pitch);
 		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, texture, NULL, NULL);

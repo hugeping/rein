@@ -1897,10 +1897,8 @@ static int
 gfx_background(lua_State *L)
 {
 	color_t col;
-	if (checkcolor(L, 1, &col))
-		WindowBackground(col.r, col.g, col.b);
-	else
-		WindowBackground(0, 0, 0);
+	checkcolor(L, 1, &col);
+	WindowBackground(col.r, col.g, col.b);
 	return 0;
 }
 
