@@ -228,7 +228,7 @@ function core.touch_inp(e, tid, fid, x, y)
       end
     end
     local dr = ((x - vpad.stick.x)^2 + (y - vpad.stick.y)^2)^0.5
-    if dr <= vpad.stick.r and dr > (vpad.stick.r/3) + 1 then
+    if dr <= vpad.stick.r and dr > (vpad.stick.r/4) + 1 then
       local dx = x - vpad.stick.x
       local dy = y - vpad.stick.y
       local a
