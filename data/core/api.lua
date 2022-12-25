@@ -316,7 +316,7 @@ end
 
 function env_ro.gfx.border(col)
   conf.brd = { gfx.pal(col or conf.brd) }
-  if false then
+  if not gfx.expose then
     gfx.win():clear(conf.brd)
   else
     gfx.background(conf.brd)
@@ -614,8 +614,11 @@ function api.event(e, v, a, b, c)
   end
 
   if e == 'resized' or e == 'exposed' then
---    gfx.win():clear(conf.brd)
-    gfx.background(conf.brd)
+    if not gfx.expose then
+      gfx.win():clear(conf.brd)
+    else
+      gfx.background(conf.brd)
+    end
     return true
   end
 

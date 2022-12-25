@@ -186,7 +186,7 @@ function core.render(force)
   core.view_w, core.view_h = dw, dh
   core.view_x, core.view_y = math.floor((ww - dw)/2), math.floor((hh - dh)/2)
 
-  if false then
+  if not gfx.expose then
     local win = gfx.win()
     win:clip(core.view_x, core.view_y,
       core.view_w, core.view_h)
