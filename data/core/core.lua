@@ -165,7 +165,6 @@ function core.vpad(x, y, w, h)
     vpad.w == w and vpad.h == h then
     return
   end
-  vpad.scr_w, vpad.scr_h = w, h
   vpad.x, vpad.y, vpad.w, vpad.h = x, y, w, h
   local xc = w/4 + x
   local yc = h/2 + y
