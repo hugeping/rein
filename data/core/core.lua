@@ -134,9 +134,11 @@ function core.init()
   local opts, optarg = core.getopt(ARGS, {
     s = true,
     nosound = true,
+    vpad = true,
   })
   core.scale = opts.s
   core.nosound = opts.nosound
+  core.vpad_enabled = opts.vpad
   if optarg then
     for i=optarg,#ARGS do
       table.insert(env.ARGS, ARGS[i])
@@ -155,6 +157,100 @@ function core.done()
 end
 
 local last_render = 0
+
+local vpad = { fingers = {} }
+local vpad_col = { 192, 192, 192, 255 }
+function core.vpad(x, y, w, h)
+  if vpad.x == x and vpad.y == y and
+    vpad.w == w and vpad.h == h then
+    return
+  end
+  vpad.scr_w, vpad.scr_h = w, h
+  vpad.x, vpad.y, vpad.w, vpad.h = x, y, w, h
+  local xc = w/4 + x
+  local yc = h/2 + y
+  local r = h/4 < w/4 and h/4 or w/4
+  vpad.stick = { x = xc, y = yc, r = r }
+  gfx.win():circle(xc, yc, r, {255, 255, 255 })
+  local d = r/4
+  gfx.win():circle(xc, yc, r / 2, vpad_col)
+  r = r * 0.9
+  gfx.win():fill_poly( {xc, yc - r, xc + d, yc - r + d, xc - d, yc - r + d }, vpad_col)
+  gfx.win():fill_poly( {xc, yc + r, xc + d, yc + r - d, xc - d, yc + r - d }, vpad_col)
+  gfx.win():fill_poly( {xc - r, yc, xc - r + d, yc - d, xc - r + d, yc + d }, vpad_col)
+  gfx.win():fill_poly( {xc + r, yc, xc + r - d, yc - d, xc + r - d, yc + d }, vpad_col)
+  r = h/8 < w/8 and h/8 or w/8
+  xc = x + 7*w/8
+  yc = y + h/2 - r
+  vpad.z = { x = xc, y = yc, r = r }
+  gfx.win():circle(xc, yc, r, vpad_col)
+  gfx.win():circle(xc, yc, r/2, vpad_col)
+  xc = x + 6*w/8
+  yc = y + h/2 + r
+  vpad.x = { x = xc, y = yc, r = r }
+  gfx.win():circle(xc, yc, r, vpad_col)
+  gfx.win():rect(xc - r/2, yc - r/2, xc + r/2, yc + r/2, vpad_col)
+end
+
+local function finger_process(old, new)
+  for k, v in pairs(old) do -- keyup old keys
+    if v and not new[k] then
+      old[k] = false
+      if not api.event("keyup", k) then return false end
+    end
+  end
+  for k, v in pairs(new) do -- keydown new keys
+    if not old[k] then
+      if not api.event("keydown", k) then return false end
+    end
+  end
+  return true
+end
+
+function core.touch_inp(e, tid, fid, x, y)
+  if not core.vpad_enabled or not vpad.x or
+    e ~= 'fingerup' and e ~= 'fingerdown'and
+    e ~= 'fingermotion'  then
+    return true
+  end
+  local w, h = gfx.win():size()
+  x, y = w * x, h * y
+  local fng = vpad.fingers[fid] or {}
+  local new = {}
+  if e == 'fingerdown' or e == 'fingermotion' then
+    for _, b in ipairs { "z", "x" } do
+      if ((x - vpad[b].x)^2 + (y - vpad[b].y)^2)^0.5 <= vpad[b].r then
+        new[b] = true
+        vpad.fingers[fid] = new
+        return finger_process(fng, new)
+      end
+    end
+    local dr = ((x - vpad.stick.x)^2 + (y - vpad.stick.y)^2)^0.5
+    if dr <= vpad.stick.r and dr > (vpad.stick.r/5) + 1 then
+      local dx = x - vpad.stick.x
+      local dy = y - vpad.stick.y
+      local a
+      if math.abs(dy) > math.abs(dx) then
+        a = math.abs(dx/dy)
+      else
+        a = math.abs(dy/dx)
+      end
+      local dia = a > 0.4 and a < 1
+      if dia or math.abs(dy) > math.abs(dx) then
+        new[dy > 0 and 'down' or 'up'] = true
+      end
+      if dia or math.abs(dx) > math.abs(dy) then
+        new[dx > 0 and 'right' or 'left'] = true
+      end
+      vpad.fingers[fid] = new
+      return finger_process(fng, new)
+    end
+  elseif e == 'fingerup' then
+    finger_process(fng, {})
+    vpad.fingers[fid] = nil
+  end
+  return true
+end
 
 function core.render(force)
   if not env.screen then
@@ -194,9 +290,16 @@ function core.render(force)
       core.view_x, core.view_y,
       core.view_w, core.view_h)
     gfx.flip()
+  elseif core.vpad_enabled then
+    core.view_y = 0
+    gfx.expose(env.screen, core.view_x, core.view_y, core.view_w, core.view_h)
+    local vx, vy = 0, core.view_h + core.view_y
+    local vw, vh = ww, hh - vy
+    core.vpad(vx, vy, vw, vh)
+    gfx.flip(vx, vy, vw, vh)
   else
     gfx.expose(env.screen, core.view_x, core.view_y, core.view_w, core.view_h)
-    gfx.flip(0, 0, 0, 0) -- just flip to show exposed
+    gfx.flip(0, 0, 0, 0)
   end
   last_render = start
   return true
@@ -220,7 +323,8 @@ function core.run()
     if not r then
       break
     end
-    if not api.event(r, v, a, b, c) then
+    if not core.touch_inp(r, v, a, b, c) or
+      not api.event(r, v, a, b, c) then
       break
     end
   end

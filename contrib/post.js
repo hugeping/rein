@@ -46,6 +46,7 @@ Module['postRun'].push(function() {
       FS.writeFile(url, new Int8Array(data), { encoding: 'binary' }, "w");
       window.onclick = function(){ window.focus() };
       console.log("Running...");
+      Module['arguments'].push("-vpad");
       Module['arguments'].push(url);
       callMain(Module['arguments']);
     });

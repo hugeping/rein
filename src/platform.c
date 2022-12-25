@@ -601,6 +601,18 @@ top:
 		lua_pushstring(L, "exposed");
 		destroyed = 1;
 		return 1;
+	case SDL_FINGERMOTION:
+	case SDL_FINGERDOWN:
+	case SDL_FINGERUP:
+		if (e.type == SDL_FINGERMOTION)
+			lua_pushstring(L, "fingermotion");
+		else
+			lua_pushstring(L, (e.type == SDL_FINGERDOWN)?"fingerdown":"fingerup");
+		lua_pushinteger(L, e.tfinger.touchId);
+		lua_pushinteger(L, e.tfinger.fingerId);
+		lua_pushnumber(L, e.tfinger.x);
+		lua_pushnumber(L, e.tfinger.y);
+		return 5;
 	case SDL_WINDOWEVENT:
 		if (e.window.event == SDL_WINDOWEVENT_RESIZED) {
 			lua_pushstring(L, "resized");
