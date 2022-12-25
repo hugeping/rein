@@ -246,8 +246,8 @@ function core.touch_inp(e, tid, fid, x, y)
       end
       vpad.fingers[fid] = new
       return finger_process(fng, new)
-    else
-      sys.window_mode 'fullscreen'
+--    else
+--      sys.window_mode 'fullscreen'
     end
   elseif e == 'fingerup' then
     finger_process(fng, {})
