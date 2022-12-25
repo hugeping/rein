@@ -196,6 +196,7 @@ function core.render(force)
     gfx.flip()
   else
     gfx.expose(env.screen, core.view_x, core.view_y, core.view_w, core.view_h)
+    gfx.flip(0, 0, 0, 0) -- just flip to show exposed
   end
   last_render = start
   return true
