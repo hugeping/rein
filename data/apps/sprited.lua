@@ -391,6 +391,9 @@ function grid:save(fname, sel)
     [8] = '8', [9] = '9', [10] = 'a', [11] = 'b',
     [12] = 'c', [13] = 'd', [14] = 'e', [15] = 'f',
   }
+  for i = 0x67, 0x67+COLORS-16 do
+    colmap[i-0x67+16] = string.char(i)
+  end
   local y1,x1,y2,x2
   local cols = {}
   for y=1,s.max_grid do
@@ -423,7 +426,7 @@ function grid:save(fname, sel)
     return f, e
   end
   local p = ''
-  for c=0,15 do
+  for c=0,COLORS-1 do
     if cols[c] then
       p = p .. colmap[c]
     else
