@@ -510,7 +510,7 @@ WindowUpdate(int x, int y, int w, int h)
 	pixels = winbuff->pixels;
 //	if (renderer_info.flags & SDL_RENDERER_ACCELERATED)
 //		w = -1;
-	if (w > 0 && h > 0) {
+	if (w > 0 && h > 0) { /* do not flip on partial updates */
 		rect.x = x;
 		rect.y = y;
 		rect.w = w;
@@ -518,7 +518,8 @@ WindowUpdate(int x, int y, int w, int h)
 		pixels += pitch * y + x * psize;
 		SDL_UpdateTexture(texture, &rect, pixels, pitch);
 		SDL_RenderCopy(renderer, texture, &rect, &rect);
-	} else if (w < 0 || h < 0) {
+		return;
+	} else if (w < 0 || h < 0) { /* all screen */
 		SDL_UpdateTexture(texture, NULL, pixels, pitch);
 		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, texture, NULL, NULL);
@@ -528,7 +529,7 @@ WindowUpdate(int x, int y, int w, int h)
 			SDL_RenderClear(renderer);
 			SDL_RenderCopy(renderer, texture, NULL, NULL);
 		}
-	}
+	} /* else - nothing */
 	SDL_RenderPresent(renderer);
 	destroyed = 0;
 }

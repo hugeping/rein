@@ -295,17 +295,18 @@ function core.render(force)
     env.screen:stretch(win,
       core.view_x, core.view_y,
       core.view_w, core.view_h)
-    gfx.flip()
+    gfx.update() -- no flip needed
   elseif core.vpad_enabled then
     core.view_y = 0
     gfx.expose(env.screen, core.view_x, core.view_y, core.view_w, core.view_h)
     local vx, vy = 0, core.view_h + core.view_y
     local vw, vh = ww, hh - vy
     core.vpad(vx, vy, vw, vh)
-    gfx.flip(vx, vy, vw, vh)
+    gfx.update(vx, vy, vw, vh)
+    gfx.flip()
   else
     gfx.expose(env.screen, core.view_x, core.view_y, core.view_w, core.view_h)
-    gfx.flip(0, 0, 0, 0)
+    gfx.flip()
   end
   last_render = start
   return true

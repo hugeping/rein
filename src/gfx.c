@@ -1902,8 +1902,15 @@ gfx_background(lua_State *L)
 	return 0;
 }
 
-int
+static int
 gfx_flip(lua_State *L)
+{
+	WindowUpdate(0, 0, 0, 0);
+	return 0;
+}
+
+static int
+gfx_update(lua_State *L)
 {
 	int x, y, w, h;
 	x = luaL_optnumber(L, 1, 0);
@@ -2055,6 +2062,7 @@ gfx_lib[] = {
 	{ "new", gfx_pixels_new },
 	{ "icon", gfx_icon },
 	{ "flip", gfx_flip },
+	{ "update", gfx_update },
 	{ "expose", gfx_pixels_expose },
 	{ "background", gfx_background },
 	{ "pal", gfx_pal },
