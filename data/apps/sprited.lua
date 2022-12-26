@@ -40,10 +40,11 @@ pal = {
 
 function pal:mode()
   local s = self
+  s.color, s.map_color = s.map_color or 0, s.color
   if map_mode then
-    s.h = (16 + 5)*8;
+    s.h = (16 + 5)*8
   else
-    s.h = (HCOLORS+5)*8;
+    s.h = (HCOLORS+5)*8
   end
 end
 
