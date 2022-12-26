@@ -8,6 +8,7 @@ on:
 env:
     luajit_ver: 2.1.0-beta3
     sdl_ver: 2.24.0
+    emsdk_ver: 3.1.28
 
 jobs:
   build:
@@ -15,6 +16,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@main
+
+      - name: Cache emsdk
+        id: cache-emsdk
+        uses: actions/cache@main
+        with:
+          path: emsdk
+          key: ${{ runner.os }}-${{ env.emsdk_ver }}
+
       - name: Cache libs
         id: cache-libs
         uses: actions/cache@main
@@ -27,16 +36,36 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y gcc-mingw-w64-i686 mingw-w64-i686-dev binutils-mingw-w64-i686 gcc-multilib wget libsdl2-dev libasound2-dev libsamplerate-dev
-          sudo apt-get install -y build-essential
+          sudo apt-get install -y build-essential git curl
+
+      - if: ${{ steps.cache-emsdk.outputs.cache-hit != 'true' }}
+        name: emsdk
+        run: |
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          ./emsdk install ${{ env.emsdk_ver }}
+          ./emsdk activate ${{ env.emsdk_ver }}
 
       - name: build
         run: |
           ./contrib/build-release.sh
 
+      - name: emscripten
+        run: |
+          curl -R -O http://www.lua.org/ftp/lua-5.4.4.tar.gz
+          tar zxf lua-5.4.4.tar.gz
+          mv -f lua-5.4.4/src src/lua
+          rm -f src/lua/luac.c src/lua/lua.c
+          . ./emsdk/emsdk_env.sh
+          ./contrib/make-emscripten.sh
+
       - name: Create Artifact
         run: |
           mkdir -p artifact/rein
           cp -r release/* artifact/rein
+          mkdir -p ./artifact/rein-em
+          cp rein.data rein.wasm rein.js ./artifact/rein-em
+          cp contrib/rein.html ./artifact/rein-em
 
       - name: Publish Artifact
         uses: actions/upload-artifact@v3
