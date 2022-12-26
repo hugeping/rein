@@ -36,9 +36,7 @@ jobs:
 
       - name: Build
         run: |
-          cd emsdk
-          export WORKSPACE="${{github.workspace}}/emsdk/env"
-          . emsdk/emsdk_env.sh
+          . ./emsdk/emsdk_env.sh
           ./contrib/make-emscripten.sh
 
       - name: Create Artifact
