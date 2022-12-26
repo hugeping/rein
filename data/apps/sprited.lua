@@ -15,6 +15,7 @@ local COLORS = 16
 for c = 16, 32 do
   local r, g, b, a = gfx.pal(c)
   if r == 0 and g == 0 and b == 0 and a == 0 then
+    if c % 2 == 1 then COLORS = COLORS + 1 end
     break
   end
   COLORS = 16 + c - 16 + 1
