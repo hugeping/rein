@@ -63,9 +63,9 @@ jobs:
         run: |
           mkdir -p artifact/rein
           cp -r release/* artifact/rein
-          mkdir -p ./artifact/rein-em
-          cp rein.data rein.wasm rein.js ./artifact/rein-em
-          cp contrib/rein.html ./artifact/rein-em
+          mkdir -p ./artifact/rein/rein-em
+          cp rein.data rein.wasm rein.js ./artifact/rein/rein-em
+          cp contrib/rein.html ./artifact/rein/rein-em
 
       - name: Publish Artifact
         uses: actions/upload-artifact@v3
