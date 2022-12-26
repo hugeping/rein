@@ -326,7 +326,7 @@ function mixer.status(nr)
 end
 
 function mixer.init()
-  local t, r
+  local t, r, e
   if mixer.running then return end
   mixer.running = true
   if THREADED then
