@@ -12,6 +12,15 @@ local map_mode=false
 
 local SPRITE = ARGS[2] or 'sprite.spr'
 local COLORS = 16
+for c = 16, 32 do
+  local r, g, b, a = gfx.pal(c)
+  if r == 0 and g == 0 and b == 0 and a == 0 then
+    break
+  end
+  COLORS = 16 + c - 16 + 1
+end
+print("Detected "..COLORS.." color(s)")
+
 local HCOLORS = COLORS/2
 
 sys.title ("sprited: " .. SPRITE)
@@ -64,29 +73,25 @@ function pal:show()
     local fx, fy
     for y=0, 15 do
       screen:clear(x, y*h, w*2, h, {0, 0, 0, 255})
-      grid:drawspr((s.base + y)%256, x, y*h)
-      grid:drawspr((s.base + y + 16)%256, x+w, y*h)
+      grid:drawspr((s.base + y*2), x, y*h)
+      grid:drawspr((s.base + y*2 + 1), x+w, y*h)
     end
     if s.color >= s.base and s.color < s.base + 32 then
-      fx, fy = math.floor((s.color - s.base) / 16), (s.color - s.base) % 16
+      fx, fy = (s.color - s.base) % 2, math.floor((s.color - s.base) /2)
       screen:rect(x + fx*8, y + fy*8,
         x + fx*8 + w - 1, y + fy*8 + h - 1, 7)
     end
     py = 16
   else
     for y=0, HCOLORS-1 do
-      screen:clear(x, y*h, w, h, y)
-      screen:clear(x+w, y*h, w, h, y+HCOLORS)
+      screen:clear(x, y*h, w, h, y*2)
+      screen:clear(x+w, y*h, w, h, y*2+1)
     end
-    local n = s.color
-    local c = n + (HCOLORS-1)
+    local c = s.color + (HCOLORS-1)
     if c >= COLORS then c = c - COLORS end
-    if n >= HCOLORS then
-      x = x + w
-      n = n - HCOLORS
-    end
-    y = n
-    screen:rect(x, y*h, x+w-1, y*h +h -1, c)
+    y = s.y + math.floor(s.color/2)*h
+    x = s.x + (s.color % 2)*w
+    screen:rect(x, y, x+w-1, y+h-1, c)
   end
   if hand_mode then
     self:select(0, py, 7)
@@ -139,9 +144,9 @@ function pal:mousewheel(e, x, y)
   if not map_mode then
     return
   end
-  self.base = self.base - e
+  self.base = self.base - 2*e
   if self.base < 0 then self.base = 0 end
-  if (self.base+32) > 255 then self.base = 256-32 end
+--  if (self.base+32) > 255 then self.base = 256-32 end
   return true
 end
 
@@ -153,7 +158,8 @@ function pal:showcolor()
   if n >= self.base and n <= self.base + 31 then
     return
   end
-  self.base = math.floor(n / 32)*32
+  if n == -1 then n = 0 end
+  self.base = math.floor(n / 2)*2
   return
 end
 
@@ -166,9 +172,9 @@ function pal:click(x, y, mb, click)
   end
   if y < py then
     if map_mode then
-      c = self.base + x*16 + y
+      c = self.base + x + y*2
     else
-      c = x*HCOLORS + y
+      c = x + y*2
     end
     self.color = c
   elseif y == py and x == 0 and click then -- hand mode
@@ -248,7 +254,7 @@ function title:show()
     mx < pal.x + pal.w and my < pal.y + 16*8 then
     mx, my = pal:pos2col(mx, my)
     info = string.format("x%-3d spr:%-3d %s%s",
-    grid.grid, pal.base + my + mx*16, fname(SPRITE), dirty)
+    grid.grid, pal.base + my*2 + mx, fname(SPRITE), dirty)
   else
     info = string.format("x%-3d %3d:%-3d %s%s",
       grid.grid, x-1, y-1, fname(SPRITE), dirty)
