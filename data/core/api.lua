@@ -514,7 +514,8 @@ function env_ro.sys.exec(fn, ...)
   setmetatable(newenv, env)
   local r, e = core.go(fn, newenv)
   if not r then
-    r, e = sys.go(function() error(e) end)
+    local msg = e
+    r, e = env_ro.sys.go(function() error(msg) end)
   end
   if not r then return false, e end
   return true

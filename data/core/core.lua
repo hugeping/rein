@@ -59,7 +59,6 @@ function core.go(fn, env)
       f, e = loadfile(fn, "t", env)
     end
     if not f then
-      core.err(e)
       return f, e
     end
   else
@@ -147,7 +146,10 @@ function core.init()
     env.ARGS[1] = DATADIR..'/boot.lua'
   end
 
-  core.go(env.ARGS[1], env)
+  local r, e = core.go(env.ARGS[1], env)
+  if not r then
+    core.err(e)
+  end
   -- sys.window_mode 'fullscreen'
   -- sys.window_mode 'normal'
 end
