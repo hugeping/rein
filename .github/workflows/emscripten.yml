@@ -24,7 +24,7 @@ jobs:
       - name: Install Packages
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y git
+          sudo apt-get install -y git curl
 
       - if: ${{ steps.cache-emsdk.outputs.cache-hit != 'true' }}
         name: Prep
@@ -36,6 +36,10 @@ jobs:
 
       - name: Build
         run: |
+          curl -R -O http://www.lua.org/ftp/lua-5.4.4.tar.gz
+          tar zxf lua-5.4.4.tar.gz
+          mv -f lua-5.4.4/src src/lua
+          rm -f src/lua/luac.c src/lua/lua.c
           . ./emsdk/emsdk_env.sh
           ./contrib/make-emscripten.sh
 
