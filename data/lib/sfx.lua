@@ -92,6 +92,26 @@ function sfx.parse_cmd(cmd, mus)
       return false, e
     end
     ret.args = r
+  elseif cmd[1] == '@set' then
+    table.remove(cmd, 1) -- cmd
+    table.remove(cmd, 1) -- chan
+    local pos = tonumber(table.remove(cmd, 1)) -- pos
+    if not pos then
+      return false, "No stack position"
+    end
+    local box = table.remove(cmd, 1)
+    if not box then
+      return false, "No box name"
+    end
+    if #cmd == 0 then
+      return false, "No arguments"
+    end
+    local r, e = sfx.compile_par(box, table.concat(cmd, ' '))
+    if not r then
+      return false, e
+    end
+    ret.args = r
+    table.insert(r, 1, pos)
   elseif cmd[1] == '@pan' then
     local pan = tonumber(cmd[3]) or 0
     ret.args = { pan }
@@ -328,8 +348,11 @@ local function chan2track(chans, c)
 end
 
 function sfx.proc.voice(chans, mus, c, v, ...)
-  mus.voices[chan2track(chans, c)] = v
-  return sfx.apply(c, v, ...)
+  local r, vo = sfx.apply(c, v, ...)
+  if r then
+    mus.voices[chan2track(chans, c)] = vo
+  end
+  return r
 end
 
 function sfx.proc.synth(chans, mus, c, ...)
@@ -337,6 +360,17 @@ function sfx.proc.synth(chans, mus, c, ...)
     return true
   end
   synth.chan_change(c, ...)
+  return true
+end
+
+function sfx.proc.set(chans, mus, c, pos, ...)
+  local v = mus.voices[chan2track(chans, c)]
+  local len = #v
+  local rpos = pos < 0 and len + pos or pos
+  if not v or rpos >= len then
+    return false, "Wrong stack position"
+  end
+  synth.change(c, pos, ...)
   return true
 end
 
@@ -532,7 +566,7 @@ function sfx.box_info(nam)
       return v
     end
   end
-  error ("No sfx box:".. tostring(nam), 2)
+  return false, ("No sfx box:".. tostring(nam))
 end
 
 local function par_lookup(info, nam)
@@ -604,7 +638,8 @@ local function par_value(par, val)
 end
 
 function sfx.compile_par(nam, l)
-  local v = sfx.box_info(nam)
+  local v, e = sfx.box_info(nam)
+  if not v then return v, e end
   local a, p
   local cmd = {}
   a = l:split("#", 1)
@@ -723,11 +758,12 @@ function sfx.apply(chan, voice)
       synth.change(chan, -1, table.unpack(p))
     end
   end
-  return true
+  return true, vo
 end
 
 function sfx.box_defs(nam)
-  local v = sfx.box_info(nam)
+  local v, e = sfx.box_info(nam)
+  if not v then return v, e end
   local txt = string.format("# %s\n", nam)
   for _, p in ipairs(v) do
     if p.comment then txt = txt .. '# ' end
