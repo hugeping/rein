@@ -22,6 +22,10 @@ local NOTES = {
 
 local note2sym = { 'c-', 'c#', 'd-', 'd#', 'e-', 'f-', 'f#', 'g-', 'g#', 'a-', 'a#', 'b-' }
 
+function sfx.semi(x)
+  return 2 ^ (x/12) - 1
+end
+
 function sfx.midi_to_note(m)
     if m == -1 then return '===' end
     if not m then return '...' end
