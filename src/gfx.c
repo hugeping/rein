@@ -1097,34 +1097,6 @@ orient2d(int ax, int ay, int bx, int by, int cx, int cy)
 	return (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
 }
 
-static __inline int
-min3(int a, int b, int c)
-{
-	if (a < b) {
-		if (a < c)
-			return a;
-		return c;
-	} else {
-		if (b < c)
-			return b;
-		return c;
-	}
-}
-
-static __inline int
-max3(int a, int b, int c)
-{
-	if (a > b) {
-		if (a > c)
-			return a;
-		return c;
-	} else {
-		if (b > c)
-			return b;
-		return c;
-	}
-}
-
 static void
 triangle(img_t *src, int x0, int y0,
 	int x1, int y1, int x2, int y2,
@@ -1149,10 +1121,10 @@ triangle(img_t *src, int x0, int y0,
 	A12 = y1 - y2; B12 = x2 - x1;
 	A20 = y2 - y0; B20 = x0 - x2;
 
-	minx = min3(x0, x1, x2);
-	miny = min3(y0, y1, y2);
-	maxx = max3(x0, x1, x2);
-	maxy = max3(y0, y1, y2);
+	minx = MIN3(x0, x1, x2);
+	miny = MIN3(y0, y1, y2);
+	maxx = MAX3(x0, x1, x2);
+	maxy = MAX3(y0, y1, y2);
 
 	w = src->w;
 	yd = 4 * w;
