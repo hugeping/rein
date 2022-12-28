@@ -54,6 +54,13 @@ function string.startswith(s, pfx)
   return s:find(pfx, 1, true) == 1
 end
 
+function string.endswith(s, sfx)
+  local len = sfx:len()
+  if len > s:len() then return false end
+  local start = s:len() - len + 1
+  return s:find(sfx, start, true) == start
+end
+
 function string.lines(text)
   text = text:gsub("\r", "")
   local state = {text, 1, 1}
