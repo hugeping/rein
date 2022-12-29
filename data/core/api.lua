@@ -74,10 +74,44 @@ local env = {
   SCALE = SCALE,
   VERSION = VERSION,
   collectgarbage = collectgarbage,
+  screen = gfx.new(conf.w, conf.h),
+  utf = utf,
+  gfx = {
+    pal = gfx.pal,
+    icon = gfx.icon,
+  };
+  sys = {
+    running = sys.running,
+    time = sys.time,
+    title = sys.title,
+    log = sys.log,
+    readdir = sys.readdir,
+    chdir = sys.chdir,
+    mkdir = sys.mkdir,
+    hidemouse = sys.hidemouse,
+    clipboard = sys.clipboard,
+    newrand = sys.newrand,
+  },
+  thread = thread,
+  net = net,
+  mixer = mixer,
+  synth = synth,
+  input = {},
 }
 env._G = env
 
 env.__mods_loaded__ = {}
+
+--[[
+function env.__newindex(t, nam, val)
+  if rawget(env, nam) then
+    error("Can not change readonly value: "..nam, 2)
+  end
+  rawset(t, nam, val)
+end
+]]--
+
+env.__index = env
 
 local function make_dofile(n, env)
   if setfenv then
@@ -153,46 +187,10 @@ function thread.start(code)
   return r
 end
 
-local env_ro = {
-  screen = gfx.new(conf.w, conf.h),
-  utf = utf,
-  gfx = {
-    pal = gfx.pal,
-    icon = gfx.icon,
-  };
-  sys = {
-    running = sys.running,
-    time = sys.time,
-    title = sys.title,
-    log = sys.log,
-    readdir = sys.readdir,
-    chdir = sys.chdir,
-    mkdir = sys.mkdir,
-    hidemouse = sys.hidemouse,
-    clipboard = sys.clipboard,
-    newrand = sys.newrand,
-  },
-  thread = thread,
-  net = net,
-  mixer = mixer,
-  synth = synth,
-  input = {},
-}
-
-env_ro.__index = env_ro
-env_ro.__newindex = function(t, nam, val)
-  if rawget(env_ro, nam) then
-    error("Can not change readonly value: "..nam, 2)
-  end
-  rawset(t, nam, val)
-end
-
-setmetatable(env, env_ro)
-
-function env_ro.gfx.win(w, h, fnt) -- create new win or change
-  local oscr = env_ro.screen
+function env.gfx.win(w, h, fnt) -- create new win or change
+  local oscr = env.screen
   if type(w) == 'userdata' then -- new screen?
-    env_ro.screen = w
+    env.screen = w
     return oscr
   end
   local nscr
@@ -205,16 +203,16 @@ function env_ro.gfx.win(w, h, fnt) -- create new win or change
     end
     if not fnt then
       if w < 192 then
-        env_ro.font = font.new(DATADIR..'/fonts/'..conf.font_tiny)
+        env.font = font.new(DATADIR..'/fonts/'..conf.font_tiny)
       elseif h >= 380 then
-        env_ro.font = font.new(DATADIR..'/fonts/'..conf.font_large)
+        env.font = font.new(DATADIR..'/fonts/'..conf.font_large)
       else
-        env_ro.font = font.new(DATADIR..'/fonts/'..conf.font)
+        env.font = font.new(DATADIR..'/fonts/'..conf.font)
       end
     else
-      env_ro.font = fnt
+      env.font = fnt
     end
-    env_ro.screen = nscr
+    env.screen = nscr
     conf.w, conf.h = nscr:size()
     env.gfx.border()
     nscr:clear(conf.bg)
@@ -224,7 +222,7 @@ end
 
 local flipsx, flipsy, flipsxy = {}, {}
 
-function env_ro.gfx.spr(data, nr, x, y, w, h, flipx, flipy)
+function env.gfx.spr(data, nr, x, y, w, h, flipx, flipy)
   local flips
   local W, H = data:size()
   local nsp = math.floor(W/8)
@@ -264,7 +262,7 @@ function env_ro.gfx.spr(data, nr, x, y, w, h, flipx, flipy)
   return
 end
 
-function env_ro.gfx.loadmap(fname)
+function env.gfx.loadmap(fname)
   fname = fname:strip():gsub("\r", "")
   local f, e
   if fname:find("\n") then
@@ -286,7 +284,7 @@ function env_ro.gfx.loadmap(fname)
   return map
 end
 
-function env_ro.gfx.new(x, y)
+function env.gfx.new(x, y)
   if type(x) == 'number' and type(y) == 'number' then
     return gfx.new(x, y)
   end
@@ -301,22 +299,22 @@ function env_ro.gfx.new(x, y)
   return gfx.new(x, y)
 end
 
-function env_ro.gfx.printf(x, y, col, fmt, ...)
+function env.gfx.printf(x, y, col, fmt, ...)
   return env.gfx.print(string.format(fmt, ...), x, y, col)
 end
 
 local last_flip = 0
 local flips = {}
 
-function env_ro.gfx.fg(col)
+function env.gfx.fg(col)
   conf.fg = { gfx.pal(col or conf.fg) }
 end
 
-function env_ro.gfx.bg(col)
+function env.gfx.bg(col)
   conf.bg = { gfx.pal(col or conf.bg) }
 end
 
-function env_ro.gfx.border(col)
+function env.gfx.border(col)
   conf.brd = { gfx.pal(col or conf.brd) }
   if not gfx.expose then
     gfx.win():clear(conf.brd)
@@ -325,7 +323,7 @@ function env_ro.gfx.border(col)
   end
 end
 
-function env_ro.gfx.font(fname, ...)
+function env.gfx.font(fname, ...)
   if type(fname) == 'string' and fname:find("%.[fF][nN][tT]$") then
     return font.new(fname, ...)
   end
@@ -334,22 +332,22 @@ end
 
 local framedrop
 
-function env_ro.gfx.framedrop()
+function env.gfx.framedrop()
   return framedrop
 end
 
-function env_ro.gfx.render()
+function env.gfx.render()
   core.render(true)
 end
 
-function env_ro.gfx.flip(fps, interrupt)
+function env.gfx.flip(fps, interrupt)
   if not framedrop then -- drop every 2nd frame if needed
     core.render(true)
   end
   local cur_time = sys.time()
   local delta = (fps or conf.fps) - (cur_time - last_flip)
   framedrop = delta < 0 and not framedrop
-  env_ro.sys.sleep(delta, interrupt)
+  env.sys.sleep(delta, interrupt)
   last_flip = sys.time()
   table.insert(flips, last_flip)
   if #flips > 50 then
@@ -361,15 +359,15 @@ function env_ro.gfx.flip(fps, interrupt)
   return math.floor(#flips / math.abs(last_flip - flips[1]))
 end
 
-function env_ro.input.mouse()
+function env.input.mouse()
   return input.mouse.x or 0, input.mouse.y or 0, input.mouse.btn
 end
 
-function env_ro.sys.getopt(...)
+function env.sys.getopt(...)
   return core.getopt(...)
 end
 
-function env_ro.sys.input(reset)
+function env.sys.input(reset)
   if reset == false then
     return #input.fifo ~= 0
   end
@@ -383,11 +381,11 @@ function env_ro.sys.input(reset)
   return v.nam, table.unpack(v.args)
 end
 
-function env_ro.input.keydown(name)
+function env.input.keydown(name)
   return input.kbd[name]
 end
 
-function env_ro.input.keypress(name) -- single press
+function env.input.keypress(name) -- single press
   local r = input.kbd[name]
   if not r or r == 1 then
     return false
@@ -426,7 +424,7 @@ function env.sys.sleep(to, interrupt)
   until interrupt
 end
 
-function env_ro.error(text)
+function env.error(text)
   env.screen:noclip()
   env.screen:nooffset()
   env.screen:clear(conf.bg)
@@ -439,7 +437,7 @@ function env_ro.error(text)
   coroutine.yield()
 end
 
-function env_ro.gfx.print(text, x, y, col, scroll)
+function env.gfx.print(text, x, y, col, scroll)
   text = tostring(text)
   if not env.screen then
     sys.log(text)
@@ -490,41 +488,42 @@ function env_ro.gfx.print(text, x, y, col, scroll)
   end
 end
 
-function env_ro.sprite_data(fname)
+function env.sprite_data(fname)
   if fname:find("\n") then
     return spr.new({ lines = function() return fname:lines() end }, true)
   end
   return spr.new(fname)
 end
 
-function env_ro.sys.go(fn)
+function env.sys.go(fn)
   return core.go(fn, env)
 end
 
-function env_ro.sys.suspend(...)
+function env.sys.suspend(...)
   return coroutine.yield 'suspend'
 end
 
-function env_ro.sys.exec(fn, ...)
+
+function env.sys.exec(fn, ...)
   local newenv = {
     ARGS = { fn, ... },
     __mods_loaded__ = {},
   }
   newenv.dofile = function(f) return make_dofile(f, newenv) end
   newenv.require = function(f) return make_require(f, newenv) end
-  newenv.package = { path = REQUIRE },
-  rawset(env, '__index', env)
+  newenv.package = { path = REQUIRE }
   setmetatable(newenv, env)
+
   local r, e = core.go(fn, newenv)
   if not r then
     local msg = e
-    r, e = env_ro.sys.go(function() error(msg) end)
+    r, e = env.sys.go(function() error(msg) end)
   end
   if not r then return false, e end
   return true
 end
 
-function env_ro.sys.appdir(app)
+function env.sys.appdir(app)
   if type(app) ~= 'string' then
     return false, "Invalid argument"
   end
@@ -536,28 +535,28 @@ function env_ro.sys.appdir(app)
   core.err("Can not create savedir: "..path("/")..app)
 end
 
-function env_ro.sys.stop(fn)
+function env.sys.stop(fn)
   if not fn then
     return coroutine.yield 'stop'
   end
   return core.stop(fn)
 end
 
-function env_ro.sys.yield(...)
+function env.sys.yield(...)
   return coroutine.yield(...)
 end
 
 local api = { running = true }
 
-function env_ro.sys.running()
+function env.sys.running()
   return api.running
 end
 
 function api.init(core_mod)
   math.randomseed(os.time())
-  env_ro.font = font.new(DATADIR..'/fonts/'..conf.font)
+  env.font = font.new(DATADIR..'/fonts/'..conf.font)
   core = core_mod
-  if not env_ro.font then
+  if not env.font then
     return false, string.format("Can't load font %q", DATADIR..'/fonts/'..conf.font)
   end
   mixer.init(core_mod)
