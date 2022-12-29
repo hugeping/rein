@@ -50,7 +50,7 @@ local conf = {
 }
 
 local env = {
-  package = package,
+  package = { path = './?.lua;'..DATADIR..'/lib/?.lua'},
   debug = debug,
   loadfile = loadfile,
   type = type,
@@ -75,7 +75,6 @@ local env = {
   VERSION = VERSION,
   collectgarbage = collectgarbage,
 }
-
 env._G = env
 
 env.__mods_loaded__ = {}
@@ -101,13 +100,15 @@ local function make_require(n, env)
     if mods[n] then
       return mods[n]
     end
-    local name = DATADIR..'/lib/'..n..'.lua'
-    local f = io.open(name, "r")
-    if f then
-      f:close()
-      mods[n] = make_dofile(name, env)
-    else
-      mods[n] = make_dofile(n..'.lua', env)
+    local pathes = env.package.path:split(";")
+    for _, p in ipairs(pathes) do
+      local name = p:gsub("%?", n)
+      local f = io.open(name, "r")
+      if f then
+        f:close()
+        mods[n] = make_dofile(name, env)
+        break
+      end
     end
     return mods[n]
   end
