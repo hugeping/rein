@@ -6,7 +6,7 @@ local dump = require "dump"
 local utf = require "utf"
 local THREADED = not not thread
 local core
-
+local REQUIRE = './?.lua;'..DATADIR..'/lib/?.lua;'..DATADIR..'/core/?.lua'
 local input = {
   fifo = {};
   mouse = {
@@ -50,7 +50,7 @@ local conf = {
 }
 
 local env = {
-  package = { path = './?.lua;'..DATADIR..'/lib/?.lua'},
+  package = { path = REQUIRE },
   debug = debug,
   loadfile = loadfile,
   type = type,
@@ -512,6 +512,7 @@ function env_ro.sys.exec(fn, ...)
   }
   newenv.dofile = function(f) return make_dofile(f, newenv) end
   newenv.require = function(f) return make_require(f, newenv) end
+  newenv.package = { path = REQUIRE },
   rawset(env, '__index', env)
   setmetatable(newenv, env)
   local r, e = core.go(fn, newenv)
