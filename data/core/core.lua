@@ -193,6 +193,12 @@ function core.vpad(x, y, w, h)
   vpad.x = { x = xc, y = yc, r = r }
   win:circle(xc, yc, r, vpad_col)
   win:rect(xc - r/2, yc - r/2, xc + r/2, yc + r/2, vpad_col)
+  r = r / 2
+  xc = x + w - 1.5*r
+  yc = y + h - 1.5*r
+  vpad.escape = { x = xc, y = yc, r = r }
+  win:circle(xc, yc, r, vpad_col)
+  win:rect(xc - r/1.5, yc - r/4, xc + r/1.5, yc + r/4, vpad_col)
 end
 
 local function finger_process(old, new)
@@ -222,7 +228,7 @@ function core.touch_inp(e, tid, fid, x, y)
   local fng = vpad.fingers[fid] or {}
   local new = {}
   if e == 'fingerdown' or e == 'fingermotion' then
-    for _, b in ipairs { "z", "x" } do
+    for _, b in ipairs { "z", "x", "escape" } do
       if ((x - vpad[b].x)^2 + (y - vpad[b].y)^2)^0.5 <= vpad[b].r then
         new[b] = true
         vpad.fingers[fid] = new
