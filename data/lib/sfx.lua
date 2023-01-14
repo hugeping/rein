@@ -631,7 +631,12 @@ local function par_value(par, val)
     end
     return false
   end
-  val = tonumber(val)
+  if val:startswith'*' then
+    val = tonumber(val:sub(2))
+    val = val and sfx.semi(val)
+  else
+    val = tonumber(val)
+  end
   if not val then
     return false
   end
