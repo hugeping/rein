@@ -27,6 +27,8 @@ static SDL_Texture *texture = NULL;
 static SDL_Texture *expose_texture = NULL;
 static SDL_RendererInfo renderer_info;
 
+static float scalew, scaleh;
+
 void
 Log(const char *msg)
 {
@@ -488,7 +490,7 @@ WindowExpose(void *pixels, int w, int h, int dx, int dy, int dw, int dh)
 		rect.x = dx;
 		rect.y = dy;
 		if (dw <= 0 || dh <= 0)
-			SDL_GetWindowSize(window, &dw, &dh);
+			SDL_GetRendererOutputSize(renderer, &dw, &dh);
 		rect.w = dw;
 		rect.h = dh;
 		SDL_RenderCopy(renderer, expose_texture, NULL, &rect);
@@ -554,7 +556,10 @@ Icon(unsigned char *ptr, int w, int h)
 unsigned char *
 WindowPixels(int *w, int *h)
 {
-	SDL_GetWindowSize(window, w, h);
+	int ww, wh;
+	SDL_GetWindowSize(window, &ww, &wh);
+	SDL_GetRendererOutputSize(renderer, w, h);
+	scalew = (float)*w/ww, scaleh = (float)*h/wh;
 	if (winbuff && (winbuff->w != *w || winbuff->h != *h)) {
 		SDL_FreeSurface(winbuff);
 		winbuff = NULL;
@@ -672,16 +677,16 @@ top:
 		if (e.button.button == 1) { SDL_CaptureMouse(1); }
 		lua_pushstring(L, "mousedown");
 		lua_pushstring(L, button_name(e.button.button));
-		lua_pushinteger(L, e.button.x);
-		lua_pushinteger(L, e.button.y);
+		lua_pushinteger(L, scalew*e.button.x);
+		lua_pushinteger(L, scaleh*e.button.y);
 		lua_pushinteger(L, e.button.clicks);
 		return 5;
 	case SDL_MOUSEBUTTONUP:
 		if (e.button.button == 1) { SDL_CaptureMouse(0); }
 		lua_pushstring(L, "mouseup");
 		lua_pushstring(L, button_name(e.button.button));
-		lua_pushinteger(L, e.button.x);
-		lua_pushinteger(L, e.button.y);
+		lua_pushinteger(L, scalew*e.button.x);
+		lua_pushinteger(L, scaleh*e.button.y);
 		return 4;
 	case SDL_MOUSEMOTION:
 		lua_pushstring(L, "mousemotion");
@@ -695,10 +700,10 @@ top:
 			xrel += e.motion.xrel;
 			yrel += e.motion.yrel;
 		}
-		lua_pushinteger(L, x);
-		lua_pushinteger(L, y);
-		lua_pushinteger(L, xrel);
-		lua_pushinteger(L, yrel);
+		lua_pushinteger(L, scalew*x);
+		lua_pushinteger(L, scaleh*y);
+		lua_pushinteger(L, scalew*xrel);
+		lua_pushinteger(L, scaleh*yrel);
 		return 5;
 	case SDL_MOUSEWHEEL:
 		lua_pushstring(L, "mousewheel");
