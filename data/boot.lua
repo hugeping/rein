@@ -39,7 +39,7 @@ logo:blend(screen, 4, 6)
 local frames = 0
 
 gfx.printf(40, 4, 0, [[REIN Version:%s
-(c)2022 Peter Kosyh
+(c)2023 Peter Kosyh
 https://hugeping.ru
 
 Peter Sovietov

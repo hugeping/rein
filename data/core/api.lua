@@ -187,7 +187,7 @@ function thread.start(code)
   return r
 end
 
-function env.gfx.win(w, h, fnt) -- create new win or change
+function env.gfx.win(w, h, fnt, sz) -- create new win or change
   local oscr = env.screen
   if type(w) == 'userdata' then -- new screen?
     env.screen = w
@@ -199,7 +199,7 @@ function env.gfx.win(w, h, fnt) -- create new win or change
   end
   if nscr then
     if fnt then
-      fnt = font.new(fnt)
+      fnt = env.gfx.font(fnt, sz)
     end
     if not fnt then
       if w < 192 then
