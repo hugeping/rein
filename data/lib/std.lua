@@ -7,21 +7,78 @@ if not table.unpack then
   table.unpack = unpack
 end
 
+function table.clone(src)
+  local dst = {}
+  if type(src) ~= 'table' then return src end
+  for k, _ in pairs(src) do
+    dst[table.clone(k)] = table.clone(src[k])
+  end
+  return dst
+end
+
+function table.append(dst, ...)
+  for _, t in ipairs({...}) do
+    table.insert(dst, t)
+  end
+  return dst
+end
+
+function table.push(t, v)
+  table.insert(t, v)
+  return v
+end
+
+function table.pop(t)
+  if table.empty(t) then return end
+  return table.remove(t, #t)
+end
+
+function table.find(t, a)
+  for i = 1, #t do
+    if t[i] == a then return i end
+  end
+  return false
+end
+
+function table.del(t, a)
+  local i = table.find(t, a)
+  if i then return table.remove(t, i) end
+end
+
+function table.strict(g)
+  setmetatable(g, {
+    __index = function(_, n)
+      local f = debug.getinfo(2, "S").source
+      std.err("Uninitialized global variable: %s in %s", n, f)
+      std.err(debug.traceback())
+    end;
+    __newindex = function(t, k, v)
+      if type(v) ~= 'function' then
+        local f = debug.getinfo(2, "S").source
+        if f ~= '=[C]' then
+          std.err ("Set uninitialized variable: %s in %s", k, f)
+          std.err(debug.traceback())
+        end
+      end
+      rawset(t, k, v)
+   end})
+end
+
 function string.empty(str)
   local r = str:find("^[ \t]*$")
   return not not r
 end
 
-function string.strip(str)
+function string.strip(str, pat)
   if not str then return str end
-  str = str:gsub("^[ \t\n\r]+",""):gsub("[ \t\n\r]+$","")
+  pat = pat or " \t\n\r"
+  str = str:gsub("^["..pat.."]+",""):gsub("["..pat .. "]+$","")
   return str
 end
 
 function string.stripnl(str)
   if not str then return str end
-  str = str:gsub("^[\n\r]+",""):gsub("[\r\n]+$","")
-  return str
+  return string.strip(str, "\n\r")
 end
 
 function string.split(self, n, sep, rexp)

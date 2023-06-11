@@ -367,6 +367,7 @@ function env.sys.getopt(...)
   return core.getopt(...)
 end
 
+
 function env.sys.input(reset)
   if reset == false then
     return #input.fifo ~= 0
@@ -578,6 +579,14 @@ local event_filter = {
   mousewheel = true,
   mousemotion = true,
 }
+
+function env.sys.event_filter(t)
+  local r = event_filter
+  if type(t) == 'table' then
+    event_filter = table.clone(t)
+  end
+  return r
+end
 
 function api.event(e, v, a, b, c)
   if not api.running then
