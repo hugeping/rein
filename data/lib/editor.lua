@@ -404,6 +404,7 @@ end
 function editor:cutline()
   self:history('cut', 1, self.cur.y, #self.lines[self.cur.y] + 1, self.cur.y)
   table.remove(self.lines, self.cur.y)
+  self:move()
 end
 
 function editor:search(t)
