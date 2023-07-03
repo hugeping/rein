@@ -272,7 +272,9 @@ function core.render(force)
   if not force and start - last_render < fps then
     return
   end
-  local ww, hh = gfx.win():size()
+  local win = gfx.win()
+  if not win then return end -- minimized?
+  local ww, hh = win:size()
   local w, h = env.screen:size()
   local xs, ys = ww/w, hh/h
   local scale = (xs <= ys) and xs or ys
