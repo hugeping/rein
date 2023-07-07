@@ -35,6 +35,7 @@ reopen_stderr(const char *fname)
 		fprintf(stderr, "Error opening '%s': %s\n", fname, strerror(errno));
 		exit(1);
 	}
+	setvbuf(stderr, NULL, _IONBF, 0);
 }
 static void
 reopen_stdout(const char *fname)
@@ -43,6 +44,7 @@ reopen_stdout(const char *fname)
 		fprintf(stderr, "Error opening '%s': %s\n", fname, strerror(errno));
 		exit(1);
 	}
+	setvbuf(stdout, NULL, _IONBF, 0);
 }
 static void
 base_path(char *base, size_t size, const char *exepath, const char *file)
