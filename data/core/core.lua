@@ -113,6 +113,8 @@ function core.err(fmt, ...)
 end
 
 function core.init()
+  io.stdout:setvbuf "no"
+  io.stderr:setvbuf "no"
   gfx.icon(gfx.new(DATADIR..'/icon.png'))
   local err
   env, err = api.init(core)
