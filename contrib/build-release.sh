@@ -77,5 +77,5 @@ rm -rf release
 mkdir release
 
 cp rein release/rein.x86-64.linux
-cp -r rein.exe demo/ data/ COPYING ChangeLog external/windows/bin/*.dll release/
+cp -r rein.exe demo/ data/ doc/ COPYING ChangeLog external/windows/bin/*.dll release/
 i686-w64-mingw32-strip release/SDL2.dll
