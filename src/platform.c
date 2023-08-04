@@ -391,6 +391,19 @@ GetPlatform(void)
 	return SDL_GetPlatform();
 }
 
+const char *
+GetLanguage(void)
+{
+	static char b[16] = {0};
+#if SDL_VERSION_ATLEAST(2,0,14)
+	SDL_Locale *l = SDL_GetPreferredLocales();
+	snprintf(b, 16, "%s", l && l->language ? l->language : "");
+	SDL_free(l);
+#endif
+	return b;
+}
+
+
 int
 WindowCreate(void)
 {

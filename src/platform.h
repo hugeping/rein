@@ -21,6 +21,7 @@ extern double Time(void);
 extern float GetScale(void);
 
 extern const char *GetPlatform(void);
+extern const char *GetLanguage(void);
 extern const char *GetExePath(const char *progname);
 
 extern void Icon(unsigned char *ptr, int w, int h);
