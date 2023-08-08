@@ -18,7 +18,7 @@ if [ ! -f external/.stamp_SDL2 ]; then
 
 	tar xf SDL2-${sdl_ver}.tar.gz
 	cd SDL2-${sdl_ver}
-	./configure --prefix=`pwd`/../external/windows/ --host=i686-w64-mingw32 --enable-shared --enable-static --enable-joystick --disable-sensor --disable-power --disable-haptic --disable-filesystem --disable-file --disable-video-vulkan --enable-video-opengl --disable-video-opengles2 --disable-video-vivante --disable-video-cocoa --disable-video-metal --disable-render-metal --disable-video-kmsdrm --disable-video-opengles --disable-video-opengles1 --disable-video-opengles2 --disable-video-vulkan --disable-render-d3d
+	./configure CFLAGS="-funwind-tables" --prefix=`pwd`/../external/windows/ --host=i686-w64-mingw32 --enable-shared --enable-static --enable-joystick --disable-sensor --disable-power --disable-haptic --disable-filesystem --disable-file --disable-video-vulkan --enable-video-opengl --disable-video-opengles2 --disable-video-vivante --disable-video-cocoa --disable-video-metal --disable-render-metal --disable-video-kmsdrm --disable-video-opengles --disable-video-opengles1 --disable-video-opengles2 --disable-video-vulkan --disable-render-d3d
 	make && make install
 	cd ..
 	touch external/.stamp_SDL2
