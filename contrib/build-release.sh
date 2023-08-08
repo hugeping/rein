@@ -36,7 +36,7 @@ if [ ! -f external/.stamp_luajit ]; then
 		cp src/$f ../external/include/
 	done
 	make clean
-	make CROSS=i686-w64-mingw32- HOST_CC="gcc -m32" TARGET_SYS=Windows BUILDMODE=static
+	make CROSS=i686-w64-mingw32- TARGET_CFLAGS=-funwind-tables HOST_CC="gcc -m32" TARGET_SYS=Windows BUILDMODE=static
 	for f in lua.h luaconf.h lualib.h lauxlib.h; do
 		cp src/$f ../external/windows/include/
 	done
@@ -67,7 +67,7 @@ LDFLAGS="-Lexternal/windows/lib -lSDL2.dll -lSDL2main -lm -lluajit -lws2_32 -lws
 
 i686-w64-mingw32-windres -i contrib/resources.rc -o resources.o || exit 1
 
-i686-w64-mingw32-gcc -DVERSION=\"`date +%y%m%d`\" -Wall -static -O3 $CFLAGS src/*.c resources.o $LDFLAGS -mwindows -o rein.exe || exit 1
+i686-w64-mingw32-gcc -funwind-tables -DVERSION=\"`date +%y%m%d`\" -Wall -static -O3 $CFLAGS src/*.c resources.o $LDFLAGS -mwindows -o rein.exe || exit 1
 i686-w64-mingw32-strip rein.exe
 rm -f *.o
 

@@ -1,4 +1,39 @@
 local W, H = screen:size()
+local FW, FH = font:size(" ")
+
+local function scan_dir(apps)
+  local ret = {}
+  local dir = DATADIR..'/'..apps
+  for _, n in ipairs(sys.readdir(dir)) do
+    if n:find("%.[lL][uU][aA]$") then
+      local name = n:gsub("%.[lL][uU][aA]$", "")
+      table.insert(ret, { dir .. '/'.. n, name })
+    end
+  end
+  table.sort(ret, function(a, b) return a[1] < b[1] end)
+  return ret
+end
+
+local apps = scan_dir 'apps'
+
+table.append(apps, table.unpack(scan_dir '../demo')) -- demos
+
+local start = 1
+local select = 1
+local D = FH + 2
+local NR = math.floor((H - 70)/ D) - 4
+
+local function resume()
+  gfx.border{ 0xde, 0xde, 0xde }
+  mixer.done()
+  mixer.init()
+  sys.hidemouse(false)
+  screen:nooffset()
+  screen:noclip()
+  sys.input(true) -- clear input
+  gfx.win(W, H) -- resume screen
+end
+
 local logo = gfx.new
 [[0----56---------
 --------------------------------
@@ -34,18 +69,18 @@ local logo = gfx.new
 --------------------------------
 --------------------------------]]
 
-logo:blend(screen, 4, 6)
-
-local frames = 0
-
-gfx.printf(40, 4, 0, [[REIN Version:%s
+local function header()
+  logo:blend(screen, 4, 6)
+  gfx.printf(40, 4, 0, [[REIN Version:%s
 (c)2023 Peter Kosyh
 https://hugeping.ru
 
 Peter Sovietov
 (Sound system)]], VERSION)
+end
 
-gfx.printf(4, 64, 0,
+local function help()
+  gfx.printf(4, 64, 0,
 [[Usage:
   rein edit [file] - edit file
   rein sprited     - gfx editor
@@ -69,13 +104,67 @@ Chat with community:
   rein irc
 
         Happy hacking!]])
+end
 
-
-gfx.border(7)
-
-while true do
-  frames = frames + 1
-  local fl = math.floor(frames / 25)%2
+local function border()
+  local fl = math.floor(sys.time())%2
   gfx.border(fl == 1 and 7 or 12)
-  gfx.flip(1/30)
+end
+
+local help_mode
+
+while sys.running() do
+  while help_mode do
+    screen:clear(16)
+    header()
+    help()
+    border()
+    if sys.input() == 'keydown' then
+      help_mode = false
+      break
+    end
+    coroutine.yield()
+  end
+  screen:clear(16)
+  header()
+
+  gfx.printf(4, H - 2*FH, 0, [[F1-help Up,Down,z-select and run
+shift+esc-return to this launcher]])
+
+  local xoff, yoff = 26, 72
+  for i = start, #apps do
+    local nr = i - start + 1
+    local name = apps[i][2]
+    if i == select then
+      gfx.print("=>", xoff, yoff + nr*D, 1)
+    end
+    gfx.print(apps[i][2], xoff + 2*FW, yoff + nr*D, 1)
+    if nr >= NR then
+      break
+    end
+  end
+  gfx.flip(1/20, true)
+  local e, v, a, b = sys.input()
+  if e == 'keydown' then
+    if v == 'up' then
+      select = select - 1
+    elseif v == 'down' then
+      select = select + 1
+    elseif v == 'f1' then
+      help_mode = true
+    elseif v == 'z' or v == 'return' or v == 'space' then
+      sys.exec(apps[select][1])
+      sys.suspend()
+      -- resumed
+      resume()
+    end
+    select = math.min(select, #apps)
+    select = math.max(1, select)
+    if select < start then
+      start = select
+    elseif select - start >= NR then
+      start = start + 1
+    end
+  end
+  border()
 end
