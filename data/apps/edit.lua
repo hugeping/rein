@@ -484,6 +484,11 @@ function buff:keydown(k)
     s.edit:backspace()
   elseif k == 'tab' then
     s.edit:input("  ")
+  elseif k== 'f2' and input.keydown'shift' then
+    inp_mode = not inp_mode
+    if inp_mode then
+      inp_mode = 'write'
+    end
   elseif k == 'f2' or (k == 's' and input.keydown'ctrl') then
     s:write()
   elseif k == 'f8' then
@@ -614,6 +619,12 @@ function inp.edit:newline()
       FILE = t
       b = buff.new(FILE)
     end
+  elseif inp_mode == 'write' then
+    if not t:empty() then
+      b.fname = t
+      FILE = t
+      b:write()
+    end
   end
   inp:history(t)
   s:set ''
@@ -629,6 +640,7 @@ mixer.done()
 
 local HELP = [[Keys:
 F2,ctrl-s    - save
+shift-f2     - save as
 ctrl-l       - jump to line
 home,ctrl-a  - line begin
 end,ctrl-e   - line end
