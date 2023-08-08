@@ -128,7 +128,7 @@ while sys.running() do
   screen:clear(16)
   header()
 
-  gfx.printf(4, H - 2*FH, 0, [[F1-help Up,Down,z-select and run
+  gfx.printf(4, H - 2*FH, 0, [[F1-help Up,Down,z-run,x-edit
 shift+esc-return to this launcher]])
 
   local xoff, yoff = 26, 72
@@ -154,6 +154,12 @@ shift+esc-return to this launcher]])
       help_mode = true
     elseif v == 'z' or v == 'return' or v == 'space' then
       sys.exec(apps[select][1])
+      sys.suspend()
+      -- resumed
+      resume()
+    elseif v == 'x' then
+      sys.input(true) -- clear input
+      sys.exec("edit", apps[select][1])
       sys.suspend()
       -- resumed
       resume()
