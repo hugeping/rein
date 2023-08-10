@@ -99,7 +99,7 @@ function sfx.parse_cmd(cmd, mus)
   elseif cmd[1] == '@set' then
     table.remove(cmd, 1) -- cmd
     table.remove(cmd, 1) -- chan
-    local pos = tonumber(table.remove(cmd, 1)) -- pos
+    local pos = tonumber(table.remove(cmd, 1) or false) -- pos
     if not pos then
       return false, "No stack position"
     end
