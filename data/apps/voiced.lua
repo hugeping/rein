@@ -190,7 +190,9 @@ function editarea:event(r, v, ...)
     elseif v == 'c' and input.keydown 'ctrl' then
       self.edit:cut(true)
     elseif v == 'v' and input.keydown 'ctrl' then
+      self.edit:insmode(self.edit:selmode())
       self.edit:paste()
+      self.edit:insmode(false)
 --    elseif v == 'd' and input.keydown 'ctrl' then
 --      if not w_conf.hidden then
 --        w_conf.edit:set(sfx.box_defs(w_conf.nam))
@@ -203,6 +205,9 @@ function editarea:event(r, v, ...)
       self.edit:undo()
     elseif v:find 'shift' then
        self.edit:select(true)
+    end
+    if self.edit:selstarted() then
+      self.edit:selmode(input.keydown 'alt')
     end
     self.edit:move()
     self.edit:select()
@@ -689,7 +694,8 @@ function w_prev:onclick(s)
 end
 
 function w_next:event(r, v, ...)
-  if r == 'keydown' and v == 'right' and input.keydown'alt' and not tune then
+  if r == 'keydown' and v == 'right' and input.keydown'alt'
+    and not input.keydown 'shift' and not tune then
     self:onclick()
     return true
   end
@@ -697,7 +703,8 @@ function w_next:event(r, v, ...)
 end
 
 function w_prev:event(r, v, ...)
-  if r == 'keydown' and v == 'left' and input.keydown'alt' and not tune then
+  if r == 'keydown' and v == 'left' and input.keydown'alt'
+    and not input.keydown 'shift' and not tune then
     self:onclick()
     return true
   end
@@ -1280,9 +1287,10 @@ function w_del:onclick()
   local cx, cy = w_edit.edit:cursor()
   local pos = math.floor(cx / CELLW)*CELLW + 1
   w_edit.edit:history 'start'
+  w_edit.edit:selmode(false)
   for idx, l in ipairs(w_edit.edit.lines) do
     local s = line(l):strip()
-    if not s:startswith("@") and not s:startswith("#") then
+    if not s:startswith("@") and not s:startswith("#") and not s:empty() then
       w_edit.edit:select(pos, idx, pos + CELLW, idx)
       w_edit.edit:cut(false, false)
     end
@@ -1383,6 +1391,10 @@ zsxdcvgbhnjm  Input note
 ,l.;/q2w3er5  (cursor must be inside
 t6y7ui9o0p[=] track)
 =             Note off
+shift+cursor  Select (+alt vertical)
+ctrl-x        Cut
+ctrl-c        Copy
+ctrl-v        Paste
 ctrl-z        Undo
 ctrl-y        Delete line
 Ins           Direct input mode (notes)
