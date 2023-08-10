@@ -1398,7 +1398,7 @@ Commands (chan can be set as *):
 @vol <chan> <volume>   Set chan volume
 @pan <chan> <pan>      Set chan pan
 @push [nr]/@pop        Begin/end of loop
-@synth par val         Change synth parameter
+@synth <chan> par val  Change synth parameter
 ]]
 
 while sys.running() do
