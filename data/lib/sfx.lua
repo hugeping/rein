@@ -158,6 +158,8 @@ function sfx.parse_row(text, mus)
     end
     ret.cmd = r
     return ret
+  elseif text:startswith("#") then -- comment
+    return ret
   elseif text:startswith("|") then
     text = text:sub(2)
   end
@@ -271,7 +273,7 @@ function sfx.parse_songs(text)
       end
       song = cmd[2] or tostring(#res + 1)
       txt = ''
-    elseif not l:startswith('#') and not l:empty() then
+    else -- if not l:startswith('#') and not l:empty() then
       if not song then
         close()
         return false, "No song defined", line
