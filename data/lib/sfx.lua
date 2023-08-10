@@ -336,8 +336,12 @@ function sfx.proc.pop(chans, mus)
 end
 
 function sfx.proc.play(chans, mus, song)
-  if not sfx.sfx_bank[song] then
+  local sng = sfx.sfx_bank[song]
+  if not sng then
     return false, "No sfx:"..tostring(song)
+  end
+  if sng.playing then
+    return false, "Recursion detected:"..tostring(song)
   end
   return sfx.play_song(chans, sfx.sfx_bank[song], mus.tempo)
 end
@@ -410,11 +414,13 @@ function sfx.play_song_once(chans, tracks)
   local row, r, e
   tracks.row = 1
   tracks.voices = {}
+  tracks.playing = true
   while tracks.row <= #tracks do
     row = tracks[tracks.row]
     r, e = sfx.proc_cmd(chans, tracks, row.cmd)
     if not r then
       print(e)
+      tracks.playing = false
       return r, e
     end
     row = tracks[tracks.row]
@@ -438,6 +444,7 @@ function sfx.play_song_once(chans, tracks)
     end
     tracks.row = tracks.row + 1
   end
+  tracks.playing = false
   return true
 end
 
