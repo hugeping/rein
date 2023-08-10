@@ -184,11 +184,24 @@ function buff:cursor()
   end
 end
 
+local function trimr(s, len)
+  if utf.len(s) <= len then return s end
+  local t = utf.chars(s)
+  local r = '...'
+  for i=#t-len+4, #t do
+    r = r .. t[i]
+  end
+  return r
+end
+
 function buff:status()
   local s = self
   local cx, cy = self.edit:cursor()
-  local info = string.format("%s%s %2d:%-2d",
-    s.edit.dirty and '*' or '', s.fname, cx, cy)
+  local fn = trimr(s.fname, 40)
+  local info = string.format("%s%s %2d:%-2d %s%s",
+    s.edit.dirty and '*' or '', fn, cx, cy,
+    s.edit:insmode() and '+i' or ' ',
+    s.edit:selmode() and '+v' or ' ')
   screen:fill_rect(0, H - s.sph, W, H, conf.status)
   sfont:text(info, conf.fg):blend(screen, 0, H - s.sph)
 end
@@ -433,6 +446,9 @@ function buff:mouse(r, v)
     s.edit:move(cx + s.edit.col,
       cy + s.edit.line)
   end
+  if s.edit:selstarted() then
+    s.edit:selmode(input.keydown 'alt')
+  end
   if r == 'mousedown' then
     s.edit:select(true)
   elseif r == 'mouseup' then
@@ -448,6 +464,9 @@ end
 function buff:keydown(k)
   local s = self
   local cx, cy = s.edit:cursor()
+  if s.edit:selstarted() then
+    s.edit:selmode(input.keydown 'alt')
+  end
   if k:find 'shift' then
     s.edit:select(true)
   elseif k == 'up' then
@@ -519,6 +538,8 @@ function buff:keydown(k)
     s:exec(FILE)
   elseif k == 'escape' and inp_mode then
     inp_mode = false
+  elseif k == 'insert' or k == 'keypad 0' then
+    s.edit:insmode(not s.edit:insmode())
   elseif k == 'f1' then
     help_mode = not help_mode
   elseif (k == 'u' or k == 'z') and input.keydown 'ctrl' then
@@ -648,13 +669,14 @@ pageup       - scroll up
 pagedown     - scroll down
 F7,ctrl-f    - search
 cursor keys  - move
-shift+cursor - select
+shift+cursor - select (+alt vertical block)
 ctrl-x       - cut&copy selection
 ctrl-c       - copy selection
 ctrl-v       - paste selection
 ctrl-y       - remove line
 ctrl-z       - undo
 ctrl-w       - wrap text
+ins          - insert mode
 F4           - open another file (no save!)
 F5           - run!
 F8           - run sprite editor
