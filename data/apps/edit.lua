@@ -6,6 +6,7 @@ local inp_mode
 local help_mode
 local sfont = font
 local W, H = screen:size()
+local b, inp
 local conf = {
   fg = 0,
   bg = 16,
@@ -144,7 +145,8 @@ function buff:write()
     return
   end
   local f = io.open(s.fname, "wb")
-  if not f then
+  if not f then -- can open
+    s.edit.dirty = true
     return
   end
   local eof = #s.edit.lines
@@ -164,6 +166,7 @@ function buff:write()
   f:close()
   s.edit.dirty = false
   print(string.format("%s written", s.fname))
+  return true
 end
 
 function buff:cursor()
@@ -506,7 +509,9 @@ function buff:keydown(k)
   elseif k== 'f2' and input.keydown'shift' then
     inp_mode = not inp_mode
     if inp_mode then
+      s.edit:select(false)
       inp_mode = 'write'
+      inp.edit:set(FILE)
     end
   elseif k == 'f2' or (k == 's' and input.keydown'ctrl') then
     s:write()
@@ -588,8 +593,8 @@ function buff:search(t)
   end
 end
 
-local b = buff.new(FILE)
-local inp = buff.new(false, 0, H - b.sph, W, b.sph)
+b = buff.new(FILE)
+inp = buff.new(false, 0, H - b.sph, W, b.sph)
 inp.status = false
 inp.lines = 1
 inp.edit:size(W, b.sph)
