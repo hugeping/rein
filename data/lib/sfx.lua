@@ -99,7 +99,7 @@ function sfx.parse_cmd(cmd, mus)
   elseif cmd[1] == '@set' then
     table.remove(cmd, 1) -- cmd
     table.remove(cmd, 1) -- chan
-    local pos = tonumber(table.remove(cmd, 1)) -- pos
+    local pos = tonumber(table.remove(cmd, 1) or false) -- pos
     if not pos then
       return false, "No stack position"
     end
@@ -157,6 +157,8 @@ function sfx.parse_row(text, mus)
       return r, e
     end
     ret.cmd = r
+    return ret
+  elseif text:startswith("#") then -- comment
     return ret
   elseif text:startswith("|") then
     text = text:sub(2)
@@ -271,7 +273,7 @@ function sfx.parse_songs(text)
       end
       song = cmd[2] or tostring(#res + 1)
       txt = ''
-    elseif not l:startswith('#') and not l:empty() then
+    else -- if not l:startswith('#') and not l:empty() then
       if not song then
         close()
         return false, "No song defined", line
@@ -336,8 +338,12 @@ function sfx.proc.pop(chans, mus)
 end
 
 function sfx.proc.play(chans, mus, song)
-  if not sfx.sfx_bank[song] then
+  local sng = sfx.sfx_bank[song]
+  if not sng then
     return false, "No sfx:"..tostring(song)
+  end
+  if sng.playing then
+    return false, "Recursion detected:"..tostring(song)
   end
   return sfx.play_song(chans, sfx.sfx_bank[song], mus.tempo)
 end
@@ -410,11 +416,13 @@ function sfx.play_song_once(chans, tracks)
   local row, r, e
   tracks.row = 1
   tracks.voices = {}
+  tracks.playing = true
   while tracks.row <= #tracks do
     row = tracks[tracks.row]
     r, e = sfx.proc_cmd(chans, tracks, row.cmd)
     if not r then
       print(e)
+      tracks.playing = false
       return r, e
     end
     row = tracks[tracks.row]
@@ -438,12 +446,14 @@ function sfx.play_song_once(chans, tracks)
     end
     tracks.row = tracks.row + 1
   end
+  tracks.playing = false
   return true
 end
 
 function sfx.play_song(chans, tracks, nr)
   local r, e
   nr = nr or 1
+  tracks = table.clone(tracks)
   while nr == -1 or nr > 0 do
     if nr ~= -1 then nr = nr - 1 end
     r, e = sfx.play_song_once(chans, tracks)
@@ -631,7 +641,7 @@ local function par_value(par, val)
     end
     return false
   end
-  if val:startswith'*' then
+  if val and val:startswith'*' then
     val = tonumber(val:sub(2))
     val = val and sfx.semi(val)
   else

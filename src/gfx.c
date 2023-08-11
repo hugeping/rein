@@ -834,7 +834,7 @@ line0(img_t *hdr, int x1, int y1, int dx, int dy, int xd, unsigned char *col, im
 	int ly = hdr->w * 4;
 	int lx = xd * 4;
 
-	while ((x1 < hdr->clip_x1 || y1 < hdr->clip_y1 || x1 >= hdr->clip_x2) && dx --) {
+	while ((x1 < hdr->clip_x1 || y1 < hdr->clip_y1 || x1 >= hdr->clip_x2 || y1 >= hdr->clip_y2) && dx --) {
 		if (err >= 0) {
 			y1 ++;
 			err += dyx2;
@@ -848,7 +848,7 @@ line0(img_t *hdr, int x1, int y1, int dx, int dy, int xd, unsigned char *col, im
 	ptr = hdr->ptr;
 	ptr += (y1 * hdr->w + x1) * 4;
 
-	pixel(col, ptr);
+	pat?pixel_textured(pat, ptr, x1, y1):pixel(col, ptr);
 	while (dx --) {
 		if (err >= 0) {
 			y1 ++;
@@ -878,9 +878,9 @@ line1(img_t *hdr, int x1, int y1, int dx, int dy, int xd, unsigned char *col, im
 	int ly = hdr->w * 4;
 	int lx = xd * 4;
 
-	while ((x1 < hdr->clip_x1 || y1 < hdr->clip_y1 || x1 >= hdr->clip_x2) && dy --) {
+	while ((x1 < hdr->clip_x1 || y1 < hdr->clip_y1 || x1 >= hdr->clip_x2 || y1 >= hdr->clip_y2) && dy --) {
 		if (err >= 0) {
-		        x1 += xd;
+			x1 += xd;
 			err += dxy2;
 		} else {
 			err += dx2;
@@ -893,7 +893,7 @@ line1(img_t *hdr, int x1, int y1, int dx, int dy, int xd, unsigned char *col, im
 	ptr = hdr->ptr;
 	ptr += (y1 * hdr->w + x1) * 4;
 
-	pixel(col, ptr);
+	pat?pixel_textured(pat, ptr, x1, y1):pixel(col, ptr);
 
 	while (dy --) {
 		if (err >= 0) {
