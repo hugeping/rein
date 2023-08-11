@@ -6,6 +6,7 @@ local inp_mode
 local help_mode
 local sfont = font
 local W, H = screen:size()
+local b, inp
 local conf = {
   fg = 0,
   bg = 16,
@@ -144,7 +145,8 @@ function buff:write()
     return
   end
   local f = io.open(s.fname, "wb")
-  if not f then
+  if not f then -- can open
+    s.edit.dirty = true
     return
   end
   local eof = #s.edit.lines
@@ -164,6 +166,7 @@ function buff:write()
   f:close()
   s.edit.dirty = false
   print(string.format("%s written", s.fname))
+  return true
 end
 
 function buff:cursor()
@@ -184,11 +187,24 @@ function buff:cursor()
   end
 end
 
+local function trimr(s, len)
+  if utf.len(s) <= len then return s end
+  local t = utf.chars(s)
+  local r = '...'
+  for i=#t-len+4, #t do
+    r = r .. t[i]
+  end
+  return r
+end
+
 function buff:status()
   local s = self
   local cx, cy = self.edit:cursor()
-  local info = string.format("%s%s %2d:%-2d",
-    s.edit.dirty and '*' or '', s.fname, cx, cy)
+  local fn = trimr(s.fname, 40)
+  local info = string.format("%s%s %2d:%-2d %s%s",
+    s.edit.dirty and '*' or '', fn, cx, cy,
+    s.edit:insmode() and '+i' or ' ',
+    s.edit:selmode() and '+v' or ' ')
   screen:fill_rect(0, H - s.sph, W, H, conf.status)
   sfont:text(info, conf.fg):blend(screen, 0, H - s.sph)
 end
@@ -433,6 +449,9 @@ function buff:mouse(r, v)
     s.edit:move(cx + s.edit.col,
       cy + s.edit.line)
   end
+  if s.edit:selstarted() then
+    s.edit:selmode(input.keydown 'alt')
+  end
   if r == 'mousedown' then
     s.edit:select(true)
   elseif r == 'mouseup' then
@@ -448,6 +467,9 @@ end
 function buff:keydown(k)
   local s = self
   local cx, cy = s.edit:cursor()
+  if s.edit:selstarted() then
+    s.edit:selmode(input.keydown 'alt')
+  end
   if k:find 'shift' then
     s.edit:select(true)
   elseif k == 'up' then
@@ -484,6 +506,13 @@ function buff:keydown(k)
     s.edit:backspace()
   elseif k == 'tab' then
     s.edit:input("  ")
+  elseif k== 'f2' and input.keydown'shift' then
+    inp_mode = not inp_mode
+    if inp_mode then
+      s.edit:select(false)
+      inp_mode = 'write'
+      inp.edit:set(FILE)
+    end
   elseif k == 'f2' or (k == 's' and input.keydown'ctrl') then
     s:write()
   elseif k == 'f8' then
@@ -514,6 +543,8 @@ function buff:keydown(k)
     s:exec(FILE)
   elseif k == 'escape' and inp_mode then
     inp_mode = false
+  elseif k == 'insert' or k == 'keypad 0' then
+    s.edit:insmode(not s.edit:insmode())
   elseif k == 'f1' then
     help_mode = not help_mode
   elseif (k == 'u' or k == 'z') and input.keydown 'ctrl' then
@@ -562,8 +593,8 @@ function buff:search(t)
   end
 end
 
-local b = buff.new(FILE)
-local inp = buff.new(false, 0, H - b.sph, W, b.sph)
+b = buff.new(FILE)
+inp = buff.new(false, 0, H - b.sph, W, b.sph)
 inp.status = false
 inp.lines = 1
 inp.edit:size(W, b.sph)
@@ -614,6 +645,12 @@ function inp.edit:newline()
       FILE = t
       b = buff.new(FILE)
     end
+  elseif inp_mode == 'write' then
+    if not t:empty() then
+      b.fname = t
+      FILE = t
+      b:write()
+    end
   end
   inp:history(t)
   s:set ''
@@ -629,6 +666,7 @@ mixer.done()
 
 local HELP = [[Keys:
 F2,ctrl-s    - save
+shift-f2     - save as
 ctrl-l       - jump to line
 home,ctrl-a  - line begin
 end,ctrl-e   - line end
@@ -636,13 +674,14 @@ pageup       - scroll up
 pagedown     - scroll down
 F7,ctrl-f    - search
 cursor keys  - move
-shift+cursor - select
+shift+cursor - select (+alt vertical block)
 ctrl-x       - cut&copy selection
 ctrl-c       - copy selection
 ctrl-v       - paste selection
 ctrl-y       - remove line
 ctrl-z       - undo
 ctrl-w       - wrap text
+ins          - insert mode
 F4           - open another file (no save!)
 F5           - run!
 F8           - run sprite editor

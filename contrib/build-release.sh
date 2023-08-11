@@ -18,7 +18,7 @@ if [ ! -f external/.stamp_SDL2 ]; then
 
 	tar xf SDL2-${sdl_ver}.tar.gz
 	cd SDL2-${sdl_ver}
-	./configure --prefix=`pwd`/../external/windows/ --host=i686-w64-mingw32 --enable-shared --enable-static --enable-joystick --disable-sensor --disable-power --disable-haptic --disable-filesystem --disable-file --disable-video-vulkan --enable-video-opengl --disable-video-opengles2 --disable-video-vivante --disable-video-cocoa --disable-video-metal --disable-render-metal --disable-video-kmsdrm --disable-video-opengles --disable-video-opengles1 --disable-video-opengles2 --disable-video-vulkan --disable-render-d3d
+	./configure CFLAGS="-funwind-tables" --prefix=`pwd`/../external/windows/ --host=i686-w64-mingw32 --enable-shared --enable-static --enable-joystick --disable-sensor --disable-power --disable-haptic --disable-filesystem --disable-file --disable-video-vulkan --enable-video-opengl --disable-video-opengles2 --disable-video-vivante --disable-video-cocoa --disable-video-metal --disable-render-metal --disable-video-kmsdrm --disable-video-opengles --disable-video-opengles1 --disable-video-opengles2 --disable-video-vulkan --disable-render-d3d
 	make && make install
 	cd ..
 	touch external/.stamp_SDL2
@@ -36,7 +36,7 @@ if [ ! -f external/.stamp_luajit ]; then
 		cp src/$f ../external/include/
 	done
 	make clean
-	make CROSS=i686-w64-mingw32- HOST_CC="gcc -m32" TARGET_SYS=Windows BUILDMODE=static
+	make CROSS=i686-w64-mingw32- TARGET_CFLAGS=-funwind-tables HOST_CC="gcc -m32" TARGET_SYS=Windows BUILDMODE=static
 	for f in lua.h luaconf.h lualib.h lauxlib.h; do
 		cp src/$f ../external/windows/include/
 	done
@@ -67,8 +67,8 @@ LDFLAGS="-Lexternal/windows/lib -lSDL2.dll -lSDL2main -lm -lluajit -lws2_32 -lws
 
 i686-w64-mingw32-windres -i contrib/resources.rc -o resources.o || exit 1
 
-i686-w64-mingw32-gcc -DVERSION=\"`date +%y%m%d`\" -Wall -static -O3 $CFLAGS src/*.c resources.o $LDFLAGS -mwindows -o rein.exe || exit 1
-i686-w64-mingw32-strip rein.exe
+i686-w64-mingw32-gcc -funwind-tables -DVERSION=\"`date +%y%m%d`\" -Wall -static -O3 $CFLAGS src/*.c resources.o $LDFLAGS -mwindows -o rein.exe || exit 1
+# i686-w64-mingw32-strip rein.exe # do not strip unwind information
 rm -f *.o
 
 ## make release

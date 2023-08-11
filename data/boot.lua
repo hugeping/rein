@@ -1,4 +1,59 @@
 local W, H = screen:size()
+local FW, FH = font:size(" ")
+
+local function scan_dir(dir, tag)
+  local ret = {}
+  for _, n in ipairs(sys.readdir(dir) or {}) do
+    if n:find("%.[lL][uU][aA]$") then
+      local name = n:gsub("%.[lL][uU][aA]$", "")
+      table.insert(ret, { (dir .. '/'.. n):gsub("/+", "/"), name, tag = tag })
+    end
+  end
+  table.sort(ret, function(a, b) return a[1] < b[1] end)
+  return ret
+end
+
+local apps
+
+local function rescan_dirs()
+  apps = {}
+  if #ARGS > 1 then
+    for i = 2, #ARGS do
+      table.append(apps, table.unpack(scan_dir(ARGS[i])))
+    end
+  else
+    apps = scan_dir(DATADIR..'/apps', 'apps')
+    table.append(apps, table.unpack(scan_dir('.'))) -- curdir
+    table.append(apps, table.unpack(scan_dir('demo', 'demo'))) -- demos3
+    table.append(apps, table.unpack(scan_dir('doc/tutorial', 'tutorial'))) -- demos3
+  end
+end
+
+rescan_dirs()
+
+local start = 1
+local select = 1
+local D = FH + 2
+local NR = math.floor((H - 70)/ D) - 4
+
+local function prepare()
+  screen:clear(16)
+  gfx.border{ 0xde, 0xde, 0xde }
+  sys.input(true) -- clear input
+end
+
+local function resume()
+  rescan_dirs()
+  gfx.border{ 0xde, 0xde, 0xde }
+  mixer.done()
+  mixer.init()
+  sys.hidemouse(false)
+  screen:nooffset()
+  screen:noclip()
+  sys.input(true) -- clear input
+  gfx.win(W, H) -- resume screen
+end
+
 local logo = gfx.new
 [[0----56---------
 --------------------------------
@@ -34,18 +89,18 @@ local logo = gfx.new
 --------------------------------
 --------------------------------]]
 
-logo:blend(screen, 4, 6)
-
-local frames = 0
-
-gfx.printf(40, 4, 0, [[REIN Version:%s
+local function header()
+  logo:blend(screen, 4, 6)
+  gfx.printf(40, 4, 1, [[REIN Version:%s
 (c)2023 Peter Kosyh
 https://hugeping.ru
 
 Peter Sovietov
 (Sound system)]], VERSION)
+end
 
-gfx.printf(4, 64, 0,
+local function help()
+  gfx.printf(4, 64, 0,
 [[Usage:
   rein edit [file] - edit file
   rein sprited     - gfx editor
@@ -69,13 +124,85 @@ Chat with community:
   rein irc
 
         Happy hacking!]])
+end
 
-
-gfx.border(7)
-
-while true do
-  frames = frames + 1
-  local fl = math.floor(frames / 25)%2
+local function border()
+  local fl = math.floor(sys.time())%2
   gfx.border(fl == 1 and 7 or 12)
-  gfx.flip(1/30)
+end
+
+local help_mode
+
+while sys.running() do
+  while help_mode do
+    screen:clear(16)
+    header()
+    help()
+    border()
+    if sys.input() == 'keydown' then
+      help_mode = false
+      break
+    end
+    coroutine.yield()
+  end
+  screen:clear(16)
+  header()
+
+  gfx.printf(4, H - 2*FH, 1, [[F1-help Up,Down,z-run,x-edit
+shift+esc-return to this launcher]])
+
+  local xoff, yoff = 26, 72
+  local tag2col = {
+    apps = 9;
+    demo = 11;
+    tutorial = 12;
+  }
+  for i = start, #apps do
+    local nr = i - start + 1
+    local name = apps[i][2]
+    if i == select then
+      gfx.print("=>", xoff, yoff + nr*D, 0)
+    end
+    local n = apps[i][2]
+    if apps[i].tag and apps[i].tag ~= 'apps' then n = apps[i].tag..'/'..n end
+    gfx.print(n, xoff + 2*FW, yoff + nr*D, tag2col[apps[i].tag or ''] or 0)
+    if nr >= NR then
+      break
+    end
+  end
+  gfx.flip(1/20, true)
+  local e, v, a, b = sys.input()
+  if e == 'keydown' then
+    if v == 'up' then
+      select = select - 1
+    elseif v == 'down' then
+      select = select + 1
+    elseif v == 'pagedown' or v == 'keypad 3' then
+      select = select + NR
+    elseif v == 'pageup' or v == 'keypad 9' then
+      select = select - NR
+    elseif v == 'f1' then
+      help_mode = true
+    elseif v == 'z' or v == 'return' or v == 'space' then
+      prepare()
+      sys.exec(apps[select][1])
+      sys.suspend()
+      -- resumed
+      resume()
+    elseif v == 'x' then
+      prepare()
+      sys.exec("edit", apps[select][1])
+      sys.suspend()
+      -- resumed
+      resume()
+    end
+    select = math.min(select, #apps)
+    select = math.max(1, select)
+    if select < start then
+      start = select
+    elseif select - start >= NR then
+      start = math.max(1, select - NR + 1)
+    end
+  end
+  border()
 end

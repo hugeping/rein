@@ -30,7 +30,7 @@ jobs:
         with:
           path: |
             external
-          key: ${{ runner.os }}-${{ env.luajit_ver }}-${{ env.sdl_ver }}-3
+          key: ${{ runner.os }}-${{ env.luajit_ver }}-${{ env.sdl_ver }}-5
 
       - name: Install Packages
         run: |

@@ -3,7 +3,8 @@ editor.__index = editor
 function editor.new()
   local ed = { cur = {x = 1, y = 1},
     col = 1, line = 1, lines = {},
-    sel = {}, hl = { 0, 0, 0, 32 }, hist = {},
+    sel = { mode = false }, hl = { 0, 0, 0, 32 }, hist = {},
+    insert_mode = false,
   }
   setmetatable(ed, editor)
   return ed
@@ -85,7 +86,11 @@ function editor:input(t, replace)
   end
   s.lines[s.cur.y] = s.lines[s.cur.y] or {}
   for _, v in ipairs(c) do
-    table.insert(s.lines[s.cur.y], s.cur.x, v)
+    if s:insmode() then
+      s.lines[s.cur.y][s.cur.x] = v
+    else
+      table.insert(s.lines[s.cur.y], s.cur.x, v)
+    end
     s.cur.x = s.cur.x + 1
   end
   s:move()
@@ -108,7 +113,9 @@ function editor:history(op, x1, y1, x2, y2)
   local h = { op = op, x = s.cur.x, y = s.cur.y,
     nr = y1, rem = 0 }
   if op == 'cut' then
-    if y1 == y2 then
+    if s:selmode() then
+      h.rem = y2 - y1 + 1
+    elseif y1 == y2 then
       h.rem = x2 - x1 < #s.lines[y1] and 1 or 0
     else
       h.rem = x1 > 1 and 1 or 0
@@ -170,9 +177,11 @@ function editor:selection()
   end
   if y1 > y2 then
     y1, y2 = y2, y1
-    x1, x2 = x2, x1
+    if not s:selmode() then
+      x1, x2 = x2, x1
+    end
   end
-  if y1 == y2 and x1 > x2 then x1, x2 = x2, x1 end
+  if (y1 == y2 or s:selmode()) and x1 > x2 then x1, x2 = x2, x1 end
   return x1, y1, x2, y2
 end
 
@@ -198,6 +207,9 @@ function editor:insel(x, nr)
   local s = self
   local x1, y1, x2, y2 = s:selection()
   if not x1 then return end
+  if s:selmode() then
+    return nr >= y1 and nr <= y2 and x >= x1 and x <= x2
+  end
   if nr < y1 or nr > y2 then return end -- fast path
   if nr > y1 and nr < y2 then -- full line
     return true
@@ -217,6 +229,26 @@ end
 function editor:unselect()
   local s = self
   s.sel.x, s.sel.endx, s.sel.start = false, false, false
+end
+
+function editor:selmode(mode)
+  local old = self.sel.mode
+  if mode ~= nil then
+    self.sel.mode = mode
+  end
+  return old
+end
+
+function editor:insmode(mode)
+  local old = self.insert_mode
+  if mode ~= nil then
+    self.insert_mode = mode
+  end
+  return old
+end
+
+function editor:selstarted()
+  return self.sel.start
 end
 
 function editor:select(on, y1, x2, y2)
@@ -269,13 +301,13 @@ function editor:cut(copy, clip)
   end
   for y=y1, y2 do
     local nl = {}
-    if y ~= y1 and y ~= y2 then -- full line
+    if y ~= y1 and y ~= y2 and not s:selmode() then -- full line
       clipboard = clipboard .. table.concat(s.lines[yy])..'\n'
     else
       for x=1, #s.lines[yy] do
         if s:insel(x, y) then
           clipboard = clipboard .. s.lines[yy][x]
-          if x == #s.lines[yy] then
+          if x == #s.lines[yy] or s:selmode() and x == x2 then
             clipboard = clipboard .. '\n'
           end
         else
@@ -383,8 +415,13 @@ function editor:paste(clip)
   local text = clip or sys.clipboard() or s.clipboard or ''
   s:history 'start'
   for l in text:lines() do
+    local x, y = s:cursor()
     s:input(l)
-    s:newline(false)
+    if s:selmode() then -- vertical?
+      s:move(x, y + 1)
+    else
+      s:newline(false)
+    end
   end
   s:history 'end'
 end

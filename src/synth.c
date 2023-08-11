@@ -2,7 +2,7 @@
 #include "platform.h"
 #include "zvon_sfx.h"
 
-#define CHANNELS_MAX 32
+#define CHANNELS_MAX 33 /* 1..32 in lua, 0 is always free */
 
 enum {
 	ZV_BYPASS = ZV_END + 1,
