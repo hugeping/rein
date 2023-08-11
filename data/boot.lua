@@ -1,22 +1,33 @@
 local W, H = screen:size()
 local FW, FH = font:size(" ")
 
-local function scan_dir(apps)
+local function scan_dir(dir)
   local ret = {}
-  local dir = DATADIR..'/'..apps
-  for _, n in ipairs(sys.readdir(dir)) do
+  for _, n in ipairs(sys.readdir(dir) or {}) do
     if n:find("%.[lL][uU][aA]$") then
       local name = n:gsub("%.[lL][uU][aA]$", "")
-      table.insert(ret, { dir .. '/'.. n, name })
+      table.insert(ret, { (dir .. '/'.. n):gsub("/+", "/"), name })
     end
   end
   table.sort(ret, function(a, b) return a[1] < b[1] end)
   return ret
 end
 
-local apps = scan_dir 'apps'
+local apps
 
-table.append(apps, table.unpack(scan_dir '../demo')) -- demos
+local function rescan_dirs()
+  apps = {}
+  if #ARGS > 1 then
+    for i = 2, #ARGS do
+      table.append(apps, table.unpack(scan_dir(ARGS[i])))
+    end
+  else
+    apps = scan_dir(DATADIR..'/apps')
+    table.append(apps, table.unpack(scan_dir(DATADIR..'/../demo'))) -- demos
+  end
+end
+
+rescan_dirs()
 
 local start = 1
 local select = 1
@@ -24,6 +35,7 @@ local D = FH + 2
 local NR = math.floor((H - 70)/ D) - 4
 
 local function resume()
+  rescan_dirs()
   gfx.border{ 0xde, 0xde, 0xde }
   mixer.done()
   mixer.init()
@@ -71,7 +83,7 @@ local logo = gfx.new
 
 local function header()
   logo:blend(screen, 4, 6)
-  gfx.printf(40, 4, 0, [[REIN Version:%s
+  gfx.printf(40, 4, 1, [[REIN Version:%s
 (c)2023 Peter Kosyh
 https://hugeping.ru
 
@@ -128,7 +140,7 @@ while sys.running() do
   screen:clear(16)
   header()
 
-  gfx.printf(4, H - 2*FH, 0, [[F1-help Up,Down,z-run,x-edit
+  gfx.printf(4, H - 2*FH, 1, [[F1-help Up,Down,z-run,x-edit
 shift+esc-return to this launcher]])
 
   local xoff, yoff = 26, 72
@@ -136,9 +148,9 @@ shift+esc-return to this launcher]])
     local nr = i - start + 1
     local name = apps[i][2]
     if i == select then
-      gfx.print("=>", xoff, yoff + nr*D, 1)
+      gfx.print("=>", xoff, yoff + nr*D, 0)
     end
-    gfx.print(apps[i][2], xoff + 2*FW, yoff + nr*D, 1)
+    gfx.print(apps[i][2], xoff + 2*FW, yoff + nr*D, 0)
     if nr >= NR then
       break
     end
@@ -153,6 +165,7 @@ shift+esc-return to this launcher]])
     elseif v == 'f1' then
       help_mode = true
     elseif v == 'z' or v == 'return' or v == 'space' then
+      gfx.border{ 0xde, 0xde, 0xde }
       sys.exec(apps[select][1])
       sys.suspend()
       -- resumed
