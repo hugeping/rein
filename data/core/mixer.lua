@@ -11,7 +11,7 @@ local mixer = {
   srv = { };
   ack = { };
   fn = { };
-  chans = { size = 31 };
+  chans = { size = 32 };
   freq = 1/100;
   hz = 44100;
   req = {};
