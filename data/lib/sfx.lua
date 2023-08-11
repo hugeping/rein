@@ -453,6 +453,7 @@ end
 function sfx.play_song(chans, tracks, nr)
   local r, e
   nr = nr or 1
+  tracks = table.clone(tracks)
   while nr == -1 or nr > 0 do
     if nr ~= -1 then nr = nr - 1 end
     r, e = sfx.play_song_once(chans, tracks)
