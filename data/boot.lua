@@ -1,12 +1,12 @@
 local W, H = screen:size()
 local FW, FH = font:size(" ")
 
-local function scan_dir(dir)
+local function scan_dir(dir, tag)
   local ret = {}
   for _, n in ipairs(sys.readdir(dir) or {}) do
     if n:find("%.[lL][uU][aA]$") then
       local name = n:gsub("%.[lL][uU][aA]$", "")
-      table.insert(ret, { (dir .. '/'.. n):gsub("/+", "/"), name })
+      table.insert(ret, { (dir .. '/'.. n):gsub("/+", "/"), name, tag = tag })
     end
   end
   table.sort(ret, function(a, b) return a[1] < b[1] end)
@@ -22,8 +22,10 @@ local function rescan_dirs()
       table.append(apps, table.unpack(scan_dir(ARGS[i])))
     end
   else
-    apps = scan_dir(DATADIR..'/apps')
-    table.append(apps, table.unpack(scan_dir(DATADIR..'/../demo'))) -- demos
+    apps = scan_dir(DATADIR..'/apps', 'apps')
+    table.append(apps, table.unpack(scan_dir('.'))) -- curdir
+    table.append(apps, table.unpack(scan_dir('demo', 'demo'))) -- demos3
+    table.append(apps, table.unpack(scan_dir('doc/tutorial', 'tutorial'))) -- demos3
   end
 end
 
@@ -144,13 +146,20 @@ while sys.running() do
 shift+esc-return to this launcher]])
 
   local xoff, yoff = 26, 72
+  local tag2col = {
+    apps = 9;
+    demo = 11;
+    tutorial = 12;
+  }
   for i = start, #apps do
     local nr = i - start + 1
     local name = apps[i][2]
     if i == select then
       gfx.print("=>", xoff, yoff + nr*D, 0)
     end
-    gfx.print(apps[i][2], xoff + 2*FW, yoff + nr*D, 0)
+    local n = apps[i][2]
+    if apps[i].tag and apps[i].tag ~= 'apps' then n = apps[i].tag..'/'..n end
+    gfx.print(n, xoff + 2*FW, yoff + nr*D, tag2col[apps[i].tag or ''] or 0)
     if nr >= NR then
       break
     end
@@ -162,6 +171,10 @@ shift+esc-return to this launcher]])
       select = select - 1
     elseif v == 'down' then
       select = select + 1
+    elseif v == 'pagedown' or v == 'keypad 3' then
+      select = select + NR
+    elseif v == 'pageup' or v == 'keypad 9' then
+      select = select - NR
     elseif v == 'f1' then
       help_mode = true
     elseif v == 'z' or v == 'return' or v == 'space' then
@@ -182,7 +195,7 @@ shift+esc-return to this launcher]])
     if select < start then
       start = select
     elseif select - start >= NR then
-      start = start + 1
+      start = math.max(1, select - NR + 1)
     end
   end
   border()
