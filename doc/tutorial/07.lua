@@ -37,7 +37,7 @@ function init()
     ball_y = 16
     ball_x = math.random(128) + 64
     ball_dx = math.random(2) == 1 and 1 or -1
-    music = mixer.play('music', 1)
+    music = mixer.play('music', -1)
 end
 
 function update()
