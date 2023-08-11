@@ -36,6 +36,12 @@ local select = 1
 local D = FH + 2
 local NR = math.floor((H - 70)/ D) - 4
 
+local function prepare()
+  screen:clear(16)
+  gfx.border{ 0xde, 0xde, 0xde }
+  sys.input(true) -- clear input
+end
+
 local function resume()
   rescan_dirs()
   gfx.border{ 0xde, 0xde, 0xde }
@@ -178,13 +184,13 @@ shift+esc-return to this launcher]])
     elseif v == 'f1' then
       help_mode = true
     elseif v == 'z' or v == 'return' or v == 'space' then
-      gfx.border{ 0xde, 0xde, 0xde }
+      prepare()
       sys.exec(apps[select][1])
       sys.suspend()
       -- resumed
       resume()
     elseif v == 'x' then
-      sys.input(true) -- clear input
+      prepare()
       sys.exec("edit", apps[select][1])
       sys.suspend()
       -- resumed
