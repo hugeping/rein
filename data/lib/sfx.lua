@@ -180,7 +180,11 @@ function sfx.parse_song(text)
     if not song then
       return false, "No sfx:"..tostring(text)
     end
-    return table.clone(song)
+    local s = {}
+    song.__index = song
+    setmetatable(s, song)
+    s.len = #song
+    return s
   end
   local ret = { tracks = 0 }
   text = text:strip()
@@ -417,7 +421,7 @@ function sfx.play_song_once(chans, tracks)
   tracks.row = 1
   tracks.voices = {}
   tracks.playing = true
-  while tracks.row <= #tracks do
+  while tracks.row <= (tracks.len or #tracks) do
     row = tracks[tracks.row]
     r, e = sfx.proc_cmd(chans, tracks, row.cmd)
     if not r then

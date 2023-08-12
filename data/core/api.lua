@@ -380,6 +380,7 @@ function env.sys.input(reset)
   local v = table.remove(input.fifo, 1)
   if reset then
     input.fifo = {}
+    input.kbd = {}
   end
   return v.nam, table.unpack(v.args)
 end
