@@ -871,6 +871,36 @@ function w_play:switch_octave(v)
   end
 end
 
+function w_play:play_note(v)
+  v = tonumber(v) or v
+
+  local m = key2note[v]
+  if not m then
+    return
+  end
+  m = m + 12 * (self.octave + 1)
+
+  if not self.voice and mode == 'tracked' then -- or not tune then
+    self:apply_voice()
+    print(self.voice)
+  end
+  if #stack == 0 then return true end
+  local note = sfx.midi_to_note(m)
+  local hz = 440 * 2 ^ ((m - 69) / 12) -- sfx.get_note(m..'3')
+  for c = 1, chans.max do
+    if chans[c] == v then
+      return
+    end
+  end
+  local c = find_free_channel()
+  chans[c] = v
+  chans.notes[c] = note
+  chans.times[c] = sys.time()
+  print("play", v)
+  synth.chan_change(c, synth.NOTE_ON, hz)
+  return note
+end
+
 function w_play:event(r, v, ...)
   if self.disabled then
     return
@@ -883,6 +913,19 @@ function w_play:event(r, v, ...)
     return
   end
   if button.event(self, r, v, ...) then return true end
+
+  if r == 'keyup' then
+    for c = 1, chans.max do
+      v = tonumber(v) or v
+      if chans[c] == v then
+        chans[c] = false
+        synth.chan_change(c, synth.NOTE_OFF, 0)
+        print ("stop", v)
+        break
+      end
+    end
+  end
+
   if v ~= 'escape' and not self.play then return end
   if r == 'text' then
     return mode == 'voiced'
@@ -899,41 +942,13 @@ function w_play:event(r, v, ...)
     if self:switch_octave(v) then
       return true
     end
-    v = tonumber(v) or v
-    local m = key2note[v]
-    if not m then
-      return mode == 'voiced'
-    end
-    if not self.voice and mode == 'tracked' then -- or not tune then
-      self:apply_voice()
-    end
-    if #stack == 0 then return true end
-    m = m + 12 * (w_play.octave + 1)
-    local note = sfx.midi_to_note(m)
-    local hz = 440 * 2 ^ ((m - 69) / 12) -- sfx.get_note(m..'3')
     for c = 1, chans.max do
       if chans[c] == v then
         return mode == 'voiced'
       end
     end
-    local c = find_free_channel()
-    chans[c] = v
-    chans.notes[c] = note
-    chans.times[c] = sys.time()
-    synth.chan_change(c, synth.NOTE_ON, hz)
---    if cellv and celln then
---      synth.change(c, 0, synth.VOLUME, 0)
---    end
+    self:play_note(v)
     return mode == 'voiced'
-  elseif r == 'keyup' then
-    for c = 1, chans.max do
-      v = tonumber(v) or v
-      if chans[c] == v then
-        chans[c] = false
-        synth.chan_change(c, synth.NOTE_OFF, 0)
-        break
-      end
-    end
   end
 end
 
@@ -1116,14 +1131,12 @@ local function keynote_ins(v, l, pos, x)
 end
 
 local function keynote(v)
-  v = tonumber(v) or v
-  local m = key2note[v]
-  if not m then return end
-  local note = sfx.midi_to_note((w_play.octave + 1)*12 + m)
-  return note
+  w_play.voice = false
+  return w_play:play_note(v)
 end
 
 local function note_text(v)
+  local rc
   if w_play.selected then return end
   local cx, cy = w_edit.edit:cursor()
   local pos = math.floor(cx / CELLW) * CELLW
@@ -1141,7 +1154,8 @@ local function note_text(v)
     if not v then return end
     w_edit.edit:select(pos + 3, cy, pos + 6, cy)
     w_edit.edit:input(v, true)
-  elseif x >= 7 and x <= 8 and v:find("[0-9a-fA-F]") then
+    rc = true
+  elseif x >= 7 and x <= 8 and v:find("[0-9a-fA-F]") and v:len() == 1 then
     local t
     if x == 7 then
       t = v .. ((l[pos+8] and l[pos+8] ~= '.') and l[pos+8] or '0')
@@ -1153,8 +1167,10 @@ local function note_text(v)
 --    local t = ((l[pos+8] and l[pos+8] ~= '.') and l[pos+8] or '0') .. v
     w_edit.edit:select(pos + 7, cy, pos + 9, cy)
     w_edit.edit:input(t, true)
+    rc = true
   end
   w_edit.edit:move(cx, cy)
+  return rc
 end
 
 local function note_bs()
@@ -1238,7 +1254,9 @@ function w_edit:event(r, v, ...)
   if not tune and editarea.mouse(self, r, v) then return true end
   if r == 'text' and not tune then
     if note_edit() then
-      note_text(v)
+      if ins_mode then
+        note_text(v)
+      end
     else
       self.edit:input(v)
     end
@@ -1269,6 +1287,7 @@ function w_edit:event(r, v, ...)
         end
       end
       return true
+    elseif not ins_mode and note_edit() and note_text(v) then
     else
       editarea.event(self, r, v, ...)
       return not tune
