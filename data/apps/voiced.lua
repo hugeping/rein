@@ -312,6 +312,7 @@ end
 local button = label:new { }
 
 function button:event(r, v, ...)
+  if self.hidden then return end
   if self.active and r == 'mouseup' then
     self.active = false
     if self.onclick then self:onclick() end
@@ -896,7 +897,6 @@ function w_play:play_note(v)
   chans[c] = v
   chans.notes[c] = note
   chans.times[c] = sys.time()
-  print("play", v)
   synth.chan_change(c, synth.NOTE_ON, hz)
   return note
 end
@@ -920,7 +920,6 @@ function w_play:event(r, v, ...)
       if chans[c] == v then
         chans[c] = false
         synth.chan_change(c, synth.NOTE_OFF, 0)
-        print ("stop", v)
         break
       end
     end
