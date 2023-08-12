@@ -180,7 +180,7 @@ function sfx.parse_song(text)
     if not song then
       return false, "No sfx:"..tostring(text)
     end
-    return song
+    return table.clone(song)
   end
   local ret = { tracks = 0 }
   text = text:strip()
@@ -453,7 +453,6 @@ end
 function sfx.play_song(chans, tracks, nr)
   local r, e
   nr = nr or 1
-  tracks = table.clone(tracks)
   while nr == -1 or nr > 0 do
     if nr ~= -1 then nr = nr - 1 end
     r, e = sfx.play_song_once(chans, tracks)
