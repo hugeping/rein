@@ -417,6 +417,7 @@ function buff:exec(prog, ...)
   mixer.init()
   gfx.win(256, 256)
   screen:clear(conf.bg)
+  sys.input(true)
   sys.exec(prog, ...)
   sys.suspend()
 end
