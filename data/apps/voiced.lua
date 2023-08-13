@@ -1150,6 +1150,7 @@ local function note_text(v)
       v = keynote(v, l)
     end
     if not v then return end
+    w_edit.edit:selmode(false)
     w_edit.edit:select(pos + 3, cy, pos + 6, cy)
     w_edit.edit:input(v, true)
     rc = true
@@ -1163,6 +1164,7 @@ local function note_text(v)
       cx = cx + 1
     end
 --    local t = ((l[pos+8] and l[pos+8] ~= '.') and l[pos+8] or '0') .. v
+    w_edit.edit:selmode(false)
     w_edit.edit:select(pos + 7, cy, pos + 9, cy)
     w_edit.edit:input(t, true)
     rc = true
