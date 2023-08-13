@@ -1,4 +1,4 @@
-local dump = require "dump"
+-- local dump = require "dump"
 local sfx = require "sfx"
 require "std"
 local THREADED = not not thread
@@ -114,8 +114,8 @@ function mixer.srv.play(text, nr)
   if not chans then
     return false, "No free channels"
   end
-  local state
-  local f, e = coroutine.create(function(...)
+  local state, f
+  f, e = coroutine.create(function(...)
     local r, err = sfx.play_song(...)
     if not r then
       state.status = err
@@ -326,14 +326,14 @@ function mixer.status(nr)
 end
 
 function mixer.init()
-  local t, r, e
+  local t
   if mixer.running then return end
   mixer.running = true
   if THREADED then
-    t, e = thread.start(function()
-      local mixer = require "mixer"
-      mixer.thr = thread
-      mixer.thread()
+    t = thread.start(function()
+      local mix = require "mixer"
+      mix.thr = thread
+      mix.thread()
     end)
   end
   if not t then

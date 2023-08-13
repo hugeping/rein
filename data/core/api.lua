@@ -226,17 +226,16 @@ function env.gfx.win(w, h, fnt, sz) -- create new win or change
   return oscr
 end
 
-local flipsx, flipsy, flipsxy = {}, {}
+local flipsx, flipsy, flipsxy = {}, {}, {}
 
 function env.gfx.spr(data, nr, x, y, w, h, flipx, flipy)
   local flips
-  local W, H = data:size()
+  local W, _ = data:size()
   local nsp = math.floor(W/8)
   w = w or 1
   h = h or 1
   local fx = nr % nsp
   local fy = math.floor(nr / nsp)
-  local flips
   if flipx and not flipy then
     flips = flipsx
   elseif not flipx and flipy then
@@ -507,7 +506,7 @@ function env.sys.go(fn)
   return core.go(fn, env)
 end
 
-function env.sys.suspend(...)
+function env.sys.suspend()
   return coroutine.yield 'suspend'
 end
 
