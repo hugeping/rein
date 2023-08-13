@@ -189,6 +189,10 @@ function thread.start(code)
   return r
 end
 
+function env.sys.window_size()
+  return gfx.win():size()
+end
+
 function env.gfx.win(w, h, fnt, sz) -- create new win or change
   local oscr = env.screen
   if type(w) == 'userdata' then -- new screen?
