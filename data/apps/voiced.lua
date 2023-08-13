@@ -639,6 +639,15 @@ local w_tracker = button:new { text = 'Tracker',
   w = 16 * 7, h = 12, x = 0, y = w_volume:below(1),
   border = true }
 
+function w_tracker:event(r, v, ...)
+  if r == 'keydown' and v == 'space' and input.keydown'alt' then
+    switch 'tracked'
+    sys.input(true)
+    return true
+  end
+  return button.event(self, r, v, ...)
+end
+
 function w_tracker:onclick()
   switch 'tracked'
 end
@@ -1023,6 +1032,17 @@ end
 local tracker_mode = { w_song_prev, w_song, w_song_next,
   w_edit, w_add, w_del, w_play, w_poly, w_voiced, w_file, w_info, w_help }
 
+function w_voiced:event(r, v, ...)
+  if r == 'keydown' and v == 'space' and input.keydown'alt' and
+    song_check() then
+    switch 'voiced'
+    sys.input(true)
+    return true
+  end
+  return button.event(self, r, v, ...)
+end
+
+
 function w_voiced:onclick()
   if song_check() then
     switch 'voiced'
@@ -1154,14 +1174,14 @@ local function note_text(v)
     w_edit.edit:select(pos + 3, cy, pos + 6, cy)
     w_edit.edit:input(v, true)
     rc = true
-  elseif x >= 7 and x <= 8 and v:find("[0-9a-fA-F]") and v:len() == 1 then
+  elseif x >= 7 and x <= 8 and v:find("^[0-9a-fA-F]$") and v:len() == 1 then
     local t
     if x == 7 then
       t = v .. ((l[pos+8] and l[pos+8] ~= '.') and l[pos+8] or '0')
       cx = cx + 1
     elseif x == 8 then
       t = ((l[pos+7] and l[pos+7] ~= '.') and l[pos+7] or '0') .. v
-      cx = cx + 1
+      -- cx = cx + 1
     end
 --    local t = ((l[pos+8] and l[pos+8] ~= '.') and l[pos+8] or '0') .. v
     w_edit.edit:selmode(false)
@@ -1419,6 +1439,7 @@ ctrl-y        Delete line
 Ins           Direct input mode (notes)
 alt-left      Prev song
 alt-right     Next song
+alt-space     Switch mode (tracker/voices)
 
 Commands (chan can be set as *):
 
