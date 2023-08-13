@@ -883,7 +883,6 @@ function w_play:play_note(v)
 
   if not self.voice and mode == 'tracked' then -- or not tune then
     self:apply_voice()
-    print(self.voice)
   end
   if #stack == 0 then return true end
   local note = sfx.midi_to_note(m)
