@@ -131,7 +131,6 @@ function core.init()
   end
 
   env.ARGS = {}
-  local f, e, optarg, opts
   local opts, optarg = core.getopt(ARGS, {
     s = true,
     nosound = true,
@@ -210,7 +209,7 @@ local function finger_process(old, new)
       if not api.event("keyup", k) then return false end
     end
   end
-  for k, v in pairs(new) do -- keydown new keys
+  for k, _ in pairs(new) do -- keydown new keys
     if not old[k] then
       if not api.event("keydown", k) then return false end
     end
