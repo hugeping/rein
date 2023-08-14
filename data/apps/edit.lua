@@ -1,15 +1,19 @@
 local editor = require "editor"
-gfx.win(385, 380)
---local sfont = gfx.font('demo/iosevka.ttf',12)
+
+local sfont = font
+
 local idle_mode
 local inp_mode
 local help_mode
-local sfont = font
-local W, H = screen:size()
 local b, inp
+
 local conf = {
   fg = 0,
   bg = 16,
+  scalable = false,
+  scalable_font = DATADIR..'/iosevka.ttf',
+  scalable_font_sz = 14,
+  cursor_blink = true,
   brd = { 0xde, 0xde, 0xde },
   hl = { 0, 0, 0, 32 },
   status = { 0, 0, 0, 64 },
@@ -22,6 +26,19 @@ local conf = {
   delim = 4,
   syntax = true,
 }
+
+if conf.scalable then
+  sys.event_filter().resized = true
+  gfx.win(sys.window_size())
+  if conf.scalable_font then
+    sfont = gfx.font(DATADIR..'/iosevka.ttf', conf.scalable_font_sz * SCALE)
+  end
+else
+  gfx.win(385, 380)
+end
+
+local W, H = screen:size()
+
 gfx.border(conf.brd)
 
 local FILE = ARGS[2] or 'main.lua'
@@ -50,6 +67,15 @@ function glyph(t, col)
   return glyph_cache[key]
 end
 
+function buff:resize(w, h)
+  local b = self
+  b.spw, b.sph = sfont:size(" ")
+  b.w, b.h = w, h
+  b.columns = math.floor(b.w / b.spw)
+  b.lines = math.floor(b.h / b.sph)
+  b.edit:size(b.columns, b.lines)
+end
+
 function buff.new(fname, x, y, w, h)
   local b = { edit = editor.new(), fname = fname,
     x = x or 0, y = y or 0, w = w or W, h = h or H }
@@ -61,11 +87,8 @@ function buff.new(fname, x, y, w, h)
     end
     f:close()
   end
-  b.spw, b.sph = sfont:size(" ")
-  b.columns = math.floor(b.w / b.spw)
-  b.lines = math.floor(b.h / b.sph) - 1 -- status line
-  b.edit:size(b.columns, b.lines)
   setmetatable(b, buff)
+  b:resize(b.w, b.h)
   return b
 end
 
@@ -171,7 +194,7 @@ end
 
 function buff:cursor()
   local s = self
-  if math.floor(sys.time()*4) % 2 == 1 then
+  if conf.cursor_blink and math.floor(sys.time()*4) % 2 == 1 then
     return
   end
   local px, py = s.edit:coord(s.edit:cursor())
@@ -179,10 +202,12 @@ function buff:cursor()
   for y=py, py + s.sph-1 do
     for x=px, px + s.spw-1 do
       local r, g, b = screen:val(s.x + x, s.y + y)
-      r = bit.bxor(r, 255)
-      g = bit.bxor(g, 255)
-      b = bit.bxor(b, 255)
-      screen:val(s.x + x, s.y + y, {r, g, b, 255})
+      if r then
+        r = bit.bxor(r, 255)
+        g = bit.bxor(g, 255)
+        b = bit.bxor(b, 255)
+        screen:val(s.x + x, s.y + y, {r, g, b, 255})
+      end
     end
   end
 end
@@ -205,6 +230,7 @@ function buff:status()
     s.edit.dirty and '*' or '', fn, cx, cy,
     s.edit:insmode() and '+i' or ' ',
     s.edit:selmode() and '+v' or ' ')
+  screen:clear(0, H - s.sph, W, H, conf.bg)
   screen:fill_rect(0, H - s.sph, W, H, conf.status)
   sfont:text(info, conf.fg):blend(screen, 0, H - s.sph)
 end
@@ -595,10 +621,9 @@ function buff:search(t)
 end
 
 b = buff.new(FILE)
+b:resize(W, H - b.sph)
 inp = buff.new(false, 0, H - b.sph, W, b.sph)
 inp.status = false
-inp.lines = 1
-inp.edit:size(W, b.sph)
 
 function inp:history(t)
   if t == '' then return end
@@ -728,8 +753,16 @@ while sys.running() do
     end
     coroutine.yield()
   end
-  local r, v = sys.input()
-  if r == 'keydown' then
+  local r, v, a = sys.input()
+  if r == 'resized' or r == 'exposed' then
+    W, H = v, a
+    gfx.win(v, a)
+    b:resize(v, a - b.sph)
+    inp:resize(v, b.sph)
+    inp.y = H - b.sph
+    inp.w = W
+    if inp_mode then b:show() end
+  elseif r == 'keydown' then
     get_buff():keydown(v)
   elseif r == 'keyup' then
     get_buff():keyup(v)
@@ -743,6 +776,6 @@ while sys.running() do
     if not gfx.framedrop() then
       get_buff():show()
     end
-    gfx.flip(1/10, true)
+    gfx.flip(conf.cursor_blink and 1/10 or 1, true)
   end
 end
