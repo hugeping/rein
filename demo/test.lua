@@ -236,7 +236,7 @@ end
 
 local fps = 0
 
-while true do
+while sys.running() do
   screen:clear(0)
   draw_text("REIN", 70, 100, 4, s)
   gfx.printf(102, 140, 1, VERSION)

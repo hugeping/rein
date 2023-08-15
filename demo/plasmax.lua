@@ -167,7 +167,7 @@ local fps = 0
 
 start_demo()
 
-while true do
+while sys.running() do
   for i=1, THREADS do
     thr[i]:write 'render'
   end
@@ -177,14 +177,6 @@ while true do
   end
 
   local r, v = sys.input()
-
-  if r == 'quit' then
-    print "quitting..." -- nothing to do, will exit on next cycle
-    for i=1, THREADS do
-      thr[i]:write 'quit'
-    end
-    break
-  end
 
   if r == 'keydown' and v == 'space' then
     for i=1, THREADS do
@@ -196,4 +188,9 @@ while true do
   screen:clear(0,w-8,w,h-8,7)
   gfx.printf(0, h-8, 1, "Демо:%d FPS:%d", 1, fps)
   fps = gfx.flip(0)
+end
+
+print "quitting..." -- nothing to do, will exit on next cycle
+for i=1, THREADS do
+  thr[i]:write 'quit'
 end

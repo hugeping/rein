@@ -40,7 +40,7 @@ demo = { first, second, third, fifth }
 current = 1
 local fps = 0
 
-while true do
+while sys.running() do
   t = t + 1
   local i = 1
   for x = 0, w-1 do
