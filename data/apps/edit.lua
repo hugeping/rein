@@ -34,6 +34,7 @@ if conf.scalable then
     sfont = gfx.font(DATADIR..'/iosevka.ttf', conf.scalable_font_sz * SCALE)
   end
 else
+  sys.event_filter().resized = false
   gfx.win(385, 380)
 end
 
@@ -723,6 +724,7 @@ while sys.running() do
     screen:nooffset()
     screen:noclip()
     sys.input(true) -- clear input
+    sys.event_filter().resized = conf.scalable
     gfx.win(W, H)
     if idle_mode == 'voices' then
       if not b:selected() then
