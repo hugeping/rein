@@ -136,7 +136,7 @@ local demo = { plasma1, plasma2, plasma3, plasma4, plasma5, plasma6 }
 local demo_nr = 1
 
 local fps = 0
-while true do
+while sys.running() do
   demo[demo_nr]()
   screen:buff(buf)
 
