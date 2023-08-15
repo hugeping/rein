@@ -36,10 +36,12 @@ local select = 1
 local D = FH + 2
 local NR = math.floor((H - 70)/ D) - 4
 
+local oldevents
 local function prepare()
   screen:clear(16)
   gfx.border{ 0xde, 0xde, 0xde }
   sys.input(true) -- clear input
+  oldevents = table.clone(sys.event_filter())
 end
 
 local function resume()
@@ -52,6 +54,7 @@ local function resume()
   screen:noclip()
   sys.input(true) -- clear input
   gfx.win(W, H) -- resume screen
+  sys.event_filter(oldevents)
 end
 
 local logo = gfx.new
