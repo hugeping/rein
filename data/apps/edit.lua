@@ -29,10 +29,14 @@ local conf = {
 
 if conf.scalable then
   sys.event_filter().resized = true
-  gfx.win(sys.window_size())
+  local w, h = sys.window_size()
+  gfx.win(w, h)
+  local fn = DATADIR..'/iosevka.ttf'
+  local sz = conf.scalable_font_sz * SCALE
   if conf.scalable_font then
-    sfont = gfx.font(DATADIR..'/iosevka.ttf', conf.scalable_font_sz * SCALE)
+    sfont = gfx.font(fn, sz)
   end
+  gfx.win(w, h, fn, sz)
 else
   sys.event_filter().resized = false
   gfx.win(385, 380)
