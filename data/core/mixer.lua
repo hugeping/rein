@@ -96,15 +96,14 @@ function mixer.change()
   end
 end
 
-local function tobytes(v, size)
-  if size == 2 then
-    if v < 0 then v = v + 0x10000 end
-    return string.char(bit.band(v, 0xff), bit.rshift(v, 8))
-  elseif size == 4 then
-    if v < 0 then v = v + 0x100000000 end
-    return string.char(bit.band(v, 0xff), bit.band(bit.rshift(v, 8), 0xff),
-      bit.band(bit.rshift(v, 16), 0xff), bit.rshift(v, 24))
-  end
+local function tobytes2(v)
+  if v < 0 then v = v + 0x10000 end
+  return string.char(bit.band(v, 0xff), bit.rshift(v, 8))
+end
+local function tobytes4(v)
+  if v < 0 then v = v + 0x100000000 end
+  return string.char(bit.band(v, 0xff), bit.band(bit.rshift(v, 8), 0xff),
+    bit.band(bit.rshift(v, 16), 0xff), bit.rshift(v, 24))
 end
 
 local function wav_close(wr)
@@ -112,9 +111,9 @@ local function wav_close(wr)
   local sc2_size = wr.frames * 2 * 2;
 
   wr.file:seek("set", 4)
-  wr.file:write(tobytes(4 + (8 + 16) + (8 + sc2_size), 4))
+  wr.file:write(tobytes4(4 + (8 + 16) + (8 + sc2_size)))
   wr.file:seek("set", 40)
-  wr.file:write(tobytes(sc2_size, 4))
+  wr.file:write(tobytes4(sc2_size))
   wr.file:seek("end")
   wr.file:close()
   mixer.write_req = nil
@@ -130,18 +129,14 @@ function mixer.proc(tick)
         wav_close(wr)
         mixer.write_req = nil
       else
-        local t = mixer.write_req.samples
-        local nr = synth.mix_table(tick, mixer.vol, t)
-        wr.frames = wr.frames + nr / 2 -- (#t / 2)
-        wr.procs = wr.procs + 1
-        for i=1, nr do
+        local t = synth.mix_table(tick, mixer.vol)
+        wr.frames = wr.frames + (#t / 2)
+        for i=1, #t do
           local v = math.floor(math.round(32768 * t[i]))
-          wr.file:write(tobytes(v, 2))
+          wr.file:write(tobytes2(v))
         end
       end
-      if wr.procs % 10 == 1 then
-        coroutine.yield()
-      end
+      coroutine.yield()
       break
     else
       rc = synth.mix(tick, mixer.vol)
@@ -158,7 +153,7 @@ function mixer.srv.write(text, file)
   if not f then return f, e end
   f:write("RIFF0000WAVEfmt \x10\x00\x00\x00\x01\x00\x02\x00\x44\xac\x00\x00\x10\xb1\x02\x00\x04\x00\x10\x00data0000")
   mixer.write_req = { id = id, filename = file, file = f,
-    frames = 0, samples = {}, procs = 0 }
+    frames = 0 }
   print(string.format("Writing file: %s", file))
   return id
 end
