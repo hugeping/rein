@@ -225,27 +225,21 @@ synth_mix_table(lua_State *L)
 	size_t i;
 	int nr;
 	int k = 1;
-	int tidx = 3;
 	int samples = luaL_checkinteger(L, 1);
 	const double vol = luaL_optnumber(L, 2, 1.0f);
 	#define SAMPLES_NR 128
 	float floats[SAMPLES_NR*2];
-	if (!lua_istable(L, tidx)) {
-		lua_newtable(L);
-		tidx = -2;
-	}
+	lua_newtable(L);
 	while (samples) {
 		nr = (samples > SAMPLES_NR)?SAMPLES_NR:samples;
 		mix_process(channels, CHANNELS_MAX, vol, floats, nr);
 		for (i = 0; i < nr * 2; i++) {
 			lua_pushnumber(L, floats[i]);
-			lua_rawseti(L, tidx, k ++);
+			lua_rawseti(L, -2, k ++);
 		}
 		samples -= nr;
 	}
 	#undef SAMPLES_NR
-	if (tidx == 3)
-		lua_pushnumber(L, k - 1);
 	return 1;
 }
 
