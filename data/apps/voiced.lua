@@ -1301,7 +1301,11 @@ function w_edit:event(r, v, ...)
           local t, delta = tune_part(w_edit.edit:get())
           tune_delta = delta
           last_cur = { self.edit:cursor() }
-          tune = mixer.play(t)
+          if input.keydown 'shift' then
+            tune = mixer.write(t, 'output.wav')
+          else
+            tune = mixer.play(t)
+          end
           -- w_play.disabled = tune
           w_edit.lev = -100
         end
