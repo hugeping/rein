@@ -118,7 +118,7 @@ function string.endswith(s, sfx)
   return s:find(sfx, start, true) == start
 end
 
-function string.lines(text)
+function string.lines(text, eol)
   text = text:gsub("\r", "")
   local state = {text, 1, 1}
   local function next_line()
@@ -131,7 +131,7 @@ function string.lines(text)
     local b, e = text:find("\n", begin, true)
     if b then
       state[2] = b == #text and -1 or e+1
-      return text:sub(begin, e-1), line_n
+      return text:sub(begin, eol and e or e-1), line_n
     else
       state[2] = -1
       return text:sub(begin), line_n

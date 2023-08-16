@@ -220,6 +220,36 @@ synth_set_pan(lua_State *L)
 }
 
 static int
+synth_mix_table(lua_State *L)
+{
+	size_t i;
+	int nr;
+	int k = 1;
+	int tidx = 3;
+	int samples = luaL_checkinteger(L, 1);
+	const double vol = luaL_optnumber(L, 2, 1.0f);
+	#define SAMPLES_NR 128
+	float floats[SAMPLES_NR*2];
+	if (!lua_istable(L, tidx)) {
+		lua_newtable(L);
+		tidx = -2;
+	}
+	while (samples) {
+		nr = (samples > SAMPLES_NR)?SAMPLES_NR:samples;
+		mix_process(channels, CHANNELS_MAX, vol, floats, nr);
+		for (i = 0; i < nr * 2; i++) {
+			lua_pushnumber(L, floats[i]);
+			lua_rawseti(L, tidx, k ++);
+		}
+		samples -= nr;
+	}
+	#undef SAMPLES_NR
+	if (tidx == 3)
+		lua_pushnumber(L, k - 1);
+	return 1;
+}
+
+static int
 synth_mix(lua_State *L)
 {
 	int samples = luaL_checkinteger(L, 1);
@@ -285,6 +315,7 @@ synth_lib[] = {
 	{ "chan_change", synth_chan_change },
 //	{ "peek", synth_peek },
 	{ "mix", synth_mix },
+	{ "mix_table", synth_mix_table },
 	{ "stop", synth_stop },
 	{ NULL, NULL }
 };

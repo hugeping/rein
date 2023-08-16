@@ -96,13 +96,71 @@ function mixer.change()
   end
 end
 
+local function tobytes(v, size)
+  if size == 2 then
+    if v < 0 then v = v + 0x10000 end
+    return string.char(bit.band(v, 0xff), bit.rshift(v, 8))
+  elseif size == 4 then
+    if v < 0 then v = v + 0x100000000 end
+    return string.char(bit.band(v, 0xff), bit.band(bit.rshift(v, 8), 0xff),
+      bit.band(bit.rshift(v, 16), 0xff), bit.rshift(v, 24))
+  end
+end
+
+local function wav_close(wr)
+  print("Writing stop...")
+  local sc2_size = wr.frames * 2 * 2;
+
+  wr.file:seek("set", 4)
+  wr.file:write(tobytes(4 + (8 + 16) + (8 + sc2_size), 4))
+  wr.file:seek("set", 40)
+  wr.file:write(tobytes(sc2_size, 4))
+  wr.file:seek("end")
+  wr.file:close()
+  mixer.write_req = nil
+end
+
 function mixer.proc(tick)
   local rc
   repeat
-    rc = synth.mix(tick, mixer.vol)
-    if rc == 0 then coroutine.yield() end -- sys.sleep(mixer.freq*2) end
-    tick = tick - rc
+    if mixer.write_req then
+      local r = mixer.ids[mixer.write_req.id]
+      local wr = mixer.write_req
+      if not r or r.dead then
+        wav_close(wr)
+        mixer.write_req = nil
+      else
+        local t = mixer.write_req.samples
+        local nr = synth.mix_table(tick, mixer.vol, t)
+        wr.frames = wr.frames + nr / 2 -- (#t / 2)
+        wr.procs = wr.procs + 1
+        for i=1, nr do
+          local v = math.floor(math.round(32768 * t[i]))
+          wr.file:write(tobytes(v, 2))
+        end
+      end
+      if wr.procs % 10 == 1 then
+        coroutine.yield()
+      end
+      break
+    else
+      rc = synth.mix(tick, mixer.vol)
+      if rc == 0 then coroutine.yield() end -- sys.sleep(mixer.freq*2) end
+      tick = tick - rc
+    end
   until tick == 0
+end
+
+function mixer.srv.write(text, file)
+  local id, e = mixer.srv.play(text, 1)
+  if not id then return id, e end
+  local f, e = io.open(file, 'wb')
+  if not f then return f, e end
+  f:write("RIFF0000WAVEfmt \x10\x00\x00\x00\x01\x00\x02\x00\x44\xac\x00\x00\x10\xb1\x02\x00\x04\x00\x10\x00data0000")
+  mixer.write_req = { id = id, filename = file, file = f,
+    frames = 0, samples = {}, procs = 0 }
+  print(string.format("Writing file: %s", file))
+  return id
 end
 
 function mixer.srv.play(text, nr)
@@ -189,7 +247,7 @@ function mixer.getreq()
     mixer.req = false
     return table.unpack(r)
   else
-    local rd, _ = thread:poll(mixer.freq * 2)
+    local rd, _ = thread:poll(mixer.write_req and 0 or mixer.freq * 2)
     if rd then
       return thread:read()
     end
@@ -287,6 +345,10 @@ end
 
 function mixer.play(...)
   return mixer.clireq("play", {...})
+end
+
+function mixer.write(...)
+  return mixer.clireq("write", {...})
 end
 
 function mixer.voices(text)

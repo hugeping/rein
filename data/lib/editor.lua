@@ -308,7 +308,9 @@ function editor:cut(copy, clip)
         if s:insel(x, y) then
           clipboard = clipboard .. s.lines[yy][x]
           if x == #s.lines[yy] or s:selmode() and x == x2 then
-            clipboard = clipboard .. '\n'
+            if y ~= y2 then
+              clipboard = clipboard .. '\n'
+            end
           end
         else
           table.insert(nl, s.lines[yy][x])
@@ -414,13 +416,17 @@ function editor:paste(clip)
   local s = self
   local text = clip or sys.clipboard() or s.clipboard or ''
   s:history 'start'
-  for l in text:lines() do
+  for l in text:lines(true) do
     local x, y = s:cursor()
+    local nl = l:endswith("\n")
+    l = l:gsub("\n$", "")
     s:input(l)
-    if s:selmode() then -- vertical?
-      s:move(x, y + 1)
-    else
-      s:newline(false)
+    if nl then
+      if s:selmode() then -- vertical?
+        s:move(x, y + 1)
+      else
+        s:newline(false)
+      end
     end
   end
   s:history 'end'
