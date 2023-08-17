@@ -23,7 +23,7 @@ print = function(t, x, y, c, scroll)
 end
 
 println = function(t, ...)
-  if type(t) == 'string' then t = t .. '\n' end
+  if t ~= nil then t = tostring(t) .. '\n' end
   return print(t, ...)
 end
 
