@@ -76,6 +76,13 @@ end
 function editor:input(t, replace)
   local s = self
   local c = utf.chars(t)
+  if replace == nil then
+    if s:insel(s:cursor()) then
+      replace = true
+    else
+      s:unselect()
+    end
+  end
   if replace then
     s:history('start')
     s:cut(false, false)
@@ -274,6 +281,103 @@ function editor:select(on, y1, x2, y2)
   end
 end
 
+function editor:selpar()
+  local s = self
+
+  local delim = {
+    [" "] = true;
+    [","] = true;
+    ["."] = true;
+    [";"] = true;
+    ["!"] = true;
+    ["("] = true;
+    ["{"] = true;
+    ["<"] = true;
+    ["["] = true;
+    [")"] = true;
+    ["}"] = true;
+    [">"] = true;
+    ["]"] = true;
+    ["*"] = true;
+    ["+"] = true;
+    ["-"] = true;
+    ["/"] = true;
+    ["="] = true;
+  }
+
+  local left_delim = {
+    ["("] = ")";
+    ["{"] = "}";
+    ["["] = "]";
+    ["<"] = ">";
+    ['"'] = '"';
+    ["'"] = "'";
+  }
+
+  local right_delim = {
+    [")"] = "(";
+    ["}"] = "{";
+    ["]"] = "[";
+    [">"] = "<";
+    ['"'] = '"';
+    ["'"] = "'";
+  }
+  local x, y = s:cursor()
+  local l = s.lines[y]
+  local ind
+
+  local function ind_find(l, i, a, b)
+    if a == b then
+      return l[i] == a
+    end
+    if l[i] == a then ind = ind + 1
+    elseif l[i] == b then ind = ind - 1 end
+    return ind == 0
+  end
+
+  local c = l[x-1]
+  if c and left_delim[c] then
+    ind = 1
+    for i = x, #l, 1 do
+      if ind_find(l, i, c, left_delim[c]) then
+        s:selmode()
+        s:select(x, y, i, y)
+        return
+      end
+    end
+    return
+  end
+
+  c = l[x+1]
+  if c and right_delim[c] then
+    ind = 1
+    for i=x, 1, -1 do
+      if ind_find(l, i, c, right_delim[c]) then
+        s:selmode()
+        s:select(i + 1, y, x + 1, y)
+        return
+      end
+    end
+    return
+  end
+
+  local left, right = 1, #l + 1
+  for i = x - 1, 1, -1 do
+    if delim[l[i]] then
+      left = i + 1
+      break
+    end
+  end
+  for i = x + 1, #l, 1 do
+    if delim[l[i]] then
+      right = i
+      break
+    end
+  end
+  s:selmode()
+  s:select(left, y, right, y)
+end
+
 function editor:wrap()
   local s = self
   local t = s:selected()
@@ -337,10 +441,11 @@ end
 
 function editor:delete()
   local s = self
-  if s:selection() then
+  if s:insel(s:cursor()) then
     s:cut(false, false)
     return
   end
+  s:unselect()
   if s.cur.x <= #s.lines[s.cur.y] then
     s:history()
     table.remove(s.lines[s.cur.y], s.cur.x)
@@ -391,10 +496,11 @@ end
 
 function editor:backspace()
   local s = self
-  if s:selection() then
+  if s:insel(s:cursor()) then
     s:cut(false, false)
     return
   end
+  s:unselect()
   if s.cur.x > 1 then
     s:history()
     table.remove(s.lines[s.cur.y], s.cur.x - 1)
@@ -447,6 +553,13 @@ end
 function editor:cutline()
   self:history('cut', 1, self.cur.y, #self.lines[self.cur.y] + 1, self.cur.y)
   table.remove(self.lines, self.cur.y)
+  self:move()
+end
+
+function editor:dupline()
+  local s = self
+  s:history 'newline'
+  table.insert(self.lines, self.cur.y, table.clone(self.lines[self.cur.y]))
   self:move()
 end
 
