@@ -163,7 +163,7 @@ end
 function check_click(x, y)
   for i, row in ipairs(board) do
     for j, cell in ipairs(row) do
-      local is_clicked = math.sqrt((x-cell.x)^2 + (y-cell.y)^2) < board.cell_radius
+      local is_clicked = sqrt((x-cell.x)^2 + (y-cell.y)^2) < board.cell_radius
 
       if is_clicked then
         local is_cell_without_cat = not (i == cat.row and j == cat.col)
@@ -389,7 +389,7 @@ function run()
       draw_game_result()
       update()
     end
-    gfx.flip(1/30)
+    flip(1/30)
     frame = frame + 1
   end
 end
