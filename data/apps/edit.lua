@@ -313,7 +313,6 @@ function buff:colorize_md(l, nl)
     end
   end
   local cols = {}
-  local k = 1
   local col
   for k=1, #l do
     local c = l[k]
@@ -333,19 +332,9 @@ function buff:colorize_md(l, nl)
   return cols
 end
 
-function buff:colorize(l, nl)
-  if not conf.syntax then
-    return {}
-  end
-  if self.fname and self.fname:find("%.[mM][dD]$") then
-    return self:colorize_md(l, nl)
-  end
-  local pre = ' '
-  local start
-  local key
-  local cols = {}
-  local beg
-  local k, c = 1, 0
+local function colorstr(l, cols)
+  local k, c, beg
+  k = 1
   while k<=#l do -- strings
     while l[k] == '\\' do
       if beg then
@@ -373,6 +362,22 @@ function buff:colorize(l, nl)
     end
     k = k + 1
   end
+end
+
+function buff:colorize(l, nl)
+  if not conf.syntax then
+    return {}
+  end
+  if self.fname and self.fname:find("%.[mM][dD]$") then
+    return self:colorize_md(l, nl)
+  end
+  local pre = ' '
+  local start
+  local key
+  local cols = {}
+
+  colorstr(l, cols)
+
   for k, c in ipairs(l) do
     if delim[pre] and not delim[c] and
         not cols[k] then
@@ -533,8 +538,11 @@ function buff:keydown(k)
     s.edit:move(false, cy - s.lines)
   elseif k == 'return' or k == 'keypad enter' then
     s.edit:newline(true)
-  elseif k == 'w' and input.keydown 'ctrl' then
+  elseif k == 'w' and input.keydown 'alt' then
     s.edit:wrap()
+  elseif k == 'w' and input.keydown 'ctrl' then
+    s.edit:selpar()
+    return
   elseif k == 'backspace' then
     s.edit:backspace()
   elseif k == 'tab' then
@@ -588,6 +596,8 @@ function buff:keydown(k)
     s.edit:cut()
   elseif k == 'y' and input.keydown 'ctrl' then
     s.edit:cutline()
+  elseif k == 'd' and input.keydown 'ctrl' then
+    s.edit:dupline()
   elseif k == 'c' and input.keydown 'ctrl' then
     s.edit:cut(true)
   elseif k == 'v' and input.keydown 'ctrl' then
@@ -712,7 +722,9 @@ ctrl-c       - copy selection
 ctrl-v       - paste selection
 ctrl-y       - remove line
 ctrl-z       - undo
-ctrl-w       - wrap text
+ctrl-w       - select inside line
+ctrl-d       - duplicate line
+alt-w        - wrap text
 ins          - insert mode
 F4           - open another file (no save!)
 F5           - run!
@@ -774,8 +786,15 @@ while sys.running() do
   elseif r == 'keyup' then
     get_buff():keyup(v)
   elseif r == 'text' then
-    get_buff().edit:unselect()
-    get_buff().edit:input(v)
+    if not input.keydown 'alt' then
+      local x, y = get_buff().edit:cursor()
+      if get_buff().edit:insel(x, y) then
+        get_buff().edit:input(v, true)
+      else
+        get_buff().edit:unselect()
+        get_buff().edit:input(v)
+      end
+    end
   elseif r and r:startswith 'mouse' then
     get_buff():mouse(r, v)
   end
