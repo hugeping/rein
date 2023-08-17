@@ -1428,6 +1428,7 @@ HELP2 = [[TRACKER
 
 esc           Toggle PLAY mode
 tab/esc       Start/stop playing
+shift+tab     Write output.wav
 f1-f6,f10     Switch octaves
 backspace     Delete note/volume
 zsxdcvgbhnjm  Input note
