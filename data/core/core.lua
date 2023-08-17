@@ -282,7 +282,7 @@ function core.render(force)
   if scale > 1.0 then
     local oscale = scale
     scale = math.floor(scale)
-    if core.scale and scale + 0.5 < oscale then scale = scale + 0.5 end
+    if core.scale and scale + 0.5 <= oscale then scale = scale + 0.5 end
   end
   local dw = w * scale
   local dh = h * scale

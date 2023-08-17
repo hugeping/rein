@@ -354,6 +354,7 @@ PlatformInit(void)
 	}
 	SDL_PauseAudioDevice(audiodev, 0);
 	gamepad_init();
+//	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 	return 0;
 }
 
