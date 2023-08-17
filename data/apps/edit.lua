@@ -262,6 +262,7 @@ local kwd = {
   ["else"] = conf.keyword,
   ["elseif"] = conf.keyword,
   ["local"] = conf.keyword,
+  ["require"] = conf.keyword,
   ["function"] = conf.keyword,
   ["break"] = conf.keyword,
 }

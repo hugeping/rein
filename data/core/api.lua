@@ -471,8 +471,8 @@ function env.gfx.print(text, x, y, col, scroll)
     else
       ww = 0
     end
-    if x + ww >= w and scroll then
-      x = startx
+    if x + ww > w and scroll then
+      x = 0 --startx
       y = y + hh
     end
 
@@ -493,6 +493,7 @@ function env.gfx.print(text, x, y, col, scroll)
       y = y + hh
     end
   end
+  return x, y
 end
 
 function env.sprite_data(fname)

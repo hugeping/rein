@@ -1,6 +1,7 @@
 floor = math.floor
 ceil = math.ceil
 abs = math.abs
+sqrt = math.sqrt
 round = math.round
 fmt = string.format
 flip = gfx.flip
@@ -11,7 +12,21 @@ mouse = input.mouse
 keydown = input.keydown
 keypress = input.keypress
 dprint = print
-print = gfx.print
+
+local px, py = 0, 0
+print = function(t, x, y, c, scroll)
+  if scroll == nil then
+    scroll = not x
+  end
+  px, py = gfx.print(t, x or px, y or py, c or false, scroll)
+  return px, py
+end
+
+println = function(t, ...)
+  if type(t) == 'string' then t = t .. '\n' end
+  return print(t, ...)
+end
+
 printf = gfx.printf
 add = table.insert
 del = table.remove
