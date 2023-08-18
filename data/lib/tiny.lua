@@ -12,6 +12,8 @@ mouse = input.mouse
 keydown = input.keydown
 keypress = input.keypress
 dprint = print
+max = math.max
+min = math.min
 
 local px, py = 0, 0
 print = function(t, x, y, c, scroll)
