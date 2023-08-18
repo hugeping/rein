@@ -89,8 +89,8 @@ function editor:input(t, replace)
     s:history('end')
   else
     s:unselect()
-    s:history()
   end
+  s:history()
   s.lines[s.cur.y] = s.lines[s.cur.y] or {}
   for _, v in ipairs(c) do
     if s:insmode() then
