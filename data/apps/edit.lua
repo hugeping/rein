@@ -13,7 +13,7 @@ local conf = {
   scalable = false,
   scalable_font = DATADIR..'/iosevka.ttf',
   scalable_font_sz = 14,
-  cursor_blink = true,
+  cursor_blink = false,
   brd = { 0xde, 0xde, 0xde },
   hl = { 0, 0, 0, 32 },
   status = { 0, 0, 0, 64 },
@@ -36,7 +36,7 @@ if conf.scalable then
   if conf.scalable_font then
     sfont = gfx.font(fn, sz)
   end
-  gfx.win(w, h, fn, sz)
+  gfx.win(w - conf.scalable_font_sz, h - conf.scalable_font_sz, fn, sz)
 else
   sys.event_filter().resized = false
   gfx.win(385, 380)
@@ -781,10 +781,10 @@ while sys.running() do
   end
   local r, v, a = sys.input()
   if r == 'resized' or r == 'exposed' then
-    W, H = v, a
-    gfx.win(v, a)
-    b:resize(v, a - b.sph)
-    inp:resize(v, b.sph)
+    W, H = v - conf.scalable_font_sz, a - conf.scalable_font_sz
+    gfx.win(W, H)
+    b:resize(W, H - b.sph)
+    inp:resize(W, b.sph)
     inp.y = H - b.sph
     inp.w = W
     if inp_mode then b:show() end
