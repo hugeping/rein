@@ -13,7 +13,7 @@ local conf = {
   scalable = false,
   scalable_font = DATADIR..'/iosevka.ttf',
   scalable_font_sz = 14,
-  cursor_blink = false,
+  cursor_blink = true,
   brd = { 0xde, 0xde, 0xde },
   hl = { 0, 0, 0, 32 },
   status = { 0, 0, 0, 64 },
@@ -35,6 +35,7 @@ if conf.scalable then
   local sz = conf.scalable_font_sz * SCALE
   if conf.scalable_font then
     sfont = gfx.font(fn, sz)
+    font = sfont
   end
   gfx.win(w - conf.scalable_font_sz, h - conf.scalable_font_sz, fn, sz)
 else
@@ -553,6 +554,7 @@ function buff:keydown(k)
       s.edit:select(false)
       inp_mode = 'write'
       inp.edit:set(FILE)
+      inp.edit:move(128)
     end
   elseif k == 'f2' or (k == 's' and input.keydown'ctrl') then
     s:write()
@@ -606,6 +608,8 @@ function buff:keydown(k)
     inp_mode = not inp_mode
     if inp_mode then
       inp_mode = 'open'
+      inp.edit:set(FILE)
+      inp.edit:move(128)
     end
   elseif (k == 'h' and input.keydown 'ctrl') or
     (k == 'f7' and input.keydown 'shift') then
@@ -650,16 +654,16 @@ function inp:history(t)
     table.insert(h, t)
   end
   if #t > 128 then table.remove(t, 1) end
-  self.hidx = #h + 1
+  h.hidx = #h + 1
 end
 
 function inp:hprev()
   self.hist = self.hist or { }
   local h = self.hist[inp_mode] or {}
-  local idx = self.hidx or #h + 1
+  local idx = h.hidx or #h + 1
   if idx == 1 then return end
-  self.hidx = idx - 1
-  self.edit:set(h[self.hidx])
+  h.hidx = idx - 1
+  self.edit:set(h[h.hidx])
   self.edit:move(false, 1)
   self.edit:toend()
 end
@@ -667,10 +671,10 @@ end
 function inp:hnext()
   self.hist = self.hist or { }
   local h = self.hist[inp_mode] or {}
-  local idx = self.hidx or #h + 1
+  local idx = h.hidx or #h + 1
   if idx > #h then return end
-  self.hidx = idx + 1
-  self.edit:set(h[self.hidx] or '')
+  h.hidx = idx + 1
+  self.edit:set(h[h.hidx] or '')
   self.edit:move(false, 1)
   self.edit:toend()
 end
