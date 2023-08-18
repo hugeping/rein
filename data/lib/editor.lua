@@ -35,6 +35,22 @@ function editor:size(w, h)
   s.width, s.height = w, h
 end
 
+function editor:left()
+  local s = self
+  local x, y = s:cursor()
+  if x > 1 or y == 1 then return s:move(x - 1) end
+  y = y - 1
+  x = #s.lines[y]
+  return s:move(x + 1, y)
+end
+
+function editor:right()
+  local s = self
+  local x, y = s:cursor()
+  if x <= #s.lines[y] or y > #s.lines then return s:move(x + 1) end
+  return s:move(1, y + 1)
+end
+
 function editor:move(x, y)
   local s = self
   if x then s.cur.x = x end

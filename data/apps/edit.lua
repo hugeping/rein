@@ -523,9 +523,9 @@ function buff:keydown(k)
       s.edit:move(false, cy + 1)
     end
   elseif k == 'right' then
-    s.edit:move(cx + 1)
+    s.edit:right()
   elseif k == 'left' then
-    s.edit:move(cx - 1)
+    s.edit:left()
   elseif k == 'home' or k == 'keypad 7' or
     (k == 'a' and input.keydown 'ctrl') then
     s.edit:move(1)

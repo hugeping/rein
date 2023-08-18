@@ -164,9 +164,9 @@ function editarea:event(r, v, ...)
     elseif v == 'down' then
       self.edit:move(false, self.edit.cur.y + 1)
     elseif v == 'right' then
-      self.edit:move(self.edit.cur.x + 1)
+      self.edit:right()
     elseif v == 'left' then
-      self.edit:move(self.edit.cur.x - 1)
+      self.edit:left()
     elseif v == 'home' or v == 'keypad 7' or
       (v == 'a' and input.keydown 'ctrl') then
       self.edit:move(1)
