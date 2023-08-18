@@ -604,13 +604,25 @@ end
 
 function get_voices()
   local txt = ''
-  for _, v in ipairs(voices) do
+  local num = 1
+  for k, v in ipairs(voices) do
+    if #v > 0 then num = k end
+  end
+  for k, v in ipairs(voices) do
     txt = txt .. string.format("voice %s\n", v.nam:gsub(" ", "_"))
-    local conf = ''
-    for _, b in ipairs(v) do
-      conf = string.format("box %s\n%s", b.nam, b.conf or sfx.box_defs(b.nam)) .. conf
+    if #v == 0 then
+      txt = txt .. '\n'
+    else
+      local conf = ''
+      for _, b in ipairs(v) do
+        conf = string.format("box %s\n%s", b.nam,
+          b.conf or sfx.box_defs(b.nam)) .. conf
+      end
+      txt = txt .. conf:strip() .. '\n\n'
     end
-    txt = txt .. conf:strip() .. '\n\n'
+    if k == num then
+      break
+    end
   end
   return txt:strip()
 end
