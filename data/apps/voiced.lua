@@ -1021,13 +1021,22 @@ end
 
 function get_songs()
   local txt = ''
-  for _, v in ipairs(songs) do
+  local idx = 1
+  for k, v in ipairs(songs) do
+    if not v.text:empty() then idx = k end
+  end
+  for k, v in ipairs(songs) do
     if v.nam then
       txt = txt .. string.format("song %s\n", tostring(v.nam):gsub(" ", "_"))
     else
       txt = txt .. "song\n"
     end
-    txt = txt .. v.text:stripnl()..'\n\n'
+    if v.text:empty() then
+      txt = txt .. '\n'
+    else
+      txt = txt .. v.text:stripnl()..'\n\n'
+    end
+    if k == idx then break end
   end
   return txt:stripnl()
 end
