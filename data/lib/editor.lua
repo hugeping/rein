@@ -126,9 +126,9 @@ function editor:history(op, x1, y1, x2, y2)
       h.rem = 1 --x2 - x1 < #s.lines[y1] and 1 or 0
     else
       h.rem = x1 > 1 and 1 or 0
-      if x2 < #s.lines[y2] then
+--      if x2 < #s.lines[y2] then
         h.rem = h.rem + 1
-      end
+--      end
       -- h.rem = h.rem + y2 - y1 - 1
     end
   end
@@ -450,9 +450,12 @@ function editor:delete()
     s:history()
     table.remove(s.lines[s.cur.y], s.cur.x)
   elseif s.cur.x > #s.lines[s.cur.y] and s.lines[s.cur.y+1] then
+    s:history 'start'
     s:history()
     s.cur.y = s.cur.y + 1
-    s:history()
+    s:history('cut')
+    s.hist[#s.hist].rem = 0
+    s:history 'end'
     local l = table.remove(s.lines, s.cur.y)
     s.cur.y = s.cur.y - 1
     for _, v in ipairs(l) do
@@ -496,7 +499,14 @@ end
 
 function editor:backspace()
   local s = self
-  if s:insel(s:cursor()) then
+  local x, y = s:cursor()
+  if x > 1 then
+    x = x - 1
+  elseif s.cur.y > 1 then
+    y = y - 1
+    x = #s.lines[y]
+  end
+  if s:insel(x, y) then
     s:cut(false, false)
     return
   end
