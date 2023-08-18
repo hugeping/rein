@@ -1036,7 +1036,7 @@ local tracker_mode = { w_song_prev, w_song, w_song_next,
 
 function w_voiced:event(r, v, ...)
   if r == 'keydown' and v == 'space' and input.keydown'alt' and
-    song_check() then
+    not tune and song_check() then
     switch 'voiced'
     sys.input(true)
     return true

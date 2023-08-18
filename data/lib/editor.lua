@@ -143,7 +143,9 @@ function editor:history(op, x1, y1, x2, y2)
     else
       h.rem = x1 > 1 and 1 or 0
 --      if x2 < #s.lines[y2] then
+      if x2 > 1 or #s.lines[y2] > 0 then
         h.rem = h.rem + 1
+      end
 --      end
       -- h.rem = h.rem + y2 - y1 - 1
     end
@@ -151,7 +153,7 @@ function editor:history(op, x1, y1, x2, y2)
   for i = 1, y2 - y1 + 1 do
     table.insert(h, clone(s.lines[y1 + i - 1]))
   end
-  if #h > 1 and #h[#h] == 0 then table.remove(h, #h) end
+--  if #h > 1 and #h[#h] == 0 then table.remove(h, #h) end
   table.insert(s.hist, h)
   if #s.hist > 1024 then
     table.remove(s.hist, 1)
@@ -457,7 +459,14 @@ end
 
 function editor:delete()
   local s = self
-  if s:insel(s:cursor()) then
+  local x0, y0 = s:cursor()
+  s:left()
+  local x, y = s:cursor()
+  s:move(x0, y0)
+  s:right()
+  local x1, y1 = s:cursor()
+  s:move(x0, y0)
+  if s:insel(x, y) or s:insel(x0, y0) or s:insel(x1, y1) then
     s:cut(false, false)
     return
   end
@@ -515,13 +524,10 @@ end
 
 function editor:backspace()
   local s = self
+  local x0, y0 = s:cursor()
+  s:left()
   local x, y = s:cursor()
-  if x > 1 then
-    x = x - 1
-  elseif s.cur.y > 1 then
-    y = y - 1
-    x = #s.lines[y]
-  end
+  s:move(x0, y0)
   if s:insel(x, y) then
     s:cut(false, false)
     return
