@@ -636,7 +636,7 @@ function buff:search(t)
   local x1, y1, x2, y2 = self.edit:search(t)
   if x1 then
     self.edit:select(x1, y1, x2, y2)
-    self.edit:move(x1, y1+self.lines/2)
+    self.edit:move(x1, y1+math.floor(self.lines/2))
     self.edit:move(x1, y1)
     return true
   end
