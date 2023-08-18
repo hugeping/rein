@@ -1087,6 +1087,10 @@ local function line(l)
 end
 
 function note_edit()
+  if input.keydown 'alt' or input.keydown 'ctrl'
+    or input.keydown 'shift' then
+    return
+  end
   local cx, cy = w_edit.edit:cursor()
   local l = w_edit.edit.lines[cy] or {}
 --  local l = line(w_edit.edit.lines[cy])
