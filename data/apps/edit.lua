@@ -615,13 +615,7 @@ function buff:keydown(k)
   elseif (k == 'f' and input.keydown 'ctrl') or k == 'f7' then
     inp_mode = not inp_mode
     if inp_mode then
-      local t = s:selected()
-      if t then
-        inp_mode = false
-        s:search(t)
-      else
-        inp_mode = 'search'
-      end
+      inp_mode = 'search'
     end
   elseif k == 'l' and input.keydown 'ctrl' then
     inp_mode = not inp_mode
@@ -720,7 +714,7 @@ home,ctrl-a  - line begin
 end,ctrl-e   - line end
 pageup       - scroll up
 pagedown     - scroll down
-F7,ctrl-f    - search [selection]
+F7,ctrl-f    - search
 ctrl-h       - search again
 cursor keys  - move
 shift+cursor - select (+alt vertical block)
