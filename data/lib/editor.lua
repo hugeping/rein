@@ -439,7 +439,7 @@ function editor:cut(copy, clip)
         end
       end
     end
-    if #nl == 0 and yy ~= y2 and not copy then
+    if #nl == 0 and y ~= y2 and not copy then
       table.remove(s.lines, yy)
     else
       s.lines[yy] = copy and s.lines[yy] or nl
