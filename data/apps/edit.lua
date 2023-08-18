@@ -52,7 +52,7 @@ local buff = {
 }
 buff.__index = buff
 
-local glyph_cache = {}
+local glyph_cache = { col = { } }
 
 local function clone(t)
   local l = {}
@@ -64,12 +64,12 @@ end
 
 function glyph(t, col)
   col = col or conf.fg
-  local key = string.format("%s-%s", t, col)
-  if glyph_cache[key] then
-    return glyph_cache[key]
+  glyph_cache[col] = glyph_cache[col] or {}
+  if glyph_cache[col][t] then
+    return glyph_cache[col][t]
   end
-  glyph_cache[key] = sfont:text(t, col)
-  return glyph_cache[key]
+  glyph_cache[col][t] = sfont:text(t, col)
+  return glyph_cache[col][t]
 end
 
 function buff:resize(w, h)
