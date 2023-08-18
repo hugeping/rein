@@ -123,7 +123,7 @@ function editor:history(op, x1, y1, x2, y2)
     if s:selmode() then
       h.rem = y2 - y1 + 1
     elseif y1 == y2 then
-      h.rem = x2 - x1 < #s.lines[y1] and 1 or 0
+      h.rem = 1 --x2 - x1 < #s.lines[y1] and 1 or 0
     else
       h.rem = x1 > 1 and 1 or 0
       if x2 < #s.lines[y2] then
@@ -421,7 +421,7 @@ function editor:cut(copy, clip)
         end
       end
     end
-    if #nl == 0 and not copy then
+    if #nl == 0 and yy ~= y2 and not copy then
       table.remove(s.lines, yy)
     else
       s.lines[yy] = copy and s.lines[yy] or nl
