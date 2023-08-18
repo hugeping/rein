@@ -187,6 +187,8 @@ function editarea:event(r, v, ...)
       self.edit:move(false, self.edit.cur.y - lines)
     elseif v == 'y' and input.keydown 'ctrl' then
       self.edit:cutline()
+    elseif v == 'd' and input.keydown 'ctrl' then
+      self.edit:dupline()
     elseif v == 'c' and input.keydown 'ctrl' then
       self.edit:cut(true)
     elseif v == 'v' and input.keydown 'ctrl' then
@@ -1416,6 +1418,7 @@ ctrl-v        Paste
 ctrl-c        Copy
 ctrl-z        Undo
 ctrl-y        Delete line
+ctrl-d        Duplicate line
 shift+cursor  Select
 alt-left      Prev voice
 alt-right     Next voice
@@ -1441,6 +1444,7 @@ ctrl-c        Copy
 ctrl-v        Paste
 ctrl-z        Undo
 ctrl-y        Delete line
+ctrl-d        Duplicate line
 Ins           Direct input mode (notes)
 alt-left      Prev song
 alt-right     Next song
