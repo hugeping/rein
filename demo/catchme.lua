@@ -2,7 +2,7 @@
 --
 -- Game "Catch me!" by Boris Timofeev <btimofeev@emunix.org>
 --
--- Last update: 2023.08.17
+-- Last update: 2023.08.19
 --
 -- ---------------
 
@@ -44,11 +44,13 @@ local title = {
     y = 180,
   },
   cat = {
-    x = -10,
-    y = 50,
-    path_num = 1,
+    x = nil,
+    y = nil,
+    start_x = -10,
+    start_y = 65,
+    cur_path = 1,
     path = {
-      { x = 28,  y = 89,  frames = 20 },
+      { x = 28,  y = 89,  frames = 15 },
       { x = 29,  y = 89,  frames = 60 },
 
       { x = 50,  y = 70,  frames = 10 },
@@ -61,9 +63,10 @@ local title = {
       { x = 170, y = 103, frames = 10 },
       { x = 171, y = 103, frames = 60 },
 
-      { x = 195, y = 73,  frames = 10 },
-      { x = 218, y = 90,  frames = 10 },
-      { x = 260, y = 65,  frames = 15 },
+      { x = 200, y = 78,  frames = 13 },
+      { x = 218, y = 90,  frames = 7 },
+
+      { x = 260, y = 70,  frames = 10 },
     },
     path_start_frame = nil,
   }
@@ -339,12 +342,18 @@ function draw_title_cat_animation()
   local c = title.cat
   local x, y = 0, 0
 
+  if c.x == nil or c.y == nil then
+    c.cur_path = 1
+    c.x = c.start_x
+    c.y = c.start_y
+  end
+
   if c.path_start_frame == nil then
     c.path_start_frame = frame
   end
 
-  if c.path_num <= #c.path then
-    local to = c.path[c.path_num]
+  if c.cur_path <= #c.path then
+    local to = c.path[c.cur_path]
     local delta = frame - c.path_start_frame
     if delta == 0 then delta = 1 end
 
@@ -352,15 +361,15 @@ function draw_title_cat_animation()
     y = lerp(c.y, to.y, delta / to.frames)
     spr:blend(screen, x, y)
 
-
     if x == to.x and y == to.y then
-      c.path_num = c.path_num + 1
+      c.cur_path = c.cur_path + 1
       c.path_start_frame = nil
       c.x = to.x
       c.y = to.y
     end
   else
-    spr:blend(screen, c.x, c.y)
+    c.x = nil
+    c.y = nil
   end
 end
 
