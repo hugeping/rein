@@ -342,14 +342,22 @@ function sfx.proc.pop(chans, mus)
 end
 
 function sfx.proc.play(chans, mus, song)
-  local sng = sfx.sfx_bank[song]
+  local m = mus
+  while m.parent do
+    m = m.parent
+    if m.nam == song then
+      return false, "Recursion detected"
+    end
+  end
+  local sng, e = sfx.parse_song(song)
   if not sng then
-    return false, "No sfx:"..tostring(song)
+    return false, e
   end
-  if sng.playing then
-    return false, "Recursion detected:"..tostring(song)
-  end
-  return sfx.play_song(chans, sfx.sfx_bank[song], mus.tempo)
+  sng.parent = mus
+  sng.nam = song
+  sng.voices = mus.voices -- inherit voices
+  sng.tempo = mus.tempo
+  return sfx.play_song(chans, sng)
 end
 
 local function chan2track(chans, c)
@@ -362,6 +370,11 @@ local function chan2track(chans, c)
 end
 
 function sfx.proc.voice(chans, mus, c, v, ...)
+  local idx = chan2track(chans, c)
+  local ov = mus.voices[idx]
+  if ov and ov.nam == v then
+    return true
+  end
   local r, vo = sfx.apply(c, v, ...)
   if r then
     mus.voices[chan2track(chans, c)] = vo
@@ -419,7 +432,7 @@ end
 function sfx.play_song_once(chans, tracks)
   local row, r, e
   tracks.row = 1
-  tracks.voices = {}
+  tracks.voices = tracks.voices or {}
   tracks.playing = true
   while tracks.row <= (tracks.len or #tracks) do
     row = tracks[tracks.row]
