@@ -435,14 +435,15 @@ function sfx.play_song_once(chans, tracks)
   tracks.voices = tracks.voices or {}
   tracks.playing = true
   while tracks.row <= (tracks.len or #tracks) do
-    row = tracks[tracks.row]
-    r, e = sfx.proc_cmd(chans, tracks, row.cmd)
-    if not r then
-      print(e)
-      tracks.playing = false
-      return r, e
-    end
-    row = tracks[tracks.row]
+    repeat
+      row = tracks[tracks.row]
+      r, e = sfx.proc_cmd(chans, tracks, row.cmd)
+      if not r then
+        print(e)
+        tracks.playing = false
+        return r, e
+      end
+    until row == tracks[tracks.row]
     for i, r in ipairs(row) do
       local freq, vol = r[1], r[2]
       if freq and chans[i] and tracks.voices[i] then
