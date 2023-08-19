@@ -1119,12 +1119,11 @@ song pat4
 
 song music
 @tracks 6
-@vol * 2
+@vol * 1
 @play pat1
 @play pat2
 @play pat4
 @play pat3
-
 ]]
 
 mixer.voices(__voices__)
