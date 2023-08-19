@@ -376,6 +376,9 @@ function sfx.proc.voice(chans, mus, c, v, ...)
     return true
   end
   local r, vo = sfx.apply(c, v, ...)
+  if not r then
+    return false, vo
+  end
   if r then
     mus.voices[chan2track(chans, c)] = vo
   end
@@ -786,6 +789,9 @@ function sfx.apply(chan, voice)
   local vo = sfx.voices_bank[voice]
   synth.drop(chan)
   if not vo then
+    if voice == '-' or voice == 'none' then
+      return true
+    end
     return false, "Unknown voice: "..tostring(voice)
   end
   for i, b in ipairs(vo) do
