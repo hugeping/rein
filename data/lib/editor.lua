@@ -102,7 +102,6 @@ function editor:input(t, replace)
   if replace then
     s:history('start')
     s:cut(false, false)
-    s:history('end')
   else
     s:unselect()
   end
@@ -115,6 +114,9 @@ function editor:input(t, replace)
       table.insert(s.lines[s.cur.y], s.cur.x, v)
     end
     s.cur.x = s.cur.x + 1
+  end
+  if replace then
+    s:history('end')
   end
   s:move()
 end
