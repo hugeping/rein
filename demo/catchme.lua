@@ -154,7 +154,6 @@ function draw_cat()
 end
 
 function new_game()
-  music = mixer.play('music', -1)
   init_board()
   randomize_board()
 
@@ -1133,5 +1132,6 @@ mixer.songs(__songs__)
 
 sys.title("Catch me!")
 gfx.icon(cat.spr[1])
+music = mixer.play('music', -1)
 
 run()
