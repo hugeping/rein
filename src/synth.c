@@ -248,6 +248,8 @@ synth_mix(lua_State *L)
 {
 	int samples = luaL_checkinteger(L, 1);
 	const double vol = luaL_optnumber(L, 2, 1.0f);
+	double max_sample = 0.0f;
+	double max_chunk;
 	unsigned int free;
 	#define SAMPLES_NR 128
 	float floats[SAMPLES_NR*2];
@@ -260,7 +262,8 @@ synth_mix(lua_State *L)
 	written = samples;
 	while (samples > 0) {
 		nr = (samples > SAMPLES_NR)?SAMPLES_NR:samples;
-		mix_process(channels, CHANNELS_MAX, vol, floats, nr);
+		max_chunk = mix_process(channels, CHANNELS_MAX, vol, floats, nr);
+		max_sample = MAX(max_sample, max_chunk);
 		for (i = 0; i < nr*2; i ++)
 			buf[i] = (signed short)(floats[i] * 32768.0);
 		AudioWrite(buf, nr * 4);
@@ -269,7 +272,8 @@ synth_mix(lua_State *L)
 	MutexUnlock(mutex);
 	#undef SAMPLES_NR
 	lua_pushinteger(L, written);
-	return 1;
+	lua_pushnumber(L, max_sample);
+	return 2;
 }
 
 static int

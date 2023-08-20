@@ -15,6 +15,7 @@ local mixer = {
   freq = 1/100;
   hz = 44100;
   req = {};
+  clipping = false;
 }
 mixer.tick = mixer.hz * mixer.freq
 
@@ -119,31 +120,45 @@ local function wav_close(wr)
   mixer.write_req = nil
 end
 
+local function wav_write(tick)
+  local r = mixer.ids[mixer.write_req.id]
+  local wr = mixer.write_req
+  if not r or r.dead then
+    wav_close(wr)
+    mixer.write_req = nil
+  else
+    local t = synth.mix_table(tick, mixer.vol)
+    wr.frames = wr.frames + (#t / 2)
+    local v
+    for i=1, #t do
+      v = t[i]
+      mixer.clipping = mixer.clipping or math.abs(v) > 1.0
+      v = math.floor(math.round(32768 * v))
+      wr.file:write(tobytes2(v))
+    end
+  end
+end
+
 function mixer.proc(tick)
-  local rc
+  local rc, max_sample
   repeat
     if mixer.write_req then
-      local r = mixer.ids[mixer.write_req.id]
-      local wr = mixer.write_req
-      if not r or r.dead then
-        wav_close(wr)
-        mixer.write_req = nil
-      else
-        local t = synth.mix_table(tick, mixer.vol)
-        wr.frames = wr.frames + (#t / 2)
-        for i=1, #t do
-          local v = math.floor(math.round(32768 * t[i]))
-          wr.file:write(tobytes2(v))
-        end
-      end
+      wav_write(tick)
       coroutine.yield()
       break
     else
-      rc = synth.mix(tick, mixer.vol)
+      rc, max_sample = synth.mix(tick, mixer.vol)
+      mixer.clipping = mixer.clipping or max_sample > 1.0
       if rc == 0 then coroutine.yield() end -- sys.sleep(mixer.freq*2) end
       tick = tick - rc
     end
   until tick == 0
+end
+
+function mixer.srv.clipping()
+  local v = mixer.clipping
+  mixer.clipping = false
+  return v
 end
 
 function mixer.srv.write(text, file)
@@ -344,6 +359,10 @@ end
 
 function mixer.write(...)
   return mixer.clireq("write", {...})
+end
+
+function mixer.clipping(...)
+  return mixer.clireq("clipping", {...})
 end
 
 function mixer.voices(text)

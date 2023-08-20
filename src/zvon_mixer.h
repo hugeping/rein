@@ -47,7 +47,7 @@ void chan_drop(struct chan_state *c);
 struct sfx_box *chan_push(struct chan_state *c, struct sfx_proto *proto);
 
 void mix_init(struct chan_state *chans, int num_chans);
-void mix_process(struct chan_state *chans, int num_chans, double vol, float *samps, int num_samps);
+double mix_process(struct chan_state *chans, int num_chans, double vol, float *samps, int num_samps);
 
 #define SFX_BOX_VOLUME 0
 

@@ -1487,6 +1487,7 @@ Commands (chan can be set as *):
 @synth <chan> par val  Change synth parameter
 ]]
 
+local clipping, clip_time = false, 0
 while sys.running() do
   while help_mode do
     screen:clear(16)
@@ -1497,7 +1498,14 @@ while sys.running() do
     end
     coroutine.yield()
   end
-
+  if sys.time() - clip_time > 0.5 then
+    local c = mixer.clipping()
+    if c ~= clipping then
+      gfx.border(c and {0xff, 0, 0 } or {0xbe, 0xbe, 0xbe})
+    end
+    clipping = c
+    clip_time = sys.time()
+  end
   if tune then
     local st, e = mixer.status(tune)
     if not st then

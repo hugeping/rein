@@ -7,7 +7,6 @@ struct osc_state {
     int type;
     double params[OSC_PARAMS];
     struct phasor_state phasor1;
-    struct phasor_state phasor2;
     struct noise_state noise1;
 };
 
@@ -19,7 +18,6 @@ static void osc_init(struct osc_state *s) {
     s->params[OSC_WIDTH] = 0.5;
     s->params[OSC_OFFSET] = 1;
     phasor_init(&s->phasor1);
-    phasor_init(&s->phasor2);
     noise_init(&s->noise1);
 }
 
@@ -54,7 +52,6 @@ static void lfo_note_on(struct sfx_synth_state *s) {
 }
 
 static void sfx_synth_change(struct sfx_synth_state *s, int param, int elem, double val) {
-    (void) elem;
     switch (param) {
     case ZV_TYPE:
         s->osc.type = val;
@@ -168,9 +165,9 @@ static double osc_next(struct osc_state *s, double freq, double width, double of
     case OSC_SIN:
         return sin(phasor_next(&s->phasor1, freq));
     case OSC_SAW:
-        return saw(phasor_next(&s->phasor1, freq), w);
+        return dsf(phasor_next(&s->phasor1, freq), 1, w);
     case OSC_SQUARE:
-        return square(phasor_next(&s->phasor1, freq), w);
+        return dsf(phasor_next(&s->phasor1, freq), 2, w);
     case OSC_DSF:
         return dsf(phasor_next(&s->phasor1, freq), offset, w);
     case OSC_DSF2:
