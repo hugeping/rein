@@ -130,6 +130,13 @@ local function clone(t)
   return l
 end
 
+function editor:history_abort()
+  while #self.hist > 0 do
+    local h = table.remove(self.hist, #self.hist)
+    if h.op == 'start' then break end
+  end
+end
+
 function editor:history(op, x1, y1, x2, y2)
   local s = self
   y1 = y1 or s.cur.y
@@ -413,6 +420,17 @@ function editor:wrap()
   end
 end
 
+function editor:set_clipboard(clipboard)
+  local s = self
+  sys.clipboard(clipboard)
+  s.clipboard = clipboard
+end
+
+function editor:get_clipboard(clipboard)
+  local s = self
+  return sys.clipboard() or s.clipboard or ''
+end
+
 function editor:cut(copy, clip)
   local s = self
   local x1, y1, x2, y2 = s:selection()
@@ -453,8 +471,7 @@ function editor:cut(copy, clip)
     s:unselect()
   end
   if clip ~= false then
-    sys.clipboard(clipboard)
-    s.clipboard = clipboard
+    s:set_clipboard(clipboard)
   end
   return clipboard
 end
@@ -554,7 +571,7 @@ end
 
 function editor:paste(clip)
   local s = self
-  local text = clip or sys.clipboard() or s.clipboard or ''
+  local text = clip or s:get_clipboard()
   s:history 'start'
   for l in text:lines(true) do
     local x, y = s:cursor()
