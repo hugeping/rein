@@ -539,13 +539,13 @@ type dsf2
 
 fmul freq 1
 amp 1
-width 0.25
+width 0.23
 offset 0.25
 
 attack 0.2
 decay 0.1
 sustain 0.5
-release 0.4
+release 0.35
 set_sustain 0
 
 lfo_type 0 triangle
@@ -555,6 +555,13 @@ lfo_high 0 2.5
 lfo_set_loop 0 0
 lfo_set_reset 0 1
 lfo_assign 0 fmul
+
+box delay
+# delay
+volume 0.5
+time 0.3
+level 0.1
+feedback 0.5
 
 voice clav
 box synth
@@ -611,11 +618,11 @@ type saw
 set_fm 0
 fmul freq 1
 amp 1
-width 0.3
+width 0.4
 offset 1
 attack 0.01
 decay 0.3
-sustain 0.5
+sustain 0.3
 release 0.3
 set_sustain 0
 #set_glide 1
@@ -753,6 +760,7 @@ volume 0.5
 time 0.25
 level 0.5
 feedback 0.5
+
 ]]
 
 local __songs__ = [[
@@ -883,7 +891,7 @@ song pat1
 
 song pat2
 @voice 1 clav
-@voice 2 none
+#@voice 2 none
 @voice 3 bass
 @voice 4 metro
 
@@ -963,7 +971,7 @@ song pat3
 #@voice 1 clav
 #@voice 2 meow
 @voice 3 bass
-#@voice 4 metro
+@voice 4 metro
 @voice 5 bells
 #@voice 6 bells
 @pan 1 -0.8
@@ -1042,7 +1050,7 @@ song pat4
 @voice 1 clav
 @voice 2 meow
 @voice 3 bass
-@voice 4 metro
+#@voice 4 metro
 @voice 5 bells
 @voice 6 bells
 @pan 1 -0.8
