@@ -1338,7 +1338,7 @@ local function song_stop(restore)
   end
 end
 
-function w_edit:note_group_op(fn, ...)
+function w_edit:note_group_op(fn, split)
   local x1, y1, x2, y2 = self.edit:selection()
   local nosel
   if not x1 then
@@ -1358,7 +1358,14 @@ function w_edit:note_group_op(fn, ...)
         self.edit.cur.x = x
         if note_edit() then
           dirty = true
-          fn(...)
+          fn()
+        end
+      end
+      if split and (nosel or self.edit:insel(x + 4, y)) then
+        self.edit.cur.x = x + 4
+        if note_edit() then
+          dirty = true
+          fn()
         end
       end
     end
@@ -1389,7 +1396,13 @@ function w_edit:event(r, v, ...)
       if not note_edit() then
         self.edit:backspace()
       else
-        note_bs()
+        if self.edit:selection() then
+          self:note_group_op(function()
+            note_bs()
+          end, true)
+        else
+          note_bs()
+        end
       end
       return true
     elseif w_play:switch_octave(v) then
