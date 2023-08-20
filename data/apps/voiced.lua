@@ -923,6 +923,10 @@ function w_play:play_note(v)
   return note
 end
 
+local function input_modif()
+  return input.keydown 'ctrl' or input.keydown 'alt'
+end
+
 function w_play:event(r, v, ...)
   if self.disabled then
     return
@@ -950,7 +954,7 @@ function w_play:event(r, v, ...)
   if v ~= 'escape' and not self.play then return end
   if r == 'text' then
     return mode == 'voiced'
-  elseif r == 'keydown' and (not input.keydown 'ctrl' and not input.keydown 'alt') then
+  elseif r == 'keydown' and not input_modif() then
     if v == 'escape' then
       self:onclick()
       return true
@@ -1107,23 +1111,55 @@ local function line(l)
   return l and table.concat(l) or ''
 end
 
-function note_edit()
-  if input.keydown 'alt' or input.keydown 'ctrl'
-    or input.keydown 'shift' then
-    return
-  end
+local function note_cell()
   local cx, cy = w_edit.edit:cursor()
   local l = w_edit.edit.lines[cy] or {}
---  local l = line(w_edit.edit.lines[cy])
   local x = cx % CELLW
   local pos = math.floor(cx / CELLW) * CELLW
   if l[pos+1] ~= '|' then return end
   if l[pos+10] ~= '|' and l[pos+10] then return end
   if l[pos+2] ~= ' ' or l[pos+9] ~= ' ' then return end
-  local n = x >= 3 and x <= 5 and l[pos+3] and l[pos+4] and l[pos+5]
-  local v = x >= 7 and x <= 8 and l[pos+7] and l[pos+8]
-  v = v and tonumber(l[pos+7]..l[pos+8], 16) or 0
+  for i = 3, 8 do
+    if not l[pos + i] then return end
+  end
+  return l, pos, cx % CELLW
+end
+
+local function note_cell_set(t)
+  local l, pos = note_cell()
+  if not l then return end
+  for i = 3, 8 do
+    l[pos + i] = t:sub(i - 2, i - 2)
+  end
+end
+
+local function note_cell_text()
+  local l, pos = note_cell()
+  if not l then return end
+  local t = ''
+  for i = 3, 8 do
+    t = t .. l[pos + i]
+  end
+  return t
+end
+
+local function note_cell_trans(delta)
+  local t = note_cell_text()
+  if not t then return end
+  local n = sfx.get_note(t:sub(1, 3))
+  if not n then return end
+  n = sfx.midi_to_note(n + delta)
+  if not n then return end
+  note_cell_set(n .. ' '.. t:sub(5, 6))
+end
+
+function note_edit()
+  local l, pos, x = note_cell()
+  if not l then return end
+  local n = x >= 3 and x <= 5
+  local v = x >= 7 and x <= 8
   n = n and l[pos+3]..l[pos+4]..l[pos+5]
+  v = v and tonumber(l[pos+7]..l[pos+8], 16) or '..'
   return true, n, v
 end
 
@@ -1156,6 +1192,16 @@ local is_note = {
   a = true;
   b = true;
 }
+local function text_is_cell(t)
+  t = t:strip()
+  if t:len() ~= 6 then return false end
+  if t:sub(4,4) ~= ' ' then return false end
+  local note = t:sub(1,3)
+  if not sfx.get_note(note) then return false end
+  local v = t:sub(5, 6)
+  if v ~= '..' and not tonumber(v, 16) then return false end
+  return true
+end
 
 local function keynote_ins(v, l, pos, x)
   local n, d, o = l[pos+3], l[pos+4], l[pos+5]
@@ -1184,9 +1230,7 @@ local function note_text(v)
   local rc
   if w_play.selected then return end
   local cx, cy = w_edit.edit:cursor()
-  local pos = math.floor(cx / CELLW) * CELLW
-  x = cx % CELLW
-  local l = w_edit.edit.lines[cy]
+  local l, pos, x = note_cell()
   if x >= 3 and x <= 5 then
     if v == '=' then
       v = '==='
@@ -1221,16 +1265,14 @@ local function note_text(v)
 end
 
 local function note_bs()
-  local cx, cy = w_edit.edit:cursor()
-  local pos = math.floor(cx / CELLW) * CELLW
-  cx = cx % CELLW
-  local l = w_edit.edit.lines[cy]
-  if cx >= 3 and cx <= 5 then
+  local _, cy = w_edit.edit:cursor()
+  local l, pos, x = note_cell()
+  if x >= 3 and x <= 5 then
     w_edit.edit:history()
     l[pos+3] = '.'
     l[pos+4] = '.'
     l[pos+5] = '.'
-  elseif cx >= 7 and cx <= 8 then
+  elseif x >= 7 and x <= 8 then
     w_edit.edit:history()
     l[pos+7] = '.'
     l[pos+8] = '.'
@@ -1296,10 +1338,44 @@ local function song_stop(restore)
   end
 end
 
+function w_edit:note_group_op(fn, ...)
+  local x1, y1, x2, y2 = self.edit:selection()
+  local nosel
+  if not x1 then
+    x1, y1 = self.edit:cursor()
+    x2, y2 = x1, y1
+    nosel = true
+  end
+  local pos = math.floor(x1 / CELLW) * CELLW + 1
+  self.edit:history 'start'
+  local dirty
+  local xc, yc = self.edit:cursor()
+  for y = y1, y2 do
+    self.edit.cur.y = y
+    self.edit:history()
+    for x = 3, #self.edit.lines[y], CELLW do
+      if nosel or self.edit:insel(x, y) then
+        self.edit.cur.x = x
+        if note_edit() then
+          dirty = true
+          fn(...)
+        end
+      end
+    end
+  end
+  self.edit:move(xc, yc)
+  if dirty then
+    self.edit:history 'end'
+  else
+    self.edit:history_abort()
+  end
+  return true
+end
+
 function w_edit:event(r, v, ...)
   if self.hidden then return end
   if not tune and editarea.mouse(self, r, v) then return true end
-  if r == 'text' and not tune then
+  if r == 'text' and not tune and not input_modif() then
     if note_edit() then
       if ins_mode then
         note_text(v)
@@ -1317,6 +1393,22 @@ function w_edit:event(r, v, ...)
       end
       return true
     elseif w_play:switch_octave(v) then
+      return true
+    elseif v == 'c' and input.keydown 'ctrl' and
+      not self.edit:selection() and note_edit() then
+      self.edit:set_clipboard(note_cell_text())
+    elseif v == 'v' and input.keydown 'ctrl' and
+      not self.edit:selection() and note_edit() and
+      text_is_cell(self.edit:get_clipboard()) then
+      local t = self.edit:get_clipboard()
+      self.edit:history()
+      note_cell_set(t)
+      return true
+    elseif (v == '=' or v == '-') and input.keydown 'ctrl' then
+      local shift = input.keydown 'alt' and 12 or 1
+      self:note_group_op(function()
+        note_cell_trans(v == '=' and shift or -shift)
+      end)
       return true
     elseif v == 'insert' or v == 'keypad 0' then
       ins_mode = not ins_mode
@@ -1338,7 +1430,8 @@ function w_edit:event(r, v, ...)
         end
       end
       return true
-    elseif not ins_mode and note_edit() and note_text(v) then
+    elseif not ins_mode and not input_modif() and
+      note_edit() and note_text(v) then
     else
       editarea.event(self, r, v, ...)
       return not tune
@@ -1464,8 +1557,9 @@ zsxdcvgbhnjm  Input note
 t6y7ui9o0p[=] track)
 =             Note off
 shift+cursor  Select (+alt vertical)
+ctrl-+/-      Transposition (note or selection)
 ctrl-x        Cut
-ctrl-c        Copy
+ctrl-c        Copy (note or selection)
 ctrl-v        Paste
 ctrl-z        Undo
 ctrl-y        Delete line
