@@ -603,6 +603,11 @@ function api.event(e, v, a, b, c)
     return true
   end
   if e == 'quit' then
+    if #core.suspended > 0 then
+      mixer.done()
+      core.stop()
+      return true
+    end
     api.running = false
     input.fifo  = {}
     mixer.done()
