@@ -15,7 +15,7 @@ local conf = {
   scalable_font_sz = 14,
   cursor_blink = true,
   brd = { 0xde, 0xde, 0xde },
-  hl = { 0, 0, 0, 32 },
+  hl = { 224, 224, 224 },
   status = { 0, 0, 0, 64 },
   keyword = 8,
   string = 14,
@@ -73,6 +73,17 @@ function glyph(t, col)
   return glyph_cache[col][t]
 end
 
+function buff:show_flush()
+  local b = self
+  b.show_cache = {}
+  for y = 1, b.lines do
+    b.show_cache[y] = {}
+    for x = 1, b.columns do
+      b.show_cache[y][x] = {}
+    end
+  end
+end
+
 function buff:resize(w, h)
   local b = self
   b.spw, b.sph = sfont:size(" ")
@@ -80,6 +91,7 @@ function buff:resize(w, h)
   b.columns = math.floor(b.w / b.spw)
   b.lines = math.floor(b.h / b.sph)
   b.edit:size(b.columns, b.lines)
+  b:show_flush()
 end
 
 function buff.new(fname, x, y, w, h)
@@ -409,28 +421,56 @@ function buff:colorize(l, nl)
   return cols
 end
 
+function buff:update_glyph(c, px, py, g, insel)
+  if not c.cursor and c.glyph == g and c.insel == insel then
+    return
+  end
+  if insel then
+    screen:clear(self.x + px, self.y + py, self.spw, self.sph, conf.hl)
+  else
+    screen:clear(self.x + px, self.y + py, self.spw, self.sph, conf.bg)
+  end
+  g:blend(screen, self.x + px, self.y + py)
+  c.glyph = g
+  c.insel = insel
+  c.cursor = nil
+end
+
 function buff:show()
-  screen:clear(self.x, self.y, self.w, self.h, conf.bg)
   screen:clip(self.x, self.y, self.w, self.h)
 
   local px, py = 0, 0
-  local cols, g
+  local cols, g, cl
+  local x, y = 0, 0
   for nl, s, e in self.edit:visible_lines() do
+    y = y + 1
+    cl = self.show_cache[y]
     local l = self.edit.lines[nl]
     px = 0
     cols = self:colorize(l, nl)
-    for i=s, e do
-      g = glyph(l[i], cols[i]) or glyph('?', cols[i])
-      if self.edit:insel(i, nl) then
-        screen:fill_rect(self.x + px, self.y + py,
-          self.x + px + self.spw - 1,
-          self.y + py + self.sph - 1, conf.hl)
-      end
-      g:blend(screen, self.x + px, self.y + py)
+    x = 0
+    for i=s, self.columns do
+      x = x + 1
+      g = glyph(l[i] or ' ', cols[i]) or glyph('?', cols[i])
+      self:update_glyph(cl[x], px, py, g, self.edit:insel(i, nl))
       px = px + self.spw
     end
     py = py + self.sph
   end
+
+  for y = y + 1, self.lines do
+    cl = self.show_cache[y]
+    px = 0
+    for x = 1, self.columns do
+      self:update_glyph(cl[x], px, py, glyph(' '), false)
+      px = px + self.spw
+    end
+    py = py + self.sph
+  end
+
+  x, y = self.edit:coord(self.edit:cursor())
+  local cl = self.show_cache[y][x]
+  cl.cursor = true
   self:cursor()
   screen:noclip()
   if self.status then
@@ -551,6 +591,7 @@ function buff:keydown(k)
   elseif k== 'f2' and input.keydown'shift' then
     inp_mode = not inp_mode
     if inp_mode then
+      inp:show_flush()
       s.edit:select(false)
       inp_mode = 'write'
       inp.edit:set(FILE)
@@ -598,6 +639,8 @@ function buff:keydown(k)
     s.edit:cut()
   elseif k == 'y' and input.keydown 'ctrl' then
     s.edit:cutline()
+  elseif k == 'k' and input.keydown 'ctrl' then
+    s.edit:killline()
   elseif k == 'd' and input.keydown 'ctrl' then
     s.edit:dupline()
   elseif k == 'c' and input.keydown 'ctrl' then
@@ -607,6 +650,7 @@ function buff:keydown(k)
   elseif k== 'f4' then
     inp_mode = not inp_mode
     if inp_mode then
+      inp:show_flush()
       inp_mode = 'open'
       inp.edit:set(FILE)
       inp.edit:move(128)
@@ -619,11 +663,13 @@ function buff:keydown(k)
   elseif (k == 'f' and input.keydown 'ctrl') or k == 'f7' then
     inp_mode = not inp_mode
     if inp_mode then
+      inp:show_flush()
       inp_mode = 'search'
     end
   elseif k == 'l' and input.keydown 'ctrl' then
     inp_mode = not inp_mode
     if inp_mode then
+      inp:show_flush()
       inp_mode = 'goto'
     end
   end
@@ -716,6 +762,7 @@ shift-f2     - save as
 ctrl-l       - jump to line
 home,ctrl-a  - line begin
 end,ctrl-e   - line end
+ctrl-k       - kill line end
 pageup       - scroll up
 pagedown     - scroll down
 F7,ctrl-f    - search
@@ -773,6 +820,9 @@ while sys.running() do
       help_mode = 1
     elseif rr == 'keyup' and help_mode == 1 then
       help_mode = false
+      b:show_flush()
+      b:show()
+      inp:show_flush()
       break
     end
     coroutine.yield()
