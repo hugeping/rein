@@ -163,7 +163,7 @@ while sys.running() do
 shift+esc-return to this launcher]])
   end
 
-  local xoff, yoff = 26, 72
+  local xoff, yoff = 26 + 7, 72
   local tag2col = {
     apps = 9;
     demo = 11;
@@ -173,11 +173,12 @@ shift+esc-return to this launcher]])
     local nr = i - start + 1
     local name = apps[i][2]
     if i == select then
-      gfx.print("=>", xoff, yoff + nr*D, 0)
+      gfx.print("➡", xoff, yoff + nr*D,
+        math.floor(sys.time()*5)%2 == 1 and 7 or 1)
     end
     local n = apps[i][2]
     if apps[i].tag and apps[i].tag ~= 'apps' then n = apps[i].tag..'/'..n end
-    gfx.print(n, xoff + 2*FW, yoff + nr*D, tag2col[apps[i].tag or ''] or 0)
+    gfx.print(n, xoff + 1*FW, yoff + nr*D, tag2col[apps[i].tag or ''] or 0)
     if nr >= NR then
       break
     end
