@@ -120,7 +120,7 @@ env.__index = env
 
 local function make_dofile(n, env)
   if setfenv then
-    setfenv(0, env)
+    setfenv(1, env)
   end
   local r, e = loadfile(n, "t", env)
   if not r then
