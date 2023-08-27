@@ -601,6 +601,19 @@ function editor:cursor()
   return self.cur.x, self.cur.y
 end
 
+function editor:killline()
+  local x, y = self:cursor()
+  local l = self.lines[y]
+  if x >= #l then
+    return self:delete()
+  end
+  self:history()
+  local len = #l - x + 1
+  for i = 1, len do
+    table.remove(l, x)
+  end
+end
+
 function editor:cutline()
   self:history('cut', 1, self.cur.y, #self.lines[self.cur.y] + 1, self.cur.y)
   table.remove(self.lines, self.cur.y)
