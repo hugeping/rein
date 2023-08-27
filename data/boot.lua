@@ -208,7 +208,7 @@ shift+esc-return to this launcher]])
       sys.suspend()
       -- resumed
       resume()
-    elseif (v == 'delete' or v == 'backspace') and not apps[select].tag then
+    elseif (v == 'delete' or v == 'backspace') then -- and not apps[select].tag then
       delete_mode = 2
     elseif v == 'y' and delete_mode then
       os.remove(apps[select][1])
