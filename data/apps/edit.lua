@@ -772,9 +772,7 @@ ctrl-h       - search again
 alt-h        - search again (reverse)
 cursor keys  - move
 shift+cursor - select (+alt vertical block)
-ctrl-x       - cut&copy selection
-ctrl-c       - copy selection
-ctrl-v       - paste selection
+ctrl-x,c,v   - cut&copy,copy,paste selection
 ctrl-y       - remove line
 ctrl-z       - undo
 ctrl-w       - select inside line
