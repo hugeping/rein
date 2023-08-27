@@ -11,7 +11,7 @@ local conf = {
   fg = 0,
   bg = 16,
   scalable = false,
-  scalable_font = DATADIR..'/iosevka-light.ttf',
+  scalable_font = DATADIR..'/fonts/iosevka-light.ttf',
   scalable_font_sz = 16,
   cursor_blink = true,
   brd = { 0xde, 0xde, 0xde },
@@ -30,17 +30,14 @@ local conf = {
 if conf.scalable then
   sys.event_filter().resized = true
   local w, h = sys.window_size()
-  gfx.win(w, h)
   local fn = conf.scalable_font
   local sz = conf.scalable_font_sz * SCALE
-  if conf.scalable_font then
-    sfont = gfx.font(fn, sz)
-    font = sfont
-  end
-  gfx.win(w - conf.scalable_font_sz, h - conf.scalable_font_sz, fn, sz)
+  gfx.win(w - conf.scalable_font_sz, h - conf.scalable_font_sz, gfx.font(fn, sz))
+  sfont = font
 else
   sys.event_filter().resized = false
   gfx.win(385, 380)
+  sfont = font
 end
 
 local W, H = screen:size()
@@ -791,6 +788,15 @@ F9           - run synth editor
 shift-esc    - return to editor (from F5/F8/F9 mode)
 ]]
 
+local function resize(v, a)
+  W, H = v - conf.scalable_font_sz, a - conf.scalable_font_sz
+  gfx.win(W, H, sfont)
+  b:resize(W, H - b.sph)
+  inp:resize(W, b.sph)
+  inp.y = H - b.sph
+  inp.w = W
+end
+
 while sys.running() do
   if idle_mode then -- resume?
     gfx.border(conf.brd)
@@ -826,26 +832,24 @@ while sys.running() do
   while help_mode do
     screen:clear(conf.bg)
     gfx.print(HELP, 0, 0, conf.fg, true)
-    local rr = sys.input()
+    local rr, v, a = sys.input()
     if rr == 'keydown' then
       help_mode = 1
     elseif rr == 'keyup' and help_mode == 1 then
       help_mode = false
+      screen:clear(conf.bg)
       b:show_flush()
       b:show()
       inp:show_flush()
       break
+    elseif rr == 'resized' then
+      resize(v, a)
     end
     coroutine.yield()
   end
   local r, v, a = sys.input()
   if r == 'resized' or r == 'exposed' then
-    W, H = v - conf.scalable_font_sz, a - conf.scalable_font_sz
-    gfx.win(W, H)
-    b:resize(W, H - b.sph)
-    inp:resize(W, b.sph)
-    inp.y = H - b.sph
-    inp.w = W
+    resize(v, a)
     if inp_mode then b:show() end
   elseif r == 'keydown' then
     get_buff():keydown(v)

@@ -201,6 +201,7 @@ function env.gfx.win(w, h, fnt, sz) -- create new win or change
   local oscr = env.screen
   if type(w) == 'userdata' then -- new screen?
     env.screen = w
+    conf.w, conf.h = w:size()
     return oscr
   end
   local nscr
@@ -208,17 +209,19 @@ function env.gfx.win(w, h, fnt, sz) -- create new win or change
     nscr = gfx.new(w, h)
   end
   if nscr then
-    if fnt then
+    if type(fnt) == 'string'  then
       fnt = env.gfx.font(fnt, sz)
     end
     if not fnt then
+      local path
       if w < 192 then
-        env.font = font.new(DATADIR..'/fonts/'..conf.font_tiny)
+        path = DATADIR..'/fonts/'..conf.font_tiny
       elseif h >= 380 then
-        env.font = font.new(DATADIR..'/fonts/'..conf.font_large)
+        path = DATADIR..'/fonts/'..conf.font_large
       else
-        env.font = font.new(DATADIR..'/fonts/'..conf.font)
+        path = DATADIR..'/fonts/'..conf.font
       end
+      env.font = font.new(path)
     else
       env.font = fnt
     end
