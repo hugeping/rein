@@ -312,14 +312,23 @@ local last_flip = 0
 local flips = {}
 
 function env.gfx.fg(col)
+  if col == nil then
+    return conf.fg
+  end
   conf.fg = { gfx.pal(col or conf.fg) }
 end
 
 function env.gfx.bg(col)
+  if col == nil then
+    return conf.bg
+  end
   conf.bg = { gfx.pal(col or conf.bg) }
 end
 
 function env.gfx.border(col)
+  if col == nil then
+    return conf.brd
+  end
   conf.brd = { gfx.pal(col or conf.brd) }
   if not gfx.expose then
     gfx.win():clear(conf.brd)
@@ -458,8 +467,7 @@ function env.gfx.print(text, x, y, col, scroll)
   text = text:gsub("\r", ""):gsub("\t", "    ")
 
   local w, h = env.screen:size()
-  local ww, hh = env.font:size("")
-
+  local ww, hh = env.font:size(" ")
   while text ~= '' do
     local s, _ = text:find("[/:,. \n]", 1)
     if not s then s = text:len() end
