@@ -86,8 +86,9 @@ function lineinp(msg)
       if v == 'backspace' then
         if #t > 0 then
           clear(x, y, spw, sph, gfx.bg())
-          x = x - spw
-          clear(x, y, spw, sph, gfx.bg())
+          local ww, hh = font:size(t[#t])
+          x = x - ww
+          clear(x, y, ww, hh, gfx.bg())
           clear(x, y, spw, sph, gfx.fg())
         end
         table.remove(t, #t)
