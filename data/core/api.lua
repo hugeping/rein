@@ -56,6 +56,7 @@ local env = {
   type = type,
   rawset = rawset,
   rawget = rawget,
+  rawequal = rawequal,
   setmetatable = setmetatable,
   getmetatable = getmetatable,
   table = table,
