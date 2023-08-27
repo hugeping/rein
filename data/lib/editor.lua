@@ -627,17 +627,26 @@ function editor:dupline()
   self:move()
 end
 
-function editor:search(t)
+function editor:search(t, rev)
   local s = self
   local cx, cy = s:cursor()
   local x1, x2
-  for y = cy, #s.lines do
+  local max = rev and 1 or #s.lines
+  local delta = rev and -1 or 1
+  for y = cy, max, delta do
     local l = table.concat(s.lines[y], '')
     local start = 0
     if y == cy then
-      local chars = s.lines[y]
-      for i=1,cx + 1 do
-        start = start + (chars[i] or ' '):len()
+      if rev then
+        l = ''
+        for i=1, cx-1 do
+          l = l .. s.lines[y][i]
+        end
+      else
+        local chars = s.lines[y]
+        for i=1,cx + 1 do
+          start = start + (chars[i] or ' '):len()
+        end
       end
     end
     if l:find(t, start, true) then
