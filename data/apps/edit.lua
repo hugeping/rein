@@ -808,7 +808,7 @@ while sys.running() do
     screen:noclip()
     sys.input(true) -- clear input
     sys.event_filter().resized = conf.scalable
-    gfx.win(W, H)
+    gfx.win(W, H, sfont)
     if idle_mode == 'voices' then
       if not b:selected() then
         b:import('__voices__', 'data.syn')
