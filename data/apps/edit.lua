@@ -469,8 +469,9 @@ function buff:show()
   end
 
   x, y = self.edit:coord(self.edit:cursor())
-  local cl = self.show_cache[y][x]
-  cl.cursor = true
+  local cl = self.show_cache[y]
+  cl = cl and cl[x]
+  if cl then cl.cursor = true end
   self:cursor()
   screen:noclip()
   if self.status then
@@ -793,6 +794,8 @@ shift-esc    - return to editor (from F5/F8/F9 mode)
 while sys.running() do
   if idle_mode then -- resume?
     gfx.border(conf.brd)
+    b:show_flush()
+    inp:show_flush()
     mixer.done()
     sys.hidemouse(false)
     screen:nooffset()
@@ -816,6 +819,9 @@ while sys.running() do
       end
     end
     idle_mode = false
+    if inp_mode then
+      b:show()
+    end
   end
   while help_mode do
     screen:clear(conf.bg)
