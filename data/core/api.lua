@@ -143,9 +143,12 @@ local function make_require(n, env)
       local f = io.open(name, "r")
       if f then
         f:close()
-        mods[n] = make_dofile(name, env)
+        mods[n] = make_dofile(name, env) or true
         break
       end
+    end
+    if not mods[n] then
+      core.err("Can't load module: "..tostring(n))
     end
     return mods[n]
   end
