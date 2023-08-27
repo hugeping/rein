@@ -70,7 +70,7 @@ for _, n in ipairs { 'clear', 'pixel', 'fill', 'line', 'lineAA',
   make_wrapper(n)
 end
 
-function lineinp(msg)
+function inputln(msg)
   local t = {}
   local spw, sph = font:size(" ")
   local x, y = print(msg or "")
