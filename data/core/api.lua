@@ -52,6 +52,8 @@ local conf = {
 local env = {
   package = { path = REQUIRE },
   debug = debug,
+  setfenv = setfenv,
+  getfenv = getfenv,
   loadfile = loadfile,
   type = type,
   rawset = rawset,
@@ -119,14 +121,12 @@ env.__index = env
 local function make_dofile(n, env)
   if setfenv then
     setfenv(0, env)
-  else
-    local r, e = loadfile(n, "t", env)
-    if not r then
-      core.err(e..'\n'..debug.traceback())
-    end
-    return r()
   end
-  return dofile(n)
+  local r, e = loadfile(n, "t", env)
+  if not r then
+    core.err(e..'\n'..debug.traceback())
+  end
+  return r()
 end
 
 local function make_require(n, env)
