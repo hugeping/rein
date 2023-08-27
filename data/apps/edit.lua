@@ -11,8 +11,8 @@ local conf = {
   fg = 0,
   bg = 16,
   scalable = false,
-  scalable_font = DATADIR..'/iosevka-medium.ttf',
-  scalable_font_sz = 14,
+  scalable_font = DATADIR..'/iosevka-light.ttf',
+  scalable_font_sz = 16,
   cursor_blink = true,
   brd = { 0xde, 0xde, 0xde },
   hl = { 224, 224, 224 },
@@ -31,7 +31,7 @@ if conf.scalable then
   sys.event_filter().resized = true
   local w, h = sys.window_size()
   gfx.win(w, h)
-  local fn = DATADIR..'/iosevka.ttf'
+  local fn = conf.scalable_font
   local sz = conf.scalable_font_sz * SCALE
   if conf.scalable_font then
     sfont = gfx.font(fn, sz)
