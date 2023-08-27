@@ -655,6 +655,10 @@ function buff:keydown(k)
       inp.edit:set(FILE)
       inp.edit:move(128)
     end
+  elseif (k == 'h' and input.keydown 'alt') then
+    if inp.hist and inp.hist.search then
+      s:search(inp.hist.search[#inp.hist.search], true)
+    end
   elseif (k == 'h' and input.keydown 'ctrl') or
     (k == 'f7' and input.keydown 'shift') then
     if inp.hist and inp.hist.search then
@@ -676,8 +680,8 @@ function buff:keydown(k)
   s.edit:select()
 end
 
-function buff:search(t)
-  local x1, y1, x2, y2 = self.edit:search(t)
+function buff:search(t, rev)
+  local x1, y1, x2, y2 = self.edit:search(t, rev)
   if x1 then
     self.edit:select(x1, y1, x2, y2)
     self.edit:move(x1, y1+math.floor(self.lines/2))
@@ -767,6 +771,7 @@ pageup       - scroll up
 pagedown     - scroll down
 F7,ctrl-f    - search
 ctrl-h       - search again
+alt-h        - search again (reverse)
 cursor keys  - move
 shift+cursor - select (+alt vertical block)
 ctrl-x       - cut&copy selection
