@@ -129,12 +129,17 @@ Chat with community:
         Happy hacking!]])
 end
 
+local help_mode
+local delete_mode
+
 local function border()
+  if delete_mode then
+    gfx.border({255, 0, 0 })
+    return
+  end
   local fl = math.floor(sys.time())%2
   gfx.border(fl == 1 and 7 or 12)
 end
-
-local help_mode
 
 while sys.running() do
   while help_mode do
@@ -151,8 +156,12 @@ while sys.running() do
   screen:clear(16)
   header()
 
-  gfx.printf(4, H - 2*FH, 1, [[F1-help Up,Down,z-run,x-edit
+  if delete_mode then
+    gfx.printf(4, H - 2*FH, 1, [[Remove file? Press Y to confirm!]])
+  else
+    gfx.printf(4, H - 2*FH, 1, [[F1-help ⬇,⬆,z-run,x-edit,del-remove
 shift+esc-return to this launcher]])
+  end
 
   local xoff, yoff = 26, 72
   local tag2col = {
@@ -198,6 +207,17 @@ shift+esc-return to this launcher]])
       sys.suspend()
       -- resumed
       resume()
+    elseif v == 'delete' or v == 'backspace' then
+      delete_mode = 2
+    elseif v == 'y' and delete_mode then
+      os.remove(apps[select][1])
+      rescan_dirs()
+    end
+    if delete_mode then
+      delete_mode = delete_mode - 1
+      if delete_mode == 0 then
+        delete_mode = false
+      end
     end
     select = math.min(select, #apps)
     select = math.max(1, select)
