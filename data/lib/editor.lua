@@ -434,6 +434,7 @@ function editor:cut(copy, clip)
   if not x1 then return end
   local yy = y1
   if not copy then
+    s:history 'start'
     s:history('cut', x1, y1, x2, y2)
   end
   for y=y1, y2 do
@@ -464,6 +465,11 @@ function editor:cut(copy, clip)
   if not copy then
     s:move(x1, y1)
     s:unselect()
+    if not s:selmode() and y2 ~= y1 and x1 > 1 then
+      s:move(#s.lines[y1]+1)
+      s:delete()
+    end
+    s:history 'end'
   end
   if clip ~= false then
     s:set_clipboard(clipboard)
