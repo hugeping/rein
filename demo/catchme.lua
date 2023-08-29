@@ -2,7 +2,7 @@
 --
 -- Game "Catch me!" by Boris Timofeev <btimofeev@emunix.org>
 --
--- Last update: 2023.08.19
+-- Music by Peter Sovietov
 --
 -- ---------------
 
@@ -36,10 +36,6 @@ local title = {
   gfx = nil,
   gfx_x = 20,
   gfx_y = 102,
-  copyright = {
-    text = "2023 - Boris Timofeev",
-    y = 240,
-  },
   start = {
     text = "Press SPACE to start",
     y = 180,
@@ -333,7 +329,6 @@ end
 
 function draw_title()
   title.gfx:blend(screen, title.gfx_x, title.gfx_y)
-  print(title.copyright.text, get_x_to_center(title.copyright.text), title.copyright.y, 5)
   print(title.start.text, get_x_to_center(title.start.text), title.start.y)
   draw_title_cat_animation()
 end
@@ -383,7 +378,6 @@ function update_title()
 
   if keypress('space') or (mb.left) then
     game_state = STATE_GAME
-    mixer.stop(music, 50)
   end
 end
 
@@ -812,6 +806,7 @@ song win
 | ... .. | ... ..
 
 song pat1
+# Author: Peter Sovietov
 @voice 1 none
 @voice 2 none
 @voice 3 bass
@@ -890,6 +885,7 @@ song pat1
 @pop
 
 song pat2
+# Author: Peter Sovietov
 @voice 1 clav
 #@voice 2 none
 @voice 3 bass
@@ -968,6 +964,7 @@ song pat2
 @pop
 
 song pat3
+# Author: Peter Sovietov
 #@voice 1 clav
 #@voice 2 meow
 @voice 3 bass
@@ -1047,6 +1044,7 @@ song pat3
 @pop
 
 song pat4
+# Author: Peter Sovietov
 @voice 1 clav
 @voice 2 meow
 @voice 3 bass
@@ -1126,6 +1124,7 @@ song pat4
 @pop
 
 song music
+# Author: Peter Sovietov
 @tracks 6
 @vol * 1
 @play pat1
