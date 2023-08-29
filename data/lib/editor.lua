@@ -151,12 +151,7 @@ function editor:history(op, x1, y1, x2, y2)
       h.rem = 1 --x2 - x1 < #s.lines[y1] and 1 or 0
     else
       h.rem = x1 > 1 and 1 or 0
---      if x2 < #s.lines[y2] then
-      if x2 > 1 or #s.lines[y2] > 0 then
-        h.rem = h.rem + 1
-      end
---      end
-      -- h.rem = h.rem + y2 - y1 - 1
+      h.rem = h.rem + 1
     end
   end
   for i = 1, y2 - y1 + 1 do
@@ -551,13 +546,22 @@ function editor:backspace()
     s:cut(false, false)
     return
   end
+  s:right()
+  x, y = s:cursor()
+  s:move(x0, y0)
+  if s:insel(x, y) then
+    s:cut(false, false)
+    return
+  end
   s:unselect()
   if s.cur.x > 1 then
     s:history()
     table.remove(s.lines[s.cur.y], s.cur.x - 1)
     s.cur.x = s.cur.x - 1
   elseif s.cur.y > 1 then
-    s:history()
+    s:history 'start'
+    s:history('cut', s.cur.x, s.cur.y, #s.lines[s.cur.y] + 1,
+      math.min(#s.lines, s.cur.y + 1))
     local l = table.remove(s.lines, s.cur.y)
     s.cur.y = s.cur.y - 1
     s.cur.x = #s.lines[s.cur.y] + 1
@@ -565,6 +569,7 @@ function editor:backspace()
     for _, v in ipairs(l) do
       table.insert(s.lines[s.cur.y], v)
     end
+    s:history 'end'
   end
   s:move()
 end
@@ -615,7 +620,7 @@ function editor:killline()
 end
 
 function editor:cutline()
-  self:history('cut', 1, self.cur.y, #self.lines[self.cur.y] + 1, self.cur.y)
+  self:history('cut', 1, self.cur.y, #self.lines[self.cur.y] + 1, math.min(self.cur.y + 1, #self.lines))
   table.remove(self.lines, self.cur.y)
   self:move()
 end
