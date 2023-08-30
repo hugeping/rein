@@ -42,8 +42,14 @@ local function prepare()
   oldevents = table.clone(sys.event_filter())
 end
 
-local function resume()
+local function init()
   rescan_dirs()
+  sys.title "REIN"
+  gfx.icon(gfx.new(DATADIR..'/icon.png'))
+end
+
+local function resume()
+  init()
   gfx.border{ 0xde, 0xde, 0xde }
   mixer.done()
   mixer.init()
@@ -58,8 +64,6 @@ local function resume()
     screen:clear(16)
   end
   sys.event_filter(oldevents)
-  sys.title "REIN"
-  gfx.icon(gfx.new(DATADIR..'/icon.png'))
 end
 
 local logo = gfx.new
@@ -146,7 +150,7 @@ local function border()
   gfx.border(fl == 1 and 7 or 12)
 end
 
-resume()
+init()
 
 while sys.running() do
   while help_mode do
