@@ -59,7 +59,7 @@ function editor:move(x, y)
     s.cur.x, s.cur.y = 1, 1
     s.lines[1] = {}
     s.line = 1
-    return
+    return s.cur.x, s.cur.y
   end
   if s.cur.x < 1 then s.cur.x = 1 end
   if s.cur.y < 1 then s.cur.y = 1 end
@@ -75,7 +75,7 @@ function editor:move(x, y)
   local columns, lines = self:size()
   if s.cur.y >= s.line and s.cur.y <= s.line + lines - 1
     and s.cur.x >= s.col and s.cur.x < columns then
-    return
+    return s.cur.x, s.cur.y
   end
   if s.cur.x < s.col then
     s.col = s.cur.x
@@ -87,6 +87,7 @@ function editor:move(x, y)
   elseif s.cur.y > s.line + lines - 1 then
     s.line = s.cur.y - lines + 1
   end
+  return s.cur.x, s.cur.y
 end
 
 function editor:input(t, replace)
@@ -479,14 +480,7 @@ end
 
 function editor:delete()
   local s = self
-  local x0, y0 = s:cursor()
-  s:left()
-  local x, y = s:cursor()
-  s:move(x0, y0)
-  s:right()
-  local x1, y1 = s:cursor()
-  s:move(x0, y0)
-  if s:insel(x, y) or s:insel(x0, y0) or s:insel(x1, y1) then
+  if s:nearselection() then
     s:cut(false, false)
     return
   end
@@ -542,20 +536,21 @@ function editor:newline(indent)
   s:move(ind + 1, s.cur.y + 1)
 end
 
-function editor:backspace()
+function editor:nearselection()
   local s = self
   local x0, y0 = s:cursor()
-  s:left()
-  local x, y = s:cursor()
+  if s:insel(x0, y0) then return true end
+  local x, y = s:left()
   s:move(x0, y0)
-  if s:insel(x, y) then
-    s:cut(false, false)
-    return
-  end
-  s:right()
-  x, y = s:cursor()
+  if s:insel(x, y) then return true end
+  x, y = s:right()
   s:move(x0, y0)
-  if s:insel(x, y) then
+  return s:insel(x, y)
+end
+
+function editor:backspace()
+  local s = self
+  if s:nearselection() then
     s:cut(false, false)
     return
   end
