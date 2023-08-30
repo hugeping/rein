@@ -29,8 +29,6 @@ local function rescan_dirs()
   end
 end
 
-rescan_dirs()
-
 local start = 1
 local select = 1
 local D = FH + 2
@@ -53,8 +51,15 @@ local function resume()
   screen:nooffset()
   screen:noclip()
   sys.input(true) -- clear input
-  gfx.win(W, H) -- resume screen
+  local w, h = screen:size()
+  if w ~= W or h ~= H then
+    gfx.win(W, H) -- resume screen
+  else
+    screen:clear(16)
+  end
   sys.event_filter(oldevents)
+  sys.title "REIN"
+  gfx.icon(gfx.new(DATADIR..'/icon.png'))
 end
 
 local logo = gfx.new
@@ -140,6 +145,8 @@ local function border()
   local fl = math.floor(sys.time())%2
   gfx.border(fl == 1 and 7 or 12)
 end
+
+resume()
 
 while sys.running() do
   while help_mode do
