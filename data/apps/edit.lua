@@ -32,7 +32,7 @@ if conf.scalable then
   local w, h = sys.window_size()
   local fn = conf.scalable_font
   local sz = conf.scalable_font_sz * SCALE
-  gfx.win(w - conf.scalable_font_sz, h - conf.scalable_font_sz, gfx.font(fn, sz))
+  gfx.win(w - sz, h - sz, gfx.font(fn, sz))
   sfont = font
 else
   sys.event_filter().resized = false
