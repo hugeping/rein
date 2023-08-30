@@ -69,6 +69,18 @@ local title = {
   }
 }
 
+local game_over_screen = {
+  [STATE_WIN] = {
+    text = 'You win! Press SPACE to restart.',
+    sound = 'win'
+  },
+  [STATE_LOSE] = {
+    text = 'You lose! Press SPACE to restart.',
+    sound = 'lose'
+  },
+  is_sound_played = false
+}
+
 local direction = { "E", "NE", "NW", "W", "SW", "SE" }
 
 local direction_diff = {
@@ -89,8 +101,6 @@ local direction_diff = {
     SE = { col = 1, row = 1 },
   }
 }
-
-local is_game_over_music_played = false
 
 local frame = 1
 
@@ -157,7 +167,7 @@ function new_game()
   cat.row = cat.start_row
   cat.is_look_to_left = false
 
-  is_game_over_music_played = false
+  game_over_screen.is_sound_played = false
 end
 
 function check_click(x, y)
@@ -308,21 +318,12 @@ function check_game_result(row, col)
 end
 
 function draw_game_result()
-  if game_state == STATE_WIN then
-    local text = 'You win! Press SPACE to restart.'
-    print(text, get_x_to_center(text), 245)
-    if not is_game_over_music_played then
-      is_game_over_music_played = true
-      mixer.play('win')
-    end
-  end
-
-  if game_state == STATE_LOSE then
-    local text = 'You lose! Press SPACE to restart.'
-    print(text, get_x_to_center(text), 245)
-    if not is_game_over_music_played then
-      is_game_over_music_played = true
-      mixer.play('lose')
+  local s = game_over_screen[game_state]
+  if s then
+    print(s.text, get_x_to_center(s.text), 245)
+    if not game_over_screen.is_sound_played then
+      game_over_screen.is_sound_played = true
+      mixer.play(s.sound)
     end
   end
 end
@@ -412,7 +413,7 @@ end
 function get_x_to_center(text)
   local W, H = screen:size()
   local w, h = font:size(text)
-  return (W - w)/2
+  return (W - w) / 2
 end
 
 function get_title_gfx()
