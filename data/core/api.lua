@@ -423,8 +423,7 @@ function env.sys.dirname(f)
     if ff == f then return './' end
     return f
   end
-  f = f:gsub("[/\\][^/\\]+$", "")
-  return f
+  return string.match(f,"^(.*/)[^/]*$") or "./"
 end
 
 function env.sys.sleep(to, interrupt)
