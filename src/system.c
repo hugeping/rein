@@ -87,6 +87,7 @@ static int
 sys_readdir(lua_State *L)
 {
 	const char *path = luaL_checkstring(L, 1);
+	int lim = luaL_optnumber(L, 2, -1);
 	DIR *dir = opendir(path);
 	if (!dir) {
 		lua_pushnil(L);
@@ -97,6 +98,8 @@ sys_readdir(lua_State *L)
 	int i = 1;
 	struct dirent *entry;
 	while ((entry = readdir(dir))) {
+		if (lim >= 0 && i > lim)
+			break;
 		if (strcmp(entry->d_name, "." ) == 0)
 			continue;
 		if (strcmp(entry->d_name, "..") == 0)
