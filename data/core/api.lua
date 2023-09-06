@@ -362,8 +362,8 @@ function env.gfx.render()
   core.render(true)
 end
 
-function env.gfx.flip(fps, interrupt, force)
-  if force or not framedrop then -- drop every 2nd frame if needed
+function env.gfx.flip(fps, interrupt)
+  if interrupt or not framedrop then -- drop every 2nd frame if needed
     core.render(true)
   end
   local cur_time = sys.time()
