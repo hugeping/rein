@@ -1,5 +1,7 @@
 globals = {
 	'synth',
+	'utf',
+	'sys',
 }
 ignore = {
 	'542',
