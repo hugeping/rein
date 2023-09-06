@@ -91,6 +91,7 @@ local env = {
     title = sys.title,
     log = sys.log,
     readdir = sys.readdir,
+    isdir = function(f) return sys.readdir(f, 0) end,
     chdir = sys.chdir,
     mkdir = sys.mkdir,
     hidemouse = sys.hidemouse,
