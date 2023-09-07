@@ -219,7 +219,7 @@ function buf:cut(copy)
   if not copy then
     local new = {}
     for i = 1, #self.text do
-      if i < s or i > e then
+      if i < s or i >= e then
         table.insert(new, self.text[i])
       end
     end
