@@ -116,6 +116,11 @@ end
 function win:exec(t)
   local a = t:split(1)
 
+--  if t == ':?' then
+--    self.buf:input(tostring(self.frame:win().buf:line_nr()))
+--    return true
+--  end
+
   if t:startswith'!' then
     a[1] = '!'
     a[2] = t:sub(2)
@@ -472,6 +477,7 @@ function mainmenu.cmd:Help()
   w:printf([[RED - Rein EDitor
 
 ctrl-x,c,v   - cut, copy, paste
+ctrl-w       - smart selection
 ctrl-a,e     - line start, end
 ctrl-k       - kill to eol
 ctrl-z       - undo
