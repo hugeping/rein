@@ -462,10 +462,11 @@ end
 function mainmenu.cmd:Help()
   local w = self.frame:win():open_err("+Help")
   w:clear()
-  w:printf([[RED
+  w:printf([[RED - Rein EDitor
 
 ctrl-x,c,v   - cut, copy, paste
 ctrl-a,e     - line start, end
+ctrl-k       - kill to eol
 ctrl-z       - undo
 shift-arrows - select
 
