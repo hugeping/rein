@@ -64,6 +64,16 @@ function table.strict(g)
    end})
 end
 
+function string.findln(str, pat)
+  local off = 0
+  for l in str:lines(true) do
+    local ll = l:gsub("\n$", "")
+    local s, e = ll:find(pat)
+    if s then return off + s, off + e end
+    off = off + l:len()
+  end
+end
+
 function string.empty(str)
   local r = str:find("^[ \t]*$")
   return not not r
