@@ -119,6 +119,19 @@ function proc.select(w, pat)
     return text:find(pat)
   end, pat)
 end
+
+proc['!'] = function(w, pat)
+  w = w.frame:win()
+  if not w then return end
+  local f = io.popen(pat, "r")
+  if not f then return end
+  for l in f:lines() do
+    w:input(l ..'\n')
+    coroutine.yield()
+  end
+  f:close()
+end
+
 --luacheck: pop
 
 return proc
