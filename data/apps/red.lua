@@ -16,6 +16,7 @@ local conf = {
   font = DATADIR..'/fonts/iosevka-light.ttf',
   font_sz = 14,
   ts = 4,
+  spaces_tab = false, -- don't be evil!
   brd = { 0xde, 0xde, 0xde },
   menu = 17,
   hl = { 0xee, 0xee, 0x9e },
@@ -112,7 +113,19 @@ function win:show_cursor(x, y, img)
   self.cur_img.y = y
 end
 
+local function exec(w, p)
+  local f = io.popen(p, "r")
+  if not f then return end
+  w:input(f:read '*all')
+  f:close()
+end
+
 function win:exec(t)
+  if t:startswith'!' then
+    local w = self.frame:win()
+    exec(w, t:sub(2))
+    return
+  end
   local a = t:split(1)
 
   if type(proc[a[1]]) == 'function' then
@@ -474,11 +487,16 @@ Plan9 acme like mouse chording and actions
 
 To move file buffer between columns use mouse 2nd button drag&drop of menu button.
 
+right mb     - search
+alt+rmb      - search back
+middle mb    - exec cmd
+
 Some built-in commands:
 
-select lua-regexp - find in all text globally
+select lua-regexp   - find in all text globally
 gsub /lua-regexp/b/ - change a to b
-find lua-regexp - find in line
+find lua-regexp     - find in line
+!cmd                - run and show output
 ]])
   w.buf.cur = 1
   w:toline(1, false)

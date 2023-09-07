@@ -446,6 +446,7 @@ function win:get_active_text(exec, nl)
     reset = true
     buf:selpar(exec and delim_exec)
     txt = buf:getseltext()
+    buf.cur = buf:getsel().e
   end
   if not exec then
     if input.keydown 'alt' then
@@ -843,7 +844,16 @@ function win:event(r, v, a, b)
     elseif v == 'k' and input.keydown 'ctrl' then
       self:kill()
     elseif v == 'tab' then
-      self:input '\t'
+      if not conf.spaces_tab then
+        self:input '\t'
+      else
+        local l = conf.ts - (self.cx % conf.ts)
+        local t = ''
+        for i = 1, l do
+          t = t .. ' '
+        end
+        self:input(t)
+      end
     end
   end
   return true
