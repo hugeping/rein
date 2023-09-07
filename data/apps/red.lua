@@ -113,20 +113,13 @@ function win:show_cursor(x, y, img)
   self.cur_img.y = y
 end
 
-local function exec(w, p)
-  local f = io.popen(p, "r")
-  if not f then return end
-  w:input(f:read '*all')
-  f:close()
-end
-
 function win:exec(t)
-  if t:startswith'!' then
-    local w = self.frame:win()
-    exec(w, t:sub(2))
-    return true
-  end
   local a = t:split(1)
+
+  if t:startswith'!' then
+    a[1] = '!'
+    a[2] = t:sub(2)
+  end
 
   if type(proc[a[1]]) == 'function' then
     return self:run(proc[a[1]], a[2])
