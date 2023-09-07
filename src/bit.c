@@ -1,5 +1,5 @@
 #include "lualib.h"
-#ifndef LUA_BITLIBNAME
+#ifndef LUA_BITLIBNAME_OWN
 /*
 * Stripped down code from the Lua BitOp library (MIT)
 ** Original code: http://bitop.luajit.org/
