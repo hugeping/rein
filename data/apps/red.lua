@@ -1,6 +1,8 @@
 local win = require "red/win"
 local frame = require "red/frame"
 local proc = require "red/proc"
+local uri = require "red/uri"
+
 local dumper = require "dump"
 
 sys.title "red"
@@ -123,6 +125,14 @@ function win:exec(t)
 
   if self.frame:win_by_name(t) then
     return self.frame:file(t)
+  end
+
+  for _, u in ipairs(uri) do
+    if t:find(u[1]) then
+      print(string.format(u[2], t))
+      os.execute(string.format(u[2], t))
+      return
+    end
   end
 
   local ff = filename_line(t)
@@ -422,7 +432,12 @@ function mainmenu.cmd:Dump()
   for f in self.frame:for_win() do
     local c = {}
     for w in f:for_win() do
-      table.insert(c, 1, string.format("%s:%d", w.buf.fname, w.buf:line_nr()))
+      local b = { fname = string.format("%s", w.buf.fname) }
+      table.insert(c, 1, b)
+      b.line = w.buf:line_nr()
+      if not w.buf:isfile() or true then -- dump all!
+        b.text = w.buf:gettext()
+      end
     end
     table.insert(d, c)
   end
@@ -447,9 +462,23 @@ end
 function mainmenu.cmd:Help()
   local w = self.frame:win():open_err("+Help")
   w:clear()
-  w:printf([[Помоги себе сам!
+  w:printf([[RED
 
-TODO]])
+ctrl-x,c,v   - cut, copy, paste
+ctrl-a,e     - line start, end
+ctrl-z       - undo
+shift-arrows - select
+
+Plan9 acme like mouse chording and actions
+
+To move file buffer between columns use mouse 2nd button drag&drop of menu button.
+
+Some built-in commands:
+
+select lua-regexp - find in all text globally
+gsub /lua-regexp/b/ - change a to b
+find lua-regexp - find in line
+]])
   w.buf.cur = 1
   w:toline(1, false)
 end
@@ -564,21 +593,34 @@ end
 local main = mainwin:new(mainmenu)
 main:geom(0, 0, scr.w, scr.h)
 
+local function load_dump(f)
+  local d = dumper.load(f)
+  if not d then return end
+  for i, v in ipairs(d) do
+    mainmenu.cmd.Newcol(mainmenu)
+    for _, b in ipairs(v) do
+      main:win(i):file(b.fname)
+      if b.text then
+        local ww = main:win(i):win()
+        ww:set(b.text)
+        ww:dirty(ww.buf:dirty())
+        ww.frame:update()
+      end
+      if b.line then
+        main:win(i):win():toline(b.line, false)
+      end
+    end
+  end
+  return true
+end
+
 if #ARGS > 1 then
   mainmenu.cmd.Newcol(mainmenu)
   for i = 2, #ARGS do
     main:win():file(ARGS[i])
   end
 else
-  local d = dumper.load("red.dump")
-  if d then
-    for i, v in ipairs(d) do
-      mainmenu.cmd.Newcol(mainmenu)
-      for _, f in ipairs(v) do
-        main:win(i):file(f)
-      end
-    end
-  else
+  if not load_dump "red.dump" then
     mainmenu.cmd.Newcol(mainmenu)
     main:win():file(main:getnewfile())
   end
