@@ -824,7 +824,9 @@ function win:event(r, v, a, b)
     elseif v == 'escape' then
       self:escape()
     elseif v:find 'shift' then
-      self.buf:setsel(self.buf.cur, self.buf.cur)
+      if not self.buf:issel() then
+        self.buf:setsel(self.buf.cur, self.buf.cur)
+      end
     elseif v == 'e' and input.keydown 'ctrl' then
       self:lineend()
     elseif v == 'a' and input.keydown 'ctrl' then
