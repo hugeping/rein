@@ -124,7 +124,7 @@ function win:exec(t)
   if t:startswith'!' then
     local w = self.frame:win()
     exec(w, t:sub(2))
-    return
+    return true
   end
   local a = t:split(1)
 
