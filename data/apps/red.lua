@@ -452,6 +452,7 @@ function mainmenu.cmd:Dump()
         b.text = w.buf:gettext()
       end
     end
+    c.menu = f:menu().buf:gettext()
     table.insert(d, c)
   end
   dumper.save("red.dump", d)
@@ -623,11 +624,13 @@ local function load_dump(f)
         local ww = main:win(i):win()
         ww:set(b.text)
         ww:dirty(ww.buf:dirty())
-        ww.frame:update()
       end
       if b.line then
         main:win(i):win():toline(b.line, false)
       end
+    end
+    if v.menu then
+      main:win(i):menu().buf:set(v.menu)
     end
   end
   return true
