@@ -49,6 +49,7 @@ end
 function buf:undo()
   if #self.hist == 0 then return end
   self:changed(true)
+  self:resetsel()
   local depth = 0
   repeat
     local h = table.remove(self.hist, #self.hist)
