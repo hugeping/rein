@@ -76,7 +76,7 @@ function win:new(fname)
 end
 
 function win:run(fn, t)
-  table.insert(self.co, { coroutine.create(fn), self.buf, t })
+  table.insert(self.co, { coroutine.create(fn), self, t })
   return true
 end
 

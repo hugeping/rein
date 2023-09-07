@@ -17,11 +17,6 @@ function menu:event(r, v, a, b)
   end
 end
 
-function menu:run(fn, t)
-  table.insert(self.co, { coroutine.create(fn), self, t })
-  return true
-end
-
 function menu:exec(t)
   if self.cmd and self.cmd[t] then
     if self.cmd[t](self, t) then
