@@ -857,6 +857,11 @@ function win:event(r, v, a, b)
       self:compl()
     elseif v == 'k' and input.keydown 'ctrl' then
       self:kill()
+    elseif v == 's' and input.keydown 'ctrl' then
+      if self.buf:isfile() then
+        self.buf:save()
+        self:nodirty()
+      end
     elseif v == 'tab' then
       if not conf.spaces_tab then
         self:input '\t'
