@@ -243,6 +243,8 @@ function win:nextpage(jump)
   for i = self.pos, #self.buf.text do
     if y >= jump then
       self.pos = i
+      self.buf.cur = i
+      self:tox(self.autox)
       break
     end
     x, y = self:next(i, x, y)
@@ -266,6 +268,8 @@ function win:prevpage(jump)
     end
     if len >= jump then
       self:posln()
+      self.buf.cur = self.pos
+      self:tox(self.autox)
       break
     end
   end
@@ -550,6 +554,7 @@ function win:mousedown(mb, x, y)
 end
 
 function win:tox(tox)
+  if not tox then return end
   local x, y, y0 = 0, 0
   local pos = self.buf.cur
   for i = pos, #self.buf.text do
