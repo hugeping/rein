@@ -74,14 +74,16 @@ local function grep(path, rex, err)
 end
 
 function proc.grep(w, rex)
-  grep(sys.dirname(w.frame:getfilename()), rex,
-    w.frame:open_err())
+  w = w:output()
+  w:run(function()
+    grep(sys.dirname(w.frame:getfilename()), rex, w)
+  end)
 end
 
 --luacheck: push
 --luacheck: ignore 432
 function proc.gsub(w, text)
-  w = w.frame:win()
+  w = w:winmenu()
   if not w then return end
   text = text:strip()
   local u = utf.chars(text)
@@ -104,7 +106,7 @@ function proc.gsub(w, text)
   end, a[1], a[2])
 end
 function proc.find(w, pat)
-  w = w.frame:win()
+  w = w:winmenu()
   if not w then return end
   text_match(w, function(text, pat)
     return text:findln(pat)
@@ -112,7 +114,7 @@ function proc.find(w, pat)
 end
 
 function proc.select(w, pat)
-  w = w.frame:win()
+  w = w:winmenu()
   if not w then return end
   text_match(w, function(text, pat)
     if text == '' then return end
@@ -121,15 +123,16 @@ function proc.select(w, pat)
 end
 
 proc['!'] = function(w, pat)
-  w = w.frame:win()
-  if not w then return end
-  local f = io.popen(pat, "r")
-  if not f then return end
-  for l in f:lines() do
-    w:input(l ..'\n')
-    coroutine.yield()
-  end
-  f:close()
+  w = w:output()
+  w:run(function()
+    local f = io.popen(pat, "r")
+    if not f then return end
+    for l in f:lines() do
+      w:input(l ..'\n')
+      coroutine.yield()
+    end
+    f:close()
+  end)
 end
 
 --luacheck: pop
