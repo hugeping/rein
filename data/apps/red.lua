@@ -298,6 +298,9 @@ function frame:update(force)
   local fn = not force and self:getfilename()
   for c, i in self:for_win() do
     if i == 1 and fn and fn ~= c.buf.fname then
+      while self.frame:win_by_name(fn) do
+        fn = '~' .. fn
+      end
       c.buf.fname = fn
     end
     t = t .. c.buf.fname:esc() .. ' '
