@@ -46,7 +46,7 @@ function core.getopt(args, ops)
       ret[v:sub(2)] = o
     end
   end
-  if optarg > #args then optarg = false end
+--  if optarg > #args then optarg = false end
   return ret, optarg
 end
 

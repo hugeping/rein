@@ -25,10 +25,19 @@ local conf = {
   cr_sym = '^',
 }
 
-local ops, optarg = sys.getopt(ARGS, {
-  fs = conf.font_sz,
-})
-conf.font_sz = ops.fs
+local function parse_options(args)
+  local ops, optarg = sys.getopt(args, {
+    fs = conf.font_sz,
+  })
+  local ret = {}
+  for i = optarg, #args do
+    table.insert(ret, args[i])
+  end
+  conf.font_sz = ops.fs
+  return ret
+end
+
+ARGS = parse_options(ARGS)
 
 win:init(conf)
 
@@ -724,9 +733,9 @@ local function load_dump(f)
   return true
 end
 
-if #ARGS > 1 then
+if #ARGS > 0 then
   mainmenu.cmd.Newcol(mainmenu)
-  for i = 2, #ARGS do
+  for i = 1, #ARGS do
     main:win():file(ARGS[i])
   end
 else
