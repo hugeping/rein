@@ -46,6 +46,7 @@ end
 local function readdir(fn)
   local dir = sys.readdir(fn) or {}
   for k, v in ipairs(dir) do
+    dir[k] = dir[k]:esc()
     if sys.isdir(fn .. v) then
       dir[k] = dir[k] .. '/'
     end
@@ -61,6 +62,29 @@ local function readdir(fn)
     return a < b
   end)
   return dir
+end
+
+function string.esc(str)
+  str = str:gsub("\\?[ ]",
+    { [" "] = "\\ ", ["\\ "] = "\\\\ " })
+  return str
+end
+
+function string.unesc(str)
+  str = str:gsub("\\?[\\ ]", { ['\\ '] = ' ',
+    ['\\\\'] = '\\' })
+  return str
+end
+
+function string.escsplit(str, ...)
+  str = str:gsub("\\?[\\ ]", { ['\\ '] = '\1',
+    ['\\\\'] = '\2' })
+  local a = str:split(...)
+  for k, v in ipairs(a) do
+    a[k] = v:gsub("[\1\2]", { ['\1'] = " ",
+    ['\2'] = "\\" })
+  end
+  return a
 end
 
 local function make_move_cursor()
@@ -127,11 +151,11 @@ function win:proc(t)
 end
 
 function win:exec(t)
-
 --  if t == ':?' then
 --    self.buf:input(tostring(self.frame:win().buf:line_nr()))
 --    return true
 --  end
+  t = t:unesc()
 
   if self:proc(t) then
     return true
@@ -141,8 +165,8 @@ function win:exec(t)
     t = (self.buf.fname .. t):gsub('/+', '/')
   end
 
-  if self.frame:win_by_name(t) then
-    return self.frame:file(t)
+  if self.frame.frame:win_by_name(t) then
+    return self.frame.frame:file(t)
   end
 
   for _, u in ipairs(uri) do
@@ -250,7 +274,7 @@ function frame:getfilename()
     return "./"
   end
   local t = self:menu().buf:gettext():split('|', 1)[1]
-  t = (t:split()[1] or ''):strip()
+  t = (t:escsplit()[1] or ''):strip()
   return not t:empty() and t
 end
 
@@ -275,7 +299,7 @@ function frame:update(force)
     if i == 1 and fn and fn ~= c.buf.fname then
       c.buf.fname = fn
     end
-    t = t .. c.buf.fname .. ' '
+    t = t .. c.buf.fname:esc() .. ' '
   end
   if self:win() then
     -- self:win():dirty(self:win().buf:dirty())
