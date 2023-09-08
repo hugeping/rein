@@ -2,7 +2,7 @@ local win = require "red/win"
 local frame = require "red/frame"
 local proc = require "red/proc"
 local uri = require "red/uri"
-
+local presets = require "red/presets"
 local dumper = require "dump"
 
 sys.title "red"
@@ -264,6 +264,7 @@ function frame:file(f)
       b.buf:append(v..'\n')
     end
   elseif not fn:startswith '+' then
+    b.conf = presets.get(fn) or {}
     b:file(fn)
   end
   self:swap_win(b)
@@ -302,6 +303,7 @@ function frame:update(force)
         fn = '~' .. fn
       end
       c.buf.fname = fn
+      c.conf = presets.get(fn) or {}
     end
     t = t .. c.buf.fname:esc() .. ' '
   end
