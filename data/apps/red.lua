@@ -165,8 +165,9 @@ function win:exec(t)
     t = (self.buf.fname .. t):gsub('/+', '/')
   end
 
-  if self.frame.frame:win_by_name(t) then
-    return self.frame.frame:file(t)
+  local fr = self.frame.frame and self.frame.frame or self.frame
+  if fr:win_by_name(t) then
+    return fr:file(t)
   end
 
   for _, u in ipairs(uri) do
@@ -459,6 +460,7 @@ end
 
 function mainmenu.cmd:Dump()
   local d = {}
+  d.menu = self.buf:gettext()
   for f in self.frame:for_win() do
     local c = {}
     for w in f:for_win() do
@@ -495,6 +497,8 @@ function mainmenu.cmd:Help()
   w:clear()
   w:printf([[RED - Rein EDitor
 
+esc          - cut, select last typed block
+ctrl-s       - Save (Put) current buffer
 ctrl-x,c,v   - cut, copy, paste
 ctrl-w       - smart selection
 ctrl-a,e     - line start, end
@@ -702,6 +706,9 @@ local function load_dump(f)
     if v.menu then
       main:win(i):menu().buf:set(v.menu)
     end
+  end
+  if d.menu then
+    main:menu():set(d.menu)
   end
   return true
 end
