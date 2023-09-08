@@ -139,14 +139,13 @@ function core.init()
   core.scale = opts.s
   core.nosound = opts.nosound
   core.vpad_enabled = opts.vpad
-  if optarg then
+  if optarg <= #ARGS then
     for i=optarg,#ARGS do
       table.insert(env.ARGS, ARGS[i])
     end
   else
     env.ARGS[1] = DATADIR..'/boot.lua'
   end
-
   local r, e = core.go(env.ARGS[1], env)
   if not r then
     core.err(e)
