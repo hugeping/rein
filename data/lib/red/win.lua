@@ -243,8 +243,6 @@ function win:nextpage(jump)
   for i = self.pos, #self.buf.text do
     if y >= jump then
       self.pos = i
-      self.buf.cur = i
-      self:tox(self.autox)
       break
     end
     x, y = self:next(i, x, y)
@@ -268,8 +266,6 @@ function win:prevpage(jump)
     end
     if len >= jump then
       self:posln()
-      self.buf.cur = self.pos
-      self:tox(self.autox)
       break
     end
   end
@@ -832,8 +828,12 @@ function win:event(r, v, a, b)
       self:movesel()
     elseif v == 'pageup' or v == 'keypad 9' then
       self:prevpage()
+      self.buf.cur = self.pos
+      self:tox(self.autox)
     elseif v == 'pagedown' or v == 'keypad 3' then
       self:nextpage()
+      self.buf.cur = self.pos
+      self:tox(self.autox)
     elseif v == 'return' then
       self:newline()
     elseif v == 'backspace' then
