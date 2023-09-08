@@ -25,6 +25,11 @@ local conf = {
   cr_sym = '^',
 }
 
+local ops, optarg = sys.getopt(ARGS, {
+  fs = conf.font_sz,
+})
+conf.font_sz = ops.fs
+
 win:init(conf)
 
 local scr = win.scr
