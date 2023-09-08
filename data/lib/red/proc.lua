@@ -128,7 +128,24 @@ end
 function proc.select(w, pat)
   return proc.gsub(w, pat)
 end
-
+--[[
+function proc.fmt(w)
+  w = w:winmenu()
+  if not w then return end
+  local s, e = w.buf:range()
+  local b = {}
+  local len = 0
+  for i = s, e do
+    table.insert(b, w.buf.text[i])
+    len = len + 1
+    if len >= 60 then
+      table.insert(b, '\n')
+      len = 0
+    end
+  end
+  w.buf:set(b)
+end
+]]--
 proc['!'] = function(w, pat)
   w = w:output()
   local f = io.popen(pat, "r")
