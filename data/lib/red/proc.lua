@@ -34,15 +34,13 @@ local function text_match(w, fn, ...)
   w:visible()
 end
 
-local function text_replace(w, fn, ...)
-  if not w.buf:issel() then
-    return text_match(w, function(text, pat)
-      return text:findln(pat)
-    end, ...)
+local function text_replace(w, fn, a, b)
+  if not w.buf:issel() or not b then
+    return text_match(w, fn, a)
   end
   local s, e = w.buf:range()
   local text = w.buf:gettext(s, e)
-  text = fn(text, ...)
+  text = fn(text, a, b)
   w.buf:history 'start'
   w.buf:setsel(s, e + 1)
   w.buf:cut()
@@ -82,21 +80,38 @@ end
 
 --luacheck: push
 --luacheck: ignore 432
+local sub_delims = {
+  ["/"] = true,
+  [":"] = true,
+}
+
 function proc.gsub(w, text)
+  return proc.sub(w, text, true)
+end
+
+function proc.sub(w, text, glob)
   w = w:winmenu()
   if not w then return end
   text = text:strip()
-  local u = utf.chars(text)
-  local delim = u[1]
-  local a = text:split(delim)
-  table.remove(a, 1)
-  if not a[2] then
-    text_match(w, function(text, pat)
-      return text:findln(pat)
-    end, a[1])
-    return
+  local c = text:sub(1,1)
+  local a
+  if sub_delims[c] then
+    a = text:split(c)
+    table.remove(a, 1)
+  else
+    a = { text }
   end
   text_replace(w, function(text, a, b)
+    if glob then
+      if not b then
+        return text:find(a)
+      end
+      text = text:gsub(a, b)
+      return text
+    end
+    if not b then
+      return text:findln(a)
+    end
     local t = ''
     for l in text:lines(true) do
       l = l:gsub(a, b)
@@ -105,21 +120,13 @@ function proc.gsub(w, text)
     return t
   end, a[1], a[2])
 end
+
 function proc.find(w, pat)
-  w = w:winmenu()
-  if not w then return end
-  text_match(w, function(text, pat)
-    return text:findln(pat)
-  end, pat)
+  return proc.sub(w, pat)
 end
 
 function proc.select(w, pat)
-  w = w:winmenu()
-  if not w then return end
-  text_match(w, function(text, pat)
-    if text == '' then return end
-    return text:find(pat)
-  end, pat)
+  return proc.gsub(w, pat)
 end
 
 proc['!'] = function(w, pat)

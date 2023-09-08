@@ -520,8 +520,9 @@ middle mb    - exec cmd
 Some built-in commands:
 
 select lua-regexp   - find in all text globally
-gsub /lua-regexp/b/ - change a to b
 find lua-regexp     - find in line
+sub /lua-regexp/b/  - change a to b by lines
+gsub /lua-regexp/b/ - chnage a to b global
 !cmd                - run and show output
 ]])
   w.buf.cur = 1
