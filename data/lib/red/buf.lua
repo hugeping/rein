@@ -1,5 +1,5 @@
 local buf = {
-  history_len = 128;
+  history_len = 256;
 }
 
 function buf:new(fname)
@@ -29,12 +29,21 @@ function buf:changed(fl)
   return c
 end
 
-function buf:history(op, pos, nr)
+local hist_delim = {
+  [" "] = true,
+  ["\n"] = true,
+}
+function buf:history(op, pos, nr, append)
   self:changed(true)
   pos = pos or self.cur
   nr = nr or 1
-  local h = { op = op, pos = pos, nr = nr, cur = self.cur }
-  table.insert(self.hist, h)
+  local h = self.hist[#self.hist]
+  if not append or not h or h.op ~= op or op ~= 'input' or pos ~= h.pos + h.nr then
+    h = { op = op, pos = pos, nr = nr, cur = self.cur }
+    table.insert(self.hist, h)
+  else
+    h.nr = h.nr + nr
+  end
   if #h > self.history_len then
     table.remove(self.hist, 1)
   end
@@ -62,9 +71,13 @@ function buf:undo()
         table.insert(self.text, h.pos + i - 1, h.data[i])
       end
     elseif h.op == 'input' then
-      for _ = 1, h.nr do
-        table.remove(self.text, h.pos)
+      local new = {}
+      for i = 1, #self.text do
+        if i < h.pos or i >= h.pos + h.nr then
+          table.insert(new, self.text[i])
+        end
       end
+      self.text = new
     end
     self.cur = h.cur
   until depth == 0
@@ -251,18 +264,23 @@ function buf:paste()
 end
 
 function buf:input(txt)
-  self:history 'start'
-  if self:issel() then
-    self:cut(false)
-  end
+  local sel = self:issel()
   if self.cur < 1 then return end
   local u = type(txt) == 'table' and txt or utf.chars(txt)
-  self:history('input', self.cur, #u)
+  if sel or #u > 1 then
+    self:history 'start'
+  end
+  if sel then
+    self:cut(false)
+  end
+  self:history('input', self.cur, #u)--, #u == 1 and not hist_delim[u[1]])
   for i = 1, #u do
     table.insert(self.text, self.cur, u[i])
     self.cur = self.cur + 1
   end
-  self:history 'end'
+  if sel or #u > 1 then
+    self:history 'end'
+  end
 end
 
 function buf:nextline(pos)
@@ -456,6 +474,7 @@ function buf:load(fname)
     return f, e
   end
   self.fname = fname
+  self.hist = {}
   self.text = {}
   for l in f:lines() do
     local u = utf.chars(l)
