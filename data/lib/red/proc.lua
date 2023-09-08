@@ -124,15 +124,21 @@ end
 
 proc['!'] = function(w, pat)
   w = w:output()
-  w:run(function()
-    local f = io.popen(pat, "r")
-    if not f then return end
+  local f = io.popen(pat, "r")
+  if not f then return end
+  local p = w:run(function()
     for l in f:lines() do
       w:input(l ..'\n')
       coroutine.yield()
     end
     f:close()
   end)
+  p.kill = function()
+    if f then
+      f:close()
+      f = nil
+    end
+  end
 end
 
 --luacheck: pop
