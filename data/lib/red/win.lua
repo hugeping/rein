@@ -68,7 +68,7 @@ function win:new(fname)
   local w = { buf = buf:new(fname), glyphs = {},
     fg = self.fg or conf.fg,
     bg = self.bg or conf.bg,
-    pos = 1, co = {} }
+    pos = 1, co = {}, conf = {} }
   w.buf.win = w
   self.__index = self
   setmetatable(w, self)
@@ -189,7 +189,8 @@ function win:next(pos, x, y)
     x = 0
     y = y + 1
   elseif s == '\t' then
-    x = (math.floor(x / conf.ts) + 1) * conf.ts
+    local ts = self:getconf 'ts'
+    x = (math.floor(x / ts) + 1) * ts
   else
     x = x + 1
   end
@@ -695,11 +696,33 @@ function win:input(t)
   self.autox = false
 end
 
+function win:getconf(name)
+  if self.conf[name] ~= nil then
+    return self.conf[name]
+  end
+  return conf[name]
+end
+
 function win:backspace()
   if self:visible() then
     return
   end
-  self.buf:backspace()
+  if self:getconf 'spaces_tab' then
+    local len = self.cx % self:getconf 'ts'
+    len = len == 0 and self:getconf 'ts' or len
+    for i = 1, len do
+      if self.buf.text[self.buf.cur-i] ~= ' ' then
+        len = 1
+        break
+      end
+    end
+    len = math.max(len, 1)
+    for i = 1, len do
+      self.buf:backspace()
+    end
+  else
+    self.buf:backspace()
+  end
   self:visible()
   self.autox = false
   self.input_start = false
@@ -870,10 +893,15 @@ function win:event(r, v, a, b)
         self:nodirty()
       end
     elseif v == 'tab' then
-      if not conf.spaces_tab then
+      if self:visible() then
+        return
+      end
+      local sp_tab = self:getconf 'spaces_tab'
+      if not sp_tab then
         self:input '\t'
       else
-        local l = conf.ts - (self.cx % conf.ts)
+        local ts = self:getconf'ts'
+        local l = ts - (self.cx % ts)
         local t = ''
         for i = 1, l do
           t = t .. ' '
