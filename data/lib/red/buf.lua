@@ -147,9 +147,9 @@ function buf:newline()
     self:linestart()
     local p1 = scan_spaces(self, self.cur, cur)
     local p2 = scan_spaces(self, cur + 1, #self.text)
-    pre = p2
-    if p2:len() == 0 then
-      pre = p1
+    pre = p1
+    if p2:len() > p1:len() then
+      pre = p2
     end
   end
   self.cur = cur
