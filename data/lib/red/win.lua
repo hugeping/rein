@@ -75,12 +75,20 @@ function win:new(fname)
   return w
 end
 
-function win:run(fn, t)
-  table.insert(self.co, { coroutine.create(fn), self, t })
-  return true
+function win:run(fn, ...)
+  local c = { coroutine.create(fn), self, ... }
+  table.insert(self.co, c)
+  return c
 end
 
 function win:killproc()
+  self.killed = true
+  for k, v in ipairs(self.co) do
+    if v.kill then
+      debug.sethook(v[1], v.kill, 'l')
+      coroutine.resume(v[1])
+    end
+  end
   self.co = {}
 end
 
