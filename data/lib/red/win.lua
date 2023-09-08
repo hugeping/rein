@@ -80,6 +80,10 @@ function win:run(fn, t)
   return true
 end
 
+function win:killproc()
+  self.co = {}
+end
+
 function win:process()
   local status = self:autoscroll()
   local co = {}

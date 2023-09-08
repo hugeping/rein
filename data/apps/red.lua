@@ -113,21 +113,28 @@ function win:show_cursor(x, y, img)
   self.cur_img.y = y
 end
 
-function win:exec(t)
+function win:proc(t)
   local a = t:split(1)
+
+  if t:startswith'!' then
+    a[1] = '!'
+    a[2] = t:sub(2)
+  end
+  if type(proc[a[1]]) == 'function' then
+    self:run(proc[a[1]], a[2])
+    return true
+  end
+end
+
+function win:exec(t)
 
 --  if t == ':?' then
 --    self.buf:input(tostring(self.frame:win().buf:line_nr()))
 --    return true
 --  end
 
-  if t:startswith'!' then
-    a[1] = '!'
-    a[2] = t:sub(2)
-  end
-
-  if type(proc[a[1]]) == 'function' then
-    return self:run(proc[a[1]], a[2])
+  if self:proc(t) then
+    return true
   end
 
   if self.buf.fname and self.buf.fname:endswith '/' then
@@ -239,6 +246,9 @@ function frame:file(f)
 end
 
 function frame:getfilename()
+  if not self.frame then
+    return "./"
+  end
   local t = self:menu().buf:gettext():split('|', 1)[1]
   t = (t:split()[1] or ''):strip()
   return not t:empty() and t
@@ -339,19 +349,11 @@ function framemenu:event(r, v, a, b)
   return menu.event(self, r, v, a, b)
 end
 
-function framemenu:exec(t)
-  if menu.exec(self, t) then
-    return true
-  end
-  win.exec(self, t)
-end
-
 function framemenu:new(...)
   local r = menu.new(self, ...)
   r:set '| New '
   return r
 end
-
 
 function framemenu.cmd:Delcol()
   local main = self.frame.frame
@@ -403,8 +405,9 @@ function framemenu.cmd:Close()
   if not c then return end
   if c.buf:isfile() and c:dirty() then
     self.frame:err("File %q is not saved!", c.buf.fname)
-     c:nodirty()
+    c:nodirty()
   else
+    c:killproc()
     self.frame:del(c)
   end
   self.frame:update(true)
@@ -428,14 +431,6 @@ function mainmenu:scroller()
   screen:rect(self.x, self.y,
     self.x + scr.spw - 1,
     self.y + self.h - 1, conf.fg)
-end
-
-function mainmenu:exec(t)
-  if self.cmd and self.cmd[t] then
-    if self.cmd[t](self, t) then
-      return true
-    end
-  end
 end
 
 function mainmenu.cmd:Dump()
@@ -609,7 +604,59 @@ function frame:dirty()
   end
 end
 
+function menu:winmenu()
+  return self.frame:win()
+end
+function win:winmenu()
+end
+function mainmenu:winmenu()
+end
+
+function menu:output(n)
+  return self.frame:open_err(n)
+end
+function win:output(n)
+  return self
+end
+function mainmenu:output(n)
+  return self.frame:active_frame():open_err(n)
+end
+
 local main = mainwin:new(mainmenu)
+
+function main:win_by_name(n)
+  for fr in self:for_win() do
+    local r, v = fr:win_by_name(n)
+    if r then return r, v end
+  end
+end
+
+function main:file(n)
+  local found
+  for fr in self:for_win() do
+    local w = fr:win_by_name(n)
+    if w then
+      w.frame:file(n)
+      found = true
+    end
+  end
+  if found then return end
+  local fr = self:active_frame()
+  return fr:file(n)
+end
+
+function main:active_frame()
+  local i, max = 1, 10000
+  for f, k in self:for_win() do
+    local nr = f:win_nr()
+    if nr < max then
+      i = k
+      max = nr
+    end
+  end
+  return self:win(i)
+end
+
 main:geom(0, 0, scr.w, scr.h)
 
 local function load_dump(f)
