@@ -830,10 +830,12 @@ function win:event(r, v, a, b)
       self:prevpage()
       self.buf.cur = self.pos
       self:tox(self.autox)
+      self:movesel()
     elseif v == 'pagedown' or v == 'keypad 3' then
       self:nextpage()
       self.buf.cur = self.pos
       self:tox(self.autox)
+      self:movesel()
     elseif v == 'return' then
       self:newline()
     elseif v == 'backspace' then
