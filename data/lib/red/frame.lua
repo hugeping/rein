@@ -43,7 +43,6 @@ end
 
 function frame:err(fmt, ...)
   local w = self:open_err()
-  self:file '+Errors'
   w:append(string.format(fmt..'\n', ...))
 end
 
