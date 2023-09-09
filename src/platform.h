@@ -1,6 +1,7 @@
 #ifndef __PLATFORM_H
 #define __PLATFORM_H
-extern int PlatformInit(void);
+
+extern int PlatformInit(int argc, const char **argv);
 extern void PlatformDone(void);
 
 extern void Delay(float n);

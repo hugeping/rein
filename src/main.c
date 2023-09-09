@@ -99,12 +99,12 @@ void_cycle(void)
 
 
 int
-main(int argc, char **argv)
+main(int argc, const char **argv)
 {
 	char *exepath, *exedir;
 	const char *exefile;
 	static char base[4096];
-	int i;
+	int i, k;
 
 	exefile = GetExePath(argv[0]);
 	exepath = strdup(exefile);
@@ -139,16 +139,20 @@ main(int argc, char **argv)
 	}
 #endif
 
-	if (PlatformInit()) {
+	if (PlatformInit(argc, argv)) {
 		fprintf(stderr, "Can not do platform init!\n");
 		return 1;
 	}
 	synth_init();
 	luaL_openlibs(L);
 	lua_newtable(L);
+
+	k = 1;
 	for (i = 0; i < argc; i++) {
-		lua_pushstring(L, argv[i]);
-		lua_rawseti(L, -2, i + 1);
+		if (strncmp("-rein-", argv[i], 6)) {
+			lua_pushstring(L, argv[i]);
+			lua_rawseti(L, -2, k ++);
+		}
 	}
 	lua_setglobal(L, "ARGS");
 
