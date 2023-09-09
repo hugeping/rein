@@ -179,6 +179,7 @@ local function pipe(w, prog, tmp)
   local f = io.popen(prog, "r")
   if not f then return end
   local p = w:run(function()
+    w:tail()
     for l in f:lines() do
       w:append(l ..'\n')
       coroutine.yield()

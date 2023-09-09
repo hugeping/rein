@@ -670,6 +670,11 @@ function win:append(text, cur)
   self:visible()
 end
 
+function win:tail()
+  self.buf:tail()
+  self:visible()
+end
+
 function win:printf(fmt, ...)
   self:append(string.format(fmt, ...))
 end
