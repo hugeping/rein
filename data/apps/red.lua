@@ -667,7 +667,7 @@ end
 function mainwin:move(x, w)
   for c in self:for_win() do
     if x >= c.x and x < c.x + c.w then -- move it!
-      if c:win_by_name(w:win().buf.fname) then
+      if w:win() and c:win_by_name(w:win().buf.fname) then
         return
       end
       local b = w:del_win()
