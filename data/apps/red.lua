@@ -576,6 +576,7 @@ gsub /lua-regexp/b/ - chnage a to b global
 !cmd                - run cmd
 <cmd                - run cmd and get output
 >cmd                - run cmd <text data file> and get output
+fmt [width]         - fmt text by width
 Run prog            - run prog in rein
 Getline             - get current line in buffer
 ]])
