@@ -9,6 +9,8 @@
 #else
 #define LOG(s) do { printf("%s\n", (s)); } while(0)
 #endif
+static int opt_nosound = 0;
+static int opt_nojoystick = 0;
 
 static int destroyed = 0;
 static void
@@ -285,6 +287,10 @@ static void
 gamepad_init(void)
 {
 	int i;
+
+	if (opt_nojoystick)
+		return;
+
 	if (SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER) < 0) {
 		fprintf(stderr, "Couldn't initialize GameController subsystem: %s\n", SDL_GetError());
 		return;
@@ -304,7 +310,7 @@ gamepad_init(void)
 	}
 }
 
-void
+static void
 gamepad_done(void)
 {
 	if(gamepad)
@@ -313,33 +319,16 @@ gamepad_done(void)
 		SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
 }
 
-
-int
-PlatformInit(void)
+static void
+sound_init(void)
 {
 	SDL_AudioSpec spec;
-	SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "1");
-	SDL_EnableScreenSaver();
-//	SDL_SetHint(SDL_HINT_MAC_BACKGROUND_APP, "1");
-//	SDL_SetHint(SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK, "1");
-#if SDL_VERSION_ATLEAST(2, 0, 8)
-	SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0");
-#endif
-#ifdef _WIN32
-	WSADATA wsaData;
-
-	int (*SetProcessDPIAware)();
-	user32_lib = LoadLibrary("user32.dll");
-	SetProcessDPIAware = (void*) GetProcAddress(user32_lib, "SetProcessDPIAware");
-	if (SetProcessDPIAware)
-		SetProcessDPIAware();
-
-	if (WSAStartup(MAKEWORD(1,1), &wsaData) != 0) {
-		fprintf(stderr, "Couldn't initialize Winsock 1.1\n");
+	if (opt_nosound)
+		return;
+	if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0) {
+		fprintf(stderr, "Couldn't initialize Audio subsystem: %s\n", SDL_GetError());
+		return;
 	}
-#endif
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO))
-		return -1;
 	spec.freq = 44100;
 	spec.format = AUDIO_S16;
 	spec.channels = 2;
@@ -360,6 +349,51 @@ PlatformInit(void)
 		fprintf(stderr, "No audio: %s\n", SDL_GetError());
 	}
 	SDL_PauseAudioDevice(audiodev, 0);
+}
+
+static void
+sound_done(void)
+{
+	SDL_PauseAudioDevice(audiodev, 1);
+	if (audiodev)
+		SDL_CloseAudioDevice(audiodev);
+	if (SDL_WasInit(SDL_INIT_AUDIO))
+		SDL_QuitSubSystem(SDL_INIT_AUDIO);
+}
+
+int
+PlatformInit(int argc, const char **argv)
+{
+#ifdef _WIN32
+	WSADATA wsaData;
+
+	int (*SetProcessDPIAware)();
+	user32_lib = LoadLibrary("user32.dll");
+	SetProcessDPIAware = (void*) GetProcAddress(user32_lib, "SetProcessDPIAware");
+	if (SetProcessDPIAware)
+		SetProcessDPIAware();
+
+	if (WSAStartup(MAKEWORD(1,1), &wsaData) != 0) {
+		fprintf(stderr, "Couldn't initialize Winsock 1.1\n");
+	}
+#endif
+#if SDL_VERSION_ATLEAST(2, 0, 8)
+	SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0");
+#endif
+	if (argv) {
+		int i;
+		for (i = 0; i < argc; i ++) {
+			if (!strcmp(argv[i], "-rein-nosound")) {
+				opt_nosound = 1;
+			} else if (!strcmp(argv[i], "-rein-nojoystick")) {
+				opt_nojoystick = 1;
+			}
+		}
+	}
+
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
+		return -1;
+	sound_init();
 	gamepad_init();
 //	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 	return 0;
@@ -371,9 +405,7 @@ void
 PlatformDone(void)
 {
 	gamepad_done();
-	SDL_PauseAudioDevice(audiodev, 1);
-	if (audiodev)
-		SDL_CloseAudioDevice(audiodev);
+	sound_done();
 #ifdef _WIN32
 	if (user32_lib)
 		FreeLibrary(user32_lib);
