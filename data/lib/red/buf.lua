@@ -173,7 +173,7 @@ function buf:range()
     local s, e = self:selrange()
     return s, e - 1
   end
-  return self.cur, #self.text
+  return 1, #self.text
 end
 
 function buf:selrange()
