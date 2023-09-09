@@ -318,6 +318,13 @@ int
 PlatformInit(void)
 {
 	SDL_AudioSpec spec;
+	SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "1");
+	SDL_EnableScreenSaver();
+//	SDL_SetHint(SDL_HINT_MAC_BACKGROUND_APP, "1");
+//	SDL_SetHint(SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK, "1");
+#if SDL_VERSION_ATLEAST(2, 0, 8)
+	SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0");
+#endif
 #ifdef _WIN32
 	WSADATA wsaData;
 
@@ -414,13 +421,14 @@ WindowCreate(void)
 #ifdef __EMSCRIPTEN__
 		SDL_WINDOW_RESIZABLE, &window, &renderer))
 #else
-		SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI, &window, &renderer))
+		SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN, &window, &renderer))
 #endif
 		return -1;
 	SDL_GetRendererInfo(renderer, &renderer_info);
 	fprintf(stdout, "Video: %s%s\n", renderer_info.name,
 		(renderer_info.flags & SDL_RENDERER_ACCELERATED)?" (accelerated)":"");
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+	SDL_ShowWindow(window);
 	return 0;
 }
 
