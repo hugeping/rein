@@ -183,10 +183,6 @@ function win:proc(t)
 end
 
 function win:exec(t)
---  if t == ':?' then
---    self.buf:input(tostring(self.frame:win().buf:line_nr()))
---    return true
---  end
   t = t:unesc()
 
   if self:proc(t) then
@@ -414,6 +410,11 @@ function framemenu:new(...)
   return r
 end
 
+function framemenu.cmd:Getline()
+  local cur = self:cur()
+  self.buf:input(" :"..tostring(self.frame:win().buf:line_nr()))
+  self:cur(cur)
+end
 
 function framemenu.cmd:Delcol()
   local main = self.frame.frame
@@ -570,6 +571,7 @@ gsub /lua-regexp/b/ - chnage a to b global
 !cmd                - run programm
 <cmd                - run programm and get output
 Run prog            - run in rein
+Getline             - get current line in buffer
 ]])
   w.buf.cur = 1
   w:toline(1, false)

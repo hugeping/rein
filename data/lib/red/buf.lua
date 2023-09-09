@@ -458,7 +458,6 @@ function buf:dirty(fl)
 
   local hash = self:hash()
   local last = self.written
-
   if fl == false then
      self.written = hash
      self.written_len = #self.text
