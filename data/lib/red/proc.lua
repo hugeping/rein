@@ -179,9 +179,14 @@ local function pipe(w, prog, tmp)
   local f = io.popen(prog, "r")
   if not f then return end
   local p = w:run(function()
+    w:tail()
+    local num = 1
     for l in f:lines() do
-      w:input(l ..'\n')
-      coroutine.yield()
+      w:append(l ..'\n')
+      num = num + 1
+      if num % 10 == 0 then
+        coroutine.yield()
+      end
     end
     f:close()
     if tmp then
