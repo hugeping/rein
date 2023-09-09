@@ -18,8 +18,9 @@ function menu:event(r, v, a, b)
 end
 
 function menu:exec(t)
-  if self.cmd and self.cmd[t] then
-    if self.cmd[t](self, t) then
+  local a = t:strip():split(1)
+  if self.cmd and self.cmd[a[1]] then
+    if self.cmd[a[1]](self, a[2]) then
       return true
     end
   end

@@ -414,6 +414,7 @@ function framemenu:new(...)
   return r
 end
 
+
 function framemenu.cmd:Delcol()
   local main = self.frame.frame
   if main:win_nr() <= 1 then return end
@@ -431,7 +432,6 @@ function framemenu.cmd:Delcol()
   main:win(idx):update(true)
   self.frame.frame:refresh()
 end
-
 
 function framemenu.cmd:Put()
   local b = self.frame:win()
@@ -569,6 +569,7 @@ sub /lua-regexp/b/  - change a to b by lines
 gsub /lua-regexp/b/ - chnage a to b global
 !cmd                - run programm
 <cmd                - run programm and get output
+Run prog            - run in rein
 ]])
   w.buf.cur = 1
   w:toline(1, false)
@@ -586,7 +587,7 @@ function mainmenu.cmd:Exit()
   if conf.save_dump then
     mainmenu.cmd.Dump(mainmenu)
   end
-  os.exit(0)
+  conf.stop = true
 end
 
 function mainmenu.cmd:Newcol()
@@ -697,7 +698,7 @@ end
 function menu:output(n)
   return self.frame:open_err(n)
 end
-function win:output(n)
+function win:output()
   return self
 end
 function mainmenu:output(n)
@@ -737,6 +738,55 @@ function main:active_frame()
     end
   end
   return self:win(i)
+end
+
+local oldevents
+local function prepare()
+  screen:clear(16)
+  gfx.border{ 0xde, 0xde, 0xde }
+  sys.input(true) -- clear input
+  oldevents = table.clone(sys.event_filter())
+  gfx.win(256, 256)
+end
+
+local function resume()
+  win:init(conf)
+  main:geom(0, 0, scr.w, scr.h)
+  gfx.border{ 0xde, 0xde, 0xde }
+  mixer.done()
+  mixer.init()
+  sys.hidemouse(false)
+  screen:nooffset()
+  screen:noclip()
+  sys.input(true) -- clear input
+  sys.event_filter(oldevents)
+end
+
+function mainmenu.cmd:Run(t)
+  if not t then return end
+  prepare()
+  sys.exec(t)
+  sys.suspend()
+  -- resumed
+  resume()
+end
+
+function framemenu.cmd:Run(t)
+  local w = self.frame:win()
+  if not t and (not w or not w.buf:isfile()) then
+    return
+  end
+
+  if not t then
+    w.buf:save()
+    w:nodirty()
+  end
+
+  prepare()
+  sys.exec(t or w.buf.fname)
+  sys.suspend()
+  -- resumed
+  resume(w)
 end
 
 main:geom(0, 0, scr.w, scr.h)
@@ -781,7 +831,7 @@ else
   end
 end
 
-while true do
+while not conf.stop do
   local r, v, a, b = sys.input()
   if r == 'quit' then
     mainmenu.cmd.Exit(mainmenu)
@@ -802,3 +852,5 @@ end
 if conf.save_dump then
   mainmenu.cmd.Exit(mainmenu)
 end
+mixer.done()
+print "Quit..."
