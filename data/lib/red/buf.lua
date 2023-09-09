@@ -482,6 +482,7 @@ function buf:save(fname)
 end
 
 function buf:load(fname)
+  fname = fname or self.fname
   local f, e = io.open(fname, "rb")
   if not f then
     return f, e

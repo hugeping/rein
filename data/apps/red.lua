@@ -78,6 +78,15 @@ local function readdir(fn)
   return dir
 end
 
+function win:readdir(f)
+  local dir = readdir(f)
+  self.buf:set ""
+  for _, v in ipairs(dir) do
+    self.buf:append(v..'\n')
+  end
+  self.buf.cur = 1
+end
+
 local function make_icon()
   local logo = gfx.new(64,64)
   logo:clear(16)
@@ -282,10 +291,7 @@ function frame:file(f)
   b = win:new(fn)
 
   if dir then
-    dir = readdir(fn)
-    for _, v in ipairs(dir) do
-      b.buf:append(v..'\n')
-    end
+    b:readdir(fn)
   elseif not fn:startswith '+' then
     b.conf = presets.get(fn) or {}
     b:file(fn)
@@ -440,16 +446,21 @@ function framemenu.cmd:Put()
   self.frame:update()
 end
 
+function win:Get()
+  local f = self.buf.fname
+  if not f then return end
+  if sys.isdir(f) then
+    self:readdir(f)
+  elseif self.buf:isfile() then
+    self.buf:load()
+    self:dirty(self.buf:dirty())
+  end
+end
+
 function framemenu.cmd:Get()
   local b = self.frame:win()
-  if not b then
-    return
-  end
-  local f = self.frame:getfilename()
-  if f then
-    b.buf:load(f)
-    b:nodirty()
-  end
+  if not b then return end
+  b:Get()
   self.frame:update()
 end
 
@@ -475,8 +486,7 @@ end
 local mainmenu = menu:new()
 mainmenu.cmd = {}
 
-mainmenu.buf:set 'Newcol Help PutAll Dump Exit'
-
+mainmenu.buf:set 'Newcol Help GetAll PutAll Dump Exit'
 
 function mainmenu:scroller()
   screen:clear(self.x, self.y, scr.spw, self.h,
@@ -517,6 +527,15 @@ function mainmenu.cmd:PutAll()
         end
       end
     end
+  end
+end
+
+function mainmenu.cmd:GetAll()
+  for f in self.frame:for_win() do
+    for w in f:for_win() do
+      w:Get()
+    end
+    f:update(true)
   end
 end
 
