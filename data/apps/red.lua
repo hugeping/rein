@@ -545,7 +545,7 @@ middle mb    - exec cmd
 Some built-in commands:
 
 select lua-regexp   - find in all text globally
-find lua-regexp     - find in line
+find lua-regexp     - find in line form cur pos
 sub /lua-regexp/b/  - change a to b by lines
 gsub /lua-regexp/b/ - chnage a to b global
 !cmd                - run programm

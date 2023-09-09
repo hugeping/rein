@@ -14,8 +14,8 @@ local function cur_skip(text, pos)
   return k
 end
 
-local function text_match(w, fn, ...)
-  local s, e = w.buf.cur, #w.buf.text
+local function text_match(w, glob, fn, ...)
+  local s, e = (glob and 1 or w.buf.cur), #w.buf.text
   local text = w.buf:gettext(s, e)
   local start, fin = fn(text, ...)
   if not start then
@@ -34,9 +34,9 @@ local function text_match(w, fn, ...)
   w:visible()
 end
 
-local function text_replace(w, fn, a, b)
+local function text_replace(w, glob, fn, a, b)
   if not w.buf:issel() or not b then
-    return text_match(w, fn, a)
+    return text_match(w, glob, fn, a)
   end
   local s, e = w.buf:range()
   local text = w.buf:gettext(s, e)
@@ -101,7 +101,7 @@ function proc.sub(w, text, glob)
   else
     a = { text }
   end
-  text_replace(w, function(text, a, b)
+  text_replace(w, not not glob, function(text, a, b)
     if glob then
       if not b then
         return text:find(a)
