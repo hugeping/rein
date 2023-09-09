@@ -135,15 +135,21 @@ function proc.fmt(w)
   local s, e = w.buf:range()
   local b = {}
   local len = 0
-  for i = s, e do
+  w.buf:history('cut', s, e - s + 1)
+  local t = ''
+  for i = 1, #w.buf.text do
     table.insert(b, w.buf.text[i])
-    len = len + 1
-    if len >= 60 then
-      table.insert(b, '\n')
-      len = 0
+    if i >= s and i <= e then
+      t = t .. w.buf.text[i]
+      len = len + 1
+      if len >= 60 then
+        t = t .. '\n'
+        len = 0
+      end
     end
   end
-  w.buf:set(b)
+  w.buf.cur = s
+  w.buf:input(t)
 end
 ]]--
 proc['!'] = function(w, pat)
