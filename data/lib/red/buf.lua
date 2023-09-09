@@ -116,11 +116,11 @@ function buf:kill()
   end
 end
 
-function buf:sel_line()
+function buf:sel_line(whole)
   self:linestart()
   local start = self.cur
   self:lineend()
-  if self.text[self.cur] == '\n' then
+  if self.text[self.cur] == '\n' and whole then
     self:setsel(start, self.cur + 1)
   else
     self:setsel(start, self.cur)
@@ -438,7 +438,6 @@ function buf:selpar(delim)
       break
     end
   end
-
   self:setsel(left, right)
 end
 

@@ -563,7 +563,7 @@ function win:mousedown(mb, x, y)
     local sel = self.buf:getsel()
     if sel.s == self.buf.cur and sel.e == sel.s then
       if nl then
-        self.buf:sel_line()
+        self.buf:sel_line(true)
       else
         self:selpar()
       end
