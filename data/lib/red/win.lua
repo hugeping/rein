@@ -917,7 +917,7 @@ function win:event(r, v, a, b)
         local ts = self:getconf'ts'
         local l = ts - (self.cx % ts)
         local t = ''
-        for i = _, l do
+        for _ = 1, l do
           t = t .. ' '
         end
         self:input(t)

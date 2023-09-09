@@ -128,7 +128,7 @@ end
 function proc.select(w, pat)
   return proc.gsub(w, pat)
 end
---[[
+
 function proc.fmt(w)
   w = w:winmenu()
   if not w then return end
@@ -151,7 +151,7 @@ function proc.fmt(w)
   w.buf.cur = s
   w.buf:input(t)
 end
-]]--
+
 proc['!'] = function(w, pat)
   os.execute(pat:unesc())
 end
