@@ -173,7 +173,9 @@ local io_delim = {
   ['<'] = true;
   ['>'] = true;
   ['!'] = true;
+  ['|'] = true,
 }
+
 function win:proc(t)
   local a = t:split(1)
 
@@ -570,6 +572,7 @@ gsub /lua-regexp/b/ - chnage a to b global
 !cmd                - run cmd
 <cmd                - run cmd and get output
 >cmd                - run cmd <text data file> and get output
+|cmd                - run cat text | cmd and get output (Unix only)
 fmt [width]         - fmt text by width
 Run prog            - run prog in rein
 Getline             - get current line in buffer
