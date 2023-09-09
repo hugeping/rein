@@ -175,7 +175,7 @@ proc['!'] = function(_, pat)
 end
 
 local function pipe(w, prog, tmp)
-  if tmp then prog = prog .. ' '..tmp end
+  if tmp then prog = 'cat '..tmp.. ' | '.. prog end
   local f = io.popen(prog, "r")
   if not f then return end
   local p = w:run(function()
@@ -211,7 +211,7 @@ proc['>'] = function(w, prog)
 
   f:write(data.buf:gettext(data.buf:range()))
   f:close()
-  pipe(w:output(), prog, tmp)
+  pipe(w:output(), prog..' '..tmp, tmp)
 end
 
 proc['<'] = function(w, prog)
@@ -228,5 +228,22 @@ function proc.Getline(w)
 end
 
 --luacheck: pop
+
+if PLATFORM ~= 'Windows' then
+proc['|'] = function(w, prog)
+  local data = w:data()
+  if not data then return end
+
+  local tmp = os.tmpname()
+  local f = io.open(tmp, "wb")
+  if not f then
+    return
+  end
+
+  f:write(data.buf:gettext(data.buf:range()))
+  f:close()
+  pipe(w:output(), 'cat '..tmp..'|'..prog..' 2>&1', tmp)
+end
+end
 
 return proc
