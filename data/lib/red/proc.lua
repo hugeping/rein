@@ -92,7 +92,7 @@ end
 function proc.sub(w, text, glob)
   w = w:winmenu()
   if not w then return end
-  text = text:strip()
+  text = text:strip():gsub("\\[tn]", { ["\\t"] = "\t", ["\\n"] = "\n" })
   local c = text:sub(1,1)
   local a
   if sub_delims[c] then
@@ -129,30 +129,48 @@ function proc.select(w, pat)
   return proc.gsub(w, pat)
 end
 
-function proc.fmt(w)
+function proc.fmt(w, width)
+  width = tonumber(width) or 60
   w = w:winmenu()
   if not w then return end
   local s, e = w.buf:range()
   local b = {}
   local len = 0
-  w.buf:history('cut', s, e - s + 1)
-  local t = ''
+  local t = {}
+  local c, last
   for i = 1, #w.buf.text do
-    table.insert(b, w.buf.text[i])
+    c = w.buf.text[i]
     if i >= s and i <= e then
-      t = t .. w.buf.text[i]
+      table.insert(t, c)
       len = len + 1
-      if len >= 60 then
-        t = t .. '\n'
+      if len >= width then
+        if not last then
+          table.insert(t, '\n')
+          len = 0
+        else
+          len = #t - last
+          table.insert(t, last + 1, '\n')
+          last = false
+        end
+      elseif c == '\n' then
         len = 0
+        last = false
+      elseif c == ' ' or c == '\t' then
+        last = #t
       end
+    else
+      table.insert(b, c)
     end
   end
-  w.buf.cur = s
-  w.buf:input(t)
+  w:history 'start'
+  w:history('cut', s, e - s + 1)
+  w:set(b)
+  w:cur(s)
+  w:input(t)
+  w:history 'end'
 end
 
-proc['!'] = function(w, pat)
+proc['!'] = function(_, pat)
   os.execute(pat:unesc())
 end
 

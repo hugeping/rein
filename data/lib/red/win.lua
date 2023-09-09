@@ -310,6 +310,18 @@ function win:bottom()
   return self.y + self.h
 end
 
+function win:cur(pos)
+  local o = self.buf.cur
+  if pos then
+    self.buf.cur = pos
+  end
+  return o
+end
+
+function win:history(...)
+  return self.buf:history(...)
+end
+
 function win:cursor(x, y)
   self.glyphs[y][x].cursor = true
   if x > 0 then

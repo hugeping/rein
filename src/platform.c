@@ -383,9 +383,9 @@ PlatformInit(int argc, const char **argv)
 	if (argv) {
 		int i;
 		for (i = 0; i < argc; i ++) {
-			if (!strcmp(argv[i], "-rein-nosound")) {
+			if (!strcmp(argv[i], "-platform-nosound")) {
 				opt_nosound = 1;
-			} else if (!strcmp(argv[i], "-rein-nojoystick")) {
+			} else if (!strcmp(argv[i], "-platform-nojoystick")) {
 				opt_nojoystick = 1;
 			}
 		}

@@ -149,7 +149,7 @@ main(int argc, const char **argv)
 
 	k = 1;
 	for (i = 0; i < argc; i++) {
-		if (strncmp("-rein-", argv[i], 6)) {
+		if (strncmp("-platform-", argv[i], 6)) {
 			lua_pushstring(L, argv[i]);
 			lua_rawseti(L, -2, k ++);
 		}
