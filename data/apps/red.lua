@@ -558,9 +558,14 @@ end
 function mainmenu.cmd:Exit()
   local w = self.frame:dirty()
   if w then
---    w.frame:err("File %q is not saved!", w.buf.fname)
-    w.frame:push_win(w)
+    w.frame:err("File %q is not saved!", w.buf.fname)
+    w:nodirty()
+    sys.running(true)
+--    w.frame:push_win(w)
     return
+  end
+  if conf.save_dump then
+    mainmenu.cmd.Dump(mainmenu)
   end
   os.exit(0)
 end
@@ -752,12 +757,16 @@ else
   if not load_dump "red.dump" then
     mainmenu.cmd.Newcol(mainmenu)
     main:win():file(main:getnewfile())
+  else
+    conf.save_dump = true
   end
 end
 
-while sys.running() do
+while true do
   local r, v, a, b = sys.input()
-  if r == 'resized' or r == 'exposed' then
+  if r == 'quit' then
+    mainmenu.cmd.Exit(mainmenu)
+  elseif r == 'resized' or r == 'exposed' then
     win:init(conf)
     main:geom(0, 0, scr.w, scr.h)
   else
@@ -769,4 +778,8 @@ while sys.running() do
   else
     gfx.flip(1, true)
   end
+end
+
+if conf.save_dump then
+  mainmenu.cmd.Exit(mainmenu)
 end

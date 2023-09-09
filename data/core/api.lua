@@ -571,8 +571,12 @@ end
 
 local api = { running = true }
 
-function env.sys.running()
-  return api.running
+function env.sys.running(fl)
+  local ov = api.running
+  if fl ~= nil then
+    api.running = fl
+  end
+  return ov
 end
 
 function api.init(core_mod)
