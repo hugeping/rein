@@ -174,9 +174,9 @@ proc['!'] = function(_, pat)
   os.execute(pat:unesc())
 end
 
-proc['<'] = function(w, pat)
-  w = w:output()
-  local f = io.popen(pat, "r")
+local function pipe(w, prog, tmp)
+  if tmp then prog = prog .. ' '..tmp end
+  local f = io.popen(prog, "r")
   if not f then return end
   local p = w:run(function()
     for l in f:lines() do
@@ -184,13 +184,38 @@ proc['<'] = function(w, pat)
       coroutine.yield()
     end
     f:close()
+    if tmp then
+      os.remove(tmp)
+    end
   end)
   p.kill = function()
     if f then
       f:close()
       f = nil
+      if tmp then
+        os.remove(tmp)
+      end
     end
   end
+end
+
+proc['>'] = function(w, prog)
+  local data = w:data()
+  if not data then return end
+
+  local tmp = os.tmpname()
+  local f = io.open(tmp, "wb")
+  if not f then
+    return
+  end
+
+  f:write(data.buf:gettext(data.buf:range()))
+  f:close()
+  pipe(w:output(), prog, tmp)
+end
+
+proc['<'] = function(w, prog)
+  pipe(w:output(), prog)
 end
 
 --luacheck: pop

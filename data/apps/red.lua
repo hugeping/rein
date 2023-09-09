@@ -169,10 +169,15 @@ function win:show_cursor(x, y, img)
   self.cur_img.y = y
 end
 
+local io_delim = {
+  ['<'] = true;
+  ['>'] = true;
+  ['!'] = true;
+}
 function win:proc(t)
   local a = t:split(1)
 
-  if t:startswith'!' or t:startswith'<' then
+  if io_delim[t:sub(1,1)] then
     a[1] = t:sub(1, 1)
     a[2] = t:sub(2)
   end
@@ -541,7 +546,7 @@ function mainmenu.cmd:GetAll()
 end
 
 function mainmenu.cmd:Help()
-  local w = self.frame:win():open_err("+Help")
+  local w = self.frame:open_err("+Help")
   w:clear()
   w:printf([[RED - Rein EDitor
 
@@ -568,9 +573,10 @@ select lua-regexp   - find in all text globally
 find lua-regexp     - find in line form cur pos
 sub /lua-regexp/b/  - change a to b by lines
 gsub /lua-regexp/b/ - chnage a to b global
-!cmd                - run programm
-<cmd                - run programm and get output
-Run prog            - run in rein
+!cmd                - run cmd
+<cmd                - run cmd and get output
+>cmd                - run cmd <text data file> and get output
+Run prog            - run prog in rein
 Getline             - get current line in buffer
 ]])
   w.buf.cur = 1
@@ -696,27 +702,54 @@ function win:winmenu()
 end
 function mainmenu:winmenu()
 end
-
-function menu:output(n)
-  return self.frame:open_err(n)
-end
 function win:output()
   return self
 end
+
+function menu:output(n)
+  n = n or "+Output"
+  local w = self.frame.frame:win_by_name(n)
+  if w then
+    return w.frame:open_err(n)
+  end
+  return self.frame.frame:active_frame():open_err(n)
+end
+
+function win:data()
+  return self
+end
+
+function menu:data()
+  return self.frame:win()
+end
+
+function mainmenu:data()
+end
+
 function mainmenu:output(n)
-  return self.frame:active_frame():open_err(n)
+  n = n or "+Output"
+  return self.frame:open_err(n)
 end
 
 local main = mainwin:new(mainmenu)
 
-function main:win_by_name(n)
+function mainwin:open_err(n)
+  n = n or "+Errors"
+  local w = self:win_by_name(n)
+  if w then
+    return w.frame:open_err(n)
+  end
+  return self:active_frame():open_err(n)
+end
+
+function mainwin:win_by_name(n)
   for fr in self:for_win() do
     local r, v = fr:win_by_name(n)
     if r then return r, v end
   end
 end
 
-function main:file(n)
+function mainwin:file(n)
   local found
   for fr in self:for_win() do
     local w = fr:win_by_name(n)
@@ -730,13 +763,22 @@ function main:file(n)
   return fr:file(n)
 end
 
-function main:active_frame()
-  local i, max = 1, 10000
+function mainwin:empty_frame()
   for f, k in self:for_win() do
     local nr = f:win_nr()
-    if nr < max then
+    if nr == 0 then
+      return self:win(k)
+    end
+  end
+end
+
+function mainwin:active_frame()
+  local i, min = 1, 10000
+  for f, k in self:for_win() do
+    local nr = f:win_nr()
+    if nr < min then
       i = k
-      max = nr
+      min = nr
     end
   end
   return self:win(i)
