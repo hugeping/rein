@@ -665,8 +665,8 @@ function win:resetsel(text)
   self.buf:resetsel(text)
 end
 
-function win:append(text)
-  self.buf:append(text)
+function win:append(text, cur)
+  self.buf:append(text, cur)
   self:visible()
 end
 

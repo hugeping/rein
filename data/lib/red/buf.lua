@@ -351,12 +351,14 @@ function buf:set(text)
   self.cur = math.min(#self.text + 1, self.cur)
 end
 
-function buf:append(text)
+function buf:append(text, cur)
   local u = utf.chars(text)
   for i = 1, #u do
     table.insert(self.text, u[i])
   end
-  self.cur = #self.text + 1
+  if cur then
+    self.cur = #self.text + 1
+  end
 end
 
 local sel_delim = {
