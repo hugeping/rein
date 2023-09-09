@@ -415,12 +415,6 @@ function framemenu:new(...)
   return r
 end
 
-function framemenu.cmd:Getline()
-  local cur = self:cur()
-  self.buf:input(" :"..tostring(self.frame:win().buf:line_nr()))
-  self:cur(cur)
-end
-
 function framemenu.cmd:Delcol()
   local main = self.frame.frame
   if main:win_nr() <= 1 then return end
