@@ -43,7 +43,7 @@ end
 
 function frame:err(fmt, ...)
   local w = self:open_err()
-  w:append(string.format(fmt..'\n', ...))
+  w:append(string.format(fmt..'\n', ...), true)
 end
 
 function frame:process()

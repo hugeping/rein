@@ -180,7 +180,7 @@ local function pipe(w, prog, tmp)
   if not f then return end
   local p = w:run(function()
     for l in f:lines() do
-      w:input(l ..'\n')
+      w:append(l ..'\n')
       coroutine.yield()
     end
     f:close()
