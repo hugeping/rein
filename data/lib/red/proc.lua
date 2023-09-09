@@ -153,7 +153,7 @@ function proc.fmt(w)
 end
 ]]--
 proc['!'] = function(w, pat)
-  os.execute(pat)
+  os.execute(pat:unesc())
 end
 
 proc['<'] = function(w, pat)
