@@ -83,7 +83,7 @@ end
 
 function win:killproc()
   self.killed = true
-  for k, v in ipairs(self.co) do
+  for _, v in ipairs(self.co) do
     if v.kill then
       debug.sethook(v[1], v.kill, 'l')
       coroutine.resume(v[1])
@@ -446,11 +446,6 @@ function win:autoscroll()
   return true
 end
 
-function win:mouseup()
-  self.autoscroll_on = false
-  self.scrolling = false
-end
-
 function win:get_active_text(exec, nl)
   local buf = self.buf
   local txt = buf:getseltext()
@@ -505,12 +500,35 @@ function win:compl()
   end
 end
 
+function win:mouseup(mb, x, y)
+  local _, _, st = input.mouse()
+
+  self.autoscroll_on = false
+  self.scrolling = false
+
+  if (x < 0 or y < 0 or x >= self.w or y >= self.h) or st.left then
+    return false
+  end
+
+  local nl
+  local exec = mb == 'middle' or (mb == 'right' and input.keydown 'shift')
+  if mb == 'right' or exec then
+    self.buf.cur, nl = self:off2cur(x, y)
+    local txt = self:get_active_text(exec, nl)
+    if exec then
+      self:exec(txt)
+    else
+      self:search(txt, input.keydown 'alt')
+    end
+  end
+  return
+end
+
 function win:mousedown(mb, x, y)
   if x < 0 or x > self.w or y < 0 or y > self.h then
     return
   end
   local nl
-  local exec = mb == 'middle' or (mb == 'right' and input.keydown 'shift')
   local _, _, st = input.mouse()
   if st.left and (st.right or st.middle) then
     if mb == 'middle' then
@@ -519,14 +537,9 @@ function win:mousedown(mb, x, y)
       self:paste()
     end
     return
-  elseif mb == 'right' or exec then
-    self.buf.cur, nl = self:off2cur(x, y)
-    local txt = self:get_active_text(exec, nl)
-    if exec then
-      self:exec(txt)
-    else
-      self:search(txt, input.keydown 'alt')
-    end
+  end
+  if mb ~= 'left' then
+    self.buf.cur = self:off2cur(x, y)
     return
   end
   if x < scr.spw then
@@ -717,9 +730,11 @@ function win:backspace()
       end
     end
     len = math.max(len, 1)
-    for i = 1, len do
+    self.buf:history 'start'
+    for _ = 1, len do
       self.buf:backspace()
     end
+    self.buf:history 'end'
   else
     self.buf:backspace()
   end
@@ -817,13 +832,12 @@ function win:event(r, v, a, b)
     my >= self.y + self.h) then
       return false
   end
-  if r == 'mousedown' then
+  if r == 'mousedown'  then
     self:mousedown(v, a - self.x, b - self.y)
+  elseif r == 'mouseup' then
+    return self:mouseup(v, a - self.x, b - self.y)
   elseif r == 'mousemotion' then
     return self:motion(v - self.x, a - self.y)
-  elseif r == 'mouseup' then
-    self:mouseup(a - self.x, b - self.y)
-    return false
   elseif r == 'mousewheel' then
     if v > 0 then
       for _ = 1, math.abs(v) do
@@ -903,7 +917,7 @@ function win:event(r, v, a, b)
         local ts = self:getconf'ts'
         local l = ts - (self.cx % ts)
         local t = ''
-        for i = 1, l do
+        for i = _, l do
           t = t .. ' '
         end
         self:input(t)
