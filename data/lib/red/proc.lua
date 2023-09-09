@@ -218,6 +218,15 @@ proc['<'] = function(w, prog)
   pipe(w:output(), prog)
 end
 
+function proc.Getline(w)
+  if not w.frame.frame then -- main menu
+    return
+  end
+  local cur = w:cur()
+  w.buf:input(" :"..tostring(w.frame:win().buf:line_nr()))
+  w:cur(cur)
+end
+
 --luacheck: pop
 
 return proc
