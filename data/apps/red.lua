@@ -163,8 +163,8 @@ end
 function win:proc(t)
   local a = t:split(1)
 
-  if t:startswith'!' then
-    a[1] = '!'
+  if t:startswith'!' or t:startswith'<' then
+    a[1] = t:sub(1, 1)
     a[2] = t:sub(2)
   end
   if type(proc[a[1]]) == 'function' then
@@ -548,7 +548,8 @@ select lua-regexp   - find in all text globally
 find lua-regexp     - find in line
 sub /lua-regexp/b/  - change a to b by lines
 gsub /lua-regexp/b/ - chnage a to b global
-!cmd                - run and show output
+!cmd                - run programm
+<cmd                - run programm and get output
 ]])
   w.buf.cur = 1
   w:toline(1, false)

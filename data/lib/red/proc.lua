@@ -153,6 +153,10 @@ function proc.fmt(w)
 end
 ]]--
 proc['!'] = function(w, pat)
+  os.execute(pat)
+end
+
+proc['<'] = function(w, pat)
   w = w:output()
   local f = io.popen(pat, "r")
   if not f then return end
