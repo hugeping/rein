@@ -29,10 +29,11 @@ function buf:changed(fl)
   return c
 end
 
-local hist_delim = {
-  [" "] = true,
-  ["\n"] = true,
-}
+--local hist_delim = {
+--  [" "] = true,
+--  ["\n"] = true,
+--}
+
 function buf:history(op, pos, nr, append)
   self:changed(true)
   pos = pos or self.cur

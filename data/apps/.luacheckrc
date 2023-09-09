@@ -9,6 +9,7 @@ globals = {
   'utf',
   'ARGS',
   'DATADIR',
+  'mixer',
 }
 ignore = {
   '542',
@@ -21,6 +22,7 @@ read_globals = {
     fields = {
       del = {},
       find = {},
+      clone = {},
     }
   },
   string = {
