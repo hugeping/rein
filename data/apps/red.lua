@@ -78,6 +78,15 @@ local function readdir(fn)
   return dir
 end
 
+local function make_icon()
+  local logo = gfx.new(64,64)
+  logo:clear(16)
+  local d = 6
+  logo:clear(d, d, 64-2*d, 64-2*d, { 255, 0, 0 })
+  return logo
+end
+gfx.icon(make_icon())
+
 function string.esc(str)
   str = str:gsub("\\?[ ]",
     { [" "] = "\\ ", ["\\ "] = "\\\\ " })
