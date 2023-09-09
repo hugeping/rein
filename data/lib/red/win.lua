@@ -760,7 +760,7 @@ function win:escape()
   if self.buf:issel() then
     self.buf:cut()
   elseif self.input_start then
-    self.buf:setsel(self.input_start, self.buf.cur + 1)
+    self.buf:setsel(self.input_start, self.buf.cur)
   end
   self.autox = false
   self.input_start = false
