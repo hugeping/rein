@@ -900,9 +900,9 @@ function win:event(r, v, a, b)
       if not self.buf:issel() then
         self.buf:setsel(self.buf.cur, self.buf.cur)
       end
-    elseif v == 'e' and input.keydown 'ctrl' then
+    elseif (v == 'e' and input.keydown 'ctrl') or v == 'end' then
       self:lineend()
-    elseif v == 'a' and input.keydown 'ctrl' then
+    elseif (v == 'a' and input.keydown 'ctrl') or v == 'home' then
       self:linestart()
     elseif v == 'z' and input.keydown 'ctrl' then
       self:undo()
