@@ -107,14 +107,22 @@ function string.unesc(str)
     ['\\\\'] = '\\' })
   return str
 end
-
-function string.escsplit(str, ...)
+function string.escencode(str, ...)
   str = str:gsub("\\?[\\ ]", { ['\\ '] = '\1',
     ['\\\\'] = '\2' })
+  return str
+end
+
+function string.escdecode(str, ...)
+  str = str:gsub("[\1\2]", { ['\1'] = " ", ['\2'] = "\\" })
+  return str
+end
+
+function string.escsplit(str, ...)
+  str = str:escencode()
   local a = str:split(...)
   for k, v in ipairs(a) do
-    a[k] = v:gsub("[\1\2]", { ['\1'] = " ",
-    ['\2'] = "\\" })
+    a[k] = v:escdecode()
   end
   return a
 end

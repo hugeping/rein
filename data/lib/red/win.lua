@@ -500,13 +500,24 @@ function win:compl()
     self.buf:selpar(delim_exec)
     txt = self.buf:getseltext()
   end
+  if txt == self.last_compl then
+    txt = self.last_compl_path
+  else
+    self.last_compl = false
+    txt = txt:gsub("/+", "/")
+  end
   if txt == '' then return end
-  txt = txt:gsub("/+", "/")
   local d = sys.dirname(txt)
+  self.last_compl_path = txt
   for _, f in ipairs(sys.readdir(d) or {}) do
-    f = (d ..'/'.. f):gsub("/+", "/")
-    if f:startswith(txt) or f:startswith("./"..txt) then
-      self:input(f)
+    local path = (d ..'/'.. f):gsub("/+", "/"):esc()
+    if self.last_compl then
+      if self.last_compl == path then
+        self.last_compl = false
+      end
+    elseif (path:startswith(txt) or path:startswith("./"..txt)) then
+      self:input(path)
+      self.last_compl = path
       break
     end
   end
