@@ -932,6 +932,7 @@ function win:event(r, v, a, b)
     elseif v == 's' and input.keydown 'ctrl' then
       if self.buf:isfile() then
         self:save()
+        self.frame:update()
       end
     elseif v == 'tab' then
       if self:visible() then
