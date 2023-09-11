@@ -17,6 +17,7 @@ local conf = {
   font_sz = 14,
   ts = 4,
   spaces_tab = false, -- don't be evil!
+  trim_spaces = false,
   brd = { 0xde, 0xde, 0xde },
   menu = 17,
   hl = { 0xee, 0xee, 0x9e },
@@ -183,6 +184,23 @@ local io_delim = {
   ['!'] = true;
   ['|'] = true,
 }
+
+function win:save()
+  if not self.buf:isfile() then
+    return
+  end
+  local trim = self:getconf 'trim_spaces'
+  if trim then
+    local cur = self:cur()
+    self.buf:set(self.buf:gettext():gsub('[ \t]+\n', '\n'):gsub("[ \t\n]+$", "\n"))
+    self:cur(cur)
+  end
+  local r, e = self.buf:save()
+  if r then
+    self:nodirty()
+  end
+  return r, e
+end
 
 function win:proc(t)
   local a = t:split(1)
@@ -450,8 +468,7 @@ function framemenu.cmd:Put()
   end
   local f = self.frame:getfilename()
   if f then
-    b.buf:save(f)
-    b:nodirty()
+    b:save(f)
   end
   self.frame:update()
 end
@@ -529,11 +546,9 @@ function mainmenu.cmd:PutAll()
   for f in self.frame:for_win() do
     for w in f:for_win() do
       if w.buf:isfile() and w.buf:dirty() then
-        local r, e = w.buf:save()
+        local r, e = w:save()
         if not r then
           f:err(e)
-        else
-          w:nodirty()
         end
       end
     end
@@ -828,8 +843,7 @@ function framemenu.cmd:Run(t)
   end
 
   if not t then
-    w.buf:save()
-    w:nodirty()
+    w:save()
   end
 
   prepare()

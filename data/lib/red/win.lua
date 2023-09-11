@@ -313,7 +313,7 @@ end
 function win:cur(pos)
   local o = self.buf.cur
   if pos then
-    self.buf.cur = pos
+    self.buf.cur = math.min(pos, #self.buf.text + 1)
   end
   return o
 end
@@ -931,8 +931,7 @@ function win:event(r, v, a, b)
       self:kill()
     elseif v == 's' and input.keydown 'ctrl' then
       if self.buf:isfile() then
-        self.buf:save()
-        self:nodirty()
+        self:save()
       end
     elseif v == 'tab' then
       if self:visible() then

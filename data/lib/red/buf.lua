@@ -350,9 +350,11 @@ function buf:set(text)
   self:resetsel()
   self.cur = math.min(#self.text + 1, self.cur)
 end
+
 function buf:tail()
   self.cur = #self.text + 1
 end
+
 function buf:append(text, cur)
   local u = utf.chars(text)
   for i = 1, #u do
