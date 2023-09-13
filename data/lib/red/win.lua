@@ -461,9 +461,10 @@ end
 function win:get_active_text(exec, nl)
   local buf = self.buf
   local txt = buf:getseltext()
-  local reset
+  local reset, s, e
   if not buf:issel() or (not buf:insel() and not nl) then
     reset = true
+    s, e = buf:getsel().s, buf:getsel().e
     buf:selpar(exec and delim_exec)
     txt = buf:getseltext()
     buf.cur = buf:getsel().e
@@ -475,7 +476,7 @@ function win:get_active_text(exec, nl)
       buf.cur = buf:getsel().e
     end
   elseif reset then
-    buf:resetsel()
+    buf:setsel(s, e)
   end
   return txt
 end

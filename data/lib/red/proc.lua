@@ -75,7 +75,7 @@ local function grep(path, rex, err)
 end
 
 function proc.grep(w, rex)
-  w = w:output()
+  w = w:output('+Output')
   w:run(function()
     grep(sys.dirname(w.frame:getfilename()), rex, w)
   end)
@@ -195,6 +195,7 @@ local function pipe(w, prog, tmp)
     end
     f:close()
     w:history 'end'
+--    w.buf:setsel(cur, w:cur())
     w:cur(cur)
     if tmp then
       os.remove(tmp)
@@ -220,10 +221,9 @@ proc['>'] = function(w, prog)
   if not f then
     return
   end
-
   f:write(data.buf:gettext(data.buf:range()))
   f:close()
-  pipe(w:output(), prog..' '..tmp, tmp)
+  pipe(w:output('+Output'), prog..' '..tmp, tmp)
 end
 
 proc['<'] = function(w, prog)

@@ -724,11 +724,17 @@ function win:winmenu()
 end
 function mainmenu:winmenu()
 end
-function win:output()
+function win:output(n)
+  if n then
+    return menu.output(self, n)
+  end
   return self
 end
 
 function menu:output(n)
+  if not n and self.frame:win() then
+    return self.frame:win()
+  end
   n = n or "+Output"
   local w = self.frame.frame:win_by_name(n)
   if w then
