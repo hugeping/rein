@@ -230,6 +230,16 @@ proc['<'] = function(w, prog)
   pipe(w:output(), prog)
 end
 
+function proc.Codepoint(w)
+  local data = w:winmenu()
+  if not data then return end
+  local sym = data.buf.text[data:cur()]
+  local cp = utf.codepoint(sym)
+  local cur = w:cur()
+  w.buf:input(" "..string.format("%x", cp))
+  w:cur(cur)
+end
+
 function proc.Getline(w)
   if not w.frame.frame then -- main menu
     return

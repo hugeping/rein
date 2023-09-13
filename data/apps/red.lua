@@ -599,6 +599,7 @@ gsub /lua-regexp/b/ - chnage a to b global
 fmt [width]         - fmt text by width
 Run prog            - run prog in rein
 Getline             - get current line in buffer
+Codepoint           - get codepoint of the sym
 ]])
   w.buf.cur = 1
   w:toline(1, false)
