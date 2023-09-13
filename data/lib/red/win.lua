@@ -678,7 +678,9 @@ end
 
 function win:append(text, cur)
   self.buf:append(text, cur)
-  self:visible()
+  if cur then
+    self:visible()
+  end
 end
 
 function win:tail()

@@ -62,11 +62,14 @@ local function grep(path, rex, err)
           nr = nr + 1
           if l:find(rex) then
             err:printf("%s:%d %q\n", p, nr, l)
+          end
+          if nr % 1000 == 0 then
             coroutine.yield()
           end
         end
         f:close()
       end
+      coroutine.yield()
     end
   end
 end
