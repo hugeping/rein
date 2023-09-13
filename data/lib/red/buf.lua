@@ -63,6 +63,7 @@ function buf:undo()
   local depth = 0
   repeat
     local h = table.remove(self.hist, #self.hist)
+    if not h then break end
     if h.op == 'start' then
       depth = depth + 1
     elseif h.op == 'end' then
