@@ -182,16 +182,20 @@ local function pipe(w, prog, tmp)
   local f = io.popen(prog, "r")
   if not f then return end
   local p = w:run(function()
-    w:tail()
+--    w:tail()
     local num = 1
+    local cur = w:cur()
+    w:history 'start'
     for l in f:lines() do
-      w:append(l ..'\n')
+      w.buf:input(l ..'\n')
       num = num + 1
-      if num % 10 == 0 then
+      if num % 100 == 0 then
         coroutine.yield()
       end
     end
     f:close()
+    w:history 'end'
+    w:cur(cur)
     if tmp then
       os.remove(tmp)
     end
@@ -250,7 +254,7 @@ proc['|'] = function(w, prog)
 
   f:write(data.buf:gettext(data.buf:range()))
   f:close()
-  pipe(w:output(), 'cat '..tmp..'|'..prog..' 2>&1', tmp)
+  pipe(w:data(), 'cat '..tmp..'|'..prog..' 2>&1', tmp)
 end
 end
 
