@@ -261,9 +261,11 @@ proc['|'] = function(w, prog)
   if not f then
     return
   end
-
-  f:write(data.buf:gettext(data.buf:range()))
+  local s, e = data.buf:range()
+  f:write(data.buf:gettext(s, e))
   f:close()
+  data.buf:setsel(s, e + 1)
+  data.buf:cut()
   pipe(w:data(), 'cat '..tmp..'|'..prog..' 2>&1', tmp)
 end
 end
