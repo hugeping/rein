@@ -179,6 +179,9 @@ end
 
 local function pipe(w, prog, tmp)
   if tmp then prog = 'cat '..tmp.. ' | '.. prog end
+  if PLATFORM ~= 'Windows' then
+    prog = prog .. ' 2>&1'
+  end
   local f = io.popen(prog, "r")
   if not f then return end
   local p = w:run(function()
