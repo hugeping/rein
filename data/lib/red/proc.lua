@@ -177,7 +177,7 @@ proc['!'] = function(_, pat)
   os.execute(pat:unesc())
 end
 
-local function pipe(w, prog, tmp)
+local function pipe(w, prog, tmp, sh)
   if tmp then prog = 'cat '..tmp.. ' | '.. prog end
   if PLATFORM ~= 'Windows' then
     prog = prog .. ' </dev/null 2>&1'
@@ -187,7 +187,7 @@ local function pipe(w, prog, tmp)
   local p = w:run(function()
 --    w:tail()
     local num = 1
-    local cur = w:cur()
+--    local cur = w:cur()
     w:history 'start'
     for l in f:lines() do
       w.buf:input(l ..'\n')
@@ -197,6 +197,9 @@ local function pipe(w, prog, tmp)
       end
     end
     f:close()
+    if sh then
+      w:input("$ ")
+    end
     w:history 'end'
 --    w.buf:setsel(cur, w:cur())
 --    w:cur(cur)
@@ -267,6 +270,7 @@ function win_newline(self)
   for i = self.buf.cur, #self.buf.text do
     t = t .. self.buf.text[i]
   end
+  t = t:gsub("^%$", ""):strip()
   self.buf:lineend()
   self.buf:input '\n'
   local cmd = t:split(1)
@@ -276,12 +280,13 @@ function win_newline(self)
       self.buf:input("Error\n")
     end
   else
-    pipe(self, t)
+    pipe(self, t, false, true)
   end
 end
 
 function proc.win(w)
   w = w:output("+win")
+  w:input("$ ")
   w.newline = win_newline
 end
 
