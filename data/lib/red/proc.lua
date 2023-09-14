@@ -180,7 +180,7 @@ end
 local function pipe(w, prog, tmp, sh)
   if tmp then prog = 'cat '..tmp.. ' | '.. prog end
   if PLATFORM ~= 'Windows' then
-    prog = prog .. ' </dev/null 2>&1'
+    prog = '( ' ..prog .. ' ) </dev/null 2>&1'
   end
   local f = io.popen(prog, "r")
   if not f then return end
