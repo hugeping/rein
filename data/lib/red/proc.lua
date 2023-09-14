@@ -249,6 +249,14 @@ function proc.Getline(w)
   w:cur(cur)
 end
 
+function proc.Clear(w)
+  w = w:winmenu()
+  if not w then return end
+  w.buf:setsel(1, #w.buf.text + 1)
+  w.buf:cut()
+  w.buf.cur = 1
+end
+
 --luacheck: pop
 
 if PLATFORM ~= 'Windows' then
