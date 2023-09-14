@@ -341,8 +341,9 @@ function win:scroller()
 
   local len = #self.buf.text
   local top = math.floor((self.pos / (len + 1)) * (self.h - 5))
-  local bottom = math.floor(((self.epos or self.pos) / (len + 1)) * (self.h - 5))
-
+  local bottom = math.floor(((self.epos or self.pos) / (len + 1)) * (self.h - 5))  if bottom - top <= scr.spw then
+    bottom = top + scr.spw
+  end
   screen:offset(self.x, self.y)
   screen:clear(0, 0, scr.spw, self.h, conf.bg)
   screen:rect(0, 0, scr.spw - 1, self.h - 1, conf.fg)
