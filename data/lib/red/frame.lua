@@ -38,6 +38,7 @@ end
 
 function frame:open_err(name)
   self:file(name or '+Errors')
+  self:win():tail()
   return self:win()
 end
 
