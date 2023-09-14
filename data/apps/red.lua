@@ -389,7 +389,7 @@ function frame:update(force)
       break
     end
     if old[i] ~= new[i] then
-      self:menu().buf.cur = self:menu().buf.cur + #new - #old
+      self:menu():cur(self:menu():cur() + #new - #old)
       break
     end
   end

@@ -314,6 +314,7 @@ function win:cur(pos)
   local o = self.buf.cur
   if pos then
     self.buf.cur = math.min(pos, #self.buf.text + 1)
+    self.buf.cur = math.max(self.buf.cur, 1)
   end
   return o
 end
