@@ -199,7 +199,7 @@ local function pipe(w, prog, tmp)
     f:close()
     w:history 'end'
 --    w.buf:setsel(cur, w:cur())
-    w:cur(cur)
+--    w:cur(cur)
     if tmp then
       os.remove(tmp)
     end
@@ -258,6 +258,31 @@ function proc.Clear(w)
   w.buf:setsel(1, #w.buf.text + 1)
   w.buf:cut()
   w.buf.cur = 1
+  w:visible()
+end
+
+function win_newline(self)
+  self.buf:linestart()
+  local t = ''
+  for i = self.buf.cur, #self.buf.text do
+    t = t .. self.buf.text[i]
+  end
+  self.buf:lineend()
+  self.buf:input '\n'
+  local cmd = t:split(1)
+  if cmd[1] == 'cd' and #cmd == 2 then
+    local r, e = sys.chdir(cmd[2])
+    if not r then
+      self.buf:input("Error\n")
+    end
+  else
+    pipe(self, t)
+  end
+end
+
+function proc.win(w)
+  w = w:output("+win")
+  w.newline = win_newline
 end
 
 --luacheck: pop
