@@ -601,6 +601,7 @@ Run prog            - run prog in rein
 Getline             - get current line in buffer
 Codepoint           - get codepoint of the sym
 Clear               - clear window
+win                 - pseudo acme win (just make <cmd for all input lines)
 ]])
   w.buf.cur = 1
   w:toline(1, false)
