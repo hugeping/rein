@@ -289,7 +289,10 @@ end
 
 function proc.win(w)
   w = w:output("+win")
-  w:input("$ ")
+  if not w.win_shell then
+    w.win_shell = true
+    w:input("$ ")
+  end
   w.newline = win_newline
 end
 
