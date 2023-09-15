@@ -598,6 +598,7 @@ gsub /lua-regexp/b/ - chnage a to b global
 >cmd                - run cmd <text data file> and get output
 |cmd                - run cat text | cmd and get output (Unix only)
 fmt [width]         - fmt text by width
+i+/i-               - indent inc/dec
 Run prog            - run prog in rein
 Getline             - get current line in buffer
 Codepoint           - get codepoint of the sym

@@ -35,7 +35,7 @@ local function text_match(w, glob, fn, ...)
 end
 
 local function text_replace(w, glob, fn, a, b)
-  if not w.buf:issel() or not b then
+  if a and (not w.buf:issel() or not b) then
     return text_match(w, glob, fn, a)
   end
   local s, e = w.buf:range()
@@ -46,6 +46,9 @@ local function text_replace(w, glob, fn, a, b)
   w.buf:cut()
   w.buf:input(text)
   w.buf:history 'end'
+  if not a then
+    w.buf:setsel(s, w:cur()+1)
+  end
   w:visible()
 end
 
@@ -218,6 +221,47 @@ local function pipe(w, prog, tmp, sh)
   r.kill = function()
     p:detach()
   end
+end
+
+proc["i+"] = function(w)
+  w = w:winmenu()
+  if not w then return end
+  local ts = w:getconf 'ts'
+  local tab_sp = w:getconf 'spaces_tab'
+  local tab = '\t'
+  if tab_sp then
+    tab = string.rep(" ", ts)
+  end
+  text_replace(w, false, function(text)
+    local t = ''
+    local tab = '  '
+    for l in text:lines(true) do
+      t = t .. tab .. l
+    end
+    return t
+  end)
+end
+
+proc["i-"] = function(w)
+  w = w:winmenu()
+  if not w then return end
+  local ts = w:getconf 'ts'
+  local tab_sp = w:getconf 'spaces_tab'
+  local tab = '\t'
+  if tab_sp then
+    tab = string.rep(" ", ts)
+  end
+  text_replace(w, false, function(text)
+    local t = ''
+    local tab = '  '
+    for l in text:lines(true) do
+      if l:startswith(tab) then
+        l = l:sub(tab:len()+1)
+      end
+      t = t .. l
+    end
+    return t
+  end)
 end
 
 proc['>'] = function(w, prog)
