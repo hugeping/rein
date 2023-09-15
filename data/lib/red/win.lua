@@ -85,8 +85,7 @@ function win:killproc()
   self.killed = true
   for _, v in ipairs(self.co) do
     if v.kill then
-      debug.sethook(v[1], v.kill, 'l')
-      coroutine.resume(v[1])
+      v.kill()
     end
   end
   self.co = {}

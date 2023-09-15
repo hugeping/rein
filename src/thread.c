@@ -443,7 +443,7 @@ thread_stop(lua_State *L)
 	int haschild;
 	if (!chan)
 		return 0;
-	printf("Thread stop\n");
+//	printf("Thread stop\n");
 	MutexLock(chan->m);
 	chan->peers[0].L = NULL;
 	haschild = !!chan->peers[1].L;
@@ -459,12 +459,34 @@ thread_stop(lua_State *L)
 	return 0;
 }
 
+static int
+thread_kill(lua_State *L)
+{
+	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
+	struct lua_channel *chan = thr->chan;
+	int haschild;
+	if (!chan)
+		return 0;
+//	printf("Thread kill\n");
+	MutexLock(chan->m);
+	chan->peers[0].L = NULL;
+	haschild = !!chan->peers[1].L;
+	MutexUnlock(chan->m);
+	if (haschild) {
+		SemPost(chan->peers[1].sem);
+		chan->peers[1].L = NULL;
+		chan->used = 0;
+	}
+	return 0;
+}
+
 static const luaL_Reg thread_mt[] = {
 	{ "wait", thread_wait },
 	{ "write", thread_write },
 	{ "read", thread_read },
 	{ "poll", thread_poll },
 	{ "err", thread_err },
+	{ "kill", thread_kill },
 	{ "__gc", thread_stop },
 	{ NULL, NULL }
 };
