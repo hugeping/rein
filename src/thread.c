@@ -270,10 +270,16 @@ static int
 thread_err(lua_State *L)
 {
 	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
+	const char *err = luaL_optstring(L, 2, NULL);
 	struct lua_channel *chan = thr->chan;
 	struct lua_peer *other = (thr->tid >= 0)?&chan->peers[1]:&chan->peers[0];
 
 	MutexLock(chan->m);
+	if (err) {
+		thr->err = strdup(err);
+		MutexUnlock(chan->m);
+		return 0;
+	}
 	if (thr->err) {
 		lua_pushstring(L, thr->err);
 		MutexUnlock(chan->m);
@@ -460,23 +466,28 @@ thread_stop(lua_State *L)
 }
 
 static int
-thread_kill(lua_State *L)
+thread_detach(lua_State *L)
 {
 	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
 	struct lua_channel *chan = thr->chan;
 	int haschild;
-	if (!chan)
+	if (!chan || !chan->peers[1].L)
 		return 0;
-//	printf("Thread kill\n");
 	MutexLock(chan->m);
 	chan->peers[0].L = NULL;
 	haschild = !!chan->peers[1].L;
-	MutexUnlock(chan->m);
 	if (haschild) {
 		SemPost(chan->peers[1].sem);
 		chan->peers[1].L = NULL;
-		chan->used = 0;
+		chan->used = 1;
+	} else {
+		chan_free(chan);
+		thr->chan = NULL;
 	}
+	if (thr->err)
+		free(thr->err);
+	thr->err = NULL;
+	MutexUnlock(chan->m);
 	return 0;
 }
 
@@ -486,7 +497,7 @@ static const luaL_Reg thread_mt[] = {
 	{ "read", thread_read },
 	{ "poll", thread_poll },
 	{ "err", thread_err },
-	{ "kill", thread_kill },
+	{ "detach", thread_detach },
 	{ "__gc", thread_stop },
 	{ NULL, NULL }
 };

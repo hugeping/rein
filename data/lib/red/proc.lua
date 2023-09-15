@@ -216,7 +216,7 @@ local function pipe(w, prog, tmp, sh)
     end
   end)
   r.kill = function()
-    p:kill()
+    p:detach()
   end
 end
 

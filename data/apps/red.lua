@@ -334,6 +334,7 @@ function frame:getfilename()
     return "./"
   end
   local t = self:menu().buf:gettext():split('|', 1)[1]
+  if not t then return end
   t = (t:escsplit()[1] or ''):strip()
   return not t:empty() and t
 end
