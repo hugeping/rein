@@ -608,6 +608,7 @@ win                 - pseudo acme win (just make <cmd for all input lines)
 end
 
 function mainmenu.cmd:Exit()
+  self.frame:killproc()
   local w = self.frame:dirty()
   if w then
     w.frame:err("File %q is not saved!", w.buf.fname)
@@ -762,6 +763,14 @@ function mainmenu:output(n)
 end
 
 local main = mainwin:new(mainmenu)
+
+function main:killproc()
+  for fr in main:for_win() do
+    for w in fr:for_win() do
+      w:killproc()
+    end
+  end
+end
 
 function mainwin:open_err(n)
   n = n or "+Errors"
@@ -925,5 +934,6 @@ end
 if conf.save_dump then
   mainmenu.cmd.Exit(mainmenu)
 end
+
 mixer.done()
 print "Quit..."

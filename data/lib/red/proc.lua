@@ -182,39 +182,41 @@ local function pipe(w, prog, tmp, sh)
   if PLATFORM ~= 'Windows' then
     prog = '( ' ..prog .. ' ) </dev/null 2>&1'
   end
-  local f = io.popen(prog, "r")
-  if not f then return end
-  local p = w:run(function()
---    w:tail()
-    local num = 1
---    local cur = w:cur()
-    w:history 'start'
-    for l in f:lines() do
-      w.buf:input(l ..'\n')
-      num = num + 1
-      if num % 100 == 0 then
-        coroutine.yield()
+  local p = thread.start(function()
+    local prog = thread:read()
+    local f = io.popen(prog, "r")
+    if f then
+      for l in f:lines() do
+        thread:write(l)
       end
+      f:close()
     end
-    f:close()
+    thread:write '\1eof'
+  end, prog, tmp)
+  local r = w:run(function()
+    w:history 'start'
+    local l
+    p:write(prog)
+    while l ~= '\1eof' do
+      while p:poll() do
+        l = p:read()
+        if l == '\1eof' then
+          break
+        end
+        w.buf:input(l..'\n')
+      end
+      coroutine.yield()
+    end
     if sh then
-      w:input("$ ")
+      w:input '$ '
     end
     w:history 'end'
---    w.buf:setsel(cur, w:cur())
---    w:cur(cur)
     if tmp then
       os.remove(tmp)
     end
   end)
-  p.kill = function()
-    if f then
-      f:close()
-      f = nil
-      if tmp then
-        os.remove(tmp)
-      end
-    end
+  r.kill = function()
+    p:kill()
   end
 end
 
@@ -279,6 +281,7 @@ function win_newline(self)
     if not r then
       self.buf:input("Error\n")
     end
+    self.buf:input '$ '
   else
     pipe(self, t, false, true)
   end
