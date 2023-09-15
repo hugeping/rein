@@ -234,7 +234,6 @@ proc["i+"] = function(w)
   end
   text_replace(w, false, function(text)
     local t = ''
-    local tab = '  '
     for l in text:lines(true) do
       t = t .. tab .. l
     end
@@ -253,7 +252,6 @@ proc["i-"] = function(w)
   end
   text_replace(w, false, function(text)
     local t = ''
-    local tab = '  '
     for l in text:lines(true) do
       if l:startswith(tab) then
         l = l:sub(tab:len()+1)
