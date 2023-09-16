@@ -98,7 +98,7 @@ end
 function proc.sub(w, text, glob)
   w = w:winmenu()
   if not w then return end
-  text = text:strip():gsub("\\[tn]", { ["\\t"] = "\t", ["\\n"] = "\n" })
+  text = text:strip():gsub("\\[tnr]", { ["\\t"] = "\t", ["\\n"] = "\n", ["\\r"] = "\r" })
   local c = text:sub(1,1)
   local a
   if sub_delims[c] then
