@@ -273,6 +273,9 @@ end
 
 function buf:paste()
   local clip = sys.clipboard() or self.clipboard
+  if clip then
+    clip = clip:gsub("\r", "") -- Windows?
+  end
 --  local start = self:issel() and self:selrange() or self.cur
   self:input(clip)
 --  self:setsel(start, self.cur)
