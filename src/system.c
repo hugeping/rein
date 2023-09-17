@@ -63,6 +63,20 @@ sys_chdir(lua_State *L)
 }
 
 static int
+sys_realpath(lua_State *L)
+{
+	const char *path = luaL_checkstring(L, 1);
+	char *ret = Getrealpath(path);
+	if (!ret) {
+	        lua_pushstring(L, path);
+		return 1;
+	}
+	lua_pushstring(L, ret);
+	free(ret);
+	return 1;
+}
+
+static int
 sys_mkdir(lua_State *L)
 {
 	const char *path = luaL_checkstring(L, 1);
@@ -222,6 +236,7 @@ sys_lib[] = {
 	{ "window_mode", sys_window_mode },
 	{ "chdir", sys_chdir },
 	{ "mkdir", sys_mkdir },
+	{ "realpath", sys_realpath },
 	{ "time", sys_time },
 	{ "readdir", sys_readdir },
 	{ "sleep", sys_sleep },

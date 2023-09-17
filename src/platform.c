@@ -1033,3 +1033,138 @@ Clipboard(const char *text)
 	SDL_SetClipboardText(text);
 	return NULL;
 }
+
+static int
+is_absolute_path(const char *path)
+{
+	if (!path || !*path)
+		return 0;
+#ifndef _WIN32
+	return (*path == '/');
+#else
+	return (*path == '/' || *path == '\\' || path[1] == ':');
+#endif
+}
+
+/*
+ * char *realpath(const char *path, char *resolved);
+ *
+ * Find the real name of path, by removing all ".", ".." and symlink
+ * components.  Returns (resolved) on success, or (NULL) on failure,
+ * in which case the path which caused trouble is left in (resolved).
+ */
+char *
+Getrealpath(const char *path)
+{
+	char *resolved;
+	const char *q;
+	char *p;
+	size_t len;
+
+	/* POSIX sez we must test for this */
+	if (path == NULL) {
+		return NULL;
+	}
+
+	resolved = malloc(PATH_MAX);
+	if (resolved == NULL)
+		return NULL;
+
+	/*
+	 * Build real path one by one with paying an attention to .,
+	 * .. and symbolic link.
+	 */
+
+	/*
+	 * `p' is where we'll put a new component with prepending
+	 * a delimiter.
+	 */
+	p = resolved;
+
+	if (*path == '\0') {
+		*p = '\0';
+		goto out;
+	}
+
+	/* If relative path, start from current working directory. */
+	if (!is_absolute_path(path)) {
+		/* check for resolved pointer to appease coverity */
+		if (getcwd(resolved, PATH_MAX) == NULL) {
+			p[0] = '.';
+			p[1] = '\0';
+			goto out;
+		}
+		unix_path(resolved);
+		len = strlen(resolved);
+		if (len > 1) {
+			p += len;
+			while (p != resolved && *(p-1) == '/')
+				*(--p) = 0;
+		}
+	}
+
+loop:
+	/* Skip any slash. */
+	while (*path == '/')
+		path++;
+
+	if (*path == '\0') {
+		if (p == resolved)
+			*p++ = '/';
+		*p = '\0';
+		return resolved;
+	}
+
+	/* Find the end of this component. */
+	q = path;
+	do
+		q++;
+	while (*q != '/' && *q != '\0');
+
+	/* Test . or .. */
+	if (path[0] == '.') {
+		if (q - path == 1) {
+			path = q;
+			goto loop;
+		}
+		if (path[1] == '.' && q - path == 2) {
+			/* Trim the last component. */
+			if (p != resolved)
+				while (*--p != '/' && p != resolved)
+					continue;
+			path = q;
+			goto loop;
+		}
+	}
+
+	/* Append this component. */
+	if (p - resolved + 1 + q - path + 1 > PATH_MAX) {
+		if (p == resolved)
+			*p++ = '/';
+		*p = '\0';
+		goto out;
+	}
+	if (p == resolved
+		&& is_absolute_path(path)
+			&& path[0] != '/') { /* win? */
+		memcpy(&p[0], path,
+		    q - path);
+		p[q - path] = '\0';
+		p += q - path;
+		path = q;
+		goto loop;
+	} else {
+		p[0] = '/';
+		memcpy(&p[1], path,
+		    /* LINTED We know q > path. */
+		    q - path);
+		p[1 + q - path] = '\0';
+	}
+	/* Advance both resolved and unresolved path. */
+	p += 1 + q - path;
+	path = q;
+	goto loop;
+out:
+	free(resolved);
+	return NULL;
+}
