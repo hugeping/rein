@@ -368,6 +368,7 @@ function frame:update(force)
       c.conf = presets.get(fn) or {}
     end
     t = t .. c.buf.fname:esc() .. ' '
+--    if i == 1 then t = t .. ':: ' end
   end
   if self:win() then
     -- self:win():dirty(self:win().buf:dirty())
