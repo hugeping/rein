@@ -610,6 +610,7 @@ Getline             - get current line in buffer
 Codepoint           - get codepoint of the sym
 Clear               - clear window
 win                 - pseudo acme win (just make <cmd for all input lines)
+dump                - hex-dump
 ]])
   w.buf.cur = 1
   w:toline(1, false)
