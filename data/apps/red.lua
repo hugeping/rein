@@ -4,6 +4,7 @@ local proc = require "red/proc"
 local uri = require "red/uri"
 local presets = require "red/presets"
 local dumper = require "dump"
+local HISTFILE = DATADIR .. '/red.hist'
 
 sys.title "red"
 
@@ -25,6 +26,7 @@ local conf = {
   unknown_sym = "?",
   cr_sym = '^',
   nodump = false,
+  histfile = false,
 }
 
 local function parse_options(args)
@@ -46,6 +48,27 @@ ARGS = parse_options(ARGS)
 win:init(conf)
 
 local scr = win.scr
+
+local histfile = (conf.histfile and dumper.load(HISTFILE)) or {}
+
+function win:histfile_add()
+  if not conf.histfile then
+    return
+  end
+  table.insert(histfile, 1, { self.buf.fname, self.buf.cur or 1 })
+  if #histfile > 128 then
+    table.remove(histfile, #histfile)
+  end
+end
+
+function win:histfile_get()
+  for _, v in ipairs(histfile) do
+    if v[1] == self.buf.fname then
+      self:cur(v[2])
+      return true
+    end
+  end
+end
 
 local function filename_line(fn)
   local a = fn:split ':'
@@ -327,6 +350,11 @@ function frame:file(f)
   elseif not fn:startswith '+' then
     b.conf = presets.get(fn) or {}
     b:file(fn)
+    if nr == 0 and b:histfile_get() then
+      self:swap_win(b)
+      self:win():visible()
+      return
+    end
   end
   self:swap_win(b)
   self:win():toline(nr)
@@ -625,6 +653,16 @@ function mainmenu.cmd:Exit()
     sys.running(true)
 --    w.frame:push_win(w)
     return
+  end
+  for fr in self.frame:for_win() do
+    for w in fr:for_win() do
+      if w.buf:isfile() then
+        w:histfile_add()
+      end
+    end
+  end
+  if conf.histfile then
+    dumper.save(HISTFILE, histfile)
   end
   if conf.save_dump then
     mainmenu.cmd.Dump(mainmenu)
@@ -933,6 +971,7 @@ while not conf.stop do
     main:event(r, v, a, b)
   end
   main:show()
+  if conf.stop then break end
   if main:process() then
     gfx.flip(conf.process_hz, true)
   else
@@ -940,9 +979,8 @@ while not conf.stop do
   end
 end
 
-if conf.save_dump then
+--if conf.save_dump then
   mainmenu.cmd.Exit(mainmenu)
-end
-
+--end
 mixer.done()
 print "Quit..."

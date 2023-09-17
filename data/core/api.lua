@@ -65,6 +65,7 @@ local env = {
   math = math,
   bit = bit,
   string = string,
+  pcall = pcall,
   pairs = pairs,
   ipairs = ipairs,
   io = io,
