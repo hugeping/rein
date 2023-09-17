@@ -55,7 +55,7 @@ function win:histfile_add()
   if not conf.histfile then
     return
   end
-  table.insert(histfile, 1, { self.buf.fname, self.buf.cur or 1 })
+  table.insert(histfile, 1, { sys.realpath(self.buf.fname), self.buf.cur or 1 })
   if #histfile > 128 then
     table.remove(histfile, #histfile)
   end
@@ -63,7 +63,7 @@ end
 
 function win:histfile_get()
   for _, v in ipairs(histfile) do
-    if v[1] == self.buf.fname then
+    if v[1] == sys.realpath(self.buf.fname) then
       self:cur(v[2])
       return true
     end

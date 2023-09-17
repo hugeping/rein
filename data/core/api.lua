@@ -95,6 +95,7 @@ local env = {
     isdir = function(f) return sys.readdir(f, 0) end,
     chdir = sys.chdir,
     mkdir = sys.mkdir,
+    realpath = sys.realpath,
     hidemouse = sys.hidemouse,
     clipboard = sys.clipboard,
     newrand = sys.newrand,
