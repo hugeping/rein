@@ -77,7 +77,29 @@ local function grep(path, rex, err)
   end
 end
 
+function proc.dump(w)
+  local data = w:winmenu()
+  if not data then return end
+  w = w:output('+Dump')
+  local s, e = data.buf:range()
+  local text = data.buf:gettext(s, e)
+  for i = 1, #text, 16 do
+    local t, a = '', ''
+    for k = 0, 15 do
+      local b = string.byte(text, i + k)
+      if not b then break end
+      t = t .. string.format("%02x", b) .. ' '
+      if b < 32 then
+        b = 46
+      end
+      a = a .. string.char(b)
+    end
+    w:printf("%s| %s\n",t, a)
+  end
+end
+
 function proc.grep(w, rex)
+  if not rex then return end
   w = w:output('+Output')
   w:run(function()
     grep(sys.dirname(w.frame:getfilename()), rex, w)
