@@ -286,7 +286,7 @@ function proc.Codepoint(w)
   local sym = data.buf.text[data:cur()]
   local cp = utf.codepoint(sym)
   local cur = w:cur()
-  w.buf:input(" "..string.format("%x", cp))
+  w.buf:input(" "..string.format("0x%x", cp))
   w:cur(cur)
 end
 
