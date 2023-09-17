@@ -80,7 +80,7 @@ end
 function proc.dump(w)
   local data = w:winmenu()
   if not data then return end
-  w = w:output('+Dump')
+  w = w:output('+dump')
   local s, e = data.buf:range()
   local text = data.buf:gettext(s, e)
   for i = 1, #text, 16 do
@@ -100,7 +100,7 @@ end
 
 function proc.grep(w, rex)
   if not rex then return end
-  w = w:output('+Output')
+  w = w:output('+grep')
   w:run(function()
     grep(sys.dirname(w.frame:getfilename()), rex, w)
   end)
