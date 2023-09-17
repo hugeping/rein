@@ -85,9 +85,15 @@ function proc.dump(w)
   local text = data.buf:gettext(s, e)
   for i = 1, #text, 16 do
     local t, a = '', ''
+    t = string.format("%04x | ", (i - 1)/16)
     for k = 0, 15 do
       local b = string.byte(text, i + k)
-      if not b then break end
+      if not b then
+        for i = k, 15 do
+          t = t .. '   '
+        end
+        break
+      end
       t = t .. string.format("%02x", b) .. ' '
       if b < 32 then
         b = 46
