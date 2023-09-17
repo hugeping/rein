@@ -24,17 +24,20 @@ local conf = {
   process_hz = 1/50,
   unknown_sym = "?",
   cr_sym = '^',
+  nodump = false,
 }
 
 local function parse_options(args)
   local ops, optarg = sys.getopt(args, {
     fs = conf.font_sz,
+    nodump = true,
   })
   local ret = {}
   for i = optarg, #args do
     table.insert(ret, args[i])
   end
   conf.font_sz = ops.fs
+  conf.nodump = ops.nodump
   return ret
 end
 
@@ -570,6 +573,8 @@ function mainmenu.cmd:Help()
   w:clear()
   w:printf([[RED - Rein EDitor
 
+Arguments: red -fs <font size> [-nodump]
+
 esc          - cut, select last typed block
 ctrl-s       - Save (Put) current buffer
 ctrl-x,c,v   - cut, copy, paste
@@ -907,9 +912,9 @@ if #ARGS > 0 then
     main:win():file(ARGS[i])
   end
 else
-  if not load_dump "red.dump" then
+  if conf.nodump or not load_dump "red.dump" then
     mainmenu.cmd.Newcol(mainmenu)
-    main:win():file(main:getnewfile())
+    main:win():file("./")
   else
     conf.save_dump = true
   end
