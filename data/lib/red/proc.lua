@@ -209,8 +209,8 @@ proc['!'] = function(_, pat)
 end
 
 local function pipe(w, prog, tmp, sh)
-  if tmp then prog = 'cat '..tmp.. ' | '.. prog end
   if PLATFORM ~= 'Windows' then
+    if tmp then prog = 'cat '..tmp.. ' | '.. prog end
     prog = '( ' ..prog .. ' ) </dev/null 2>&1'
   end
   local p = thread.start(function()
@@ -223,7 +223,7 @@ local function pipe(w, prog, tmp, sh)
       f:close()
     end
     thread:write '\1eof'
-  end, prog, tmp)
+  end)
   local r = w:run(function()
     w:history 'start'
     local l
@@ -383,7 +383,7 @@ proc['|'] = function(w, prog)
   f:close()
   data.buf:setsel(s, e + 1)
   data.buf:cut()
-  pipe(w:data(), 'cat '..tmp..'|'..prog..' 2>&1', tmp)
+  pipe(w:data(), prog, tmp)
 end
 end
 
