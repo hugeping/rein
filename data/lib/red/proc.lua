@@ -269,7 +269,7 @@ local function pipe(w, prog, inp, sh)
   local r = w:run(function()
     w:history 'start'
     local l
-    while l ~= '\1eof' do
+    while l ~= '\1eof' and not ret.stopped do
       while p:poll() do
         l = p:read()
         if l == '\1eof' then
@@ -288,8 +288,10 @@ local function pipe(w, prog, inp, sh)
     end
     ret.stopped = true
   end)
+  ret.routine = r
   r.kill = function()
     p:detach()
+    ret.stopped = true
   end
   if tmp then
     ret.fifo = io.open(tmp, "a")
@@ -383,7 +385,17 @@ function proc.Clear(w)
   w:visible()
 end
 
-local function win_escape(self)
+local shell = {}
+
+function shell:delete()
+  if not self.prog or not self.prog.routine or self.prog.stopped then
+    return
+  end
+  self.prog.routine.kill()
+  self.prog.stopped = true
+end
+
+function shell:escape()
   if not self.prog or self.prog.stopped or
     not self.prog.fifo then
     return
@@ -392,7 +404,7 @@ local function win_escape(self)
   self.prog.fifo = nil
 end
 
-local function win_newline(self)
+function shell:newline()
   self.buf:linestart()
   local t = ''
   for i = self.buf.cur, #self.buf.text do
@@ -424,8 +436,9 @@ function proc.win(w)
     w.win_shell = true
     w:input("$ ")
   end
-  w.newline = win_newline
-  w.escape = win_escape
+  w.newline = shell.newline
+  w.escape = shell.escape
+  w.delete = shell.delete
 end
 
 --luacheck: pop

@@ -102,8 +102,8 @@ function win:process()
       end
       table.insert(co, v)
       status = true
---    else
---      print("Dead proc")
+    else
+      print("Proc died")
     end
   end
   self.co = co
