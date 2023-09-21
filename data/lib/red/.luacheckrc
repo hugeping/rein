@@ -1,4 +1,5 @@
 globals = {
+  'thread',
   'synth',
   'gfx',
   'font',
@@ -9,6 +10,7 @@ globals = {
   'utf',
   'ARGS',
   'DATADIR',
+  'PLATFORM',
 }
 ignore = {
   '542',
