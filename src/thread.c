@@ -446,18 +446,20 @@ thread_stop(lua_State *L)
 {
 	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
 	struct lua_channel *chan = thr->chan;
-	int haschild;
+	int haschild, detached;
 	if (!chan)
 		return 0;
 //	printf("Thread stop\n");
 	MutexLock(chan->m);
+	detached = !chan->peers[0].L;
 	chan->peers[0].L = NULL;
 	haschild = !!chan->peers[1].L;
 	MutexUnlock(chan->m);
 	if (haschild) {
 		SemPost(chan->peers[1].sem);
 		thread_wait(L);
-	}
+	} else if (detached)
+		return 0;
 	chan_free(chan);
 	thr->chan = NULL;
 	if (thr->err)
@@ -481,13 +483,16 @@ thread_detach(lua_State *L)
 		chan->peers[1].L = NULL;
 		chan->used = 1;
 	} else {
+		MutexUnlock(chan->m);
 		chan_free(chan);
 		thr->chan = NULL;
+		chan = NULL;
 	}
 	if (thr->err)
 		free(thr->err);
 	thr->err = NULL;
-	MutexUnlock(chan->m);
+	if (chan)
+		MutexUnlock(chan->m);
 	return 0;
 }
 
