@@ -84,12 +84,12 @@ function proc.dump(w)
   local s, e = data.buf:range()
   local text = data.buf:gettext(s, e)
   for i = 1, #text, 16 do
-    local t, a = '', ''
+    local a, t = ''
     t = string.format("%04x | ", (i - 1)/16)
     for k = 0, 15 do
       local b = string.byte(text, i + k)
       if not b then
-        for i = k, 15 do
+        for _ = k, 15 do
           t = t .. '   '
         end
         break
@@ -208,33 +208,74 @@ proc['!'] = function(_, pat)
   os.execute(pat:unesc())
 end
 
-local function pipe(w, prog, tmp, sh)
-  if PLATFORM ~= 'Windows' then
-    if tmp then prog = 'cat '..tmp.. ' | '.. prog end
-    prog = '( ' ..prog .. ' ) </dev/null 2>&1'
+local function pipe_shell()
+  local prog = thread:read()
+  local f = io.popen(prog, "r")
+  if f then
+    f:setvbuf 'line'
+    for l in f:lines() do
+      thread:write(l..'\n')
+    end
+    f:close()
   end
-  local p = thread.start(function()
-    local prog = thread:read()
-    local f = io.popen(prog, "r")
-    if f then
-      for l in f:lines() do
+  thread:write '\1eof'
+end
+
+local function pipe_proc()
+  require "std"
+  local prog = thread:read()
+  local f = io.popen(prog, "r")
+  if f then
+    f:setvbuf 'no'
+    local pre
+    while true do
+      local chunk = f:read(512)
+      if not chunk then
+        if pre then
+          thread:write(pre)
+        end
+        break
+      end
+      chunk = chunk .. (pre or '')
+      for l in chunk:lines(true) do
+        if not l:endswith '\n' then
+          pre = l
+          break
+        end
         thread:write(l)
       end
-      f:close()
     end
-    thread:write '\1eof'
-  end)
+    f:close()
+  end
+  thread:write '\1eof'
+end
+
+local function pipe(w, prog, inp, sh)
+  local tmp
+  if prog:empty() then
+    return
+  end
+  if PLATFORM ~= 'Windows' and inp then
+    tmp = os.tmpname()
+    os.remove(tmp)
+    if os.execute("mkfifo "..tmp) ~= 0 then
+      return
+    end
+    prog = '( ' ..prog .. ' ) <' .. (inp and tmp or '/dev/null') .. ' 2>&1'
+  end
+  local p = thread.start(sh and pipe_shell or pipe_proc)
+  local ret = { }
+  p:write(prog)
   local r = w:run(function()
     w:history 'start'
     local l
-    p:write(prog)
     while l ~= '\1eof' do
       while p:poll() do
         l = p:read()
         if l == '\1eof' then
           break
         end
-        w.buf:input(l..'\n')
+        w.buf:input(l)
       end
       coroutine.yield()
     end
@@ -245,10 +286,16 @@ local function pipe(w, prog, tmp, sh)
     if tmp then
       os.remove(tmp)
     end
+    ret.stopped = true
   end)
   r.kill = function()
     p:detach()
   end
+  if tmp then
+    ret.fifo = io.open(tmp, "a")
+    ret.fifo:setvbuf 'no'
+  end
+  return ret
 end
 
 proc["i+"] = function(w)
@@ -318,7 +365,7 @@ function proc.Codepoint(w)
   w:cur(cur)
 end
 
-function proc.Getline(w)
+function proc.Line(w)
   if not w.frame.frame then -- main menu
     return
   end
@@ -336,7 +383,16 @@ function proc.Clear(w)
   w:visible()
 end
 
-function win_newline(self)
+local function win_escape(self)
+  if not self.prog or self.prog.stopped or
+    not self.prog.fifo then
+    return
+  end
+  self.prog.fifo:close()
+  self.prog.fifo = nil
+end
+
+local function win_newline(self)
   self.buf:linestart()
   local t = ''
   for i = self.buf.cur, #self.buf.text do
@@ -347,13 +403,18 @@ function win_newline(self)
   self.buf:input '\n'
   local cmd = t:split(1)
   if cmd[1] == 'cd' and #cmd == 2 then
-    local r, e = sys.chdir(cmd[2])
+    local r = sys.chdir(cmd[2])
     if not r then
       self.buf:input("Error\n")
     end
     self.buf:input '$ '
+  elseif self.prog and not self.prog.stopped then
+    if self.prog.fifo then
+      self.prog.fifo:write(t..'\n')
+      self.prog.fifo:flush()
+    end
   else
-    pipe(self, t, false, true)
+    self.prog = pipe(self, t, true, true)
   end
 end
 
@@ -364,6 +425,7 @@ function proc.win(w)
     w:input("$ ")
   end
   w.newline = win_newline
+  w.escape = win_escape
 end
 
 --luacheck: pop
@@ -372,18 +434,22 @@ if PLATFORM ~= 'Windows' then
 proc['|'] = function(w, prog)
   local data = w:data()
   if not data then return end
-
-  local tmp = os.tmpname()
-  local f = io.open(tmp, "wb")
-  if not f then
+  local ret = pipe(w:data(), prog, true)
+  if not ret or not ret.fifo then
     return
   end
   local s, e = data.buf:range()
-  f:write(data.buf:gettext(s, e))
-  f:close()
   data.buf:setsel(s, e + 1)
-  data.buf:cut()
-  pipe(w:data(), prog, tmp)
+  local txt = data.buf:gettext(s, e)
+  w:data():run(function()
+    data.buf:cut()
+    while txt ~= '' do
+      ret.fifo:write(txt:sub(1, 256))
+      txt = txt:sub(257)
+      coroutine.yield()
+    end
+    ret.fifo:close()
+  end)
 end
 end
 

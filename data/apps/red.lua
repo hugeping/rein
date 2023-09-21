@@ -634,7 +634,7 @@ gsub /lua-regexp/b/ - chnage a to b global
 fmt [width]         - fmt text by width
 i+/i-               - indent inc/dec
 Run prog            - run prog in rein
-Getline             - get current line in buffer
+Line                - get current line in buffer
 Codepoint           - get codepoint of the sym
 Clear               - clear window
 win                 - pseudo acme win (just make <cmd for all input lines)

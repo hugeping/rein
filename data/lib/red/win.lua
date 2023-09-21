@@ -748,6 +748,9 @@ function win:getconf(name)
   return conf[name]
 end
 
+function win:delete()
+end
+
 function win:backspace()
   if self:visible() then
     return
@@ -909,6 +912,8 @@ function win:event(r, v, a, b)
       self:newline()
     elseif v == 'backspace' then
       self:backspace()
+    elseif v == 'delete' then
+      self:delete()
     elseif v == 'escape' then
       self:escape()
     elseif v:find 'shift' then
