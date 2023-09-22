@@ -73,12 +73,14 @@ struct lua_peer {
 struct lua_channel {
 	int m; /* mutex */
 	int used;
+	char *err;
 	struct lua_peer peers[2];
 };
 
 static void
 chan_free(struct lua_channel *chan)
 {
+	free(chan->err);
 	MutexDestroy(chan->m);
 	SemDestroy(chan->peers[0].sem);
 	SemDestroy(chan->peers[1].sem);
@@ -88,7 +90,6 @@ chan_free(struct lua_channel *chan)
 struct lua_thread {
 	int tid;
 	lua_State *L;
-	char *err;
 	struct lua_channel *chan;
 };
 
@@ -105,9 +106,9 @@ thread_poll(lua_State *L)
 		ms = to * 1000; /* seconds to ms */
 
 	MutexLock(chan->m);
-	if (thr->err) {
+	if (chan->err) {
 		MutexUnlock(chan->m);
-		return luaL_error(L, thr->err);
+		return luaL_error(L, chan->err);
 	}
 	if (!other->L) {
 		MutexUnlock(chan->m);
@@ -142,9 +143,9 @@ thread_read(lua_State *L)
 	struct lua_peer *other = (thr->tid >= 0)?&chan->peers[1]:&chan->peers[0];
 	struct lua_peer *self = (thr->tid >= 0)?&chan->peers[0]:&chan->peers[1];
 	MutexLock(chan->m);
-	if (thr->err) {
+	if (chan->err) {
 		MutexUnlock(chan->m);
-		return luaL_error(L, "No peer on thread read: %s", thr->err);
+		return luaL_error(L, "No peer on thread read: %s", chan->err);
 	}
 	if (other->read) {
 		MutexUnlock(chan->m);
@@ -178,9 +179,9 @@ thread_write(lua_State *L)
 
 	MutexLock(chan->m);
 
-	if (thr->err) {
+	if (chan->err) {
 		MutexUnlock(chan->m);
-		return luaL_error(L, "No peer on thread write: %s", thr->err);
+		return luaL_error(L, "No peer on thread write: %s", chan->err);
 	}
 
 	if (!other->L) {
@@ -204,9 +205,9 @@ thread_write(lua_State *L)
 	SemWait(self->sem, -1);
 	MutexLock(chan->m);
 	self->write --;
-	if (thr->err) {
+	if (chan->err) {
 		MutexUnlock(chan->m);
-		return luaL_error(L, "No peer on thread write: %s", thr->err);
+		return luaL_error(L, "No peer on thread write: %s", chan->err);
 	}
 	if (!other->L) {
 		MutexUnlock(chan->m);
@@ -227,22 +228,25 @@ thread_write(lua_State *L)
 }
 
 static int
-child_stop(lua_State *L)
+child_gc(lua_State *L)
 {
 	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
 	struct lua_channel *chan = thr->chan;
+	int close;
 	MutexLock(chan->m);
 	chan->peers[1].L = NULL;
 	chan->used --;
-	MutexUnlock(chan->m);
-	SemPost(chan->peers[0].sem);
-	if (!chan->used)
+	close = (chan->used == 0);
+	if (!close)
+		SemPost(chan->peers[0].sem);
+	else
 		chan_free(chan);
+	MutexUnlock(chan->m);
 	return 0;
 }
 
 static const luaL_Reg child_thread_mt[] = {
-	{ "__gc", child_stop },
+	{ "__gc", child_gc },
 	{ "read", thread_read },
 	{ "poll", thread_poll },
 	{ "write", thread_write },
@@ -254,13 +258,11 @@ thread(void *data)
 {
 	int rc;
 	struct lua_thread *thr = (struct lua_thread *)data;
-	if (lua_callfn(thr->L)) {
-		if (thr->chan) {
-			MutexLock(thr->chan->m);
-			if (!thr->err)
-				thr->err = strdup(lua_tostring(thr->L, -1));
-			MutexUnlock(thr->chan->m);
-		}
+	if (lua_callfn(thr->L) && thr->chan) {
+		MutexLock(thr->chan->m);
+		if (!thr->chan->err)
+			thr->chan->err = strdup(lua_tostring(thr->L, -1));
+		MutexUnlock(thr->chan->m);
 		lua_pop(thr->L, 1);
 	}
 	rc = lua_toboolean(thr->L, -1);
@@ -278,12 +280,12 @@ thread_err(lua_State *L)
 
 	MutexLock(chan->m);
 	if (err) {
-		thr->err = strdup(err);
+		chan->err = strdup(err);
 		MutexUnlock(chan->m);
 		return 0;
 	}
-	if (thr->err) {
-		lua_pushstring(L, thr->err);
+	if (chan->err) {
+		lua_pushstring(L, chan->err);
 		MutexUnlock(chan->m);
 		return 1;
 	}
@@ -353,7 +355,7 @@ thread_new(lua_State *L)
 	thr->chan = chan;
 	thr->tid = -1;
 	thr->L = nL;
-	thr->err = NULL;
+	chan->err = NULL;
 
 	luaL_getmetatable(L, "thread metatable");
 	lua_setmetatable(L, -2);
@@ -385,7 +387,6 @@ thread_new(lua_State *L)
 
 	child->tid = -1;
 	child->chan = chan;
-	child->err = NULL;
 
 	if (file)
 		rc = luaL_loadfile(nL, code);
@@ -430,71 +431,50 @@ err2:
 }
 
 static int
-thread_wait(lua_State *L)
+thread_stop(lua_State *L, int wait, int wake)
 {
 	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
 	struct lua_channel *chan = thr->chan;
-	int status = ThreadWait(thr->tid);
-	chan->peers[1].L = NULL;
-	chan->used = 0;
-//	chan_free(chan);
-//	thr->chan = NULL;
-	lua_pushboolean(L, status);
-	return 1;
-}
-
-static int
-thread_stop(lua_State *L)
-{
-	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
-	struct lua_channel *chan = thr->chan;
-	int haschild;
+	int close, peer;
+	int rc = 0;
+//	printf("Thread stop %d\n", wait);
 	if (!chan)
 		return 0;
-//	printf("Thread stop\n");
 	MutexLock(chan->m);
 	chan->peers[0].L = NULL;
-	haschild = !!chan->peers[1].L;
-	MutexUnlock(chan->m);
-	if (haschild) {
+	chan->used --;
+	close = (chan->used == 0);
+	peer = !!chan->peers[1].L;
+	if (peer && wake)
 		SemPost(chan->peers[1].sem);
-		thread_wait(L);
-	}
-	chan_free(chan);
+	MutexUnlock(chan->m);
+	if (wait && peer) {
+		lua_pushboolean(L, ThreadWait(thr->tid));
+		rc = 1;
+	} else
+		ThreadDetach(thr->tid);
+	if (close)
+		chan_free(chan);
 	thr->chan = NULL;
-	if (thr->err)
-		free(thr->err);
-	return 0;
+	return rc;
 }
 
 static int
 thread_detach(lua_State *L)
 {
-	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
-	struct lua_channel *chan = thr->chan;
-	int haschild;
-	if (!chan)
-		return 0;
-	MutexLock(chan->m);
-	chan->peers[0].L = NULL;
-	haschild = !!chan->peers[1].L;
-	if (haschild) {
-		SemPost(chan->peers[1].sem);
-		chan->peers[1].L = NULL;
-		chan->used = 1;
-	} else {
-		MutexUnlock(chan->m);
-		chan_free(chan);
-		chan = NULL;
-	}
-	thr->chan = NULL;
+	return thread_stop(L, 0, 0);
+}
 
-	if (thr->err)
-		free(thr->err);
-	thr->err = NULL;
-	if (chan)
-		MutexUnlock(chan->m);
-	return 0;
+static int
+thread_gc(lua_State *L)
+{
+	return thread_stop(L, 1, 1);
+}
+
+static int
+thread_wait(lua_State *L)
+{
+	return thread_stop(L, 1, 0);
 }
 
 static const luaL_Reg thread_mt[] = {
@@ -504,7 +484,7 @@ static const luaL_Reg thread_mt[] = {
 	{ "poll", thread_poll },
 	{ "err", thread_err },
 	{ "detach", thread_detach },
-	{ "__gc", thread_stop },
+	{ "__gc", thread_gc },
 	{ NULL, NULL }
 };
 
