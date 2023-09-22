@@ -55,10 +55,12 @@ function win:histfile_add()
   if not conf.histfile then
     return
   end
+  histfile = dumper.load(HISTFILE) or {}
   table.insert(histfile, 1, { sys.realpath(self.buf.fname), self.buf.cur or 1 })
   if #histfile > 128 then
     table.remove(histfile, #histfile)
   end
+  dumper.save(HISTFILE, histfile)
 end
 
 function win:histfile_get()
@@ -665,9 +667,6 @@ function mainmenu.cmd:Exit()
         w:histfile_add()
       end
     end
-  end
-  if conf.histfile then
-    dumper.save(HISTFILE, histfile)
   end
   if conf.save_dump then
     mainmenu.cmd.Dump(mainmenu)
