@@ -162,7 +162,9 @@ end
 function proc.select(w, pat)
   return proc.gsub(w, pat)
 end
-
+local function is_space(c)
+  return c == ' ' or c == '\t' or c == '\n'
+end
 function proc.fmt(w, width)
   width = tonumber(width) or 60
   w = w:winmenu()
@@ -175,6 +177,8 @@ function proc.fmt(w, width)
   for i = 1, #w.buf.text do
     c = w.buf.text[i]
     if i >= s and i <= e then
+      if c == '\n' and not is_space(w.buf.text[i+1])
+        and not is_space(w.buf.text[i-1]) then c = ' ' end
       table.insert(t, c)
       len = len + 1
       if len >= width then
