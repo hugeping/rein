@@ -419,17 +419,17 @@ function shell:newline()
   self.buf:lineend()
   self.buf:input '\n'
   local cmd = t:split(1)
-  if cmd[1] == 'cd' and #cmd == 2 then
+  if self.prog and not self.prog.stopped then
+    if self.prog.fifo then
+      self.prog.fifo:write(t..'\n')
+      self.prog.fifo:flush()
+    end
+  elseif cmd[1] == 'cd' and #cmd == 2 then
     local r = sys.chdir(cmd[2])
     if not r then
       self.buf:input("Error\n")
     end
     self.buf:input '$ '
-  elseif self.prog and not self.prog.stopped then
-    if self.prog.fifo then
-      self.prog.fifo:write(t..'\n')
-      self.prog.fifo:flush()
-    end
   else
     self.prog = pipe(self, t, true, true)
   end
