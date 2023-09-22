@@ -209,12 +209,26 @@ proc['!'] = function(_, pat)
 end
 
 local function pipe_shell()
+  local function read_sym(f)
+    local t = ''
+    while true do
+      local b = f:read(1)
+      if not b then break end
+      t = t .. b
+      if b:byte(1) < 128 then break end
+    end
+    return t ~= '' and t
+  end
   local prog = thread:read()
   local f = io.popen(prog, "r")
   if f then
-    f:setvbuf 'line'
-    for l in f:lines() do
-      thread:write(l..'\n')
+    f:setvbuf 'no'
+    local t = true
+    while t do
+      t = read_sym(f)
+      if t then
+        thread:write(t)
+      end
     end
     f:close()
   end
@@ -415,7 +429,7 @@ function shell:newline()
   for i = self.buf.cur, #self.buf.text do
     t = t .. self.buf.text[i]
   end
-  t = t:gsub("^%$", ""):strip()
+  t = t:gsub("^[^%$]*%$", ""):strip()
   self.buf:lineend()
   self.buf:input '\n'
   local cmd = t:split(1)
