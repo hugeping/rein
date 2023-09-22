@@ -258,7 +258,7 @@ local function pipe(w, prog, inp, sh)
   if PLATFORM ~= 'Windows' and inp then
     tmp = os.tmpname()
     os.remove(tmp)
-    if os.execute("mkfifo "..tmp) ~= 0 then
+    if not os.execute("mkfifo "..tmp) then
       return
     end
     prog = '( ' ..prog .. ' ) <' .. (inp and tmp or '/dev/null') .. ' 2>&1'
@@ -290,6 +290,7 @@ local function pipe(w, prog, inp, sh)
   end)
   ret.routine = r
   r.kill = function()
+    p:err("kill")
     p:detach()
     ret.stopped = true
   end

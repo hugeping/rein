@@ -929,6 +929,17 @@ ThreadWait(int id)
 	return status;
 }
 
+void
+ThreadDetach(int id)
+{
+	SDL_Thread *thread = han_get(&threads, id);
+	if (!thread)
+		return;
+	SDL_DetachThread(thread);
+	han_close(&threads, id);
+	return;
+}
+
 int
 Thread(int (*fn) (void *), void *data)
 {

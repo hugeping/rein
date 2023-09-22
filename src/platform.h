@@ -35,6 +35,7 @@ extern void Log(const char *msg);
 
 extern int Thread(int (*fn) (void *), void *data);
 extern int ThreadWait(int tid);
+extern void ThreadDetach(int id);
 
 extern int Mutex(void);
 extern int MutexDestroy(int mid);

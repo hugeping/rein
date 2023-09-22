@@ -637,7 +637,12 @@ Run prog            - run prog in rein
 Line                - get current line in buffer
 Codepoint           - get codepoint of the sym
 Clear               - clear window
-win                 - pseudo acme win (just make <cmd for all input lines)
+win                 - pseudo acme win (do <cmd on enter)
+  ** win notes **
+  In Unix systems stdin is available.
+  esc - close input
+  delete - try to kill programm
+
 dump                - hex-dump
 ]])
   w.buf.cur = 1

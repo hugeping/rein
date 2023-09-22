@@ -191,8 +191,8 @@ main(int argc, const char **argv)
 #endif
 	dostring(L, "core.done()");
 
-	lua_close(L);
-	synth_done();
 	PlatformDone();
+	lua_close(L); /* after PlatfromDone to silently kill detached threads */
+	synth_done();
 	return 0;
 }
