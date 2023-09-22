@@ -103,7 +103,7 @@ function win:process()
       table.insert(co, v)
       status = true
     else
-      print("Proc died")
+--      print("Proc died")
     end
   end
   self.co = co
