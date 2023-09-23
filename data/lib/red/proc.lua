@@ -209,7 +209,12 @@ function proc.fmt(w, width)
 end
 
 proc['!'] = function(_, pat)
-  os.execute(pat:unesc())
+  if pat:empty() then return end
+  if PLATFORM ~= 'Windows' then
+    os.execute(pat:unesc()..' &')
+  else
+    os.execute(pat:unesc())
+  end
 end
 
 local function pipe_shell()
