@@ -26,7 +26,7 @@ local conf = {
   unknown_sym = "?",
   cr_sym = '^',
   nodump = false,
-  histfile = false,
+  histfile = true,
 }
 
 local function parse_options(args)
@@ -786,9 +786,9 @@ function win:output(n)
 end
 
 function menu:output(n)
-  if not n and self.frame:win() then
-    return self.frame:win()
-  end
+--  if not n and self.frame:win() then
+--    return self.frame:win()
+--  end
   n = n or "+Output"
   local w = self.frame.frame:win_by_name(n)
   if w then
