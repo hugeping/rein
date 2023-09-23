@@ -26,7 +26,7 @@ local conf = {
   unknown_sym = "?",
   cr_sym = '^',
   nodump = false,
-  histfile = true,
+--  histfile = true,
 }
 
 local function parse_options(args)
