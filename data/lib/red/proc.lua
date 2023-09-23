@@ -263,7 +263,7 @@ local function pipe_proc()
         end
         break
       end
-      chunk = chunk .. (pre or '')
+      chunk = (pre or '') .. chunk
       for l in chunk:lines(true) do
         if not l:endswith '\n' then
           pre = l
