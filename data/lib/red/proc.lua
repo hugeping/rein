@@ -210,11 +210,15 @@ end
 
 proc['!'] = function(_, pat)
   if pat:empty() then return end
-  if PLATFORM ~= 'Windows' then
-    os.execute(pat:unesc()..' &')
-  else
-    os.execute(pat:unesc())
-  end
+  local p = thread.start(function()
+    local prog = thread:read()
+    if PLATFORM ~= 'Windows' then
+      prog = prog .. ' &'
+    end
+    os.execute(prog)
+  end)
+  p:write(pat:unesc())
+  p:detach()
 end
 
 local function pipe_shell()
@@ -278,13 +282,15 @@ local function pipe(w, prog, inp, sh)
   if prog:empty() then
     return
   end
-  if PLATFORM ~= 'Windows' and inp then
+  if PLATFORM ~= 'Windows' and inp == true then
     tmp = os.tmpname()
     os.remove(tmp)
     if not os.execute("mkfifo "..tmp) then
       return
     end
     prog = '( ' ..prog .. ' ) <' .. (inp and tmp or '/dev/null') .. ' 2>&1'
+  elseif type(inp) == 'string' then
+    tmp = inp
   end
   local p = thread.start(sh and pipe_shell or pipe_proc)
   local ret = { }
