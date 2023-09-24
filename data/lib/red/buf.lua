@@ -285,7 +285,7 @@ function buf:input(txt)
   local sel = self:issel()
   if self.cur < 1 then return end
   local u = type(txt) == 'table' and txt or utf.chars(txt)
-  if sel or #u > 1 then
+  if sel then
     self:history 'start'
   end
   if sel then
@@ -296,7 +296,7 @@ function buf:input(txt)
     table.insert(self.text, self.cur, u[i])
     self.cur = self.cur + 1
   end
-  if sel or #u > 1 then
+  if sel then
     self:history 'end'
   end
 end
