@@ -292,9 +292,7 @@ local function pipe(w, prog, inp, sh)
     if not os.execute("mkfifo "..tmp) then
       return
     end
-    prog = prog:gsub("[#;&|()'\\]", { [";"] = "\\;", ["&"] = "\\&",
-      ["|"] = "\\|", ["("] = "\\(", [")"] = "\\)", ["'"] = "\\'", ["\\"] = "\\\\",
-      ["#"] = "\\#" })
+    prog = string.format("eval %q", prog)
     prog = '( ' ..prog.. ' ) <' .. (inp and tmp or '/dev/null') .. ' 2>&1'
   elseif type(inp) == 'string' then
     tmp = inp
@@ -434,7 +432,9 @@ end
 local shell = {}
 
 function shell:delete()
-  if not self.prog or not self.prog.routine or self.prog.stopped then
+  if not self.prog or
+    not self.prog.routine or
+    self.prog.stopped then
     return
   end
   self.prog.routine.kill()
