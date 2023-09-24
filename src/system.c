@@ -66,13 +66,21 @@ static int
 sys_realpath(lua_State *L)
 {
 	const char *path = luaL_checkstring(L, 1);
-	char *ret = Getrealpath(path);
+	char *ret = GetRealpath(path);
 	if (!ret) {
 	        lua_pushstring(L, path);
 		return 1;
 	}
 	lua_pushstring(L, ret);
 	free(ret);
+	return 1;
+}
+
+static int
+sys_is_absolute_path(lua_State *L)
+{
+	const char *path = luaL_checkstring(L, 1);
+	lua_pushboolean(L, IsAbsolutePath(path));
 	return 1;
 }
 
@@ -237,6 +245,7 @@ sys_lib[] = {
 	{ "chdir", sys_chdir },
 	{ "mkdir", sys_mkdir },
 	{ "realpath", sys_realpath },
+	{ "is_absolute_path", sys_is_absolute_path },
 	{ "time", sys_time },
 	{ "readdir", sys_readdir },
 	{ "sleep", sys_sleep },
