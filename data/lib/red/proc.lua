@@ -237,47 +237,47 @@ local function pipe_shell()
   if cwd then
     prog = string.format("cd %q && %s", cwd, prog)
   end
-  local f = io.popen(prog, "r")
-  if f then
-    f:setvbuf 'no'
-    local t = true
-    while t do
-      t = read_sym(f)
-      if t then
-        thread:write(t)
-      end
+  local f, e = io.popen(prog, "r")
+  thread:write(not not f, e)
+  if not f then return end
+  f:setvbuf 'no'
+  local t = true
+  while t do
+    t = read_sym(f)
+    if t then
+      thread:write(t)
     end
-    f:close()
   end
+  f:close()
   thread:write '\1eof'
 end
 
 local function pipe_proc()
   require "std"
   local prog = thread:read()
-  local f = io.popen(prog, "r")
-  if f then
-    f:setvbuf 'no'
-    local pre
-    while true do
-      local chunk = f:read(512)
-      if not chunk then
-        if pre then
-          thread:write(pre)
-        end
+  local f, e = io.popen(prog, "r")
+  thread:write(not not f, e)
+  if not f then return end
+  f:setvbuf 'no'
+  local pre
+  while true do
+    local chunk = f:read(512)
+    if not chunk then
+      if pre then
+        thread:write(pre)
+      end
+      break
+    end
+    chunk = (pre or '') .. chunk
+    for l in chunk:lines(true) do
+      if not l:endswith '\n' then
+        pre = l
         break
       end
-      chunk = (pre or '') .. chunk
-      for l in chunk:lines(true) do
-        if not l:endswith '\n' then
-          pre = l
-          break
-        end
-        thread:write(l)
-      end
+      thread:write(l)
     end
-    f:close()
   end
+  f:close()
   thread:write '\1eof'
 end
 
@@ -292,14 +292,26 @@ local function pipe(w, prog, inp, sh)
     if not os.execute("mkfifo "..tmp) then
       return
     end
-    prog = '( ' ..prog .. ' ) <' .. (inp and tmp or '/dev/null') .. ' 2>&1'
+    prog = prog:gsub("[#;&|()'\\]", { [";"] = "\\;", ["&"] = "\\&",
+      ["|"] = "\\|", ["("] = "\\(", [")"] = "\\)", ["'"] = "\\'", ["\\"] = "\\\\",
+      ["#"] = "\\#" })
+    prog = '( ' ..prog.. ' ) <' .. (inp and tmp or '/dev/null') .. ' 2>&1'
   elseif type(inp) == 'string' then
     tmp = inp
   end
   local p = thread.start(sh and pipe_shell or pipe_proc)
   local ret = { }
   p:write(prog, w.cwd or false)
-  local r = w:run(function()
+  local r, e = p:read()
+  if not r then
+    w:input(e..'\n')
+    return
+  end
+  if tmp then
+    ret.fifo = io.open(tmp, "a")
+    ret.fifo:setvbuf 'no'
+  end
+  r = w:run(function()
     w:history 'start'
     local l
     while l ~= '\1eof' and not ret.stopped do
@@ -330,10 +342,6 @@ local function pipe(w, prog, inp, sh)
     p:err("kill")
     p:detach()
     ret.stopped = true
-  end
-  if tmp then
-    ret.fifo = io.open(tmp, "a")
-    ret.fifo:setvbuf 'no'
   end
   return ret
 end
@@ -459,12 +467,17 @@ function shell:newline()
     end
   elseif cmd[1] == 'cd' and #cmd == 2 then
     local cwd = (self.cwd or '.').. '/' .. cmd[2]
+    if sys.is_absolute_path(cmd[2]) then
+      cwd = cmd[2]
+    end
     if not sys.isdir(cwd) then
       self.buf:input("Error\n")
     else
       self.cwd = sys.realpath(cwd) .. '/'
       self.buf:input(self.cwd..'\n')
     end
+    self.buf:input '$ '
+  elseif t:empty() then
     self.buf:input '$ '
   else
     self.prog = pipe(self, t, true, true)

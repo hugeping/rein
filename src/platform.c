@@ -1045,8 +1045,8 @@ Clipboard(const char *text)
 	return NULL;
 }
 
-static int
-is_absolute_path(const char *path)
+int
+IsAbsolutePath(const char *path)
 {
 	if (!path || !*path)
 		return 0;
@@ -1065,7 +1065,7 @@ is_absolute_path(const char *path)
  * in which case the path which caused trouble is left in (resolved).
  */
 char *
-Getrealpath(const char *path)
+GetRealpath(const char *path)
 {
 	char *resolved;
 	const char *q;
@@ -1098,7 +1098,7 @@ Getrealpath(const char *path)
 	}
 
 	/* If relative path, start from current working directory. */
-	if (!is_absolute_path(path)) {
+	if (!IsAbsolutePath(path)) {
 		/* check for resolved pointer to appease coverity */
 		if (getcwd(resolved, PATH_MAX) == NULL) {
 			p[0] = '.';
@@ -1156,7 +1156,7 @@ loop:
 		goto out;
 	}
 	if (p == resolved
-		&& is_absolute_path(path)
+		&& IsAbsolutePath(path)
 			&& path[0] != '/') { /* win? */
 		memcpy(&p[0], path,
 		    q - path);

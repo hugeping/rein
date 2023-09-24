@@ -93,6 +93,7 @@ local env = {
     log = sys.log,
     readdir = sys.readdir,
     isdir = function(f) return sys.readdir(f, 0) end,
+    is_absolute_path = sys.is_absolute_path,
     chdir = sys.chdir,
     mkdir = sys.mkdir,
     realpath = sys.realpath,

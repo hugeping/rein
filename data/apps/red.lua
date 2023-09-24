@@ -243,6 +243,28 @@ function win:proc(t)
   end
 end
 
+function win:path(t)
+  local a = self.cwd
+  if not a then return t end
+  a = a:gsub("/+$", "")
+  a = a:split('/')
+  local b = (sys.realpath "./")
+  b = b:split('/')
+  local p = ''
+  local k = #b + 1
+  for i = 1, #b do
+    if b[i] ~= a[i] then
+      k = i
+      p = p .. string.rep('../', #b - i + 1)
+      break
+    end
+  end
+  for i = k, #a do
+    p = p .. a[i] .. '/'
+  end
+  return p .. t
+end
+
 function win:exec(t)
   t = t:unesc()
 
@@ -267,6 +289,7 @@ function win:exec(t)
     end
   end
 
+  t = self:path(t)
   local ff = filename_line(t)
 
   if not sys.isdir(ff) then

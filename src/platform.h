@@ -55,6 +55,7 @@ extern void Shutdown(int fd);
 
 extern char *Clipboard(const char *text);
 
-extern char *Getrealpath(const char *path);
+extern char *GetRealpath(const char *path);
+extern int IsAbsolutePath(const char *path);
 
 #endif
