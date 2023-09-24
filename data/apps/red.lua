@@ -526,7 +526,10 @@ function framemenu.cmd:Put()
   end
   local f = self.frame:getfilename()
   if f then
-    b:save(f)
+    local r, e = b:save(f)
+    if not r then
+      self.frame:err(e)
+    end
   end
   self.frame:update()
 end
