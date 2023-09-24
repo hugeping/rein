@@ -466,6 +466,7 @@ function shell:newline()
       self.prog.fifo:flush()
     end
   elseif cmd[1] == 'cd' and #cmd == 2 then
+    cmd[2] = cmd[2]:unesc()
     local cwd = (self.cwd or '.').. '/' .. cmd[2]
     if sys.is_absolute_path(cmd[2]) then
       cwd = cmd[2]
