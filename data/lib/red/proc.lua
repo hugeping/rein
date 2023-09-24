@@ -132,6 +132,7 @@ function proc.sub(w, text, glob)
   if sub_delims[c] then
     a = text:split(c)
     table.remove(a, 1)
+    if a[2] == '' and not a[3] then a[2] = false end
   else
     a = { text }
   end
