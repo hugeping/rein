@@ -29,14 +29,42 @@ local conf = {
 --  histfile = true,
 }
 
+local function try_lua(file)
+  if not io.access(file) then return end
+  local r, e = pcall(function() return dofile(file) end)
+  if not r then
+    print(string.format("Error parsing: %q: %s", file, e))
+  end
+  return r and e
+end
+
+local function load_conf(dir)
+  local merge = {
+    { "conf.lua", conf, table.merge },
+    { "presets.lua", presets, function(_, t) presets = t end },
+    { "uri.lua", uri, function(_, t) uri = t end },
+    { "proc.lua", proc, table.merge },
+  }
+  for _, v in ipairs(merge) do
+    local t = try_lua(dir .. '/'.. v[1])
+    if type(t) == 'table' then
+      v[3](v[2], t)
+    end
+  end
+end
+
 local function parse_options(args)
   local ops, optarg = sys.getopt(args, {
     fs = conf.font_sz,
     nodump = true,
+    confdir = false,
   })
   local ret = {}
   for i = optarg, #args do
     table.insert(ret, args[i])
+  end
+  if ops.confdir and sys.isdir(ops.confdir) then
+    load_conf(ops.confdir)
   end
   conf.font_sz = ops.fs
   conf.nodump = ops.nodump
@@ -44,6 +72,14 @@ local function parse_options(args)
 end
 
 ARGS = parse_options(ARGS)
+
+function presets.get(fname)
+  for _, v in ipairs(presets) do
+    if fname:find(v[1]) then
+      return v[2]
+    end
+  end
+end
 
 win:init(conf)
 

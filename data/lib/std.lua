@@ -16,6 +16,13 @@ function table.clone(src)
   return dst
 end
 
+function table.merge(dst, src)
+  for k, _ in pairs(src) do
+    dst[table.clone(k)] = table.clone(src[k])
+  end
+  return dst
+end
+
 function table.append(dst, ...)
   for _, t in ipairs({...}) do
     table.insert(dst, t)
@@ -182,6 +189,14 @@ function string.wrap(text, len, delim)
     end
   end
   return res
+end
+
+function io.access(file, mode)
+  local f = io.open(file, mode or "r")
+  if f then
+    f:close()
+    return true
+  end
 end
 
 function io.file(fname, data)
