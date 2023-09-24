@@ -4,6 +4,7 @@
  #include <windows.h>
  #include <windows.h>
 #else
+ #include <signal.h>
  #include <unistd.h>
  #include <arpa/inet.h>
  #include <netdb.h>
