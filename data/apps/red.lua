@@ -65,6 +65,7 @@ local function parse_options(args)
   end
   if ops.confdir and sys.isdir(ops.confdir) then
     load_conf(ops.confdir)
+    HISTFILE = ops.confdir .. '/red.hist'
   end
   conf.font_sz = ops.fs
   conf.nodump = ops.nodump
