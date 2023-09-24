@@ -665,9 +665,16 @@ end
 function mainmenu.cmd:Help()
   local w = self.frame:open_err("+Help")
   w:clear()
-  w:printf([[RED - Rein EDitor
+  w:printf([[
+           ___  _______
+          / _ \/ __/ _ \
+         / , _/ _// // /
+        /_/|_/___/____/
 
-Arguments: red -fs <font size> [-nodump]
+       RED - Rein EDitor
+
+Arguments:
+  red -fs <font size> [-nodump] [-confdir <dir>]
 
 esc          - cut, select last typed block
 ctrl-s       - Save (Put) current buffer
@@ -709,6 +716,9 @@ win                 - pseudo acme win (do <cmd on enter)
   delete - try to kill programm
 
 dump                - hex-dump
+
+Confdir:
+  You can put files: conf.lua, presets.lua, uri.lua and proc here.
 ]])
   w.buf.cur = 1
   w:toline(1, false)
