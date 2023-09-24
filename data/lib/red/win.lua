@@ -511,7 +511,8 @@ function win:compl()
   if txt == '' then return end
   local d = sys.dirname(txt)
   self.last_compl_path = txt
-  for _, f in ipairs(sys.readdir(d) or {}) do
+  local dir = (self.cwd and self.cwd or '').. d
+  for _, f in ipairs(sys.readdir(dir) or {}) do
     local path = (d ..'/'.. f):gsub("/+", "/"):esc()
     if self.last_compl then
       if self.last_compl == path then

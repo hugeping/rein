@@ -983,8 +983,6 @@ while not conf.stop do
   end
 end
 
---if conf.save_dump then
-  mainmenu.cmd.Exit(mainmenu)
---end
+mainmenu.cmd.Exit(mainmenu)
 mixer.done()
 print "Quit..."

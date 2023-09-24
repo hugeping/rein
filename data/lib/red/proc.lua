@@ -232,7 +232,10 @@ local function pipe_shell()
     end
     return t ~= '' and t
   end
-  local prog = thread:read()
+  local prog, cwd = thread:read()
+  if cwd then
+    prog = string.format("cd %q && %s", cwd, prog)
+  end
   local f = io.popen(prog, "r")
   if f then
     f:setvbuf 'no'
@@ -294,7 +297,7 @@ local function pipe(w, prog, inp, sh)
   end
   local p = thread.start(sh and pipe_shell or pipe_proc)
   local ret = { }
-  p:write(prog)
+  p:write(prog, w.cwd or false)
   local r = w:run(function()
     w:history 'start'
     local l
@@ -454,9 +457,12 @@ function shell:newline()
       self.prog.fifo:flush()
     end
   elseif cmd[1] == 'cd' and #cmd == 2 then
-    local r = sys.chdir(cmd[2])
-    if not r then
+    local cwd = (self.cwd or '.').. '/' .. cmd[2]
+    if not sys.isdir(cwd) then
       self.buf:input("Error\n")
+    else
+      self.cwd = sys.realpath(cwd) .. '/'
+      self.buf:input(self.cwd..'\n')
     end
     self.buf:input '$ '
   else
