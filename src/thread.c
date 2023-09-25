@@ -142,6 +142,9 @@ thread_read(lua_State *L)
 	struct lua_channel *chan = thr->chan;
 	struct lua_peer *other = (thr->tid >= 0)?&chan->peers[1]:&chan->peers[0];
 	struct lua_peer *self = (thr->tid >= 0)?&chan->peers[0]:&chan->peers[1];
+	if (!chan)
+		return luaL_error(L, "Read on closed chan");
+
 	MutexLock(chan->m);
 	if (chan->err) {
 		MutexUnlock(chan->m);
@@ -176,6 +179,9 @@ thread_write(lua_State *L)
 	struct lua_channel *chan = thr->chan;
 	struct lua_peer *other = (thr->tid >= 0)?&chan->peers[1]:&chan->peers[0];
 	struct lua_peer *self = (thr->tid >= 0)?&chan->peers[0]:&chan->peers[1];
+
+	if (!chan)
+		return luaL_error(L, "Write on closed chan");
 
 	MutexLock(chan->m);
 
