@@ -223,13 +223,40 @@ proc['!'] = function(_, pat)
 end
 
 local function pipe_shell()
+  local poll = function(_) return true end
+  local poll_mode
+  if PLATFORM ~= 'Windows' and type(jit) == 'table' then
+    poll_mode = true
+    local ffi = require "ffi"
+    ffi.cdef[[
+      struct pollfd {
+        int   fd;         /* file descriptor */
+        short events;     /* requested events */
+        short revents;    /* returned events */
+      };
+      int fileno(struct FILE* stream);
+      int poll(struct pollfd *fds, unsigned long nfds, int timeout);
+    ]]
+    poll = function(f)
+      local fds = ffi.new("struct pollfd[1]")
+      fds[0].fd = ffi.C.fileno(f)
+      fds[0].events = 1
+      local fd = ffi.C.fileno(f)
+      local r = ffi.C.poll(fds, 1, 200)
+      return r > 0 and
+        bit.band(fds[0].revents, 1)
+    end
+  end
   local function read_sym(f)
     local t = ''
-    while true do
-      local b = f:read(1)
-      if not b then break end
-      t = t .. b
-      if b:byte(1) < 128 then break end
+    local b = ''
+    while b and (t == '' or t:byte(#t) >= 128) do
+      while b and poll(f) do
+        b = f:read(1)
+        if not b then break end
+        t = t .. b
+        if not poll_mode and b:byte(1) < 128 then b = false end
+      end
     end
     return t ~= '' and t
   end

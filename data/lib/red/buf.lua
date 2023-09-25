@@ -128,12 +128,16 @@ function buf:sel_line(whole)
   end
 end
 
+local function is_space(t)
+  return t == ' ' or t == '\t'
+end
+
 local function scan_spaces(self, pos, max)
   local c
   local pre = ''
   for i = pos, max do
     c = self.text[i]
-    if c == '\t' or c == ' ' then
+    if is_space(c) then
       pre = pre .. c
     else
       break
@@ -145,7 +149,7 @@ end
 function buf:newline()
   local cur = self.cur
   local pre = ''
-  if self.text[cur] == '\n' or not self.text[cur] then
+  if not is_space(self.text[cur]) then
     self:linestart()
     local p1 = scan_spaces(self, self.cur, cur)
     local p2 = scan_spaces(self, cur + 1, #self.text)

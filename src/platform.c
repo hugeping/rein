@@ -376,8 +376,6 @@ PlatformInit(int argc, const char **argv)
 	if (WSAStartup(MAKEWORD(1,1), &wsaData) != 0) {
 		fprintf(stderr, "Couldn't initialize Winsock 1.1\n");
 	}
-#else
-	signal(SIGPIPE, SIG_IGN);
 #endif
 #if SDL_VERSION_ATLEAST(2, 0, 8)
 	SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0");
