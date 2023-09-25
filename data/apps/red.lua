@@ -1058,4 +1058,4 @@ end
 
 mainmenu.cmd.Exit(mainmenu)
 mixer.done()
-print "Quit..."
+-- print "Quit..."
