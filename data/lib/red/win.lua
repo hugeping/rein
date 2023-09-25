@@ -604,7 +604,7 @@ function win:tox(tox)
 end
 
 function win:prevline()
-  if self.pos <= 1 then return end
+  if self.pos <= 1 or not self.glyphs[0][0].pos then return end
   self.pos = self.glyphs[0][0].pos - 1
   self:posln()
   self.glyphs[0][0].pos = self.pos
