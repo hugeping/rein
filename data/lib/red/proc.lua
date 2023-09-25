@@ -241,21 +241,19 @@ local function pipe_shell()
       local fds = ffi.new("struct pollfd[1]")
       fds[0].fd = ffi.C.fileno(f)
       fds[0].events = 1
-      local fd = ffi.C.fileno(f)
-      local r = ffi.C.poll(fds, 1, 200)
-      return r > 0 and
+      return ffi.C.poll(fds, 1, 200) > 0 and
         bit.band(fds[0].revents, 1)
     end
   end
   local function read_sym(f)
-    local t = ''
-    local b = ''
+    local t, b = '', ''
     while b and (t == '' or t:byte(#t) >= 128) do
       while b and poll(f) do
         b = f:read(1)
         if not b then break end
         t = t .. b
-        if not poll_mode and b:byte(1) < 128 then b = false end
+        if (not poll_mode or t:len() > 256) and
+          b:byte(1) < 128 then b = false end
       end
     end
     return t ~= '' and t
