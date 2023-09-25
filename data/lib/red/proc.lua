@@ -330,6 +330,7 @@ local function pipe(w, prog, inp, sh)
       os.remove(tmp)
     end
     ret.stopped = true
+    p:wait()
   end)
   ret.routine = r
   r.kill = function()
@@ -337,9 +338,11 @@ local function pipe(w, prog, inp, sh)
       ret.fifo:close()
       ret.fifo = nil
     end
-    p:err("kill")
-    p:detach()
-    ret.stopped = true
+    if not ret.stopped then
+      p:err("kill")
+      p:detach()
+      ret.stopped = true
+    end
   end
   return ret
 end
