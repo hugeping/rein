@@ -524,6 +524,7 @@ proc['|'] = function(w, prog)
       coroutine.yield()
     end
     ret.fifo:close()
+    ret.fifo = nil
   end)
 end
 end
