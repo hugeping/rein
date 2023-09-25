@@ -330,6 +330,10 @@ local function pipe(w, prog, inp, sh)
       os.remove(tmp)
     end
     ret.stopped = true
+    if ret.fifo then
+      ret.fifo:close()
+      ret.fifo = nil
+    end
     p:wait()
   end)
   ret.routine = r
