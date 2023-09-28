@@ -665,8 +665,11 @@ function win:down()
 end
 
 function win:scroll(off)
-  if off <= 0 then return end
-  self.pos = math.floor((off / self.h) * #self.buf.text) + 1
+  if off <= 0 then
+    self.pos = 1
+  else
+    self.pos = math.floor((off / self.h) * #self.buf.text) + 1
+  end
   self:posln()
 --  self:flush()
 end
