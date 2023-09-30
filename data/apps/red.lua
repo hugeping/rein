@@ -678,8 +678,9 @@ Arguments:
 
 esc          - cut, select last typed block
 ctrl-s       - Save (Put) current buffer
+ctrl-w       - Close current buffer
 ctrl-x,c,v   - cut, copy, paste
-ctrl-w       - smart selection
+alt-w        - smart selection
 ctrl-a,e     - line start, end
 ctrl-k       - kill to eol
 ctrl-z       - undo

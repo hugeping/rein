@@ -892,7 +892,7 @@ function win:event(r, v, a, b)
         self:nextline()
       end
     end
-  elseif r == 'text' then
+  elseif r == 'text' and not input.keydown 'alt' then
     self:input(v)
   elseif r == 'keydown' then
     if v == 'left' then
@@ -936,6 +936,8 @@ function win:event(r, v, a, b)
     elseif v == 'z' and input.keydown 'ctrl' then
       self:undo()
     elseif v == 'w' and input.keydown 'ctrl' then
+      self.frame:menu():exec 'Close'
+    elseif v == 'w' and input.keydown 'alt' then
       self:selpar()
     elseif v == 'v' and input.keydown 'ctrl' then
       self:paste()
