@@ -67,12 +67,12 @@ local function grep(path, rex, err)
             err:printf("%s:%d %q\n", p, nr, l)
           end
           if nr % 1000 == 0 then
-            coroutine.yield()
+            coroutine.yield(1/100)
           end
         end
         f:close()
       end
-      coroutine.yield()
+      coroutine.yield(1/50)
     end
   end
 end
@@ -106,9 +106,10 @@ end
 
 function proc.grep(w, rex)
   if not rex then return end
+  local path = w:data() and w:data():path()
   w = w:output('+grep')
   w:run(function()
-    grep(sys.dirname(w.frame:getfilename()), rex, w)
+    grep(sys.dirname(path or w.frame:getfilename()), rex, w)
   end)
 end
 

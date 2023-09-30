@@ -301,7 +301,7 @@ function win:path(t)
   for i = k, #a do
     p = p .. a[i] .. '/'
   end
-  return p .. t
+  return p .. (t or '')
 end
 
 function win:exec(t)
