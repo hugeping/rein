@@ -53,8 +53,8 @@ function frame:process()
     local r, e = v:process()
     if r == false then
       self:err(e)
-    elseif r == true then
-      status = true
+    else
+      status = status or r
     end
   end
   return status
