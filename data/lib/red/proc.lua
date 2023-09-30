@@ -320,14 +320,12 @@ local function pipe(w, prog, inp, sh)
     w:history 'start'
     local l
     while l ~= '\1eof' and not ret.stopped do
-      local i = 0
-      while i < 100 and p:poll() do
+      while p:poll() do
         l = p:read()
         if l == '\1eof' then
           break
         end
         w.buf:input(l)
-        i = i + 1
       end
       coroutine.yield(inp ~= true and 1/50)
     end

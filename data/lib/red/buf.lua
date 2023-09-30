@@ -246,9 +246,11 @@ function buf:cut(copy)
   if not copy then
     self:history('cut', s, e - s)
   end
+  local cl = {}
   for i = s, e - 1 do
-    clip = clip .. self.text[i]
+    table.insert(cl, self.text[i])
   end
+  clip = table.concat(cl, '')
   if not copy then
     local new = {}
     for i = 1, #self.text do
