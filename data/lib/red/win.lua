@@ -676,6 +676,11 @@ end
 
 function win:set(text)
   self.buf:set(text)
+  self:cur(self:cur())
+end
+
+function win:gettext(...)
+  return self.buf:gettext(...)
 end
 
 function win:resetsel(text)

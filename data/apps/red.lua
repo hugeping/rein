@@ -27,6 +27,7 @@ local conf = {
   cr_sym = '^',
   nodump = false,
 --  histfile = true,
+  emptymenu = '| New ',
 }
 
 local function try_lua(file)
@@ -370,12 +371,10 @@ function frame:win_by_name(f)
 end
 
 function frame:push_win(b)
+  if self:win() == b then
+    return
+  end
   local k = self:find_win(b)
-  if not k then return end
-  self:swap_win(b, k)
-end
-
-function frame:swap_win(b, k)
   if k then
     self:del_win(k)
     if k > 2 then
@@ -383,7 +382,7 @@ function frame:swap_win(b, k)
     end
   end
   self:add_win(b, 1)
-  self:update(true)
+  self:update(true, true)
   self:refresh()
 end
 
@@ -393,32 +392,27 @@ function frame:file(f)
   if dir then
     fn = dirpath(fn)
   end
-  local b, k = self:win_by_name(f)
-
+  local b = self:win_by_name(f)
   if b then -- already opened
-    if self:win() == b then -- already visible
-      self:win():toline(nr)
-      return
-    end
-    self:swap_win(b, k)
+    self:push_win(b)
     self:win():toline(nr)
     return
   end
 
   b = win:new(fn)
-
+  b.menu = self:menu().buf:gettext() -- clone menu
   if dir then
     b:readdir(fn)
   elseif not fn:startswith '+' then
     b.conf = presets.get(fn) or {}
     b:file(fn)
     if nr == 0 and b:histfile_get() then
-      self:swap_win(b)
+      self:push_win(b)
       self:win():visible()
       return
     end
   end
-  self:swap_win(b)
+  self:push_win(b)
   self:win():toline(nr)
 end
 
@@ -441,7 +435,11 @@ function frame:show()
   end
 end
 
-function frame:update(force)
+function frame:update(force, pop)
+  if pop then
+    self:menu():set(self:win() and self:win().menu or
+      conf.emptymenu)
+  end
   local o = self:menu().buf:gettext()
   local d = o:find('|', 1, true)
   if d then
@@ -489,6 +487,9 @@ function frame:update(force)
     end
   end
   self:menu():set(new)
+  if self:win() then
+    self:win().menu = self:menu():gettext()
+  end
 end
 
 local framemenu = menu:new()
@@ -534,7 +535,7 @@ end
 
 function framemenu:new(...)
   local r = menu.new(self, ...)
-  r:set '| New '
+  r:set(conf.emptymenu)
   return r
 end
 
@@ -599,7 +600,7 @@ function framemenu.cmd:Close()
     c:killproc()
     self.frame:del(c)
   end
-  self.frame:update(true)
+  self.frame:update(true, true)
   self.frame:refresh()
 end
 
@@ -630,9 +631,8 @@ function mainmenu.cmd:Dump()
       local b = { fname = string.format("%s", w.buf.fname) }
       table.insert(c, 1, b)
       b.line = w.buf:line_nr()
-      if not w.buf:isfile() or true then -- dump all!
-        b.text = w.buf:gettext()
-      end
+      b.text = w.buf:gettext()
+      b.menu = w.menu
     end
     c.menu = f:menu().buf:gettext()
     table.insert(d, c)
@@ -731,7 +731,6 @@ function mainmenu.cmd:Exit()
     w.frame:err("File %q is not saved!", w.buf.fname)
     w:nodirty()
     sys.running(true)
---    w.frame:push_win(w)
     return
   end
   for fr in self.frame:for_win() do
@@ -820,9 +819,8 @@ function mainwin:move(x, w)
       end
       local b = w:del_win()
       if not b then return end
-      c:add_win(b, 1)
-      c:update(true)
-      w:update(true)
+      c:push_win(b)
+      w:update(true, true)
       self:refresh()
       return true
     end
@@ -1012,6 +1010,7 @@ local function load_dump(f)
       if b.line then
         main:win(i):win():toline(b.line, false)
       end
+      main:win(i):win().menu = b.menu
     end
     if v.menu then
       main:win(i):menu().buf:set(v.menu)
