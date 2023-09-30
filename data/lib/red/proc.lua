@@ -67,12 +67,12 @@ local function grep(path, rex, err)
             err:printf("%s:%d %q\n", p, nr, l)
           end
           if nr % 1000 == 0 then
-            coroutine.yield(1/100)
+            coroutine.yield(true)
           end
         end
         f:close()
       end
-      coroutine.yield(1/50)
+      coroutine.yield(true)
     end
   end
 end
@@ -330,7 +330,7 @@ local function pipe(w, prog, inp, sh)
         end
         w.buf:input(l)
       end
-      coroutine.yield((inp ~= true or data) and 1/50)
+      coroutine.yield(inp ~= true or data)
     end
     if sh then
       w:input '$ '
@@ -531,7 +531,7 @@ proc['|'] = function(w, prog)
     while txt ~= '' do
       ret.fifo:write(txt:sub(1, 256))
       txt = txt:sub(257)
-      coroutine.yield(1/50)
+      coroutine.yield(true)
     end
     ret.fifo:close()
     ret.fifo = nil

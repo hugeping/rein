@@ -92,7 +92,7 @@ function win:killproc()
 end
 
 function win:process()
-  local hz = self:autoscroll() and conf.autoscroll_hz
+  local hz = self:autoscroll() and conf.proc_hz
   local co = {}
   for _, v in ipairs(self.co) do
     if coroutine.status(v[1]) == 'suspended' then
@@ -101,7 +101,7 @@ function win:process()
         return false, e
       end
       table.insert(co, v)
-      local nhz = tonumber(e) or conf.process_hz
+      local nhz = e and conf.proc_hz or conf.idle_hz
       hz = (not hz or (nhz < hz)) and nhz or hz
     else
 --      print("Proc died")
@@ -441,7 +441,7 @@ function win:autoscroll()
   if y < self.h - self.marg and y > self.marg then
     return
   end
-  if self.scrolltime and sys.time() - self.scrolltime < conf.process_hz then
+  if self.scrolltime and sys.time() - self.scrolltime < conf.proc_hz then
     return true
   end
   self.scrolltime = sys.time()
