@@ -48,16 +48,16 @@ function frame:err(fmt, ...)
 end
 
 function frame:process()
-  local status
+  local hz
   for _, v in ipairs(self.childs) do
     local r, e = v:process()
     if r == false then
       self:err(e)
-    else
-      status = status or r
+    elseif r then
+      hz = (not hz or r < hz) and r or hz
     end
   end
-  return status
+  return hz
 end
 
 function frame:refresh()
