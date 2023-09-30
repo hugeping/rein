@@ -22,7 +22,8 @@ local conf = {
   brd = { 0xde, 0xde, 0xde },
   menu = 17,
   hl = { 0xee, 0xee, 0x9e },
-  process_hz = 1/50,
+  process_hz = 1/10,
+  autoscroll_hz = 1/50,
   unknown_sym = "?",
   cr_sym = '^',
   nodump = false,
@@ -1049,11 +1050,7 @@ while not conf.stop do
   end
   main:show()
   if conf.stop then break end
-  if main:process() then
-    gfx.flip(conf.process_hz, true)
-  else
-    gfx.flip(1, true)
-  end
+  gfx.flip(main:process() or 1, true)
 end
 
 mainmenu.cmd.Exit(mainmenu)

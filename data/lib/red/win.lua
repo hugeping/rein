@@ -92,7 +92,7 @@ function win:killproc()
 end
 
 function win:process()
-  local status = self:autoscroll()
+  local status = self:autoscroll() and conf.autoscroll_hz
   local co = {}
   for _, v in ipairs(self.co) do
     if coroutine.status(v[1]) == 'suspended' then
@@ -101,7 +101,7 @@ function win:process()
         return false, e
       end
       table.insert(co, v)
-      status = true
+      status = status or conf.process_hz
     else
 --      print("Proc died")
     end

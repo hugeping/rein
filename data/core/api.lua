@@ -392,7 +392,6 @@ function env.sys.getopt(...)
   return core.getopt(...)
 end
 
-
 function env.sys.input(reset)
   if reset == false then
     return #input.fifo ~= 0
