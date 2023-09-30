@@ -328,7 +328,7 @@ local function pipe(w, prog, inp, sh)
         w.buf:input(l)
         i = i + 1
       end
-      coroutine.yield()
+      coroutine.yield(inp ~= true and 1/50)
     end
     if sh then
       w:input '$ '
@@ -525,11 +525,11 @@ proc['|'] = function(w, prog)
   data.buf:setsel(s, e + 1)
   local txt = data.buf:gettext(s, e)
   w:data():run(function()
-    data.buf:cut()
+--    data.buf:cut()
     while txt ~= '' do
       ret.fifo:write(txt:sub(1, 256))
       txt = txt:sub(257)
-      coroutine.yield()
+      coroutine.yield(1/50)
     end
     ret.fifo:close()
     ret.fifo = nil

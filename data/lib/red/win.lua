@@ -92,7 +92,7 @@ function win:killproc()
 end
 
 function win:process()
-  local status = self:autoscroll() and conf.autoscroll_hz
+  local hz = self:autoscroll() and conf.autoscroll_hz
   local co = {}
   for _, v in ipairs(self.co) do
     if coroutine.status(v[1]) == 'suspended' then
@@ -101,17 +101,18 @@ function win:process()
         return false, e
       end
       table.insert(co, v)
-      status = status or conf.process_hz
+      local nhz = tonumber(e) or conf.process_hz
+      hz = (not hz or (nhz < hz)) and nhz or hz
     else
 --      print("Proc died")
     end
   end
   self.co = co
-  if status then
+  if hz then
     self:flush()
     self:show()
   end
-  return status
+  return hz
 end
 
 function win:geom(x, y, w, h)
