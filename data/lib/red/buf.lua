@@ -241,12 +241,12 @@ function buf:cut(copy)
   if not self:issel() then
     return
   end
-  local clip = ''
   local s, e = self:selrange()
   if not copy then
     self:history('cut', s, e - s)
   end
   local cl = {}
+  local clip
   for i = s, e - 1 do
     table.insert(cl, self.text[i])
   end
