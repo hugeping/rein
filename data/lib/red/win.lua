@@ -819,6 +819,10 @@ function win:backspace()
         break
       end
     end
+    if len > 1 and self.cx-len > 1 and
+      self.buf.text[self.buf.cur-len-1] ~= ' ' then
+      len = 1
+    end
     len = math.max(len, 1)
     self.buf:history 'start'
     for _ = 1, len do
