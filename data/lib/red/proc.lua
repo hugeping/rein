@@ -108,11 +108,10 @@ end
 
 function proc.grep(w, rex)
   if not rex then return end
-  local path = w:data() and w:data():path()
+  local path = w:data() and w:data():path() or
+    sys.dirname(w.frame:getfilename())
   w = w:output('+grep')
-  w:run(function()
-    grep(sys.dirname(path or w.frame:getfilename()), rex, w)
-  end)
+  w:run(function() grep(path, rex, w) end)
 end
 
 --luacheck: push
