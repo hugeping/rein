@@ -23,6 +23,8 @@ read_globals = {
       del = {},
       find = {},
       clone = {},
+      merge = {},
+      append = {},
     }
   },
   string = {
@@ -35,4 +37,9 @@ read_globals = {
       round = {},
     }
   },
+  io = {
+    fields = {
+      access = {},
+    }
+  }
 }

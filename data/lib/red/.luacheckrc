@@ -35,4 +35,9 @@ read_globals = {
       round = {},
     }
   },
+  io = {
+    fields = {
+      file = {},
+    }
+  }
 }

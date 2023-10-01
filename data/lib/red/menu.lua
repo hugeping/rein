@@ -32,7 +32,7 @@ function menu:toline(nr)
   if not c then
     return
   end
-  return c:toline(nr)
+  return self.frame:win():toline(nr)
 end
 
 function menu:search(text, back)

@@ -5,6 +5,7 @@ local win = {
 }
 
 local conf
+local keybind = {}
 
 local scr = {
   w = 0,
@@ -58,10 +59,50 @@ function scr:glyph(sym, col)
   return g
 end
 
-function win:init(cfg)
+function win:make_keybinds(keys)
+  for _, v in ipairs(keys) do
+    local b = {}
+    if keybind[v[1]] then
+      b = keybind[v[1]]
+    else
+      table.insert(keybind, b)
+      keybind[v[1]] = b
+    end
+    local m = v[1]:split('+')
+    b.fn = v[2]
+    b.key = m[#m]
+    b.mod = {}
+    for i=1, #m-1 do
+      b.mod[m[i]] = true
+    end
+  end
+end
+
+function win:init(cfg, keys)
   conf = cfg
   scr:init()
   self.scr = scr
+  if not keys then
+    return
+  end
+end
+
+function win:handlekey(key)
+  for _, v in ipairs(keybind) do
+    if v.key == key then
+      local ok = true
+      for _, m in ipairs { 'ctrl', 'shift', 'alt' } do
+        if input.keydown(m) ~= not not v.mod[m] then
+          ok = false
+          break
+        end
+      end
+      if ok and v.fn then
+        v.fn(self, key)
+        return true
+      end
+    end
+  end
 end
 
 function win:new(fname)
@@ -934,16 +975,12 @@ function win:event(r, v, a, b)
       if not self.buf:issel() then
         self.buf:setsel(self.buf.cur, self.buf.cur)
       end
-    elseif (v == 'e' and input.keydown 'ctrl') or v == 'end' then
+    elseif v == 'e' and input.keydown 'ctrl' then
       self:lineend()
-    elseif (v == 'a' and input.keydown 'ctrl') or v == 'home' then
+    elseif v == 'a' and input.keydown 'ctrl' then
       self:linestart()
     elseif v == 'z' and input.keydown 'ctrl' then
       self:undo()
-    elseif v == 'w' and input.keydown 'ctrl' then
-      self.frame:menu():exec 'Close'
-    elseif v == 'w' and input.keydown 'alt' then
-      self:selpar()
     elseif v == 'v' and input.keydown 'ctrl' then
       self:paste()
     elseif v == 'c' and input.keydown 'ctrl' then
@@ -954,11 +991,6 @@ function win:event(r, v, a, b)
       self:compl()
     elseif v == 'k' and input.keydown 'ctrl' then
       self:kill()
-    elseif v == 's' and input.keydown 'ctrl' then
-      if self.buf:isfile() then
-        self:save()
-        self.frame:update()
-      end
     elseif v == 'tab' then
       if self:visible() then
         return
@@ -975,6 +1007,8 @@ function win:event(r, v, a, b)
         end
         self:input(t)
       end
+    else
+      self:handlekey(v)
     end
   end
   return true

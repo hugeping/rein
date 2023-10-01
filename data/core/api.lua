@@ -408,7 +408,7 @@ function env.sys.input(reset)
 end
 
 function env.input.keydown(name)
-  return input.kbd[name]
+  return not not input.kbd[name]
 end
 
 function env.input.keypress(name) -- single press
