@@ -684,6 +684,10 @@ function win:gettext(...)
   return self.buf:gettext(...)
 end
 
+function win:setsel(...)
+  return self.buf:setsel(...)
+end
+
 function win:resetsel(text)
   self.buf:resetsel(text)
 end
