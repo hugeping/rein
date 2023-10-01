@@ -601,10 +601,10 @@ function framemenu.cmd:Delcol()
   if idx > main:win_nr() then idx = main:win_nr() end
 
   local v = self.frame:dirty()
-  if v then
+  if v and not v:clean() then
     main:add_win(self.frame, idx)
     self.frame:err("File %q is not saved!", v.buf.fname)
-    v:nodirty()
+    v:clean(true)
   end
   main:win(idx):update(true)
   self.frame.frame:refresh()
@@ -646,9 +646,9 @@ end
 function framemenu.cmd:Close()
   local c = self.frame:win()
   if not c then return end
-  if c.buf:isfile() and c:dirty() then
+  if c.buf:isfile() and c:dirty() and not c:clean() then
     self.frame:err("File %q is not saved!", c.buf.fname)
-    c:nodirty()
+    c:clean(true)
   else
     c:killproc()
     self.frame:del(c)
@@ -785,9 +785,9 @@ end
 function mainmenu.cmd:Exit()
   self.frame:killproc()
   local w = self.frame:dirty()
-  if w then
+  if w and not w:clean() then
     w.frame:err("File %q is not saved!", w.buf.fname)
-    w:nodirty()
+    w:clean(true)
     sys.running(true)
     return
   end

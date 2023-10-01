@@ -908,8 +908,14 @@ function win:dirty(dirty)
   return self.buf and self.buf:isfile() and self.isdirty
 end
 
+function win:clean(f)
+  if f == nil then return self.isclean end
+  self.isclean = f
+end
+
 function win:nodirty()
   self.isdirty = false
+  self:clean(false)
   self.buf:dirty(false)
 end
 
