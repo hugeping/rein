@@ -31,6 +31,54 @@ local conf = {
   emptymenu = '| New ',
 }
 
+local win_keys = {
+  { 'home',
+    function(self)
+      self:linestart()
+    end
+  },
+  { 'end',
+    function(self)
+      self:lineend()
+    end
+  },
+  { 'ctrl+home',
+    function(self)
+      self:cur(1)
+      self:visible()
+    end
+  },
+  { 'ctrl+end',
+    function(self)
+      self:cur(#self.buf.text)
+      self:linestart()
+      self:visible()
+    end
+  },
+  { 'ctrl+s',
+    function(self)
+      self:save()
+      self.frame:update()
+    end
+  },
+  { 'ctrl+w',
+    function(self)
+      self.frame:menu():exec 'Close'
+    end
+  },
+  { 'ctrl+o',
+    function(self)
+      self.frame:push_win(self.frame:win(self.frame.prev_win))
+    end
+  },
+  {
+    'alt+w',
+    function(self)
+      self:selpar()
+    end
+  },
+}
+
 local function try_lua(file)
   if not io.access(file) then return end
   local r, e = pcall(function() return dofile(file) end)
@@ -46,6 +94,7 @@ local function load_conf(dir)
     { "presets.lua", presets, function(_, t) presets = t end },
     { "uri.lua", uri, function(_, t) uri = t end },
     { "proc.lua", proc, table.merge },
+    { "keys.lua", win_keys, function(d, t) table.append(d, table.unpack(t)) end },
   }
   for _, v in ipairs(merge) do
     local t = try_lua(dir .. '/'.. v[1])
@@ -85,6 +134,7 @@ function presets.get(fname)
 end
 
 win:init(conf)
+win:make_keybinds(win_keys)
 
 local scr = win.scr
 
@@ -175,13 +225,13 @@ function string.unesc(str)
     ['\\\\'] = '\\' })
   return str
 end
-function string.escencode(str, ...)
+function string.escencode(str)
   str = str:gsub("\\?[\\ ]", { ['\\ '] = '\1',
     ['\\\\'] = '\2' })
   return str
 end
 
-function string.escdecode(str, ...)
+function string.escdecode(str)
   str = str:gsub("[\1\2]", { ['\1'] = " ", ['\2'] = "\\" })
   return str
 end
@@ -376,7 +426,9 @@ function frame:push_win(b)
     return
   end
   local k = self:find_win(b)
+  self.prev_win = 2
   if k then
+    self.prev_win = k
     self:del_win(k)
     if k > 2 then
       self:add(self:del_win(1), k)
@@ -677,15 +729,18 @@ function mainmenu.cmd:Help()
 Arguments:
   red -fs <font size> [-nodump] [-confdir <dir>]
 
-esc          - cut, select last typed block
-ctrl-s       - Save (Put) current buffer
-ctrl-w       - Close current buffer
-ctrl-x,c,v   - cut, copy, paste
-alt-w        - smart selection
-ctrl-a,e     - line start, end
-ctrl-k       - kill to eol
-ctrl-z       - undo
-shift-arrows - select
+esc           - cut, select last typed block
+ctrl-s        - Save (Put) current buffer
+ctrl-w        - Close current buffer
+ctrl-o        - Previous buffer
+ctrl-x,c,v    - cut, copy, paste
+alt-w         - smart selection
+ctrl-a,e      - line start, end
+home,end      - line start, end
+ctrl-home,end - first line, last line
+ctrl-k        - kill to eol
+ctrl-z        - undo
+shift-arrows  - select
 
 Plan9 acme like mouse chording and actions
 
@@ -721,7 +776,7 @@ win                 - pseudo acme win (do <cmd on enter)
 dump                - hex-dump
 
 Confdir:
-  You can put files: conf.lua, presets.lua, uri.lua and proc here.
+  You can put files: conf.lua, presets.lua, uri.lua, keys.lua and proc here.
 ]])
   w.buf.cur = 1
   w:toline(1, false)
@@ -737,9 +792,9 @@ function mainmenu.cmd:Exit()
     return
   end
   for fr in self.frame:for_win() do
-    for w in fr:for_win() do
-      if w.buf:isfile() then
-        w:histfile_add()
+    for ww in fr:for_win() do
+      if ww.buf:isfile() then
+        ww:histfile_add()
       end
     end
   end
