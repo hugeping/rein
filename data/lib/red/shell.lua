@@ -138,7 +138,6 @@ function shell.pipe(w, prog, inp, sh)
   return ret
 end
 
-
 function shell:delete()
   if not self.prog or
     not self.prog.routine or
