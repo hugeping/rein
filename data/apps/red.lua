@@ -422,7 +422,7 @@ function frame:win_by_name(f)
 end
 
 function frame:push_win(b)
-  if self:win() == b then
+  if not b or self:win() == b then
     return
   end
   local k = self:find_win(b)
