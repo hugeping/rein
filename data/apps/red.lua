@@ -68,7 +68,8 @@ local win_keys = {
   },
   { 'ctrl+o',
     function(self)
-      self.frame:push_win(self.frame:win(self.frame.prev_win))
+      self.frame:push_win(self.frame:win(self.frame.prev_win or 2)
+        or self.frame:win(2))
     end
   },
   {
