@@ -309,9 +309,11 @@ function win:save()
   end
   local trim = self:getconf 'trim_spaces'
   if trim then
-    local cur = self:cur()
+    local nr = self.buf:line_nr()
     self.buf:set(self.buf:gettext():gsub('[ \t]+\n', '\n'):gsub("[ \t\n]+$", "\n"))
-    self:cur(cur)
+    if self.buf:line_nr() ~= nr then
+      self:toline(nr, false)
+    end
   end
   local r, e = self.buf:save()
   if r then

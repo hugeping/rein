@@ -81,7 +81,7 @@ function buf:undo()
       end
       self.text = new
     end
-    self.cur = h.cur
+    self.cur = math.min(h.cur, #self.text + 1)
   until depth == 0
 end
 
