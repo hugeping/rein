@@ -1,9 +1,10 @@
 local shell = {}
 
 local function pipe_shell()
-  local poll = require("red/poll").poll
+  local posix = require("red/posix")
+  local poll, sighup = posix.poll, posix.sighup
   local poll_mode = not not poll
-  poll = poll or function(_) return true end
+  poll = poll or function() return true end
   local function read_sym(f)
     local t, b = '', ''
     while b and (t == '' or t:byte(#t) >= 128) do
@@ -21,7 +22,9 @@ local function pipe_shell()
   if cwd then
     prog = string.format("cd %q && %s", cwd, prog)
   end
+  sighup(true)
   local f, e = io.popen(prog, "r")
+  sighup(false)
   thread:write(not not f, e)
   if not f then return end
   f:setvbuf 'no'
@@ -38,8 +41,11 @@ end
 
 local function pipe_proc()
   require "std"
+  local sighup = require("red/posix").sighup
   local prog = thread:read()
+  sighup(true)
   local f, e = io.popen(prog, "r")
+  sighup(false)
   thread:write(not not f, e)
   if not f then return end
   f:setvbuf 'no'
