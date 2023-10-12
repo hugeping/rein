@@ -205,6 +205,9 @@ function shell:newline()
   local h = self.shell.hist
   if h[#h] ~= t then
     table.insert(h, t)
+    if #h > 256 then
+      table.remove(h, 1)
+    end
     h.pos = #h + 1
   end
   shell.execute(self, t)
