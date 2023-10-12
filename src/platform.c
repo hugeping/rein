@@ -11,6 +11,7 @@
 #endif
 static int opt_nosound = 0;
 static int opt_nojoystick = 0;
+static int opt_xclip = 0;
 
 static int destroyed = 0;
 static void
@@ -383,11 +384,12 @@ PlatformInit(int argc, const char **argv)
 	if (argv) {
 		int i;
 		for (i = 0; i < argc; i ++) {
-			if (!strcmp(argv[i], "-platform-nosound")) {
+			if (!strcmp(argv[i], "-platform-nosound"))
 				opt_nosound = 1;
-			} else if (!strcmp(argv[i], "-platform-nojoystick")) {
+			else if (!strcmp(argv[i], "-platform-nojoystick"))
 				opt_nojoystick = 1;
-			}
+			else if (!strcmp(argv[i], "-platform-xclip"))
+				opt_xclip = 1;
 		}
 	}
 
@@ -1030,17 +1032,26 @@ Shutdown(int fd)
 char *
 Clipboard(const char *text)
 {
-    char *c, *p;
+	char *c = NULL, *p;
 	if (!text) { /* get */
-		if (!SDL_HasClipboardText())
+#if SDL_VERSION_ATLEAST(2, 26, 0)
+		if (opt_xclip && SDL_HasPrimarySelectionText())
+			c = SDL_GetPrimarySelectionText();
+#endif
+		if (!c && !SDL_HasClipboardText())
 			return NULL;
-		c = SDL_GetClipboardText();
+		if (!c)
+			c = SDL_GetClipboardText();
 		if (!c)
 			return NULL;
 		p = strdup(c);
 		SDL_free(c);
 		return p;
 	}
+#if SDL_VERSION_ATLEAST(2, 26, 0)
+	if (opt_xclip)
+		SDL_SetPrimarySelectionText(text);
+#endif
 	SDL_SetClipboardText(text);
 	return NULL;
 }
