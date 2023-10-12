@@ -163,17 +163,9 @@ function shell:escape()
   self.prog.fifo = nil
 end
 
-function shell:newline()
-  self.buf:linestart()
-  local t = ''
-  for i = self.buf.cur, #self.buf.text do
-    t = t .. self.buf.text[i]
-  end
-  t = t:gsub("^[^%$]*%$", ""):strip()
-  self.buf:lineend()
-  self.buf:input '\n'
-  local cmd = t:split(1)
-  if self.prog and not self.prog.stopped then
+function shell:execute(t)
+ local cmd = t:split(1)
+ if self.prog and not self.prog.stopped then
     if self.prog.fifo then
       self.prog.fifo:write(t..'\n')
       self.prog.fifo:flush()
@@ -196,6 +188,63 @@ function shell:newline()
   else
     self.prog = shell.pipe(self, t, true, true)
   end
+end
+
+function shell:newline()
+  self.buf:linestart()
+  local t = ''
+  for i = self.buf.cur, #self.buf.text do
+    if self.buf.text[i] == '\n' then
+      break
+    end
+    t = t .. self.buf.text[i]
+  end
+  t = t:gsub("^[^%$]*%$", ""):strip()
+  self.buf:lineend()
+  self.buf:input '\n'
+  local h = self.shell.hist
+  if h[#h] ~= t then
+    table.insert(h, t)
+    h.pos = #h + 1
+  end
+  shell.execute(self, t)
+end
+
+function shell:up()
+  if not input.keydown 'ctrl' then
+    return self.super.up(self)
+  end
+  local h = self.shell.hist
+  if not h.pos or h.pos == 1 then return end
+  h.pos = h.pos - 1
+  local t = h[h.pos]
+  self.buf:linestart()
+  self.buf:kill()
+  self.buf:input('$ '..t)
+end
+
+function shell:down()
+  if not input.keydown 'ctrl' then
+    return self.super.down(self)
+  end
+  local h = self.shell.hist
+  if not h.pos then return end
+  h.pos = h.pos + 1
+  local t = h[h.pos]
+  self.buf:linestart()
+  self.buf:kill()
+  self.buf:input('$ '..(t or ''))
+  h.pos = math.min(#h + 1, h.pos)
+end
+
+function shell.win(w)
+  w.shell = { hist = {} }
+  w.super = { up = w.up, down = w.down }
+  w.newline = shell.newline
+  w.escape = shell.escape
+  w.delete = shell.delete
+  w.up = shell.up
+  w.down = shell.down
 end
 
 return shell
