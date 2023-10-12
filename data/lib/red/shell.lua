@@ -186,6 +186,9 @@ function shell:execute(t)
   elseif cmd[1] == 'ls' then
     self:readdir(self:path(cmd[2] or './'))
     self.buf:input '$ '
+  elseif cmd[1] == 'pwd' then
+    self.buf:input(sys.realpath(self:path() or './')..'\n')
+    self.buf:input '$ '
   elseif t:empty() then
     self.buf:input '$ '
   else

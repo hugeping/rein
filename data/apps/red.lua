@@ -780,6 +780,7 @@ win                 - pseudo acme win (do <cmd on enter)
   esc          - close input
   delete       - try to kill programm
   ctrl-up/down - history
+  ls/cd/pwd    - built-in commands
 
 dump                - hex-dump
 
