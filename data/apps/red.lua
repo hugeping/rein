@@ -773,8 +773,9 @@ Clear               - clear window
 win                 - pseudo acme win (do <cmd on enter)
   ** win notes **
   In Unix systems stdin is available.
-  esc - close input
-  delete - try to kill programm
+  esc          - close input
+  delete       - try to kill programm
+  ctrl-up/down - history
 
 dump                - hex-dump
 
@@ -1085,7 +1086,7 @@ end
 
 if #ARGS > 0 then
   mainmenu.cmd.Newcol(mainmenu)
-  for i = 1, #ARGS do
+  for i = #ARGS, 1, -1 do -- reverse order!
     main:win():file(ARGS[i])
   end
 else

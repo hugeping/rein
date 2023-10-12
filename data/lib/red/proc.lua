@@ -326,9 +326,7 @@ function proc.win(w)
     w.win_shell = true
     w:input("$ ")
   end
-  w.newline = shell.newline
-  w.escape = shell.escape
-  w.delete = shell.delete
+  shell.win(w)
 end
 
 --luacheck: pop
