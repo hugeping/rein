@@ -183,6 +183,9 @@ function shell:execute(t)
       self.buf:input(self.cwd..'\n')
     end
     self.buf:input '$ '
+  elseif cmd[1] == 'ls' then
+    self:readdir(self:path(cmd[2] or './'))
+    self.buf:input '$ '
   elseif t:empty() then
     self.buf:input '$ '
   else
@@ -248,6 +251,7 @@ function shell.win(w)
   w.delete = shell.delete
   w.up = shell.up
   w.down = shell.down
+  w.conf.ts = 8
 end
 
 return shell

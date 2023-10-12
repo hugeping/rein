@@ -180,7 +180,7 @@ local function readdir(fn)
   local dir = sys.readdir(fn) or {}
   for k, v in ipairs(dir) do
     dir[k] = dir[k]:esc()
-    if sys.isdir(fn .. v) then
+    if sys.isdir(fn .. '/' .. v) then
       dir[k] = dir[k] .. '/'
     end
   end
@@ -199,11 +199,10 @@ end
 
 function win:readdir(f)
   local dir = readdir(f)
-  self.buf:set ""
   for _, v in ipairs(dir) do
-    self.buf:append(v..'\n')
+    self.buf:append(v..'\n', true)
   end
-  self.buf.cur = 1
+  return
 end
 
 local function make_icon()
@@ -458,7 +457,9 @@ function frame:file(f)
   b = win:new(fn)
   b.menu = self:menu().buf:gettext() -- clone menu
   if dir then
+    b:set ""
     b:readdir(fn)
+    b:cur(1)
   elseif not fn:startswith '+' then
     b.conf = presets.get(fn) or {}
     b:file(fn)
@@ -632,10 +633,13 @@ function win:Get()
   local f = self.buf.fname
   if not f then return end
   if sys.isdir(f) then
+    self:set ""
     self:readdir(f)
+    self:cur(1)
   elseif self.buf:isfile() then
     self.buf:load()
     self:dirty(self.buf:dirty())
+    self:cur(self:cur())
   end
 end
 
