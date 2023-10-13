@@ -51,7 +51,7 @@ local win_keys = {
   { 'ctrl+end',
     function(self)
       self:cur(#self.buf.text)
-      self:linestart()
+      self:lineend()
       self:visible()
     end
   },
