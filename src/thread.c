@@ -364,7 +364,7 @@ thread_new(lua_State *L)
 	thr = lua_newuserdata(L, sizeof(struct lua_thread));
 	thr->chan = chan;
 	thr->tid = -1;
-	thr->L = nL;
+	thr->L = L;
 	chan->err = NULL;
 
 	luaL_getmetatable(L, "thread metatable");
@@ -397,6 +397,7 @@ thread_new(lua_State *L)
 
 	child->tid = -1;
 	child->chan = chan;
+	child->L = nL;
 
 	if (file)
 		rc = luaL_loadfile(nL, code);
@@ -420,7 +421,7 @@ thread_new(lua_State *L)
 		lua_setfield(nL, -2, "path");
 	}
 	lua_pop(nL, 1);
-	thr->tid = Thread(thread, thr);
+	thr->tid = Thread(thread, child);
 
 	return 1;
 err:

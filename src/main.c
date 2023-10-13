@@ -190,8 +190,8 @@ main(int argc, const char **argv)
 	while (!cycle(L));
 #endif
 	dostring(L, "core.done()");
-	PlatformDone();
 	lua_close(L);
+	PlatformDone();
 	synth_done();
 	return 0;
 }
