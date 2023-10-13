@@ -15,7 +15,6 @@ extern int luaopen_synth(lua_State *L);
 
 extern int synth_init(void);
 extern void synth_done(void);
-extern void threads_wait();
 
 static const luaL_Reg lua_libs[] = {
 	{ "sys", luaopen_system },
@@ -191,9 +190,8 @@ main(int argc, const char **argv)
 	while (!cycle(L));
 #endif
 	dostring(L, "core.done()");
-	threads_wait();
-	lua_close(L);
 	PlatformDone();
+	lua_close(L);
 	synth_done();
 	return 0;
 }
