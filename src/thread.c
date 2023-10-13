@@ -294,6 +294,7 @@ thread_err(lua_State *L)
 	MutexLock(chan->m);
 	if (err) {
 		chan->err = strdup(err);
+		SemPost(other->sem);
 		MutexUnlock(chan->m);
 		return 0;
 	}
