@@ -223,9 +223,9 @@ function shell:newline()
     end
     t = t .. self.buf.text[i]
   end
-  t = t:strip()
-  self.buf:lineend()
+  self.buf:tail()
   self.buf:input '\n'
+  self.shell_pos = self.buf.cur
   local h = self.shell.hist
   if h[#h] ~= t then
     table.insert(h, t)
