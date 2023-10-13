@@ -375,7 +375,7 @@ function win:exec(t)
   for _, u in ipairs(uri) do
     if t:find(u[1]) then
       print(string.format(u[2], t))
-      os.execute(string.format(u[2], t))
+      proc['!'](self, string.format(u[2], t))
       return
     end
   end
