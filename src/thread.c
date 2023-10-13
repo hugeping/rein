@@ -2,8 +2,6 @@
 #include "platform.h"
 #include "gfx.h"
 
-static volatile int threads_used = 0;
-
 static int
 lua_moveval(lua_State* from, int idx, lua_State* to)
 {
@@ -269,7 +267,6 @@ thread(void *data)
 {
 	int rc;
 	struct lua_thread *thr = (struct lua_thread *)data;
-	threads_used ++;
 	if (lua_callfn(thr->L) && thr->chan) {
 		MutexLock(thr->chan->m);
 		if (!thr->chan->err)
@@ -279,7 +276,6 @@ thread(void *data)
 	}
 	rc = lua_toboolean(thr->L, -1);
 	lua_close(thr->L);
-	threads_used --;
 	return rc;
 }
 
@@ -507,13 +503,6 @@ thread_lib[] = {
 	{ "new", thread_new },
 	{ NULL, NULL }
 };
-
-void
-threads_wait(void)
-{
-	while (threads_used)
-		Delay(0.1);
-}
 
 int
 luaopen_thread(lua_State *L)
