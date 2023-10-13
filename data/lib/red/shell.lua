@@ -111,12 +111,17 @@ function shell.pipe(w, prog, inp, sh)
         if l == '\1eof' then
           break
         end
-        w.buf:input(l)
+        if sh then
+          w.buf:append(l, true)
+          w.shell_pos = w:cur()
+        else
+          w.buf:input(l)
+        end
       end
       coroutine.yield(inp ~= true or data)
     end
     if sh then
-      w:input '$ '
+      shell.prompt(w)
     end
     w:history 'end'
     if tmp then
@@ -163,6 +168,11 @@ function shell:escape()
   self.prog.fifo = nil
 end
 
+function shell:prompt()
+  self.buf:append('$ ', true)
+  self.shell_pos = self:cur()
+end
+
 function shell:execute(t)
  local cmd = t:split(1)
  if self.prog and not self.prog.stopped then
@@ -182,22 +192,30 @@ function shell:execute(t)
       self.cwd = sys.realpath(cwd) .. '/'
       self.buf:input(self.cwd..'\n')
     end
-    self.buf:input '$ '
+    shell.prompt(self)
   elseif cmd[1] == 'ls' then
     self:readdir(self:path(cmd[2] or './'))
-    self.buf:input '$ '
+    shell.prompt(self)
   elseif cmd[1] == 'pwd' then
     self.buf:input(sys.realpath(self:path() or './')..'\n')
-    self.buf:input '$ '
+    shell.prompt(self)
   elseif t:empty() then
-    self.buf:input '$ '
+    shell.prompt(self)
   else
     self.prog = shell.pipe(self, t, true, true)
   end
 end
 
 function shell:newline()
-  self.buf:linestart()
+  if not self.shell_pos or self.shell_pos > #self.buf.text + 1 then
+    self.buf:append "\n"
+    shell.prompt(self)
+    return
+  end
+  if self:cur() < self.shell_pos then
+    return self.super.newline(self)
+  end
+  self:cur(self.shell_pos)
   local t = ''
   for i = self.buf.cur, #self.buf.text do
     if self.buf.text[i] == '\n' then
@@ -205,7 +223,7 @@ function shell:newline()
     end
     t = t .. self.buf.text[i]
   end
-  t = t:gsub("^[^%$]*%$", ""):strip()
+  t = t:strip()
   self.buf:lineend()
   self.buf:input '\n'
   local h = self.shell.hist
@@ -220,35 +238,36 @@ function shell:newline()
 end
 
 function shell:up()
-  if not input.keydown 'ctrl' then
+  if not input.keydown 'ctrl' or not self.shell_pos then
     return self.super.up(self)
   end
   local h = self.shell.hist
   if not h.pos or h.pos == 1 then return end
   h.pos = h.pos - 1
   local t = h[h.pos]
-  self.buf:linestart()
+  self:cur(self.shell_pos)
   self.buf:kill()
-  self.buf:input('$ '..t)
+  self.buf:input(t)
 end
 
 function shell:down()
-  if not input.keydown 'ctrl' then
+  if not input.keydown 'ctrl' or not self.shell_pos then
     return self.super.down(self)
   end
   local h = self.shell.hist
   if not h.pos then return end
   h.pos = h.pos + 1
   local t = h[h.pos]
-  self.buf:linestart()
+  self:cur(self.shell_pos)
   self.buf:kill()
-  self.buf:input('$ '..(t or ''))
+  self.buf:input(t or '')
   h.pos = math.min(#h + 1, h.pos)
 end
 
 function shell.win(w)
   w.shell = { hist = {} }
-  w.super = { up = w.up, down = w.down }
+  w.super = { up = w.up, down = w.down,
+    newline = w.newline }
   w.newline = shell.newline
   w.escape = shell.escape
   w.delete = shell.delete

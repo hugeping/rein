@@ -322,9 +322,8 @@ end
 
 function proc.win(w)
   w = w:output("+win")
-  if not w.win_shell then
-    w.win_shell = true
-    w:input("$ ")
+  if not w.shell_pos then
+    shell.prompt(w)
   end
   shell.win(w)
 end
