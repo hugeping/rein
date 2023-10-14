@@ -300,6 +300,7 @@ local io_delim = {
   ['>'] = true;
   ['!'] = true;
   ['|'] = true,
+  ['@'] = true,
 }
 
 function win:save()
@@ -493,9 +494,13 @@ function frame:show()
 end
 
 function frame:update(force, pop)
+  local sel
   if pop then
     self:menu():set(self:win() and self:win().menu or
       conf.emptymenu)
+  elseif self:menu().buf:issel() then
+    local s = self:menu().buf:getsel()
+    sel = { s = s.s, e = s.e }
   end
   local o = self:menu().buf:gettext()
   local d = o:find('|', 1, true)
@@ -513,17 +518,14 @@ function frame:update(force, pop)
       c.conf = presets.get(fn) or {}
     end
     t = t .. c.buf.fname:esc() .. ' '
---    if i == 1 then t = t .. ':: ' end
   end
   if self:win() then
-    -- self:win():dirty(self:win().buf:dirty())
     local cur = self:win()
     if self:win():dirty() and cur.buf:isfile() then
       t = t .. 'Put '
     end
     t = t .. 'Close '
     t = t .. 'Get '
---    t = t .. ':'..tostring(cur.buf:line_nr()) .. ' '
   end
   if self.frame:win_nr() > 1 then
     t = t .. 'Delcol '
@@ -534,18 +536,32 @@ function frame:update(force, pop)
   end
   local old = utf.chars(self:menu().buf:gettext())
   local new = utf.chars(t..o)
+  local menu_delta = #new - #old
+  local diff_idx = #new + 1
   for i = 1, math.min(#old, #new) do
-    if i == self:menu().buf.cur then
-      break
-    end
     if old[i] ~= new[i] then
-      self:menu():cur(self:menu():cur() + #new - #old)
+      diff_idx = i
       break
     end
   end
+  if self:menu().buf.cur >= diff_idx then
+    self:menu():cur(self:menu():cur() + menu_delta)
+  end
+--  if self:menu().buf:insel(diff_idx) then
+--    sel = nil
+--  end
   self:menu():set(new)
   if self:win() then
     self:win().menu = self:menu():gettext()
+  end
+  if sel then
+    if diff_idx <= sel.s then
+      sel.s = sel.s + menu_delta
+    end
+    if diff_idx <= sel.e then
+      sel.e = sel.e + menu_delta
+    end
+    self:menu().buf:setsel(sel.s, sel.e)
   end
 end
 
@@ -736,53 +752,60 @@ function mainmenu.cmd:Help()
 Arguments:
   red -fs <font size> [-nodump] [-confdir <dir>]
 
-esc           - cut, select last typed block
-ctrl-s        - Save (Put) current buffer
-ctrl-w        - Close current buffer
-ctrl-o        - Previous buffer
-ctrl-x,c,v    - cut, copy, paste
-alt-w         - smart selection
-ctrl-a,e      - line start, end
-home,end      - line start, end
-ctrl-home,end - first line, last line
-ctrl-k        - kill to eol
-ctrl-z        - undo
-shift-arrows  - select
+  esc           - cut, select last typed block
+  ctrl-s        - Save (Put) current buffer
+  ctrl-w        - Close current buffer
+  ctrl-o        - Previous buffer
+  ctrl-x,c,v    - cut, copy, paste
+  alt-w         - smart selection
+  ctrl-a,e      - line start, end
+  home,end      - line start, end
+  ctrl-home,end - first line, last line
+  ctrl-k        - kill to eol
+  ctrl-z        - undo
+  shift-arrows  - select
 
 Plan9 acme like mouse chording and actions
 
 To move file buffer between columns use mouse 2nd button drag&drop of menu button.
 
-right mb     - search
-alt+rmb      - search back
-middle mb    - exec cmd
+  right mb     - search
+  alt+rmb      - search back
+  middle mb    - exec cmd
 
 Some built-in commands:
 
-select lua-regexp   - find in all text globally
-find lua-regexp     - find in line form cur pos
-sub /lua-regexp/b/  - change a to b by lines
-gsub /lua-regexp/b/ - chnage a to b global
-!cmd                - run cmd
-<cmd                - run cmd and get output
->cmd                - run cmd <text data file> and get output
-|cmd                - run cat text | cmd and get output (Unix only)
-fmt [width]         - fmt text by width
-cat <file>          - insert file into the cursor
-i+/i-               - indent inc/dec
-Run prog            - run prog in rein
-Line                - get current line in buffer
-Codepoint           - get codepoint of the sym
-Clear               - clear window
-win                 - pseudo acme win (do <cmd on enter)
-  ** win notes **
-  In Unix systems stdin is available.
-  esc          - close input
-  delete       - try to kill programm
-  ctrl-up/down - history
-  ls/cd/pwd    - built-in commands
+  select lua-regexp   - find in all text globally
+  find lua-regexp     - find in line form cur pos
+  sub /lua-regexp/b/  - change a to b by lines
+  gsub /lua-regexp/b/ - chnage a to b global
+  !cmd                - run cmd
+  <cmd                - run cmd and get output
+  @cmd                - run cmd <text> and get output
+]])
+  if PLATFORM ~= 'Windows' then
+    w:printf([[
+  >cmd                - cat <text> | cmd > output
+  |cmd                - cat <text> | cmd > edit
+]])
+  end
+  w:printf([[
+  fmt [width]         - fmt text by width
+  cat <file>          - insert file into the cursor
+  i+/i-               - indent inc/dec
+  Run prog            - run prog in rein
+  Line                - get current line in buffer
+  Codepoint           - get codepoint of the sym
+  Clear               - clear window
+  dump                - hex-dump
+  win                 - pseudo acme win
 
-dump                - hex-dump
+    ** win notes **
+    In Unix systems stdin is available.
+    esc          - close input
+    delete       - try to kill programm
+    ctrl-up/down - history
+    ls/cd/pwd    - built-in commands
 
 Confdir:
   You can put files: conf.lua, presets.lua, uri.lua, keys.lua and proc here.
