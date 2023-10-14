@@ -750,8 +750,9 @@ function mainmenu.cmd:Help()
        RED - Rein EDitor
 
 Arguments:
-  red -fs <font size> [-nodump] [-confdir <dir>]
+  rein [-platform-nojoystick] [-platform-nosound] [-platform-xclip] red [-fs <font size>] [-nodump] [-confdir <dir>]
 
+Keys:
   esc           - cut, select last typed block
   ctrl-s        - Save (Put) current buffer
   ctrl-w        - Close current buffer
@@ -765,13 +766,14 @@ Arguments:
   ctrl-z        - undo
   shift-arrows  - select
 
-Plan9 acme like mouse chording and actions
+Mouse:
+  Plan9 acme like mouse chording and actions
 
-To move file buffer between columns use mouse 2nd button drag&drop of menu button.
+  To move file buffer between columns use mouse 2nd button drag&drop of menu button.
 
   right mb     - search
   alt+rmb      - search back
-  middle mb    - exec cmd
+  middle mb    - exec command or open
 
 Some built-in commands:
 
