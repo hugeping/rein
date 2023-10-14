@@ -125,8 +125,9 @@ function shell.pipe(w, prog, inp, sh)
     end
     if sh then
       shell.prompt(w)
+    else
+      w:cur(w.output_pos)
     end
-    w:cur(w.output_pos)
     w:history 'end'
     if tmp then
       os.remove(tmp)
