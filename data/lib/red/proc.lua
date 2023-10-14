@@ -322,7 +322,7 @@ end
 
 function proc.win(w)
   w = w:output("+win")
-  if not w.shell_pos then
+  if not w.shell then
     shell.prompt(w)
   end
   shell.win(w)
