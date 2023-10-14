@@ -272,7 +272,7 @@ proc["i-"] = function(w)
   end)
 end
 
-proc['>'] = function(w, prog)
+proc['@'] = function(w, prog)
   local data = w:data()
   if not data then return end
 
@@ -340,18 +340,13 @@ end
 --luacheck: pop
 
 if PLATFORM ~= 'Windows' then
-proc['|'] = function(w, prog)
-  local data = w:data()
-  if not data then return end
-  local ret = shell.pipe(w:data(), prog, true)
+local function piped(w, out, prog)
+  local ret = shell.pipe(out, prog, true)
   if not ret or not ret.fifo then
     return
   end
-  local s, e = data.buf:range()
-  data.buf:setsel(s, e + 1)
-  local txt = data.buf:gettext(s, e)
-  w:data():run(function()
---    data.buf:cut()
+  local txt = w.buf:gettext(w.buf:range())
+  out:run(function()
     while txt ~= '' do
       ret.fifo:write(txt:sub(1, 256))
       txt = txt:sub(257)
@@ -360,6 +355,20 @@ proc['|'] = function(w, prog)
     ret.fifo:close()
     ret.fifo = nil
   end)
+end
+
+proc['>'] = function(w, prog)
+  local data = w:data()
+  if not data then return end
+  piped(data, w:output '+Output', prog)
+end
+
+proc['|'] = function(w, prog)
+  local data = w:data()
+  if not data then return end
+  local s, e = data.buf:range()
+  data.buf:setsel(s, e + 1)
+  piped(data, data, prog)
 end
 end
 
