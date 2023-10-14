@@ -114,7 +114,7 @@ function shell.pipe(w, prog, inp, sh)
         end
         if sh then
           w.buf:append(l, true)
-          w.shell_pos = w:cur()
+          w.output_pos = w:cur()
         else
           local c = w:cur(w.output_pos)
           w.buf:input(l)
@@ -167,7 +167,7 @@ end
 function shell:escape()
   if not self.prog or self.prog.stopped or
     not self.prog.fifo then
-    return
+    return self.super.escape(self)
   end
   self.prog.fifo:close()
   self.prog.fifo = nil
@@ -175,7 +175,7 @@ end
 
 function shell:prompt()
   self.buf:append('$ ', true)
-  self.shell_pos = self:cur()
+  self.output_pos = self:cur()
 end
 
 function shell:execute(t)
@@ -212,15 +212,15 @@ function shell:execute(t)
 end
 
 function shell:newline()
-  if not self.shell_pos or self.shell_pos > #self.buf.text + 1 then
+  if not self.output_pos or self.output_pos > #self.buf.text + 1 then
     self.buf:append "\n"
     shell.prompt(self)
     return
   end
-  if self:cur() < self.shell_pos then
+  if self:cur() < self.output_pos then
     return self.super.newline(self)
   end
-  self:cur(self.shell_pos)
+  self:cur(self.output_pos)
   local t = ''
   for i = self.buf.cur, #self.buf.text do
     if self.buf.text[i] == '\n' then
@@ -230,7 +230,7 @@ function shell:newline()
   end
   self.buf:tail()
   self.buf:input '\n'
-  self.shell_pos = self.buf.cur
+  self.output_pos = self.buf.cur
   local h = self.shell.hist
   if h[#h] ~= t then
     table.insert(h, t)
@@ -243,27 +243,27 @@ function shell:newline()
 end
 
 function shell:up()
-  if not input.keydown 'ctrl' or not self.shell_pos then
+  if not input.keydown 'ctrl' or not self.output_pos then
     return self.super.up(self)
   end
   local h = self.shell.hist
   if not h.pos or h.pos == 1 then return end
   h.pos = h.pos - 1
   local t = h[h.pos]
-  self:cur(self.shell_pos)
+  self:cur(self.output_pos)
   self.buf:kill()
   self.buf:input(t)
 end
 
 function shell:down()
-  if not input.keydown 'ctrl' or not self.shell_pos then
+  if not input.keydown 'ctrl' or not self.output_pos then
     return self.super.down(self)
   end
   local h = self.shell.hist
   if not h.pos then return end
   h.pos = h.pos + 1
   local t = h[h.pos]
-  self:cur(self.shell_pos)
+  self:cur(self.output_pos)
   self.buf:kill()
   self.buf:input(t or '')
   h.pos = math.min(#h + 1, h.pos)
@@ -272,7 +272,7 @@ end
 function shell.win(w)
   w.shell = { hist = {} }
   w.super = { up = w.up, down = w.down,
-    newline = w.newline }
+    newline = w.newline, escape = w.escape }
   w.newline = shell.newline
   w.escape = shell.escape
   w.delete = shell.delete
