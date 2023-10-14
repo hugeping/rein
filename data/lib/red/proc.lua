@@ -54,19 +54,28 @@ local function text_replace(w, glob, fn, a, b)
   w:visible()
 end
 
+local function grep_filter(fn)
+  if fn == 'red.dump' then return false end
+  local ext = { 'o', 'ko', 'exe', 'a' }
+  for _, v in ipairs(ext) do
+    if fn:endswith('.'..v) then return false end
+  end
+  return true
+end
+
 local function grep(path, rex, err)
   for _, fn in ipairs(sys.readdir(path)) do
     local p = (path ..'/'..fn):gsub("/+", "/")
     if sys.isdir(p) then
       grep(p, rex, err)
-    else
+    elseif grep_filter(fn) then
       local f = io.open(p, "rb")
       if f then
         local nr = 0
         for l in f:lines() do
           nr = nr + 1
           if l:find(rex) then
-            err:printf("%s:%d %q\n", p, nr, l)
+            err:printf("%s:%d %s\n", p, nr, l)
           end
           if nr % 1000 == 0 then
             coroutine.yield(true)
