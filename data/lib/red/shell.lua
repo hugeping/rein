@@ -100,6 +100,7 @@ function shell.pipe(w, prog, inp, sh)
     ret.fifo = io.open(tmp, "a")
     ret.fifo:setvbuf 'no'
   end
+  w.output_pos = w:cur()
   r = w:run(function()
     w:history 'start'
     local l
@@ -115,7 +116,9 @@ function shell.pipe(w, prog, inp, sh)
           w.buf:append(l, true)
           w.shell_pos = w:cur()
         else
+          local c = w:cur(w.output_pos)
           w.buf:input(l)
+          w.output_pos = w:cur(c)
         end
       end
       coroutine.yield(inp ~= true or data)
@@ -123,6 +126,7 @@ function shell.pipe(w, prog, inp, sh)
     if sh then
       shell.prompt(w)
     end
+    w:cur(w.output_pos)
     w:history 'end'
     if tmp then
       os.remove(tmp)
