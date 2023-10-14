@@ -1,3 +1,8 @@
+if PLATFORM == 'Windows' then
+  return { -- no ideas
+  }
+end
+
 return {
   { "^https?://.+", "xdg-open %q" },
   { "%.jpg$", "xdg-open %q" },
@@ -5,4 +10,5 @@ return {
   { "%.pdf$", "xdg-open %q" },
   { "%.mp[34]$", "xdg-open %q" },
   { "%.avi$", "xdg-open %q" },
+  { "%.mvk$", "xdg-open %q" },
 }
