@@ -233,6 +233,15 @@ proc['!'] = function(_, pat)
   p:detach()
 end
 
+proc["dos2unix"] = function(w)
+  w = w:winmenu()
+  if not w then return end
+  text_replace(w, false, function(text)
+    local t = text:gsub("\r", "")
+    return t
+  end)
+end
+
 proc["i+"] = function(w)
   w = w:winmenu()
   if not w then return end

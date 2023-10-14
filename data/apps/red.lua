@@ -792,8 +792,9 @@ Some built-in commands:
   w:printf([[
   fmt [width]         - fmt text by width
   cat <file>          - insert file into the cursor
+  dos2unix            - remove \r
   i+/i-               - indent inc/dec
-  Run prog            - run prog in rein
+  Run <prog>          - run prog in rein
   Line                - get current line in buffer
   Codepoint           - get codepoint of the sym
   Clear               - clear window
