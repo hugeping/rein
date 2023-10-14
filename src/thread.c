@@ -395,6 +395,11 @@ thread_new(lua_State *L)
 	lua_pop(L, 1);
 	lua_setglobal(nL, "DATADIR");
 
+	lua_getglobal(L, "PLATFORM");
+	lua_pushstring(nL, lua_tostring(L, -1));
+	lua_pop(L, 1);
+	lua_setglobal(nL, "PLATFORM");
+
 	child->tid = -1;
 	child->chan = chan;
 	child->L = nL;
