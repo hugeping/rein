@@ -135,6 +135,17 @@ sys_readdir(lua_State *L)
 }
 
 static int
+sys_mouse(lua_State *L)
+{
+	int x, y;
+	unsigned int mb = GetMouse(&x, &y);
+	lua_pushinteger(L, x);
+	lua_pushinteger(L, y);
+	lua_pushinteger(L, mb);
+	return 3;
+}
+
+static int
 sys_input(lua_State *L)
 {
 	TextInput();
@@ -250,6 +261,7 @@ sys_lib[] = {
 	{ "readdir", sys_readdir },
 	{ "sleep", sys_sleep },
 	{ "input", sys_input },
+	{ "mouse", sys_mouse },
 	{ "log", sys_log },
 	{ "newrand", sys_srandom },
 	{ "hidemouse", sys_hidemouse },

@@ -12,6 +12,7 @@ local conf = {
   fg = 0,
   bg = 16,
   cursor = 0,
+  cursor_over = 8,
   button = { 0x88, 0x88, 0xcc},
   active = { 0xff, 0x88, 0xcc},
   font = DATADIR..'/fonts/iosevka-light.ttf',
@@ -35,6 +36,11 @@ local win_keys = {
   { 'home',
     function(self)
       self:linestart()
+    end
+  },
+  { 'insert',
+    function(self)
+      self.buf:insmode(not self.buf:insmode())
     end
   },
   { 'end',
@@ -255,7 +261,7 @@ local function make_move_cursor()
   return cur
 end
 
-local function make_text_cursor()
+local function make_text_cursor(color)
   local d = 1*SCALE
   local w = math.floor(3*d)
   if w % 2 == 0 then
@@ -264,14 +270,15 @@ local function make_text_cursor()
   local c = math.floor(w/2)
   local cur = gfx.new(w, scr.sph)
   d = math.floor(d/2)
-  cur:fill_rect(c - d, 0, c+d, scr.sph - 1, conf.cursor)
-  cur:fill_rect(0, 0, w, w-1, conf.cursor)
-  cur:fill_rect(0, scr.sph - w, w, scr.sph - 1, conf.cursor)
+  cur:fill_rect(c - d, 0, c+d, scr.sph - 1, color)
+  cur:fill_rect(0, 0, w, w-1, color)
+  cur:fill_rect(0, scr.sph - w, w, scr.sph - 1, color)
   return cur
 end
 
 conf.move_cursor = make_move_cursor()
-conf.text_cursor = make_text_cursor()
+conf.text_cursor = make_text_cursor(conf.cursor)
+conf.text_cursor_over = make_text_cursor(conf.cursor_over)
 
 function win:show_cursor(x, y, img)
   local w, h
@@ -765,6 +772,7 @@ Keys:
   ctrl-k        - kill to eol
   ctrl-z        - undo
   shift-arrows  - select
+  insert        - toggle overwrite mode
 
 Mouse:
   Plan9 acme like mouse chording and actions

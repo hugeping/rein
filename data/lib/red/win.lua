@@ -372,7 +372,8 @@ function win:cursor(x, y)
   screen:offset(self.x, self.y)
   x, y = self:pos2off(x, y)
   local w = conf.text_cursor:size()
-  conf.text_cursor:blend(screen, math.floor(x-w/2), y)
+  local cur = self.buf:insmode() and conf.text_cursor_over or conf.text_cursor
+  cur:blend(screen, math.floor(x-w/2), y)
   screen:nooffset()
 end
 

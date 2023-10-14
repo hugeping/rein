@@ -287,22 +287,35 @@ function buf:paste()
 --  self:setsel(start, self.cur)
 end
 
+function buf:insmode(over)
+  local o = self.over_mode
+  if over ~= nil then
+    self.over_mode = over
+  end
+  return o
+end
+
 function buf:input(txt)
   local sel = self:issel()
   if self.cur < 1 then return end
   local u = type(txt) == 'table' and txt or utf.chars(txt)
   if sel then
     self:history 'start'
-  end
-  if sel then
     self:cut(false)
+  elseif self.over_mode then
+    self:history 'start'
+    self:history('cut', self.cur, #u)
   end
   self:history('input', self.cur, #u)--, #u == 1 and not hist_delim[u[1]])
   for i = 1, #u do
-    table.insert(self.text, self.cur, u[i])
+    if self.over_mode then
+      self.text[self.cur] = u[i]
+    else
+      table.insert(self.text, self.cur, u[i])
+    end
     self.cur = self.cur + 1
   end
-  if sel then
+  if sel or self.over_mode then
     self:history 'end'
   end
 end
