@@ -20,6 +20,7 @@ extern void WindowTitle(const char *title);
 
 extern double Time(void);
 extern float GetScale(void);
+extern unsigned int GetMouse(int *ox, int *oy);
 
 extern const char *GetPlatform(void);
 extern const char *GetLanguage(void);

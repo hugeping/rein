@@ -516,6 +516,21 @@ WindowResize(int w, int h)
 	destroyed = 1;
 }
 
+unsigned int
+GetMouse(int *ox, int *oy)
+{
+	Uint32 mb;
+	int x, y;
+	mb = SDL_GetMouseState(&x, &y);
+	x = scalew*x;
+	y = scaleh*y;
+	if (ox)
+		*ox = x;
+	if (oy)
+		*oy = y;
+	return mb;
+}
+
 void
 WindowBackground(int r, int g, int b)
 {

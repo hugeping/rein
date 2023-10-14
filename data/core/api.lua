@@ -385,6 +385,9 @@ function env.gfx.flip(fps, interrupt)
 end
 
 function env.input.mouse()
+  if not input.mouse.x or (input.mouse.x == 0 and input.mouse.y == 0) then
+    input.mouse.x, input.mouse.y = sys.mouse()
+  end
   return input.mouse.x or 0, input.mouse.y or 0, input.mouse.btn
 end
 

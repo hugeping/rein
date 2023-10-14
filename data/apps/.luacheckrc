@@ -9,6 +9,7 @@ globals = {
   'utf',
   'ARGS',
   'DATADIR',
+  'PLATFORM',
   'mixer',
 }
 ignore = {
