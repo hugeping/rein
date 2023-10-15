@@ -1,3 +1,4 @@
+local syntax = require "red/syntax"
 local buf = require "red/buf"
 
 local win = {
@@ -49,7 +50,7 @@ function scr:glyph(sym, col)
   end
   local vs = sym
   if vs == '\r' then vs = conf.cr_sym end
-  g = self.font:text(vs) or
+  g = self.font:text(vs, col) or
     self.font:text(conf.unknown_sym, col)
   local w, h = g:size()
   if w > self.spw or h > self.sph then
@@ -405,6 +406,7 @@ function win:flushline(x0, y0)
 end
 
 function win:show()
+  local colorizer
   if self.w <= 0 or self.h <= 0 or
     self.cols <= 0 or self.rows <= 0 then
     return
@@ -415,10 +417,15 @@ function win:show()
   local text = self.buf.text
 
   self.epos = #text + 1
-
+  if conf.syntax then
+    colorizer = syntax.new(text, self.pos, self:getconf 'syntax')
+  end
   for i = self.pos, #text + 1 do
+    if colorizer then
+      colorizer:process(i)
+    end
     self:glyph(x, y, text[i] or false,
-      conf.fg,
+      (colorizer and colorizer.cols[i]) or conf.fg,
       self.buf:insel(i) and conf.hl or self.bg)
 
     self.glyphs[y][x].pos = i
