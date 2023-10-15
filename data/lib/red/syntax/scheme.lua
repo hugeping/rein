@@ -3,6 +3,6 @@ return {
   comment = 3,
   string = 9,
   number = 13,
-  operator = 8,
-  lib = 11,
+  operator = 9,
+  lib = 8,
 }
