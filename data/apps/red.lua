@@ -1149,7 +1149,7 @@ while not conf.stop do
   end
   main:show()
   if conf.stop then break end
-  gfx.flip(main:process() or 1, true)
+  gfx.flip(main:process() or 10, true)
 end
 
 mainmenu.cmd.Exit(mainmenu)
