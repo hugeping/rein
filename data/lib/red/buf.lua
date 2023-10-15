@@ -155,7 +155,7 @@ function buf:newline()
     self:lineend()
     local p2 = scan_spaces(self, self.cur + 1, #self.text)
     pre = p1
-    if p2:len() > p1:len() and not is_space(self.text[cur]) then
+    if p2:len() > p1:len() and cur == self.cur then
       pre = p2
     end
   end
