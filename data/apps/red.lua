@@ -28,6 +28,7 @@ local conf = {
   unknown_sym = "?",
   cr_sym = '^',
   nodump = false,
+--  syntax = true,
 --  histfile = true,
   emptymenu = '| New ',
 }
