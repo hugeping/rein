@@ -149,12 +149,13 @@ end
 function buf:newline()
   local cur = self.cur
   local pre = ''
-  if not is_space(self.text[cur]) then
+  if true then -- not is_space(self.text[cur]) then
     self:linestart()
-    local p1 = scan_spaces(self, self.cur, cur)
-    local p2 = scan_spaces(self, cur + 1, #self.text)
+    local p1 = scan_spaces(self, self.cur, cur-1)
+    self:lineend()
+    local p2 = scan_spaces(self, self.cur + 1, #self.text)
     pre = p1
-    if p2:len() > p1:len() then
+    if p2:len() > p1:len() and not is_space(self.text[cur]) then
       pre = p2
     end
   end
