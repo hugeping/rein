@@ -22,8 +22,27 @@ local function preproc(ctx, txt, pos)
   return i - pos
 end
 
+local function numdelim(c)
+  if not c then return false end
+  if c:find("[a-zA-Z0-9]") then return true end
+  local num_delim = {
+    [')'] = true,
+    [']'] = true,
+  }
+  return num_delim[c]
+end
+
 local function number(ctx, txt, i)
   local n = ''
+  local function numdelim(c)
+  if not c then return false end
+  if c:find("[a-zA-Z0-9]") then return true end
+    local num_delim = {
+      [')'] = true,
+      [']'] = true,
+    }
+    return num_delim[c]
+  end
   while txt[i] and txt[i]:find("[x0-9%.%+%-]") do
     n = n .. txt[i]
     i = i + 1
