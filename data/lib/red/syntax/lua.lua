@@ -12,7 +12,7 @@ end
 
 local function number(ctx, txt, i)
   local n = ''
-  while txt[i] and txt[i]:find("[0-9%.e%+%-]") do
+  while txt[i] and txt[i]:find("[x0-9%.e%+%-]") do
     n = n .. txt[i]
     i = i + 1
   end
