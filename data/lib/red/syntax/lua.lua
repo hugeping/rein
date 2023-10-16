@@ -10,8 +10,21 @@ local function strblock(txt, i, sym)
   return i - start
 end
 
+local function numdelim(c)
+  if not c then return false end
+  if c:find("[a-zA-Z0-9]") then return true end
+  local num_delim = {
+    [')'] = true,
+    [']'] = true,
+  }
+  return num_delim[c]
+end
+
 local function number(ctx, txt, i)
   local n = ''
+  if numdelim(txt[i-1]) then
+    return false
+  end
   while txt[i] and txt[i]:find("[x0-9%.e%+%-]") do
     n = n .. txt[i]
     i = i + 1
