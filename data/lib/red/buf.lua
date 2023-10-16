@@ -396,6 +396,7 @@ local sel_delim = {
   [")"] = true, ["}"] = true, [">"] = true,
   ["]"] = true, ["*"] = true, ["+"] = true,
   ["-"] = true, ["/"] = true, ["="] = true,
+  ["&"] = true, ["^"] = true, ["~"] = true,
   ["\t"] = true, ["\n"] = true, [":"] = true,
 }
 
