@@ -85,6 +85,16 @@ local win_keys = {
       self:selpar()
     end
   },
+  { 'ctrl+b',
+    function(self)
+      local m = self.frame:menu()
+      local t = string.format(":%d ", self.buf:line_nr())
+      if m.buf.text[#m.buf.text] ~= ' ' then
+        t = ' ' .. t
+      end
+      m:append(t)
+    end
+  },
 }
 
 local function try_lua(file)
@@ -774,6 +784,7 @@ Keys:
   ctrl-z        - undo
   shift-arrows  - select
   insert        - toggle overwrite mode
+  ctrl-b        - insert current line in menu (bookmark)
 
 Mouse:
   Plan9 acme like mouse chording and actions
