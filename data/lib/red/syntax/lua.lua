@@ -28,7 +28,7 @@ local function number(ctx, txt, i)
   end
   if txt[i] == '+' then return false end
   if txt[i] == '-' then i = i + 1 end
-  while txt[i] and txt[i]:find("[x0-9%.]") do
+  while txt[i] and txt[i]:find("[x0-9%.a-fA-F]") do
     n = n .. txt[i]
     i = i + 1
   end
