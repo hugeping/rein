@@ -22,6 +22,17 @@ local function preproc(ctx, txt, pos)
   return i - pos
 end
 
+local function number(ctx, txt, i)
+  local n = ''
+  while txt[i] and txt[i]:find("[x0-9%.%+%-]") do
+    n = n .. txt[i]
+    i = i + 1
+  end
+  if n:endswith '-' or n:endswith '+' then n = n:gsub('[%+%-]$', '') end
+  if tonumber(n) then return n:len() end
+  return false
+end
+
 local col = {
   col = 0,
   keywords = {
@@ -40,6 +51,10 @@ local col = {
     {
       preproc,
       col = scheme.lib,
+    },
+    {
+      number,
+      col = scheme.number,
     }
   },
   { -- comments
