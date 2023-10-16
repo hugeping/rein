@@ -33,22 +33,18 @@ local function numdelim(c)
 end
 
 local function number(ctx, txt, i)
+  local start = i
   local n = ''
-  local function numdelim(c)
-  if not c then return false end
-  if c:find("[a-zA-Z0-9]") then return true end
-    local num_delim = {
-      [')'] = true,
-      [']'] = true,
-    }
-    return num_delim[c]
+  if numdelim(txt[i-1]) then
+    return false
   end
-  while txt[i] and txt[i]:find("[x0-9%.%+%-]") do
+  if txt[i] == '+' then return false end
+  if txt[i] == '-' then i = i + 1 end
+  while txt[i] and txt[i]:find("[x0-9%.]") do
     n = n .. txt[i]
     i = i + 1
   end
-  if n:endswith '-' or n:endswith '+' then n = n:gsub('[%+%-]$', '') end
-  if tonumber(n) then return n:len() end
+  if tonumber(n) then return i - start end
   return false
 end
 
