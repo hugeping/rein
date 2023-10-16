@@ -22,15 +22,18 @@ end
 
 local function number(ctx, txt, i)
   local n = ''
+  local start = i
   if numdelim(txt[i-1]) then
     return false
   end
-  while txt[i] and txt[i]:find("[x0-9%.e%+%-]") do
+  if txt[i] == '+' then return false end
+  if txt[i] == '-' then i = i + 1 end
+  while txt[i] and txt[i]:find("[x0-9%.]") do
     n = n .. txt[i]
     i = i + 1
   end
   if n:endswith '-' or n:endswith '+' then n = n:gsub('[%+%-]$', '') end
-  if tonumber(n) then return n:len() end
+  if tonumber(n) then return i - start end
   return false
 end
 
