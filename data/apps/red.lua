@@ -2,101 +2,14 @@ local win = require "red/win"
 local frame = require "red/frame"
 local proc = require "red/proc"
 local uri = require "red/uri"
+local conf = require "red/conf"
+local win_keys = require "red/keys"
+
 local presets = require "red/presets"
 local dumper = require "dump"
 local HISTFILE = DATADIR .. '/red.hist'
 
 sys.title "red"
-
-local conf = {
-  fg = 0,
-  bg = 16,
-  cursor = 0,
-  cursor_over = 8,
-  button = { 0x88, 0x88, 0xcc},
-  active = { 0xff, 0x88, 0xcc},
-  font = DATADIR..'/fonts/iosevka-light.ttf',
-  font_sz = 14,
-  ts = 4,
-  spaces_tab = false, -- don't be evil!
-  trim_spaces = false,
-  brd = { 0xde, 0xde, 0xde },
-  menu = 17,
-  hl = { 0xee, 0xee, 0x9e },
-  idle_hz = 1/10,
-  proc_hz = 1/50,
-  unknown_sym = "?",
-  cr_sym = '^',
-  nodump = false,
---  syntax = true,
-  colorize_win = 4096,
---  histfile = true,
-  emptymenu = '| New ',
-}
-
-local win_keys = {
-  { 'home',
-    function(self)
-      self:linestart()
-    end
-  },
-  { 'insert',
-    function(self)
-      self.buf:insmode(not self.buf:insmode())
-    end
-  },
-  { 'end',
-    function(self)
-      self:lineend()
-    end
-  },
-  { 'ctrl+home',
-    function(self)
-      self:cur(1)
-      self:visible()
-    end
-  },
-  { 'ctrl+end',
-    function(self)
-      self:cur(#self.buf.text)
-      self:lineend()
-      self:visible()
-    end
-  },
-  { 'ctrl+s',
-    function(self)
-      self:save()
-      self.frame:update()
-    end
-  },
-  { 'ctrl+w',
-    function(self)
-      self.frame:menu():exec 'Close'
-    end
-  },
-  { 'ctrl+o',
-    function(self)
-      self.frame:push_win(self.frame:win(self.frame.prev_win or 2)
-        or self.frame:win(2))
-    end
-  },
-  {
-    'alt+w',
-    function(self)
-      self:selpar()
-    end
-  },
-  { 'ctrl+b',
-    function(self)
-      local m = self.frame:menu()
-      local t = string.format(":%d ", self.buf:line_nr())
-      if m.buf.text[#m.buf.text] ~= ' ' then
-        t = ' ' .. t
-      end
-      m:append(t)
-    end
-  },
-}
 
 local function try_lua(file)
   if not io.access(file) then return end
