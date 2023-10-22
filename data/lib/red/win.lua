@@ -418,7 +418,13 @@ function win:show()
 
   self.epos = #text + 1
   if conf.syntax then
-    colorizer = syntax.new(text, self.pos, self:getconf 'syntax')
+    local start = math.max(self.pos - 4096, 1)
+    colorizer = syntax.new(text, start, self:getconf 'syntax')
+    if colorizer then
+      for i = start, self.pos - 1 do
+        colorizer:process(i)
+      end
+    end
   end
   for i = self.pos, #text + 1 do
     if colorizer then

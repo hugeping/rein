@@ -13,6 +13,12 @@ local function isalpha(a, alpha)
   end
 end
 
+local function isspace(a, spaces)
+  if a and a:find(spaces or "[ \t]") then
+    return true
+  end
+end
+
 local function startswith(txt, pos, pfx)
   for i = 1, #pfx do
     if txt[pos+i-1] ~= pfx[i] then
@@ -22,14 +28,29 @@ local function startswith(txt, pos, pfx)
   return true
 end
 
-local function isword(txt, pos, pfx)
+local function isword(v, txt, pos, pfx)
   if not startswith(txt, pos, pfx) then
     return false
   end
-  if isalpha(txt[pos + #pfx]) or isalpha(txt[pos - 1]) then
+  if isalpha(txt[pos + #pfx], v.alpha) or
+    isalpha(txt[pos - 1], v.alpha) then
     return false
   end
   return true
+end
+
+local function checkword(v, txt, pos, pfx)
+  if not pfx then return false end
+  if not v.word then
+    return startswith(txt, pos, pfx)
+  elseif v.word == 'left' then
+    return startswith(txt, pos, pfx) and
+      not isalpha(txt[pos-1], v.alpha)
+  elseif v.word == 'right' then
+    return startswith(txt, pos, pfx) and
+      not isalpha(txt[pos+#pfx], v.alpha)
+  end
+  return isword(v, txt, pos, pfx)
 end
 
 function syntax:match_fn(ctx, txt, i, fn, ...)
@@ -46,6 +67,20 @@ function syntax:match_fn(ctx, txt, i, fn, ...)
 end
 
 function syntax:match_start(ctx, txt, i)
+  local r = self:match_fn(ctx, txt, i, 'linestart')
+  if r then
+    local ok = true
+    for pos = i-1, 1, -1 do
+      if txt[pos] == '\n' then
+        break
+      end
+      if not isspace(txt[pos], ctx.spaces) then
+        ok = false
+        break
+      end
+    end
+    if ok then return r end
+  end
   return self:match_fn(ctx, txt, i, 'start')
 end
 
@@ -71,8 +106,7 @@ function syntax:context(pos)
           found_len = r
           found_col = v.col or ctx.col
         end
-      elseif ((not v.word and startswith(txt, pos, word)) or
-        (v.word and isword(txt, pos, word, v.alpha))) then
+      elseif checkword(v, txt, pos, word) then
         if not found_len or found_len < #word then
           found_len = #word
           found_col = v.col or ctx.col
