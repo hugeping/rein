@@ -66,8 +66,8 @@ function syntax:match_fn(ctx, txt, i, fn, ...)
   end
 end
 
-function syntax:match_start(ctx, txt, i)
-  local r = self:match_fn(ctx, txt, i, 'linestart')
+function syntax:match_start(ctx, txt, i, epos)
+  local r = self:match_fn(ctx, txt, i, 'linestart', epos)
   if r then
     local ok = true
     for pos = i-1, 1, -1 do
@@ -81,7 +81,7 @@ function syntax:match_start(ctx, txt, i)
     end
     if ok then return r end
   end
-  return self:match_fn(ctx, txt, i, 'start')
+  return self:match_fn(ctx, txt, i, 'start', epos)
 end
 
 function syntax:match_end(ctx, txt, i)
@@ -89,7 +89,7 @@ function syntax:match_end(ctx, txt, i)
     self.stack[1] and self.stack[1][2])
 end
 
-function syntax:context(pos)
+function syntax:context(pos, epos)
   local ctx = self.ctx
   local txt = self.txt
   local cols = self.cols
@@ -119,7 +119,7 @@ function syntax:context(pos)
     return found_len
   end
 
-  local d = self:match_end(ctx, txt, pos)
+  local d = self:match_end(ctx, txt, pos, epos)
   if d then
     colorize(cols, pos, d, ctx.col)
     self.ctx = table.remove(self.stack, 1)[1]
@@ -141,7 +141,7 @@ function syntax.new(txt, pos, scheme)
   return s
 end
 
-function syntax:process(pos)
+function syntax:process(pos, epos)
   if not self.ctx then
     return
   end
@@ -153,9 +153,9 @@ function syntax:process(pos)
     return
   end
   while i <= #txt do
-    local r, d, aux
+    local d, aux
     for _, c in ipairs(self.ctx) do
-      d, aux = self:match_start(c, txt, i)
+      d, aux = self:match_start(c, txt, i, epos)
       if d then
         colorize(cols, i, d, c.col)
         i = i + d
@@ -164,7 +164,7 @@ function syntax:process(pos)
         break
       end
     end
-    i = i + self:context(i)
+    i = i + self:context(i, epos)
     self.pos = i
     break
   end

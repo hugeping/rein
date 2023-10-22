@@ -405,6 +405,33 @@ function win:flushline(x0, y0)
   end
 end
 
+function win:colorize()
+  local scheme = self:getconf 'syntax'
+  if not scheme then return end
+  local text = self.buf.text
+  local start = math.max(self.pos - self:getconf 'colorize_win', 1)
+  while text[start] and text[start] ~= '\n' do
+    start = start - 1
+  end
+  local colorizer = syntax.new(text, start, scheme)
+  if not colorizer then
+    return
+  end
+  local x, y = 0, 0
+  local epos = #text
+  for i = self.pos, #text do
+    x, y = self:next(i, x, y)
+    if y >= self.rows then
+      epos = i
+      break
+    end
+  end
+  for i = start, epos do
+    colorizer:process(i, self.epos)
+  end
+  return colorizer
+end
+
 function win:show()
   local colorizer
   if self.w <= 0 or self.h <= 0 or
@@ -415,21 +442,11 @@ function win:show()
   local x, y = 0, 0
   local x0, y0 = x, y
   local text = self.buf.text
-
   self.epos = #text + 1
   if conf.syntax then
-    local start = math.max(self.pos - 4096, 1)
-    colorizer = syntax.new(text, start, self:getconf 'syntax')
-    if colorizer then
-      for i = start, self.pos - 1 do
-        colorizer:process(i)
-      end
-    end
+    colorizer = self:colorize()
   end
   for i = self.pos, #text + 1 do
-    if colorizer then
-      colorizer:process(i)
-    end
     self:glyph(x, y, text[i] or false,
       (colorizer and colorizer.cols[i]) or conf.fg,
       self.buf:insel(i) and conf.hl or self.bg)
