@@ -6,9 +6,9 @@ local function endsect(ctx, txt, i)
   end
 end
 
-local function numbersect(ctx, txt, pos)
+local function numbersect(ctx, txt, pos, epos)
   local n = ''
-  for i = pos, #txt do
+  for i = pos, epos do
     if txt[i]:find("[0-9]") then
       n = n .. txt[i]
     elseif txt[i] == '.' then
