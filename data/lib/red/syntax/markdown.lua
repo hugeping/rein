@@ -23,7 +23,7 @@ end
 local col = {
   col = 0,
   keywords = {
-    { '\\*', '\\#', '\\-', },
+    { '\\*', '\\#', '\\-', '\\\\' },
   },
   { -- section
     linestart = '#',
