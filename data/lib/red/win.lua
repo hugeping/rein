@@ -413,6 +413,7 @@ function win:colorize()
   while text[start] and text[start] ~= '\n' do
     start = start - 1
   end
+  start = math.max(start, 1)
   local colorizer = syntax.new(text, start, scheme)
   if not colorizer then
     return
