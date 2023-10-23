@@ -414,7 +414,7 @@ function win:colorize()
       start = colorizer.pos + 1
       colorizer.txt = self.buf.text
     end
-    if self.pos <= start then
+    if colorizer and colorizer.dirty and self.pos <= start then
       colorizer = nil
       start = 1
     end
@@ -956,6 +956,9 @@ end
 function win:dirty(dirty)
   if dirty ~= nil then
     self.isdirty = dirty
+    if dirty and self.colorizer then
+      self.colorizer.dirty = true
+    end
   end
   return self.buf and self.buf:isfile() and self.isdirty
 end
