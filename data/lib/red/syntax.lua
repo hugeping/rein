@@ -89,6 +89,24 @@ function syntax:match_end(ctx, txt, i)
     self.stack[1] and self.stack[1][2])
 end
 
+function syntax:state(s)
+  if s then
+    self.pos = s.pos
+    self.stack = s.stack
+    self.ctx = s.ctx
+    return
+  end
+  local stack = {}
+  for _, v in ipairs(self.stack) do
+    table.insert(stack, { v[1], v[2] })
+  end
+  return {
+    stack = stack,
+    pos = self.pos,
+    ctx = self.ctx,
+  }
+end
+
 function syntax:context(pos, epos)
   local ctx = self.ctx
   local txt = self.txt
@@ -154,6 +172,7 @@ function syntax:process(pos, epos)
   end
   while i <= #txt do
     local d, aux
+    cols[i] = self.ctx.col or 0
     for _, c in ipairs(self.ctx) do
       d, aux = self:match_start(c, txt, i, epos)
       if d then

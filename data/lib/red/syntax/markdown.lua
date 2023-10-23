@@ -30,13 +30,21 @@ local col = {
     stop = '\n',
     col = scheme.lib,
   },
+  { -- strong
+    start = '**',
+    stop = '**',
+    col = scheme.keyword,
+    keywords = {
+      { '\\*', '\\\\', },
+    },
+  },
   { -- items
-    linestart = '*',
+    linestart = '* ',
     stop = endsect,
     col = scheme.number,
   },
   { -- items
-    linestart = '-',
+    linestart = '- ',
     stop = endsect,
     col = scheme.number,
   },
@@ -46,7 +54,7 @@ local col = {
     col = scheme.number,
   },
   { -- quote
-    linestart = '>',
+    linestart = '> ',
     stop = '\n',
     col = scheme.comment,
   },
@@ -59,14 +67,6 @@ local col = {
     linestart = '```',
     stop = '```',
     col = scheme.string,
-  },
-  { -- strong
-    start = '**',
-    stop = '**',
-    col = scheme.keyword,
-    keywords = {
-      { '\\*', '\\\\', },
-    },
   },
   { -- strong
     start = '*',
