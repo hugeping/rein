@@ -411,7 +411,7 @@ function win:colorize()
   if colorizer then
     if colorizer.saved then
       colorizer:state(colorizer.saved)
-      start = colorizer.pos + 1
+      start = colorizer.pos
       colorizer.txt = self.buf.text
     end
     if colorizer and colorizer.dirty and self.pos <= start then
@@ -436,6 +436,8 @@ function win:colorize()
     end
   end
   local state
+--  print("Colorize:", start, epos, #colorizer.stack)
+  colorizer.saved = nil
   for i = start, epos do
     if not state and
       i < self.pos and
