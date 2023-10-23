@@ -427,7 +427,7 @@ function win:colorize()
     end
   end
   for i = start, epos do
-    colorizer:process(i, self.epos)
+    colorizer:process(i, epos)
   end
   return colorizer
 end
