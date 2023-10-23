@@ -406,18 +406,26 @@ function win:flushline(x0, y0)
 end
 
 function win:colorize()
+  local colorizer = self.colorizer
+  local start = 1
+  if colorizer then
+    if colorizer.saved then
+      colorizer:state(colorizer.saved)
+      start = colorizer.pos + 1
+      colorizer.txt = self.buf.text
+    end
+    if self.pos < start then
+      colorizer = nil
+      start = 1
+    end
+  end
   local scheme = self:getconf 'syntax'
   if not scheme then return end
-  local text = self.buf.text
-  local start = math.max(self.pos - self:getconf 'colorize_win', 1)
-  while text[start] and text[start] ~= '\n' do
-    start = start - 1
-  end
-  start = math.max(start, 1)
-  local colorizer = syntax.new(text, start, scheme)
+  colorizer = colorizer or syntax.new(self.buf.text, 1, scheme)
   if not colorizer then
     return
   end
+  local text = self.buf.text
   local x, y = 0, 0
   local epos = #text
   for i = self.pos, #text do
@@ -427,9 +435,17 @@ function win:colorize()
       break
     end
   end
+  local state
   for i = start, epos do
+    if not state and
+      i < self.pos and
+      i >= self.pos - self:getconf 'colorize_win' then
+      state = true
+      colorizer.saved = colorizer:state()
+    end
     colorizer:process(i, epos)
   end
+  self.colorizer = colorizer
   return colorizer
 end
 
