@@ -682,7 +682,8 @@ function mainmenu.cmd:Help()
        RED - Rein EDitor
 
 Arguments:
-  rein [-platform-nojoystick] [-platform-nosound] [-platform-xclip] red [-fs <font size>] [-nodump] [-confdir <dir>]
+  rein [-platform-nojoystick] [-platform-nosound] [-platform-xclip]
+      red [-fs <font size>] [-nodump] [-confdir <dir>]
 
 Keys:
   esc           - cut, select last typed block
@@ -744,8 +745,37 @@ Some built-in commands:
     ctrl-up/down - history
     ls/cd/pwd    - built-in commands
 
-Confdir:
-  You can put files: conf.lua, presets.lua, uri.lua, keys.lua and proc here.
+Arguments:
+  -platform-xclip - use X11 clipboard
+  -platform-nojoystick - no joystick, start faster!
+  -platform-nosound - no sound, start faster!
+  -nodump - do not load red.dump
+
+-confdir <directory>
+  You can put files in confdir:
+    conf.lua - changes in config
+    presets.lua - presets for files
+    uri.lua - uri handlers
+    keys.lua - keybindings
+    proc.lua - procedures
+
+Example usage:
+
+--- [~/.red/conf.lua] ---
+  return {
+    syntax = true,
+    histfile = true,
+  }
+-------------------------
+
+--- [~/bin/red] ---------
+  #!/bin/sh
+  exec ~/Devel/rein/rein -platform-xclip -platform-nosound -platform-nojoysticks red -fs 14 -confdir ~/.red "$@" 2>/dev/null >/dev/null &
+-------------------------
+
+$ red file1.txt file2.txt ...
+
+Happy hacking!
 ]])
   w.buf.cur = 1
   w:toline(1, false)
