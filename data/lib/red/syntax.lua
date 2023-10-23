@@ -139,7 +139,7 @@ function syntax:context(pos, epos)
 
   local d = self:match_end(ctx, txt, pos, epos)
   if d then
-    colorize(cols, pos, d, ctx.col)
+    colorize(cols, pos, d, ctx.ecol or ctx.col)
     self.ctx = table.remove(self.stack, 1)[1]
     return d
   end
@@ -176,7 +176,7 @@ function syntax:process(pos, epos)
     for _, c in ipairs(self.ctx) do
       d, aux = self:match_start(c, txt, i, epos)
       if d then
-        colorize(cols, i, d, c.col)
+        colorize(cols, i, d, c.scol or c.col)
         i = i + d
         table.insert(stack, 1, { self.ctx, aux })
         self.ctx = c

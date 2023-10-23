@@ -1,4 +1,5 @@
 return {
+  default = 0,
   keyword = { 102, 102, 22 },
   comment = { 64, 136, 64 },
   string = { 124, 102, 187 },

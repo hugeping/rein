@@ -12,6 +12,7 @@ local function numbersect(ctx, txt, pos, epos)
     if txt[i]:find("[0-9]") then
       n = n .. txt[i]
     elseif txt[i] == '.' then
+      if txt[i+1] ~= ' ' then return end
       break
     else
       return
@@ -41,17 +42,20 @@ local col = {
   { -- items
     linestart = '* ',
     stop = endsect,
-    col = scheme.number,
+    scol = scheme.number,
+    col = scheme.default,
   },
   { -- items
     linestart = '- ',
     stop = endsect,
-    col = scheme.number,
+    scol = scheme.number,
+    col = scheme.default,
   },
   { -- items
     linestart = numbersect,
     stop = endsect,
-    col = scheme.number,
+    scol = scheme.number,
+    col = scheme.default,
   },
   { -- quote
     linestart = '> ',
