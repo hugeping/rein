@@ -414,7 +414,7 @@ function win:colorize()
       start = colorizer.pos + 1
       colorizer.txt = self.buf.text
     end
-    if self.pos < start then
+    if self.pos <= start then
       colorizer = nil
       start = 1
     end
