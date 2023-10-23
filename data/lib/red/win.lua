@@ -286,10 +286,12 @@ function win:nextpage(jump)
   for i = self.pos, #self.buf.text do
     if y >= jump then
       self.pos = i
-      break
+      return true
     end
     x, y = self:next(i, x, y)
   end
+  self:cur(#self.buf.text)
+--  self:lineend()
 end
 
 function win:prevpage(jump)
@@ -1017,9 +1019,10 @@ function win:event(r, v, a, b)
       self:tox(self.autox)
       self:movesel()
     elseif v == 'pagedown' or v == 'keypad 3' then
-      self:nextpage()
-      self.buf.cur = self.pos
-      self:tox(self.autox)
+      if self:nextpage() then
+        self.buf.cur = self.pos
+        self:tox(self.autox)
+      end
       self:movesel()
     elseif v == 'return' then
       self:newline()
