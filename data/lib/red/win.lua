@@ -290,7 +290,6 @@ function win:nextpage(jump)
     end
     x, y = self:next(i, x, y)
   end
-  self:cur(#self.buf.text+1)
 end
 
 function win:prevpage(jump)
@@ -1021,6 +1020,8 @@ function win:event(r, v, a, b)
       if self:nextpage() then
         self.buf.cur = self.pos
         self:tox(self.autox)
+      else
+        self:cur(#self.buf.text+1)
       end
       self:movesel()
     elseif v == 'return' then
