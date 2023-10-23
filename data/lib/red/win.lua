@@ -290,8 +290,7 @@ function win:nextpage(jump)
     end
     x, y = self:next(i, x, y)
   end
-  self:cur(#self.buf.text)
---  self:lineend()
+  self:cur(#self.buf.text+1)
 end
 
 function win:prevpage(jump)
