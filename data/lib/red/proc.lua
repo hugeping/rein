@@ -361,12 +361,10 @@ local function piped(w, out, prog)
       txt = txt:sub(257)
       coroutine.yield(true)
     end
---[[
     if ret.fifo then
       ret.fifo:close()
       ret.fifo = nil
     end
-]]--
   end)
 end
 
