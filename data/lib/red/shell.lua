@@ -71,6 +71,25 @@ local function pipe_proc()
   f:close()
   thread:write '\1eof'
 end
+local pipe = {}
+pipe.__index = pipe
+
+function pipe:close()
+  if not self.fifo then
+    return
+  end
+  self.fifo:close()
+  self.fifo = nil
+end
+
+function pipe:kill()
+  if self.stopped then
+    return
+  end
+  self.thread:err("kill")
+  self.thread:detach()
+  self.stopped = true
+end
 
 function shell.pipe(w, prog, inp, sh)
   local tmp
@@ -90,6 +109,7 @@ function shell.pipe(w, prog, inp, sh)
   end
   local p = thread.start(sh and pipe_shell or pipe_proc)
   local ret = { }
+  setmetatable(ret, pipe)
   p:write(prog, w.cwd or false)
   local r, e = p:read()
   if not r then
@@ -133,23 +153,14 @@ function shell.pipe(w, prog, inp, sh)
       os.remove(tmp)
     end
     ret.stopped = true
-    if ret.fifo then
-      ret.fifo:close()
-      ret.fifo = nil
-    end
+    ret:close()
     p:wait()
   end)
   ret.routine = r
+  ret.thread = p
   r.kill = function()
-    if ret.fifo then
-      ret.fifo:close()
-      ret.fifo = nil
-    end
-    if not ret.stopped then
-      p:err("kill")
-      p:detach()
-      ret.stopped = true
-    end
+    ret:close()
+    ret:kill()
   end
   return ret
 end
@@ -160,8 +171,7 @@ function shell:delete()
     self.prog.stopped then
     return
   end
-  self.prog.routine.kill()
-  self.prog.stopped = true
+  self.prog:kill()
 end
 
 function shell:escape()
@@ -169,8 +179,7 @@ function shell:escape()
     not self.prog.fifo then
     return self.super.escape(self)
   end
-  self.prog.fifo:close()
-  self.prog.fifo = nil
+  self.prog:close()
 end
 
 function shell:prompt()
