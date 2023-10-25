@@ -356,13 +356,17 @@ local function piped(w, out, prog)
   end
   local txt = w.buf:gettext(w.buf:range())
   out:run(function()
-    while txt ~= '' do
+    while txt ~= '' and ret.fifo do
       ret.fifo:write(txt:sub(1, 256))
       txt = txt:sub(257)
       coroutine.yield(true)
     end
-    ret.fifo:close()
-    ret.fifo = nil
+--[[
+    if ret.fifo then
+      ret.fifo:close()
+      ret.fifo = nil
+    end
+]]--
   end)
 end
 
