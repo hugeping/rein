@@ -49,7 +49,7 @@ local function text_replace(w, glob, fn, a, b)
   w.buf:input(text)
   w.buf:history 'end'
   if not a then
-    w.buf:setsel(s, w:cur()+1)
+    w.buf:setsel(s, w:cur())
   end
   w:visible()
 end
