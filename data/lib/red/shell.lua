@@ -146,9 +146,6 @@ function shell.pipe(w, prog, inp, sh)
       ret.fifo = nil
     end
     if not ret.stopped then
-      if tmp then
-        os.remove(tmp)
-      end
       p:err("kill")
       p:detach()
       ret.stopped = true
