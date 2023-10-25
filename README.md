@@ -44,3 +44,5 @@ See ./make.sh if any problems.
 <img src="contrib/voiced.png" width="50%">
 
 <img src="contrib/edit.png" width="50%">
+
+<img src="contrib/red.png" width="50%">
