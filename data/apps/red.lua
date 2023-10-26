@@ -460,7 +460,7 @@ function frame:update(force, pop)
     t = t .. 'Get '
   end
   if self.frame:win_nr() > 1 then
-    t = t .. 'Delcol '
+    t = t .. 'Del ' -- Delcol
   end
   if not d then
     t = t .. '| '
@@ -559,7 +559,7 @@ function framemenu:new(...)
   return r
 end
 
-function framemenu.cmd:Delcol()
+function framemenu.cmd:Del() -- Delcol
   local main = self.frame.frame
   if main:win_nr() <= 1 then return end
 
@@ -635,7 +635,7 @@ end
 local mainmenu = menu:new()
 mainmenu.cmd = {}
 
-mainmenu.buf:set 'Newcol Vertical Help GetAll PutAll Dump Exit'
+mainmenu.buf:set 'New Vertical Help GetAll PutAll Dump Exit'
 
 function mainmenu:scroller()
   screen:clear(self.x, self.y, scr.spw, self.h,
@@ -823,7 +823,7 @@ function mainmenu.cmd:Vertical()
   self.frame:refresh()
 end
 
-function mainmenu.cmd:Newcol()
+function mainmenu.cmd:New() -- Newcol
   self.frame:add(frame:new(framemenu:new()))
   for v in self.frame:for_win() do
     v:update()
@@ -1113,7 +1113,7 @@ local function load_dump(f)
   local d = dumper.load(f)
   if not d then return end
   for i, v in ipairs(d) do
-    mainmenu.cmd.Newcol(mainmenu)
+    mainmenu.cmd.New(mainmenu) -- Newcol
     for _, b in ipairs(v) do
       main:win(i):file(b.fname)
       if b.text then
@@ -1137,13 +1137,13 @@ local function load_dump(f)
 end
 
 if #ARGS > 0 then
-  mainmenu.cmd.Newcol(mainmenu)
+  mainmenu.cmd.New(mainmenu) -- Newcol
   for i = #ARGS, 1, -1 do -- reverse order!
     main:win():file(ARGS[i])
   end
 else
   if conf.nodump or not load_dump "red.dump" then
-    mainmenu.cmd.Newcol(mainmenu)
+    mainmenu.cmd.New(mainmenu) -- Newcol
     main:win():file("./")
   else
     conf.save_dump = true
