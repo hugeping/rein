@@ -172,6 +172,7 @@ function win:geom(x, y, w, h)
 end
 
 function win:flush()
+  if self.h <= 0 or self.w <= 0 then return end
   screen:clear(self.x, self.y, self.w, self.h, self.bg)
   for y = 0, self.rows do
     self.glyphs[y] = {}

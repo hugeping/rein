@@ -512,7 +512,14 @@ function framemenu:event(r, v, a, b)
   elseif r == 'mousemotion' then
     if self.grab then
       if mb.left and not mb.right then -- resize
-        self.frame.posx = math.max(scr.spw, v)
+        if self.frame.frame.vertical then
+          local mh = self.frame.frame:menu().h
+          self.frame.posy = math.min(math.max(a - mh, self.h),
+            self.frame.frame.h - mh - self.h)
+        else
+          self.frame.posx = math.min(math.max(scr.spw, v),
+            self.frame.frame.w - scr.spw)
+        end
         self.frame.frame:refresh()
         return true
       elseif mb.right then
@@ -526,11 +533,19 @@ function framemenu:event(r, v, a, b)
       scr.grab = false
       self:show_cursor()
       if v == 'left' then -- resize
-        self.frame.posx = math.max(scr.spw, a)
+        if self.frame.frame.vertical then
+          local mh = self.frame.frame:menu().h
+          self.frame.posy = math.min(math.max(b - mh, self.h),
+            self.frame.frame.h - mh - self.h)
+        else
+          self.frame.posx = math.min(math.max(scr.spw, a),
+            self.frame.frame.w - scr.spw)
+        end
         self.frame.frame:refresh()
         return true
       elseif v == 'right' then -- move
-        self.frame.frame:move(math.max(scr.spw, a), self.frame)
+        self.frame.frame:move(math.max(scr.spw, a),
+          b, self.frame)
         return true
       end
     end
@@ -620,7 +635,7 @@ end
 local mainmenu = menu:new()
 mainmenu.cmd = {}
 
-mainmenu.buf:set 'Newcol Help GetAll PutAll Dump Exit'
+mainmenu.buf:set 'Newcol Vertical Help GetAll PutAll Dump Exit'
 
 function mainmenu:scroller()
   screen:clear(self.x, self.y, scr.spw, self.h,
@@ -803,6 +818,11 @@ function mainmenu.cmd:Exit()
   conf.stop = true
 end
 
+function mainmenu.cmd:Vertical()
+  self.frame.vertical = not self.frame.vertical
+  self.frame:refresh()
+end
+
 function mainmenu.cmd:Newcol()
   self.frame:add(frame:new(framemenu:new()))
   for v in self.frame:for_win() do
@@ -832,24 +852,35 @@ function mainwin:getnewfile()
   return string.format("new%d", max + 1)
 end
 
-function mainwin:geom(x, y, w, h)
-  local menu = self:menu()
+function mainwin:vgeom(x, y, w, h)
   local scale = 1
-  if self.w then
-    scale = w / self.w
-  end
-  self.x, self.y, self.w, self.h = x, y, w, h
-  menu:geom(x, y, w, 0)
-  menu:geom(x, y, w, menu:realheight())
-  menu.pos = math.max(0, menu.pos)
-  menu.pos = math.min(menu.pos, #menu.buf.text)
 
+  local menu = self:menu()
+  local pos = menu:bottom()
+  local dh = math.floor((h - pos) / self:win_nr())
+
+  for c, i in self:for_win() do
+    c.posy = c.posy or c.y
+    if c.posy then c.posy = math.floor(c.posy * scale) else
+      c.posy = y + (i-1)*dh
+    end
+  end
+  table.sort(self.childs, function(a, b) return (a.posy or -1) < (b.posy or -1) end)
+  for c, i in self:for_win() do
+    local r = self:win(i+1) or { posy = self.h }
+    if i == 1 then
+      c.posy = 0
+    end
+    c:geom(x, y + pos + c.posy, w, r.posy - c.posy)
+  end
+end
+
+function mainwin:hgeom(x, y, w, h)
+  local scale = 1
+
+  local menu = self:menu()
   local pos = menu:bottom()
 
-  if self:win_nr() == 0 then
-    screen:clear(x, pos, w, h - pos, 7)
-    return
-  end
   local dw = math.floor(w / self:win_nr())
   h = h - pos
   for c, i in self:for_win() do
@@ -868,9 +899,34 @@ function mainwin:geom(x, y, w, h)
   end
 end
 
-function mainwin:move(x, w)
+function mainwin:geom(x, y, w, h)
+  local menu = self:menu()
+  if self.w then
+    scale = w / self.w
+  end
+  self.x, self.y, self.w, self.h = x, y, w, h
+  menu:geom(x, y, w, 0)
+  menu:geom(x, y, w, menu:realheight())
+  menu.pos = math.max(0, menu.pos)
+  menu.pos = math.min(menu.pos, #menu.buf.text)
+
+  local pos = menu:bottom()
+
+  if self:win_nr() == 0 then
+    screen:clear(x, pos, w, h - pos, 7)
+    return
+  end
+  if self.vertical then
+    return self:vgeom(x, y, w, h)
+  else
+    return self:hgeom(x, y, w, h)
+  end
+end
+
+function mainwin:move(x, y, w)
   for c in self:for_win() do
-    if x >= c.x and x < c.x + c.w then -- move it!
+    if x >= c.x and x < c.x + c.w and
+      y >= c.y and y < c.y + c.h then -- move it!
       if w:win() and c:win_by_name(w:win().buf.fname) then
         return
       end
@@ -942,6 +998,7 @@ function mainmenu:output(n)
 end
 
 local main = mainwin:new(mainmenu)
+main.vertical = false
 
 function main:killproc()
   for fr in main:for_win() do
