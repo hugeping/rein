@@ -860,10 +860,11 @@ function mainwin:vgeom(x, y, w, h)
   local dh = math.floor((h - pos) / self:win_nr())
 
   for c, i in self:for_win() do
-    c.posy = c.posy or c.y
-    if c.posy then c.posy = math.floor(c.posy * scale) else
+    if c.posy and c.posy <= (h - pos) then
+      c.posy = math.floor(c.posy * scale) else
       c.posy = y + (i-1)*dh
     end
+    c.posy = c.posy or c.y
   end
   table.sort(self.childs, function(a, b) return (a.posy or -1) < (b.posy or -1) end)
   for c, i in self:for_win() do
@@ -871,7 +872,13 @@ function mainwin:vgeom(x, y, w, h)
     if i == 1 then
       c.posy = 0
     end
-    c:geom(x, y + pos + c.posy, w, r.posy - c.posy)
+    local d = r.posy - c.posy
+    c:menu():geom(x, y + pos + c.posy, w, d)
+    if d < c:menu().h then
+      r.posy, c.posy = c.posy - c:menu().h, r.posy + r:menu().h
+      d = r:menu().h
+    end
+    c:geom(x, y + pos + c.posy, w, d)
   end
 end
 
@@ -884,10 +891,11 @@ function mainwin:hgeom(x, y, w, h)
   local dw = math.floor(w / self:win_nr())
   h = h - pos
   for c, i in self:for_win() do
-    c.posx = c.posx or c.x
-    if c.posx then c.posx = math.floor(c.posx * scale) else
+    if c.posx and (c.posx <= w - scr.spw) then
+      c.posx = math.floor(c.posx * scale) else
       c.posx = x + (i-1)*dw
     end
+    c.posx = c.posx or c.x
   end
   table.sort(self.childs, function(a, b) return (a.posx or -1) < (b.posx or -1) end)
   for c, i in self:for_win() do
@@ -895,7 +903,12 @@ function mainwin:hgeom(x, y, w, h)
     if i == 1 then
       c.posx = 0
     end
-    c:geom(c.posx, y + pos, r.posx - c.posx, h)
+    local d = r.posx - c.posx
+    if d < scr.spw then
+      r.posx, c.posx = c.posx - scr.spw, r.posx + scr.spw
+      d = r.w
+    end
+    c:geom(c.posx, y + pos, d, h)
   end
 end
 
