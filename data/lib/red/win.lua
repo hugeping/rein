@@ -19,6 +19,7 @@ local scr = {
 local delim_exec = {
   [" "] = true,
   ["\n"] = true,
+  ["\t"] = true,
 }
 
 function scr:init()
