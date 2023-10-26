@@ -867,7 +867,7 @@ function mainwin:vgeom(x, y, w, h)
   end
   table.sort(self.childs, function(a, b) return (a.posy or -1) < (b.posy or -1) end)
   for c, i in self:for_win() do
-    local r = self:win(i+1) or { posy = self.h }
+    local r = self:win(i+1) or { posy = self.h - pos }
     if i == 1 then
       c.posy = 0
     end
