@@ -858,25 +858,33 @@ function mainwin:vgeom(x, y, w, h)
   local menu = self:menu()
   local pos = menu:bottom()
   local dh = math.floor((h - pos) / self:win_nr())
-
+  local lasty = 0
   for c, i in self:for_win() do
     if c.posy and c.posy <= (h - pos) then
       c.posy = math.floor(c.posy * scale) else
       c.posy = y + (i-1)*dh
     end
     c.posy = c.posy or c.y
+    if c.posy < lasty then
+      c.posy = lasty
+    end
+    c:menu():geom(x, y + pos + c.posy, w, 0)
+    lasty = lasty + c:menu().h
   end
-  table.sort(self.childs, function(a, b) return (a.posy or -1) < (b.posy or -1) end)
+  table.sort(self.childs, function(a, b)
+    return (a.posy or -1) < (b.posy or -1)
+  end)
   for c, i in self:for_win() do
     local r = self:win(i+1) or { posy = self.h - pos }
     if i == 1 then
       c.posy = 0
     end
     local d = r.posy - c.posy
-    c:menu():geom(x, y + pos + c.posy, w, d)
-    if d < c:menu().h then
-      r.posy, c.posy = c.posy - c:menu().h, r.posy + r:menu().h
-      d = r:menu().h
+    if i ~= self:win_nr() then
+      if d < c:menu().h then
+        r.posy, c.posy = c.posy - c:menu().h, r.posy + r:menu().h
+        d = r:menu().h
+      end
     end
     c:geom(x, y + pos + c.posy, w, d)
   end
