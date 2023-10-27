@@ -818,8 +818,15 @@ function mainmenu.cmd:Exit()
   conf.stop = true
 end
 
+function mainmenu.cmd:Horizont()
+  self.frame.vertical = false
+  self.buf:set(self.buf:gettext():gsub("Horizont", "Vertical"))
+  self.frame:refresh()
+end
+
 function mainmenu.cmd:Vertical()
-  self.frame.vertical = not self.frame.vertical
+  self.frame.vertical = true
+  self.buf:set(self.buf:gettext():gsub("Vertical", "Horizont"))
   self.frame:refresh()
 end
 
