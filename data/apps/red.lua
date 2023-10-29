@@ -577,6 +577,18 @@ function framemenu.cmd:Del() -- Delcol
   self.frame.frame:refresh()
 end
 
+function framemenu.cmd:Tab(nr)
+  if tonumber(nr) then
+    self.frame:win().conf.ts = math.max(1, math.min(nr, 8))
+    self.frame:update()
+  end
+  self.frame:win().conf.spaces_tab = false
+end
+
+function framemenu.cmd:Spaces(nr)
+  self.frame:win().conf.spaces_tab = true
+end
+
 function framemenu.cmd:Put()
   local b = self.frame:win()
   if not b then
@@ -750,6 +762,8 @@ Some built-in commands:
   Line                - get current line in buffer
   Codepoint           - get codepoint of the sym
   Clear               - clear window
+  Tab [nr]            - tab on for current bufferr
+  Spaces              - spaces tab mode
   dump                - hex-dump
   win                 - pseudo acme win
 
