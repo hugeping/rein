@@ -975,6 +975,9 @@ function win:changed(fl)
 end
 
 function win:dirty(dirty)
+  if dirty then
+    self:clean(false)
+  end
   if dirty ~= nil then
     self.isdirty = dirty
     if dirty and self.colorizer then
