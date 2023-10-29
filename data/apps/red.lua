@@ -245,6 +245,7 @@ function win:save()
     self.buf:set(self.buf:gettext():gsub('[ \t]+\n', '\n'):gsub("[ \t\n]+$", "\n"))
     if self.buf:line_nr() ~= nr then
       self:toline(nr, false)
+      self:tox(self.cx or self.autox)
     end
   end
   local r, e = self.buf:save()
