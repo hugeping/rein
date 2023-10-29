@@ -21,5 +21,6 @@ return {
 --  syntax = true,
   colorize_win = 4096,
 --  histfile = true,
+--  wrap = false,
   emptymenu = '| New ',
 }

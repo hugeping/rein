@@ -577,6 +577,11 @@ function framemenu.cmd:Del() -- Delcol
   self.frame.frame:refresh()
 end
 
+function framemenu.cmd:Wrap()
+  self.frame:win().conf.wrap = not self.frame:win().conf.wrap
+  self.frame:update()
+end
+
 function framemenu.cmd:Tab(nr)
   if tonumber(nr) then
     self.frame:win().conf.ts = math.max(1, math.min(nr, 8))
@@ -763,6 +768,7 @@ Some built-in commands:
   Codepoint           - get codepoint of the sym
   Clear               - clear window
   Tab [nr]            - tab on for current bufferr
+  Wrap                - wrap text on/off
   Spaces              - spaces tab mode
   dump                - hex-dump
   win                 - pseudo acme win

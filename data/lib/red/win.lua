@@ -227,8 +227,21 @@ function win:glyph(x, y, sym, fg, bg)
   screen:nooffset()
 end
 
+function win:nextword(pos)
+  local w = 0
+  for i = pos, #self.buf.text do
+    local t = self.buf.text[i]
+    if t == ' ' or t == '\t' or t == '\n' then
+      break
+    end
+    w = w + 1
+  end
+  return w
+end
+
 function win:next(pos, x, y)
   local s = self.buf.text[pos]
+  local w = 0
   if s == '\n' then
     x = 0
     y = y + 1
@@ -238,7 +251,11 @@ function win:next(pos, x, y)
   else
     x = x + 1
   end
-  if x >= self.cols then
+  local wrap = self:getconf 'wrap'
+  if wrap and (s == ' ' or s == '\t') then
+    w = self:nextword(pos + 1)
+  end
+  if x + w >= self.cols then
     x = 0
     y = y + 1
   end
