@@ -514,7 +514,7 @@ function buf:save(fname)
   if not r then return r, e end
   r, e = f:close()
   if not r then return r, e end
-  r, e = os.rename(self.fname..'.new', self.fname)
+  r, e = os.rename(self.fname..'.red', self.fname)
   if not r then return r, e end
   self:dirty(false)
   return true
