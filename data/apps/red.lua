@@ -751,16 +751,19 @@ Mouse:
 
 Some built-in commands:
 
-  gfind lua-rexp      - find rexp in text (multilines) from cursor
+  gfind lua-rexp      - find rexp in text (multilines)
   gfind /lua-rexp/
   gsub /lua-rexp/
 
-  find lua-rexp       - find rexp in text (by lines) form cursor
+  find lua-rexp       - find rexp in text (by lines)
   find /lua-rexp/
   sub /lua-rexp/
 
-  sub /lua-rexp/b/    - change rexp to b by lines
-  gsub /lua-rexp/b/   - chnage rexp to b globally
+  sub /lua-rexp/b/    - change rexp to b (by lines)
+  gsub /lua-rexp/b/   - change rexp to b (multilines)
+
+Note:
+  You can use ":" delimiter instead of "/" in find, gfind, sub, gsub.
 
   !cmd                - run cmd
   <cmd                - run cmd and get output
