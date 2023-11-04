@@ -707,6 +707,7 @@ end
 
 function mainmenu.cmd:Help()
   local w = self.frame:open_err("+Help")
+  w.conf.wrap = true
   w:clear()
   w:printf([[
            ___  _______
@@ -715,6 +716,8 @@ function mainmenu.cmd:Help()
         /_/|_/___/____/
 
        RED - Rein EDitor
+       by Peter Kosyh (2023)
+       https://hugeping.ru
 
 Arguments:
   rein [-platform-nojoystick] [-platform-nosound] [-platform-xclip]
@@ -747,10 +750,17 @@ Mouse:
 
 Some built-in commands:
 
-  select lua-regexp   - find in all text globally
-  find lua-regexp     - find in line form cur pos
-  sub /lua-regexp/b/  - change a to b by lines
-  gsub /lua-regexp/b/ - chnage a to b global
+  select lua-rexp     - find rexp in text globally
+  select /lua-rexp/
+  gsub /lua-rexp/
+
+  find lua-rexp       - find rexp by lines form cur pos
+  find /lua-rexp/
+  sub /lua-rexp/
+
+  sub /lua-rexp/b/    - change rexp to b by lines
+  gsub /lua-rexp/b/   - chnage rexp to b globally
+
   !cmd                - run cmd
   <cmd                - run cmd and get output
   @cmd                - run cmd <text> and get output
