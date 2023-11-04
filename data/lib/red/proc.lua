@@ -30,7 +30,7 @@ local function text_match(w, glob, fn, ...)
   end
   w.buf:resetsel()
   w.buf.cur = s + cur_skip(text, start)
-  fin = s + cur_skip(text, fin) + 1
+  fin = s + cur_skip(text, fin + 1)
   w.buf:setsel(w.buf.cur, fin)
   w.buf.cur = fin
   w:visible()
