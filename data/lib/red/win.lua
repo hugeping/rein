@@ -1059,8 +1059,6 @@ function win:event(r, v, a, b)
       self:backspace()
     elseif v == 'delete' then
       self:delete()
-    elseif v == 'escape' then
-      self:escape()
     elseif v:find 'shift' then
       if not self.buf:issel() then
         self.buf:setsel(self.buf.cur, self.buf.cur)
