@@ -13,6 +13,7 @@ return {
   brd = { 0xde, 0xde, 0xde },
   menu = 17,
   hl = { 0xee, 0xee, 0x9e },
+  break_hl = { 0xff, 0xee, 0xcc };
   idle_hz = 1/10,
   proc_hz = 1/50,
   unknown_sym = "?",
