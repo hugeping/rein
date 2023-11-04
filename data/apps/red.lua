@@ -251,6 +251,8 @@ function win:save()
   local r, e = self.buf:save()
   if r then
     self:nodirty()
+  else
+    self.frame:err(e)
   end
   return r, e
 end
