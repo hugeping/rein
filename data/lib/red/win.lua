@@ -501,7 +501,9 @@ function win:show()
 
     x0, y0 = x, y
     x, y = self:next(i, x0, y0)
-
+    if y == y0+1 and (text[i] == ' ' or text[i] == '\t') then
+      self:glyph(x0, y0, ' ', conf.fg, conf.break_hl)
+    end
     if x > x0 and y == y0 and x - x0 > 1 then
       self:flushline(x0 + 1, y0)
     end
