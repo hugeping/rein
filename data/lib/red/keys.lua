@@ -14,10 +14,20 @@ return {
       self:lineend()
     end
   },
+  { 'escape',
+    function(self)
+      self:escape()
+    end
+  },
   { 'ctrl+home',
     function(self)
       self:cur(1)
       self:visible()
+    end
+  },
+  { 'ctrl+escape',
+    function(self)
+      self:setsel(1, #self.buf.text+1)
     end
   },
   { 'ctrl+end',

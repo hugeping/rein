@@ -725,6 +725,7 @@ Arguments:
 
 Keys:
   esc           - cut, select last typed block
+  ctrl-esc      - select all text
   ctrl-s        - Save (Put) current buffer
   ctrl-w        - Close current buffer
   ctrl-o        - Previous buffer
@@ -750,11 +751,11 @@ Mouse:
 
 Some built-in commands:
 
-  select lua-rexp     - find rexp in text globally
-  select /lua-rexp/
+  gfind lua-rexp      - find rexp in text (multilines) from cursor
+  gfind /lua-rexp/
   gsub /lua-rexp/
 
-  find lua-rexp       - find rexp by lines form cur pos
+  find lua-rexp       - find rexp in text (by lines) form cursor
   find /lua-rexp/
   sub /lua-rexp/
 

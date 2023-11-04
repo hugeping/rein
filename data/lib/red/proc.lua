@@ -17,7 +17,7 @@ local function cur_skip(text, pos)
 end
 
 local function text_match(w, glob, fn, ...)
-  local s, e = (glob and 1 or w.buf.cur), #w.buf.text
+  local s, e = w.buf.cur, #w.buf.text
   local text = w.buf:gettext(s, e)
   local start, fin = fn(text, ...)
   if not start then
@@ -171,9 +171,10 @@ function proc.find(w, pat)
   return proc.sub(w, pat)
 end
 
-function proc.select(w, pat)
+function proc.gfind(w, pat)
   return proc.gsub(w, pat)
 end
+
 local function is_space(c)
   return c == ' ' or c == '\t' or c == '\n'
 end
