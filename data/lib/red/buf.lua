@@ -505,12 +505,17 @@ end
 
 function buf:save(fname)
   self.fname = fname or self.fname
-  local f, e = io.open(self.fname, "wb")
+  local r
+  local f, e = io.open(self.fname..'.red', "wb")
   if not f then
     return f, e
   end
-  f:write(self:gettext())
-  f:close()
+  r, e = f:write(self:gettext())
+  if not r then return r, e end
+  r, e = f:close()
+  if not r then return r, e end
+  r, e = os.rename(self.fname..'.new', self.fname)
+  if not r then return r, e end
   self:dirty(false)
   return true
 end
