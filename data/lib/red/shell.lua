@@ -91,6 +91,11 @@ function pipe:kill()
   self.stopped = true
 end
 
+local function shell_esc(str)
+  str = str:gsub("'", [['"'"']]);
+  return "'"..str.."'"
+end
+
 function shell.pipe(w, prog, inp, sh)
   local tmp
   if prog:empty() then
@@ -102,7 +107,7 @@ function shell.pipe(w, prog, inp, sh)
     if not os.execute("mkfifo "..tmp) then
       return
     end
-    prog = string.format("eval %q", prog)
+    prog = string.format("eval %s", shell_esc(prog))
     prog = '( ' ..prog.. ' ) <' .. (inp and tmp or '/dev/null') .. ' 2>&1'
   elseif type(inp) == 'string' then
     tmp = inp
