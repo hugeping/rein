@@ -126,6 +126,7 @@ function shell.pipe(w, prog, inp, sh)
     ret.fifo:setvbuf 'no'
   end
   w.output_pos = w:cur()
+  w.input_start = w.buf:issel() and w.buf:selrange() or w:cur()
   r = w:run(function()
     w:history 'start'
     local l
@@ -152,6 +153,10 @@ function shell.pipe(w, prog, inp, sh)
       shell.prompt(w)
     else
       w:cur(w.output_pos)
+      if w.pos >= #w.buf.text then
+        w:visible()
+      end
+      w:dirty(true)
     end
     w:history 'end'
     if tmp then
