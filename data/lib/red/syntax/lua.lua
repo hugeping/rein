@@ -38,7 +38,7 @@ local function number(ctx, txt, i)
 end
 
 local col = {
-  col = 0,
+  col = scheme.default,
   keywords = {
     { "(", ")", "{", "}", "[", "]", ".", ",", ";", ":",
       "..", "...", "==", "~=", "<=", "=>", ">", "<", "+", "-",

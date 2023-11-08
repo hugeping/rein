@@ -23,7 +23,8 @@ return {
   {"%.go$",
     { ts = 8,
       spaces_tab = false,
-      trim_spaces = true
+      trim_spaces = true,
+      syntax = "go",
     }
   },
   {"%.py$",
