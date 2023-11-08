@@ -597,6 +597,10 @@ function framemenu.cmd:Spaces(nr)
   self.frame:win().conf.spaces_tab = true
 end
 
+function framemenu.cmd:Syntax()
+  self.frame:win().conf.syntax = not self.frame:win().conf.syntax
+end
+
 function framemenu.cmd:Put()
   local b = self.frame:win()
   if not b then
@@ -787,6 +791,7 @@ Note:
   Tab [nr]            - tab on for current bufferr
   Wrap                - wrap text on/off
   Spaces              - spaces tab mode
+  Syntax              - toggle syntax hl
   dump                - hex-dump
   win                 - pseudo acme win
 
@@ -873,6 +878,10 @@ function mainmenu.cmd:New() -- Newcol
     v:update()
   end
   self.frame:refresh()
+end
+
+function mainmenu.cmd:Syntax()
+  conf.syntax = not conf.syntax
 end
 
 local mainwin = frame:new()
