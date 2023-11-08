@@ -29,7 +29,8 @@ return {
   {"%.py$",
     { ts = 4,
       spaces_tab = true,
-      trim_spaces = true
+      trim_spaces = true,
+      syntax = "python",
     }
   },
   {"%.md$", { ts = 2,
