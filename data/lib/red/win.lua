@@ -982,7 +982,7 @@ function win:dirty(dirty)
   end
   if dirty ~= nil then
     self.isdirty = dirty
-    if dirty and self.colorizer then
+    if self.colorizer then
       self.colorizer.dirty = true
     end
   end
