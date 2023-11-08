@@ -22,7 +22,7 @@ local function numbersect(ctx, txt, pos, epos)
 end
 
 local col = {
-  col = 0,
+  col = scheme.default,
   keywords = {
     { '\\*', '\\#', '\\-', '\\\\' },
   },
