@@ -503,7 +503,7 @@ function buf:dirty(fl)
   return hash ~= last
 end
 
-function buf:save(fname)
+function buf:save_atomic(fname)
   self.fname = fname or self.fname
   local r
   local f, e = io.open(self.fname..'.red', "wb")
@@ -515,6 +515,21 @@ function buf:save(fname)
   r, e = f:close()
   if not r then return r, e end
   r, e = os.rename(self.fname..'.red', self.fname)
+  if not r then return r, e end
+  self:dirty(false)
+  return true
+end
+
+function buf:save(fname)
+  self.fname = fname or self.fname
+  local r, f, e
+  f, e = io.open(self.fname, "wb")
+  if not f then
+    return f, e
+  end
+  r, e = f:write(self:gettext())
+  if not r then return r, e end
+  r, e = f:close()
   if not r then return r, e end
   self:dirty(false)
   return true
