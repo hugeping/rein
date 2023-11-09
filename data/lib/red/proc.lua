@@ -67,7 +67,9 @@ local function grep(path, rex, err)
   for _, fn in ipairs(sys.readdir(path)) do
     local p = (path ..'/'..fn):gsub("/+", "/")
     if sys.isdir(p) then
-      grep(p, rex, err)
+      if not fn:startswith '.' then
+        grep(p, rex, err)
+      end
     elseif grep_filter(fn) then
       local f = io.open(p, "rb")
       if f then
