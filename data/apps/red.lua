@@ -598,7 +598,14 @@ function framemenu.cmd:Spaces(nr)
 end
 
 function framemenu.cmd:Syntax()
-  self.frame:win().conf.syntax = not self.frame:win().conf.syntax
+  local w = self.frame:win()
+  if w.syntax then
+    w.conf.syntax = w.syntax
+    w.syntax = nil
+  else
+    w.syntax = w.conf.syntax
+    w.conf.syntax = false
+  end
 end
 
 function framemenu.cmd:Put()
