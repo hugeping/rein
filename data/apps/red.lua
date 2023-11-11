@@ -251,7 +251,7 @@ function win:save()
       end
       self.buf.cur = self.buf.cur + 1
     end
-    self:visible()
+    --self:visible()
   end
   local r, e = self.buf:save()
   if r then
