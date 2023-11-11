@@ -243,7 +243,7 @@ function win:save()
   if trim then
     local nr, pos = self.buf:line_nr()
     self.buf:set(self.buf:gettext():gsub('[ \t]+\n', '\n'):gsub("[ \t\n]+$", "\n"))
-    self:toline(nr, false)
+    self.buf:toline(nr, false)
     local start = self.buf.cur
     for i = start, start + pos - 1 do
       if not self.buf.text[i] or self.buf.text[i] == '\n' then
@@ -251,6 +251,7 @@ function win:save()
       end
       self.buf.cur = self.buf.cur + 1
     end
+    self:visible()
   end
   local r, e = self.buf:save()
   if r then
