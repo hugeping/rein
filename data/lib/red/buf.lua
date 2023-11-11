@@ -567,23 +567,30 @@ end
 
 function buf:line_nr()
   local line = 1
+  local line_pos = 1
   for i = 1, #self.text do
-    if i >= self.cur then return line end
-    if self.text[i] == '\n' then line = line + 1 end
+    if i >= self.cur then return line, i - line_pos end
+    if self.text[i] == '\n' then
+      line = line + 1
+      line_pos = i + 1
+    end
   end
-  return line
+  return line, self.cur - line_pos
 end
 
 function buf:toline(nr)
-  local line = 0
+  local line = 1
   local found
-  self.cur = 1
   for i = 1, #self.text do
-    if line >= nr then found = true break end
     self.cur = i
+    if line >= nr then found = true break end
     if self.text[i] == '\n' then line = line + 1 end
   end
-  self:linestart()
+  if not found then
+    self.cur = #self.text + 1
+  else
+    self:linestart()
+  end
   return found
 end
 

@@ -241,11 +241,15 @@ function win:save()
   end
   local trim = self:getconf 'trim_spaces'
   if trim then
-    local nr = self.buf:line_nr()
+    local nr, pos = self.buf:line_nr()
     self.buf:set(self.buf:gettext():gsub('[ \t]+\n', '\n'):gsub("[ \t\n]+$", "\n"))
-    if self.buf:line_nr() ~= nr then
-      self:toline(nr, false)
-      self:tox(self.cx or self.autox)
+    self:toline(nr, false)
+    local start = self.buf.cur
+    for i = start, start + pos - 1 do
+      if not self.buf.text[i] or self.buf.text[i] == '\n' then
+        break
+      end
+      self.buf.cur = self.buf.cur + 1
     end
   end
   local r, e = self.buf:save()
