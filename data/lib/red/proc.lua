@@ -103,9 +103,7 @@ function proc.dump(w)
     for k = 0, 15 do
       local b = string.byte(text, i + k)
       if not b then
-        for _ = k, 15 do
-          t = t .. '   '
-        end
+        t = t .. string.rep('   ', 15 - k + 1)
         break
       end
       t = t .. string.format("%02x", b) .. ' '

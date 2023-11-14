@@ -1090,10 +1090,7 @@ function win:event(r, v, a, b)
       else
         local ts = self:getconf'ts'
         local l = ts - (self.cx % ts)
-        local t = ''
-        for _ = 1, l do
-          t = t .. ' '
-        end
+        local t = string.rep(' ', l)
         self:input(t)
       end
     else
