@@ -43,7 +43,7 @@ local function pipe_proc()
   require "std"
   local sighup = require("red/posix").sighup
   local prog, cwd = thread:read()
-  if cwd then
+  if cwd and PLATFORM ~= 'Windows' then
     prog = string.format("cd %q && %s", cwd, prog)
   end
   sighup(true)

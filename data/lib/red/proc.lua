@@ -226,16 +226,19 @@ function proc.fmt(w, width)
   w:history 'end'
 end
 
-proc['!'] = function(_, pat)
+proc['!'] = function(w, pat)
   if pat:empty() then return end
   local p = thread.start(function()
-    local prog = thread:read()
+    local prog, cwd = thread:read()
     if PLATFORM ~= 'Windows' then
+      if cwd then
+        prog = string.format("cd %q && %s", cwd)
+      end
       prog = prog .. ' &'
     end
     os.execute(prog)
   end)
-  p:write(pat:unesc())
+  p:write(pat:unesc(), w.cwd)
   p:detach()
 end
 
