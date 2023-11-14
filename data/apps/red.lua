@@ -281,6 +281,9 @@ function win:path(t, from)
   if not to then return t or './' end
   if t then
     if sys.is_absolute_path(t) then
+      if not from then
+        return t
+      end
       to = sys.realpath(t)
     else
       to = sys.realpath(to .. '/' .. t)
@@ -333,7 +336,11 @@ function win:exec(t)
     end
   end
 
-  t = self:path(t)
+  if self.buf:isdir() and sys.is_absolute_path(self.buf.fname) then
+    t = sys.realpath(self.buf.fname .. t)
+  else
+    t = self:path(t)
+  end
 
   local ff = filename_line(t)
   if not sys.isdir(ff) then
@@ -343,7 +350,7 @@ function win:exec(t)
     end
     f:close()
   elseif self.buf:isdir() then
-    self.cwd = ff
+    self.cwd = sys.realpath(ff)
     self.buf.fname = (ff .. '/'):gsub("/+", "/")
     self:set ""
     self:readdir(ff)
