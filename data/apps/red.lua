@@ -348,6 +348,7 @@ function win:exec(t)
     self:set ""
     self:readdir(ff)
     self:cur(1)
+    self.pos = 1
     self.frame:update(true)
     return
   end
