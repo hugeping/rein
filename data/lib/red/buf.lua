@@ -190,13 +190,9 @@ function buf:selrange()
 end
 
 function buf:getseltext()
-  local r = ''
-  if not self:issel() then return r end
+  if not self:issel() then return '' end
   local s, e = self:selrange()
-  for i = s, e - 1 do
-    r = r .. self.text[i]
-  end
-  return r
+  return self:gettext(s, e - 1)
 end
 
 function buf:resetsel()
