@@ -163,12 +163,12 @@ function proc.sub(w, text, glob)
     if not b then
       return text:findln(a)
     end
-    local t = ''
+    local t = {}
     for l in text:lines(true) do
       l = l:gsub(a, b)
-      t = t .. l
+      table.insert(t, l)
     end
-    return t
+    return table.concat(t, '')
   end, a[1], a[2])
 end
 
