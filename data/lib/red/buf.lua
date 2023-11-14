@@ -12,11 +12,11 @@ end
 
 function buf:gettext(s, e)
   if s or e then
-    local t = ''
+    local t = {}
     for i = (s or 1), (e or #self.text) do
-      t = t .. (self.text[i] or '')
+      table.insert(t, self.text[i] or '')
     end
-    return t
+    return table.concat(t, '')
   end
   return table.concat(self.text, '')
 end
