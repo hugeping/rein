@@ -599,4 +599,9 @@ function buf:isfile()
     self.fname:startswith '+'
 end
 
+function buf:isdir()
+  return self.fname and self.fname:endswith '/' and not
+    self.fname:startswith '+'
+end
+
 return buf

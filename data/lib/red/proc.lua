@@ -74,10 +74,11 @@ local function grep(path, rex, err)
       local f = io.open(p, "rb")
       if f then
         local nr = 0
+        local path = err:path(p) --err:path(sys.realpath(p))
         for l in f:lines() do
           nr = nr + 1
           if l:find(rex) then
-            err:printf("%s:%d %s\n", p, nr, l)
+            err:printf("%s:%d %s\n", path, nr, l)
           end
           if nr % 1000 == 0 then
             coroutine.yield(true)
@@ -121,7 +122,9 @@ function proc.grep(w, rex)
   if not rex then return end
   local path = w:data() and w:data():path() or
     sys.dirname(w.frame:getfilename())
-  w = w:output('+grep')
+  w = w:output '+grep'
+  w:tail()
+  w.cwd = nil
   w:run(function() grep(path, rex, w) end)
 end
 
@@ -342,7 +345,7 @@ function proc.cat(w, f)
 end
 
 function proc.win(w)
-  w = w:output("+win")
+  w = w:output "+win"
   if not w.shell then
     shell.prompt(w)
   end

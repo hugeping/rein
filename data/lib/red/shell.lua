@@ -42,7 +42,10 @@ end
 local function pipe_proc()
   require "std"
   local sighup = require("red/posix").sighup
-  local prog = thread:read()
+  local prog, cwd = thread:read()
+  if cwd then
+    prog = string.format("cd %q && %s", cwd, prog)
+  end
   sighup(true)
   local f, e = io.popen(prog, "r")
   sighup(false)
@@ -206,19 +209,20 @@ function shell:execute(t)
     end
   elseif cmd[1] == 'cd' and #cmd == 2 then
     cmd[2] = cmd[2]:unesc()
-    local cwd = (self.cwd or '.').. '/' .. cmd[2]
+    local cwd = self:path(cmd[2])
     if sys.is_absolute_path(cmd[2]) then
       cwd = cmd[2]
     end
     if not sys.isdir(cwd) then
       self.buf:input("Error\n")
     else
-      self.cwd = sys.realpath(cwd) .. '/'
+      self.cwd = sys.realpath(cwd)
       self.buf:input(self.cwd..'\n')
+      self.frame:update(true)
     end
     shell.prompt(self)
   elseif cmd[1] == 'ls' then
-    self:readdir(self:path(cmd[2] or './'))
+    self:readdir(self:path(cmd[2]) or './')
     shell.prompt(self)
   elseif cmd[1] == 'pwd' then
     self.buf:input(sys.realpath(self:path() or './')..'\n')
