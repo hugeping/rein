@@ -125,6 +125,7 @@ local function readdir(fn)
     end
     return a < b
   end)
+  table.insert(dir, 1, '..')
   return dir
 end
 
@@ -275,26 +276,41 @@ function win:proc(t)
   end
 end
 
-function win:path(t)
-  local a = self.cwd
-  if not a then return t end
-  a = a:gsub("/+$", "")
-  a = a:split('/')
-  local b = (sys.realpath "./")
-  b = b:split('/')
+function win:path(t, from)
+  local to = self.cwd
+  if not to then return t or './' end
+  if t then
+    if sys.is_absolute_path(t) then
+      to = sys.realpath(t)
+    else
+      to = sys.realpath(to .. '/' .. t)
+    end
+  end
+  to = to:split('/')
+  from = sys.realpath(from or './')
+  from = from:split('/')
   local p = ''
-  local k = #b + 1
-  for i = 1, #b do
-    if b[i] ~= a[i] then
+  local k = #from + 1
+  for i = 1, #from do
+    if from[i] ~= to[i] then
       k = i
-      p = p .. string.rep('../', #b - i + 1)
+      p = p .. string.rep('../', #from - i)
+      p = p .. '..'
       break
     end
   end
-  for i = k, #a do
-    p = p .. a[i] .. '/'
+  for i = k, #to do
+    if p ~= '' then
+      p = p .. '/'
+    end
+    p = p .. to[i]
   end
-  return p .. (t or '')
+  if p == '' then return './' end
+  return p
+end
+
+function win:getcwd()
+  return sys.realpath(sys.dirname(self.frame:getfilename()))
 end
 
 function win:exec(t)
@@ -302,10 +318,6 @@ function win:exec(t)
 
   if self:proc(t) then
     return true
-  end
-
-  if self.buf.fname and self.buf.fname:endswith '/' then
-    t = (self.buf.fname .. t):gsub('/+', '/')
   end
 
   local fr = self.frame.frame and self.frame.frame or self.frame
@@ -322,14 +334,22 @@ function win:exec(t)
   end
 
   t = self:path(t)
-  local ff = filename_line(t)
 
+  local ff = filename_line(t)
   if not sys.isdir(ff) then
     local f = io.open(ff, "r")
     if not f then
       return
     end
     f:close()
+  elseif self.buf:isdir() then
+    self.cwd = ff
+    self.buf.fname = (ff .. '/'):gsub("/+", "/")
+    self:set ""
+    self:readdir(ff)
+    self:cur(1)
+    self.frame:update(true)
+    return
   end
   self.frame:file(t)
 end
@@ -493,7 +513,11 @@ function frame:update(force, pop)
   self:menu():set(new)
   if self:win() then
     self:win().menu = self:menu():gettext()
+    if force then
+      self:win().cwd = self:win().cwd or self:win():getcwd()
+    end
   end
+
   if sel then
     if diff_idx <= sel.s then
       sel.s = sel.s + menu_delta
@@ -598,7 +622,7 @@ function framemenu.cmd:Tab(nr)
   self.frame:win().conf.spaces_tab = false
 end
 
-function framemenu.cmd:Spaces(nr)
+function framemenu.cmd:Spaces()
   self.frame:win().conf.spaces_tab = true
 end
 
@@ -987,9 +1011,9 @@ end
 
 function mainwin:geom(x, y, w, h)
   local menu = self:menu()
-  if self.w then
-    scale = w / self.w
-  end
+--  if self.w then
+--    scale = w / self.w
+--  end
   self.x, self.y, self.w, self.h = x, y, w, h
   menu:geom(x, y, w, 0)
   menu:geom(x, y, w, menu:realheight())
@@ -1059,12 +1083,17 @@ function menu:output(n)
 --  if not n and self.frame:win() then
 --    return self.frame:win()
 --  end
+  local cwd = self:getcwd()
   n = n or "+Output"
   local w = self.frame.frame:win_by_name(n)
   if w then
-    return w.frame:open_err(n)
+    w = w.frame:open_err(n)
+    w.cwd = cwd
+    return w
   end
-  return self.frame.frame:active_frame():open_err(n)
+  w = self.frame.frame:active_frame():open_err(n)
+  w.cwd = cwd
+  return w
 end
 
 function win:data()
