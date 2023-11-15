@@ -19,6 +19,12 @@ end
 
 function menu:exec(t)
   local a = t:strip():split(1)
+  local w = self.frame:win()
+  if w and w.cmd and w.cmd[a[1]] then
+    if w.cmd[a[1]](w, a[2]) then
+      return true
+    end
+  end
   if self.cmd and self.cmd[a[1]] then
     if self.cmd[a[1]](self, a[2]) then
       return true

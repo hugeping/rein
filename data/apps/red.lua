@@ -494,6 +494,9 @@ function frame:update(force, pop)
     end
     t = t .. 'Close '
     t = t .. 'Get '
+    if self:win().cmdline then
+      t = t .. self:win().cmdline .. ' '
+    end
   end
   if self.frame:win_nr() > 1 then
     t = t .. 'Del ' -- Delcol

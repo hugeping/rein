@@ -91,12 +91,7 @@ local function grep(path, rex, err)
   end
 end
 
-function proc.dump(w)
-  local data = w:winmenu()
-  if not data then return end
-  w = w:output('+dump')
-  local s, e = data.buf:range()
-  local text = data.buf:gettext(s, e)
+local function dump(w, text)
   for i = 1, #text, 16 do
     local a, t = ''
     t = string.format("%04x | ", (i - 1)/16)
@@ -114,6 +109,34 @@ function proc.dump(w)
     end
     w:printf("%s| %s\n",t, a)
   end
+end
+
+local function dump_export(w)
+  local t = w:gettext()
+  local ret = {}
+  for l in t:lines() do
+    l = l:split('|', 2)
+    if not l[2] then break end
+    l = l[2]:split()
+    for _, v in ipairs(l) do
+      if not v:empty() then
+        table.insert(ret, string.char(tonumber('0x'..v) or 32))
+      end
+    end
+  end
+  t = table.concat(ret, '')
+  w:clear()
+  dump(w, t)
+end
+
+function proc.dump(w)
+  local data = w:winmenu()
+  if not data then return end
+  w = w:output('+dump')
+  w.cmd = { Get = dump_export }
+  local s, e = data.buf:range()
+  local text =
+  dump(w, data.buf:gettext(s, e))
 end
 
 function proc.grep(w, rex)
@@ -338,7 +361,7 @@ function proc.cat(w, f)
   if not f then return end
   w = w:data()
   if not w then return end
-  local d = io.file(f)
+  local d = io.file(w:path(f))
   if not d then return end
   local s = w:cur()
   w.buf:input(d)
