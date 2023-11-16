@@ -324,8 +324,9 @@ function win:exec(t)
   end
 
   local fr = self.frame.frame and self.frame.frame or self.frame
-  if fr:win_by_name(t) then
-    return fr:file(t)
+
+  if self.frame:win_by_name(t) then
+    return self.frame:file(t)
   end
 
   for _, u in ipairs(uri) do
@@ -343,6 +344,11 @@ function win:exec(t)
   end
 
   local ff = filename_line(t)
+
+  if not sys.isdir(ff) and fr:win_by_name(ff) then
+    return fr:file(t)
+  end
+
   if not sys.isdir(ff) then
     local f = io.open(ff, "r")
     if not f then
