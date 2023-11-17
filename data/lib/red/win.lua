@@ -1041,6 +1041,7 @@ function win:text_match(fn, ...)
   w.buf:setsel(w.buf.cur, fin)
   w.buf.cur = fin
   w:visible()
+  return true
 end
 
 function win:text_replace(fn, a, b)
