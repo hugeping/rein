@@ -945,6 +945,13 @@ function win:undo()
   self.input_start = false
 end
 
+function win:redo()
+  self:visible()
+  self.buf:redo()
+  self.autox = false
+  self.input_start = false
+end
+
 function win:paste()
   self:visible()
   self.buf:paste()
@@ -1124,6 +1131,8 @@ function win:event(r, v, a, b)
       self:linestart()
     elseif v == 'z' and input.keydown 'ctrl' then
       self:undo()
+    elseif v == 'y' and input.keydown 'ctrl' then
+      self:redo()
     elseif v == 'v' and input.keydown 'ctrl' then
       self:paste()
     elseif v == 'c' and input.keydown 'ctrl' then
