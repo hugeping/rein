@@ -4,7 +4,7 @@ local buf = {
 
 function buf:new(fname)
   local b = { cur = 1, fname = fname,
-    hist = {}, sel = {}, text = {} }
+    hist = {}, redo_hist = {}, sel = {}, text = {} }
   self.__index = self
   setmetatable(b, self)
   return b
@@ -37,8 +37,13 @@ local hist_delim = {
 ]]--
 
 function buf:history(op, pos, nr, append)
+  local text
   self:changed(true)
   pos = pos or self.cur
+  if op == 'input' then
+    text = nr
+    nr = #nr
+  end
   nr = nr or 1
   local h = self.hist[#self.hist]
   if not append or not h or h.op ~= op or op ~= 'input' or pos ~= h.pos + h.nr then
@@ -51,11 +56,50 @@ function buf:history(op, pos, nr, append)
     table.remove(self.hist, 1)
   end
   if op == 'cut' then
+    self.redo_hist = {}
     h.data = {}
     for i = 1, nr do
       table.insert(h.data, self.text[i + pos - 1])
     end
+  elseif op == 'input' then
+    self.redo_hist = {}
+    h.data = {}
+    for i = 1, nr do
+      table.insert(h.data, text[i])
+    end
   end
+  return h
+end
+
+function buf:redo()
+  if #self.redo_hist == 0 then return end
+  self:changed(true)
+  self:resetsel()
+  local depth = 0
+  repeat
+    local h = table.remove(self.redo_hist, 1)
+    if not h then break end
+    self.cur = math.min(h.cur, #self.text + 1)
+    table.insert(self.hist, h)
+    if h.op == 'start' then
+      depth = depth + 1
+    elseif h.op == 'end' then
+      depth = depth - 1
+    elseif h.op == 'input' then
+      for i = 1, h.nr do
+        table.insert(self.text, h.pos + i - 1, h.data[i])
+        self.cur = self.cur + 1
+      end
+    elseif h.op == 'cut' then
+      local new = {}
+      for i = 1, #self.text do
+        if i < h.pos or i >= h.pos + h.nr then
+          table.insert(new, self.text[i])
+        end
+      end
+      self.text = new
+    end
+  until depth == 0
 end
 
 function buf:undo()
@@ -66,6 +110,7 @@ function buf:undo()
   repeat
     local h = table.remove(self.hist, #self.hist)
     if not h then break end
+    table.insert(self.redo_hist, 1, h)
     if h.op == 'start' then
       depth = depth + 1
     elseif h.op == 'end' then
@@ -129,6 +174,7 @@ function buf:sel_line(whole)
     self:setsel(start, self.cur)
   end
 end
+
 
 local function is_space(t)
   return t == ' ' or t == '\t'
@@ -299,44 +345,45 @@ function buf:input(txt)
   local over_mode = self.over_mode
   local sel = self:issel()
   if sel or self.text[self.cur] == '\n' or
-    not self.text[self.cur] or text == '\n' then
+    not self.text[self.cur] or txt == '\n' then
     over_mode = false
   end
   local u = type(txt) == 'table' and txt or utf.chars(txt)
   if sel then
     self:history 'start'
-    self:cut(false)  elseif over_mode then
+    self:cut(false)
+  elseif over_mode then
     self:history 'start'
     self:history('cut', self.cur, #u)
   end
-  self:history('input', self.cur, #u)--, #u == 1 and not hist_delim[u[1]])
-  local txt = self.text
+  self:history('input', self.cur, u)--, #u == 1 and not hist_delim[u[1]])
+  local text = self.text
   local rebuild
   if #u > 512 and not over_mode then
     rebuild = true
+    text = {}
     for i = 1, self.cur - 1 do
-      table.insert(txt, self.text[i])
+      table.insert(text, self.text[i])
     end
-    txt = {}
   end
   local cur = self.cur
   for i = 1, #u do
     if over_mode then
-      txt[self.cur] = u[i]
+      text[self.cur] = u[i]
     else
       if rebuild then
-        table.insert(txt, u[i])
+        table.insert(text, u[i])
       else
-        table.insert(txt, self.cur, u[i])
+        table.insert(text, self.cur, u[i])
       end
     end
     self.cur = self.cur + 1
   end
   if rebuild then
     for i = cur, #self.text do
-      table.insert(txt, self.text[i])
+      table.insert(text, self.text[i])
     end
-    self.text = txt
+    self.text = text
   end
   if sel or over_mode then
     self:history 'end'
@@ -561,6 +608,7 @@ function buf:load(fname)
   end
   self.fname = fname
   self.hist = {}
+  self.redo_hist = {}
   self.text = {}
   for l in f:lines() do
     local u = utf.chars(l)

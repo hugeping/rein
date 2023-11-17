@@ -794,6 +794,7 @@ Keys:
   ctrl-home,end - first line, last line
   ctrl-k        - kill to eol
   ctrl-z        - undo
+  ctrl-z        - redo
   shift-arrows  - select
   insert        - toggle overwrite mode
   ctrl-b        - insert current line in menu (bookmark)
@@ -839,6 +840,8 @@ Note:
   dos2unix            - remove \r
   i+/i-               - indent inc/dec
   Run <prog>          - run prog in rein
+  sprited             - run sprited (rein)
+  voiced              - run voiced (rein)
   Line                - get current line in buffer
   Codepoint           - get codepoint of the sym
   Clear               - clear window
