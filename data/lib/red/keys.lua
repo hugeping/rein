@@ -19,6 +19,18 @@ return {
       self:escape()
     end
   },
+  {
+    'ctrl+]',
+    function(self)
+      self.frame:menu():exec 'i+'
+    end
+  },
+  {
+    'ctrl+[',
+    function(self)
+      self.frame:menu():exec 'i-'
+    end
+  },
   { 'ctrl+home',
     function(self)
       self:cur(1)
