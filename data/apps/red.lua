@@ -797,6 +797,7 @@ Keys:
   ctrl-z        - redo
   shift-arrows  - select
   insert        - toggle overwrite mode
+  del,backspace - delete symbol right/left
   ctrl-b        - insert current line in menu (bookmark)
 
 Mouse:
