@@ -1242,24 +1242,40 @@ function framemenu.cmd:Run(t)
 end
 
 local function select_sect(w, name)
+  if w.buf:issel() then
+    return w.buf:getseltext():strip()
+  end
+
   local c = w:cur(1)
-  w:text_match(function(text)
-    local pat = string.format("local __%s__ = %%[%%[[^%%]]*%%]%%]", name)
-    return text:find(pat)
-  end)
+
+  if not w:text_match(function(text)
+      local pat = string.format("local __%s__ = %%[%%[[^%%]]*%%]%%]", name)
+      return text:find(pat)
+    end) then
+    return
+  end
   w:cur(c)
   local t = w.buf:getseltext()
-  local s, e
-  s, e, t = t:find("^[^%[]+%[%[(.*)%]%]$")
+  local _
+  _, _, t = t:find("^[^%[]+%[%[(.*)%]%]$")
   t = t and t:strip()
   return t
 end
 
+local function write_sect(w, name, fname)
+  io.file(fname, select_sect(w, name) or '')
+end
+
 local function input_sect(w, name, text)
+  text = text:strip()
   if not text or text:empty() then return end
   local old
-  select_sect(w, name)
-  local t = string.format("local __%s__ = [[\n%s\n]]", name, text)
+  local t = select_sect(w, name)
+  if not t or t:startswith("local __") then
+    t = string.format("local __%s__ = [[\n%s\n]]", name, text)
+  else
+    t = text
+  end
   if not w.buf:issel() then
     old = w:cur()
     w.buf.cur = #w.buf.text
@@ -1269,21 +1285,25 @@ local function input_sect(w, name, text)
   if old then w:cur(old) end
 end
 
+local function read_sect(w, name, fname)
+  input_sect(w, name, io.file(fname))
+end
+
 function framemenu.cmd.voiced(w)
   local data = w:winmenu()
   if not data then return end
+
+  data.buf:resetsel()
+
   local fname = 'red-rein-data'
 
-  local t = select_sect(data, "voices")
-  io.file(fname..'.syn', t or '')
-  t = select_sect(data, "songs")
-  io.file(fname..'.sng', t or '')
+  write_sect(data, "voices", fname..'.syn')
+  write_sect(data, "songs", fname..'.sng')
 
   data:Run('voiced', fname..'.syn', fname..'.sng')
 
-  input_sect(data, "voices", io.file(fname..'.syn'))
-  input_sect(data, "songs", io.file(fname..'.sng'))
-
+  read_sect(data, "voices", fname..'.syn')
+  read_sect(data, "songs", fname..'.sng')
   os.remove(fname..'.syn')
   os.remove(fname..'.sng')
 end
@@ -1291,15 +1311,19 @@ end
 function framemenu.cmd.sprited(w)
   local data = w:winmenu()
   if not data then return end
+  local sel = data.buf:issel()
   local fname = 'red-rein-data'
 
-  local t = select_sect(data, "spr")
-  io.file(fname..'.spr', t or '')
-  t = select_sect(data, "map")
-  io.file(fname..'.map', t or '')
+  write_sect(data, "spr", fname .. '.spr')
+  if not sel then
+    write_sect(data, "map", fname .. '.map')
+  end
   data:Run('sprited', fname..'.spr')
-  input_sect(data, "spr", io.file(fname..'.spr'))
-  input_sect(data, "map", io.file(fname..'.map'))
+
+  read_sect(data, "spr", fname..'.spr')
+  if not sel then
+    read_sect(data, "map", fname..'.map')
+  end
   os.remove(fname..'.spr')
   os.remove(fname..'.map')
 end
