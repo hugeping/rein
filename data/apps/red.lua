@@ -1272,8 +1272,7 @@ end
 function framemenu.cmd.voiced(w)
   local data = w:winmenu()
   if not data then return end
-  local fname = os.tmpname()
-  os.remove(fname)
+  local fname = 'red-rein-data'
 
   local t = select_sect(data, "voices")
   io.file(fname..'.syn', t or '')
@@ -1292,8 +1291,7 @@ end
 function framemenu.cmd.sprited(w)
   local data = w:winmenu()
   if not data then return end
-  local fname = os.tmpname()
-  os.remove(fname)
+  local fname = 'red-rein-data'
 
   local t = select_sect(data, "spr")
   io.file(fname..'.spr', t or '')
