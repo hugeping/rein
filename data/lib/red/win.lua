@@ -876,6 +876,12 @@ function win:getconf(name)
 end
 
 function win:delete()
+  if self:visible() then
+    return
+  end
+  self.autox = false
+  self.input_start = false
+  self.buf:delete()
 end
 
 function win:backspace()
