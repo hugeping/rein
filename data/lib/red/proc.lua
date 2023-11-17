@@ -2,58 +2,6 @@ local shell = require "red/shell"
 
 local proc = {}
 
-local function cur_skip(text, pos)
-  local l = 1
-  local k = 0
-  while l < (pos or 1) do
-    local len = utf.next(text, l)
-    if len == 0 then
-      break
-    end
-    k = k + 1
-    l = l + len
-  end
-  return k
-end
-
-local function text_match(w, glob, fn, ...)
-  local s, e = w.buf.cur, #w.buf.text
-  local text = w.buf:gettext(s, e)
-  local start, fin = fn(text, ...)
-  if not start then
-    s, e = 1, w.buf.cur
-    text = w.buf:gettext(s, e)
-    start, fin = fn(text, ...)
-  end
-  if not start then
-    return
-  end
-  w.buf:resetsel()
-  w.buf.cur = s + cur_skip(text, start)
-  fin = s + cur_skip(text, fin + 1)
-  w.buf:setsel(w.buf.cur, fin)
-  w.buf.cur = fin
-  w:visible()
-end
-
-local function text_replace(w, glob, fn, a, b)
-  if a and (not w.buf:issel() or not b) then
-    return text_match(w, glob, fn, a)
-  end
-  local s, e = w.buf:range()
-  local text = w.buf:gettext(s, e)
-  text = fn(text, a, b)
-  w.buf:history 'start'
-  w.buf:setsel(s, e + 1)
-  w.buf:cut()
-  w.buf:input(text)
-  w.buf:history 'end'
-  if not a then
-    w.buf:setsel(s, w:cur())
-  end
-  w:visible()
-end
-
 local function grep_filter(fn)
   if fn == 'red.dump' then return false end
   local ext = { 'o', 'ko', 'exe', 'a' }
@@ -173,7 +121,7 @@ function proc.sub(w, text, glob)
   else
     a = { text }
   end
-  text_replace(w, not not glob, function(text, a, b)
+  w:text_replace(function(text, a, b)
     if glob then
       if not b then
         return text:find(a)
@@ -266,7 +214,7 @@ end
 proc["dos2unix"] = function(w)
   w = w:winmenu()
   if not w then return end
-  text_replace(w, false, function(text)
+  w:text_replace(function(text)
     local t = text:gsub("\r", "")
     return t
   end)
@@ -281,7 +229,7 @@ proc["i+"] = function(w)
   if tab_sp then
     tab = string.rep(" ", ts)
   end
-  text_replace(w, false, function(text)
+  w:text_replace(function(text)
     local t = ''
     for l in text:lines(true) do
       t = t .. tab .. l
@@ -299,7 +247,7 @@ proc["i-"] = function(w)
   if tab_sp then
     tab = string.rep(" ", ts)
   end
-  text_replace(w, false, function(text)
+  w:text_replace(function(text)
     local t = ''
     for l in text:lines(true) do
       if l:startswith(tab) then

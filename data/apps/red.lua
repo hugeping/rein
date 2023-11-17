@@ -733,6 +733,7 @@ function mainmenu.cmd:Dump()
       b.line = w.buf:line_nr()
       b.text = w.buf:gettext()
       b.menu = w.menu
+      b.cwd = w.cwd
     end
     c.menu = f:menu().buf:gettext()
     table.insert(d, c)
@@ -1213,13 +1214,17 @@ local function resume()
   sys.event_filter(oldevents)
 end
 
-function mainmenu.cmd:Run(t)
-  if not t then return end
+function win:Run(cmd, ...)
   prepare()
-  sys.exec(t)
+  sys.exec(cmd, ...)
   sys.suspend()
   -- resumed
   resume()
+end
+
+function mainmenu.cmd:Run(t)
+  if not t then return end
+  self:Run(t)
 end
 
 function framemenu.cmd:Run(t)
@@ -1227,16 +1232,75 @@ function framemenu.cmd:Run(t)
   if not t and (not w or not w.buf:isfile()) then
     return
   end
-
   if not t then
     w:save()
   end
+  self:Run(t or w.buf.fname)
+end
 
-  prepare()
-  sys.exec(t or w.buf.fname)
-  sys.suspend()
-  -- resumed
-  resume(w)
+local function select_sect(w, name)
+  local c = w:cur(1)
+  w:text_match(function(text)
+    local pat = string.format("local __%s__ = %%[%%[[^%%]]*%%]%%]", name)
+    return text:find(pat)
+  end)
+  w:cur(c)
+  local t = w.buf:getseltext()
+  local s, e
+  s, e, t = t:find("^[^%[]+%[%[(.*)%]%]$")
+  t = t and t:strip()
+  return t
+end
+
+local function input_sect(w, name, text)
+  if not text or text:empty() then return end
+  local old
+  select_sect(w, name)
+  local t = string.format("local __%s__ = [[\n%s\n]]", name, text)
+  if not w.buf:issel() then
+    old = w:cur()
+    w.buf.cur = #w.buf.text
+    w:input '\n'
+  end
+  w.buf:input(t)
+  if old then w:cur(old) end
+end
+
+function framemenu.cmd.voiced(w)
+  local data = w:winmenu()
+  if not data then return end
+  local fname = os.tmpname()
+  os.remove(fname)
+
+  local t = select_sect(data, "voices")
+  io.file(fname..'.syn', t or '')
+  t = select_sect(data, "songs")
+  io.file(fname..'.sng', t or '')
+
+  data:Run('voiced', fname..'.syn', fname..'.sng')
+
+  input_sect(data, "voices", io.file(fname..'.syn'))
+  input_sect(data, "songs", io.file(fname..'.sng'))
+
+  os.remove(fname..'.syn')
+  os.remove(fname..'.sng')
+end
+
+function framemenu.cmd.sprited(w)
+  local data = w:winmenu()
+  if not data then return end
+  local fname = os.tmpname()
+  os.remove(fname)
+
+  local t = select_sect(data, "spr")
+  io.file(fname..'.spr', t or '')
+  t = select_sect(data, "map")
+  io.file(fname..'.map', t or '')
+  data:Run('sprited', fname..'.spr')
+  input_sect(data, "spr", io.file(fname..'.spr'))
+  input_sect(data, "map", io.file(fname..'.map'))
+  os.remove(fname..'.spr')
+  os.remove(fname..'.map')
 end
 
 main:geom(0, 0, scr.w, scr.h)
@@ -1246,20 +1310,22 @@ local function load_dump(f)
   if not d then return end
   for i, v in ipairs(d) do
     mainmenu.cmd.New(mainmenu) -- Newcol
+    local fr = main:win(i)
     for _, b in ipairs(v) do
-      main:win(i):file(b.fname)
+      fr:file(b.fname)
       if b.text then
         local ww = main:win(i):win()
         ww:set(b.text)
         ww:dirty(ww.buf:dirty())
       end
       if b.line then
-        main:win(i):win():toline(b.line, false)
+        fr:win():toline(b.line, false)
       end
-      main:win(i):win().menu = b.menu
+      fr:win().menu = b.menu
+      fr:win().cwd = b.cwd
     end
     if v.menu then
-      main:win(i):menu().buf:set(v.menu)
+      fr:menu().buf:set(v.menu)
     end
   end
   if d.menu then

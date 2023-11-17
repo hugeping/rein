@@ -29,10 +29,12 @@ function buf:changed(fl)
   return c
 end
 
---local hist_delim = {
---  [" "] = true,
---  ["\n"] = true,
---}
+--[[
+local hist_delim = {
+  [" "] = true,
+  ["\n"] = true,
+}
+]]--
 
 function buf:history(op, pos, nr, append)
   self:changed(true)
@@ -308,13 +310,33 @@ function buf:input(txt)
     self:history('cut', self.cur, #u)
   end
   self:history('input', self.cur, #u)--, #u == 1 and not hist_delim[u[1]])
+  local txt = self.text
+  local rebuild
+  if #u > 512 and not over_mode then
+    rebuild = true
+    for i = 1, self.cur - 1 do
+      table.insert(txt, self.text[i])
+    end
+    txt = {}
+  end
+  local cur = self.cur
   for i = 1, #u do
     if over_mode then
-      self.text[self.cur] = u[i]
+      txt[self.cur] = u[i]
     else
-      table.insert(self.text, self.cur, u[i])
+      if rebuild then
+        table.insert(txt, u[i])
+      else
+        table.insert(txt, self.cur, u[i])
+      end
     end
     self.cur = self.cur + 1
+  end
+  if rebuild then
+    for i = cur, #self.text do
+      table.insert(txt, self.text[i])
+    end
+    self.text = txt
   end
   if sel or over_mode then
     self:history 'end'
