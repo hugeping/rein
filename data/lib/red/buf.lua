@@ -508,13 +508,13 @@ function buf:selpar(delim)
         else
           self:setsel(i + 1, pos + 1)
         end
-        return true
+        return true, c ~= delims[c]
       end
     end
   end
 
-  if ind_scan(self.text[self.cur-1], left_delim, self.cur, 1) or
-    ind_scan(self.text[self.cur], right_delim, self.cur - 1, -1) then
+  local _, v = ind_scan(self.text[self.cur-1], left_delim, self.cur, 1)
+  if not v and ind_scan(self.text[self.cur], right_delim, self.cur - 1, -1) then
     return
   end
 
