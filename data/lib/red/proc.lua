@@ -201,7 +201,7 @@ proc['!'] = function(w, pat)
     local prog, cwd = thread:read()
     if PLATFORM ~= 'Windows' then
       if cwd then
-        prog = string.format("cd %q && %s", cwd)
+        prog = string.format("cd %q && %s", cwd, prog)
       end
       prog = prog .. ' &'
     end
