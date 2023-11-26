@@ -513,8 +513,13 @@ function buf:selpar(delim)
     end
   end
 
-  local _, v = ind_scan(self.text[self.cur-1], left_delim, self.cur, 1)
-  if not v and ind_scan(self.text[self.cur], right_delim, self.cur - 1, -1) then
+  local r, v = ind_scan(self.text[self.cur-1], left_delim, self.cur, 1)
+  if v then
+    return
+  elseif ind_scan(self.text[self.cur], right_delim, self.cur - 1, -1) then
+    return
+  elseif r then
+    ind_scan(self.text[self.cur-1], left_delim, self.cur, 1)
     return
   end
 
