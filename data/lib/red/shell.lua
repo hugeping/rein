@@ -260,8 +260,8 @@ function shell:newline()
     if #h > 256 then
       table.remove(h, 1)
     end
-    h.pos = #h + 1
   end
+  h.pos = #h + 1
   shell.execute(self, t)
 end
 
