@@ -61,6 +61,7 @@ local col = {
       "short", "signed", "sizeof", "static", "struct",
       "switch", "typedef", "union", "unsigned", "void",
       "volatile", "while", "asm", "inline", "wchar_t",
+      "default",
       col = scheme.keyword, word = true
     },
     {
