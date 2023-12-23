@@ -74,16 +74,10 @@ jobs:
           path: artifact
           retention-days: 1
 
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: rein
-          path: /tmp/rein
-
       - name: Create zip
         run: |
-          ls -R
-          cd /tmp/rein
+          ls -R artifact
+          cd artifact/rein
           chmod +x rein/rein.x86-64.linux
           zip -r ../rein.zip rein/
 
