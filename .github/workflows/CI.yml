@@ -68,13 +68,13 @@ jobs:
           cp contrib/rein.html ./artifact/rein/rein-em
 
       - name: Publish Artifact
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v4
         with:
           name: rein
           path: artifact
           retention-days: 1
       - name: Download artifacts
-        uses: actions/download-artifact@main
+        uses: actions/download-artifact@v4
       - name: Create zip
         run: |
           ls -alFR
