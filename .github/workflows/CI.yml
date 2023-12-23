@@ -68,7 +68,7 @@ jobs:
           cp contrib/rein.html ./artifact/rein/rein-em
 
       - name: Publish Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@main
         with:
           name: rein
           path: artifact
