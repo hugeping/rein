@@ -73,14 +73,19 @@ jobs:
           name: rein
           path: artifact
           retention-days: 1
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
+        with:
+          name: rein
+
       - name: Create zip
         run: |
-          ls -alFR
+          ls -R
           cd rein
           chmod +x rein/rein.x86-64.linux
           zip -r ../rein.zip rein/
+
       - name: Create release and upload artifacts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
