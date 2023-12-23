@@ -73,12 +73,6 @@ jobs:
           name: rein
           path: artifact
           retention-days: 1
-  upload:
-    name: Create release and upload artifacts
-    needs:
-      - build
-    runs-on: ubuntu-latest
-    steps:
       - name: Download artifacts
         uses: actions/download-artifact@main
       - name: Create zip
