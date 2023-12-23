@@ -76,8 +76,8 @@ jobs:
 
       - name: Create zip
         run: |
-          ls -R artifact
-          cd artifact/rein
+          ls -R artifact/rein
+          cd artifact
           chmod +x rein/rein.x86-64.linux
           zip -r ../rein.zip rein/
 
