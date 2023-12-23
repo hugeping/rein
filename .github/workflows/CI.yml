@@ -52,9 +52,9 @@ jobs:
 
       - name: emscripten
         run: |
-          curl -R -O http://www.lua.org/ftp/lua-5.4.4.tar.gz
-          tar zxf lua-5.4.4.tar.gz
-          mv -f lua-5.4.4/src src/lua
+          curl -R -O https://www.lua.org/ftp/lua-5.4.6.tar.gz
+          tar zxf lua-5.4.6.tar.gz
+          mv -f lua-5.4.6/src src/lua
           rm -f src/lua/luac.c src/lua/lua.c
           . ./emsdk/emsdk_env.sh
           ./contrib/make-emscripten.sh
