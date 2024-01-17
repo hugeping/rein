@@ -407,6 +407,9 @@ function win:scroller()
   local bottom = math.floor(((self.epos or self.pos) / (len + 1)) * (self.h - 5))  if bottom - top <= scr.spw then
     bottom = top + scr.spw
   end
+  self.scroll_top = top
+  self.scroll_bottom = bottom
+
   screen:offset(self.x, self.y)
   screen:clear(0, 0, scr.spw, self.h, conf.bg)
   screen:rect(0, 0, scr.spw - 1, self.h - 1, conf.fg)
@@ -530,7 +533,7 @@ end
 function win:motion(x, y)
   local _, _, mb = input.mouse()
   if self.scrolling then
-    self:scroll(y)
+    self:scroll(y - self.scrolling)
     return
   end
   if not self.autoscroll_on then
@@ -683,8 +686,13 @@ function win:mousedown(mb, x, y)
     return
   end
   if x < scr.spw then
-    self:scroll(y)
-    self.scrolling = true
+    self:scroller()
+    if y >= self.scroll_top and y < self.scroll_bottom then
+      self.scrolling = y - self.scroll_top
+    else
+      self.scrolling = 0
+      self:scroll(y)
+    end
   else
     self.buf.cur, nl = self:off2cur(x, y)
     self.autox = self:off2pos(x, y)
