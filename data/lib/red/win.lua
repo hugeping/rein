@@ -733,11 +733,11 @@ function win:prevline()
   return true
 end
 
-function win:movesel()
+function win:movesel(noreset)
   if input.keydown 'shift' then
     self.buf:getsel().e = self.buf.cur
     return true
-  else
+  elseif not noreset then
     self.buf:resetsel()
   end
 end
@@ -1121,7 +1121,7 @@ function win:event(r, v, a, b)
       self:prevpage()
       self.buf.cur = self.pos
       self:tox(self.autox)
-      self:movesel()
+      self:movesel(true)
     elseif v == 'pagedown' or v == 'keypad 3' then
       if self:nextpage() then
         self.buf.cur = self.pos
@@ -1129,7 +1129,7 @@ function win:event(r, v, a, b)
       else
         self:cur(#self.buf.text+1)
       end
-      self:movesel()
+      self:movesel(true)
     elseif v == 'return' then
       self:newline()
     elseif v == 'backspace' then
