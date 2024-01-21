@@ -712,7 +712,7 @@ end
 local mainmenu = menu:new()
 mainmenu.cmd = {}
 
-mainmenu.buf:set 'New Horizont Help GetAll PutAll Dump Exit'
+mainmenu.buf:set 'Help GetAll PutAll Dump Exit Horizont New'
 
 function mainmenu:scroller()
   screen:clear(self.x, self.y, scr.spw, self.h,
