@@ -677,7 +677,11 @@ function win:Get()
     self:readdir(f)
     self:cur(1)
   elseif self.buf:isfile() then
-    self.buf:load()
+    local r, e = self.buf:load()
+    if not r then
+      self.frame:err(e)
+      return
+    end
     self:dirty(self.buf:dirty())
     self:cur(self:cur())
   end

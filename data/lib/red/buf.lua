@@ -630,7 +630,7 @@ end
 function buf:loadornew(fname)
   if not self:load(fname) then
     self.fname = fname
-    self:dirty(false)
+    self:dirty(true)
     return false
   end
   return true
