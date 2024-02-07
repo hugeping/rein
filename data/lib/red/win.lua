@@ -442,7 +442,7 @@ function win:colorize()
     end
   end
   local scheme = self:getconf 'syntax'
-  if not scheme then return end
+  if type(scheme) ~= 'string' then return end
   colorizer = colorizer or syntax.new(self.buf.text, 1, scheme)
   if not colorizer then
     return
