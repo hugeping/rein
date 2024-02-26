@@ -391,6 +391,8 @@ PlatformInit(int argc, const char **argv)
 				opt_nojoystick = 1;
 			else if (!strcmp(argv[i], "-platform-xclip"))
 				opt_xclip = 1;
+			else if (!strcmp(argv[i], "-platform-xclip-only"))
+				opt_xclip = 2;
 		}
 	}
 
@@ -1053,11 +1055,16 @@ Clipboard(const char *text)
 #if SDL_VERSION_ATLEAST(2, 26, 0)
 		if (opt_xclip && SDL_HasPrimarySelectionText())
 			c = SDL_GetPrimarySelectionText();
+		if (opt_xclip > 1)
+			goto skip;
 #endif
 		if (!c && !SDL_HasClipboardText())
 			return NULL;
 		if (!c)
 			c = SDL_GetClipboardText();
+#if SDL_VERSION_ATLEAST(2, 26, 0)
+skip:
+#endif
 		if (!c)
 			return NULL;
 		p = strdup(c);
@@ -1065,8 +1072,11 @@ Clipboard(const char *text)
 		return p;
 	}
 #if SDL_VERSION_ATLEAST(2, 26, 0)
-	if (opt_xclip)
+	if (opt_xclip) {
 		SDL_SetPrimarySelectionText(text);
+		if (opt_xclip > 1)
+			return NULL;
+	}
 #endif
 	SDL_SetClipboardText(text);
 	return NULL;
