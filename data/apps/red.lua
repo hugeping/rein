@@ -771,7 +771,7 @@ function mainmenu.cmd:Help()
   local w = self.frame:open_err("+Help")
   w.conf.wrap = true
   w:clear()
-  w:printf([[
+  w:printf([==[
            ___  _______
           / _ \/ __/ _ \
          / , _/ _// // /
@@ -782,7 +782,7 @@ function mainmenu.cmd:Help()
        https://hugeping.ru
 
 Arguments:
-  rein [-platform-nojoystick] [-platform-nosound] [-platform-xclip]
+  rein [-platform-nojoystick] [-platform-nosound] [-platform-xclip[-only]]
       red [-fs <font size>] [-nodump] [-confdir <dir>]
 
 Keys:
@@ -832,7 +832,7 @@ Note:
   !cmd                - run cmd
   <cmd                - run cmd and get output
   @cmd                - run cmd <text> and get output
-]])
+]==])
   if PLATFORM ~= 'Windows' then
     w:printf([[
   >cmd                - cat <text> | cmd > output
