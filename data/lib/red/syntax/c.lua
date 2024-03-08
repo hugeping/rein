@@ -92,6 +92,14 @@ local col = {
     },
     col = scheme.string,
   },
+  { -- string
+    start = "'",
+    stop = "'",
+    keywords = {
+      { "\\'", "\\\\" },
+    },
+    col = scheme.string,
+  },
 }
 
 return col
