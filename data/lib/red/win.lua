@@ -687,6 +687,9 @@ function win:mousedown(mb, x, y)
   end
   if x < scr.spw then
     self:scroller()
+    if not self.scroll_top then
+      return
+    end
     if y >= self.scroll_top and y < self.scroll_bottom then
       self.scrolling = y - self.scroll_top
     else
