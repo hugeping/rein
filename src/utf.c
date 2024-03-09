@@ -42,11 +42,11 @@ utf_bb(const char *s, const char *e)
 static int
 utf_next(lua_State *L)
 {
-	int l = 0, len;
-	const char *s = luaL_optstring(L, 1, NULL);
+	int l = 0;
+	size_t len = 0;
+	const char *s = luaL_optlstring(L, 1, NULL, &len);
 	int idx = luaL_optnumber(L, 2, 1) - 1;
 	if (s && idx >= 0) {
-		len = strlen(s);
 		if (idx < len)
 			l = utf_ff(s + idx, s + len - 1);
 	}
@@ -58,22 +58,22 @@ static int
 utf_chars(lua_State *L)
 {
 	int l, idx = 1;
+	size_t len = 0;
 	char sym[16];
 	const char *e;
-	const char *s = luaL_optstring(L, 1, NULL);
+	const char *s = luaL_optlstring(L, 1, NULL, &len);
 	lua_newtable(L);
 	if (!s)
 		return 1;
-	e = s + strlen(s) - 1;
+	e = s + len - 1;
 
 	while (s <= e) {
 		l = utf_ff(s, e);
 		if (!l || l >= sizeof(sym))
 			break;
 		memcpy(sym, s, l);
-		sym[l] = 0;
 		s += l;
-		lua_pushstring(L, sym);
+		lua_pushlstring(L, sym, l);
 		lua_rawseti(L, -2, idx ++);
 	}
 	return 1;

@@ -614,14 +614,7 @@ function buf:load(fname)
   self.fname = fname
   self.hist = {}
   self.redo_hist = {}
-  self.text = {}
-  for l in f:lines() do
-    local u = utf.chars(l)
-    for i = 1, #u do
-      table.insert(self.text, u[i])
-    end
-    table.insert(self.text, "\n")
-  end
+  self.text = utf.chars(f:read '*all') or {}
   self:dirty(false)
   f:close()
   return true
