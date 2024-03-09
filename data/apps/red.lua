@@ -807,7 +807,7 @@ Keys:
   ctrl-home,end - first line, last line
   ctrl-k        - kill to eol
   ctrl-z        - undo
-  ctrl-z        - redo
+  ctrl-y        - redo
   shift-arrows  - select
   insert        - toggle overwrite mode
   del,backspace - delete symbol right/left
