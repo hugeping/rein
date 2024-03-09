@@ -718,7 +718,16 @@ mainmenu.cmd = {}
 
 mainmenu.buf:set 'Help GetAll PutAll Dump Exit Horizont New'
 
-function mainmenu:scroller()
+function mainmenu:scroller(click)
+  if click then
+    for w in self.frame:for_win() do
+      local ww = w:dirty()
+      if ww and ww.frame:win() ~= ww then
+        ww.frame:push_win(ww)
+        break
+      end
+    end
+  end
   screen:clear(self.x, self.y, scr.spw, self.h,
     self.frame:dirty() and conf.active or conf.button)
   screen:rect(self.x, self.y,
