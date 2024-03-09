@@ -20,6 +20,15 @@ local delim_exec = {
   [" "] = true,
   ["\n"] = true,
   ["\t"] = true,
+  ["'"] = true,
+  ['"'] = true,
+}
+
+local delim_compl = {
+  noline = true,
+  [" "] = true,
+  ["\n"] = true,
+  ["\t"] = true,
 }
 
 function scr:init()
@@ -293,7 +302,10 @@ function win:toline(nr, sel)
   end
 
   local start = self.buf.cur
-  if sel ~= false then
+  if type(sel) == 'number' and sel ~= 0 then
+    self.buf:linestart()
+    self:cur(self:cur()+sel)
+  elseif sel ~= false then
     self.buf:lineend()
     self.buf:setsel(start, self.buf.cur)
   end
@@ -615,7 +627,7 @@ end
 function win:compl()
   local txt = self.buf:getseltext()
   if not self.buf:issel() then
-    self.buf:selpar(delim_exec)
+    self.buf:selpar(delim_compl)
     txt = self.buf:getseltext()
   end
   if txt == self.last_compl then

@@ -95,11 +95,18 @@ end
 
 local function filename_line(fn)
   local a = fn:split ':'
-  if #a > 1 and tonumber(a[#a]) then
-    local nr = tonumber(table.remove(a, #a))
-    return table.concat(a, ':'), nr
+  if fn:endswith ':' then
+    table.remove(a, #a)
   end
-  return fn, 0
+  if #a > 1 and tonumber(a[#a]) then
+    local pos = 0
+    if #a > 2 and tonumber(a[#a-1]) then
+      pos = tonumber(table.remove(a, #a))
+    end
+    local nr = tonumber(table.remove(a, #a))
+    return table.concat(a, ':'), nr, pos
+  end
+  return fn, 0, 0
 end
 
 local function dirpath(base, file)
@@ -417,7 +424,7 @@ function frame:push_win(b)
 end
 
 function frame:file(f)
-  local fn, nr = filename_line(f)
+  local fn, nr, col = filename_line(f)
   local dir = sys.isdir(fn)
   if dir then
     fn = dirpath(fn)
@@ -425,7 +432,7 @@ function frame:file(f)
   local b = self:win_by_name(f)
   if b then -- already opened
     self:push_win(b)
-    self:win():toline(nr)
+    self:win():toline(nr, col)
     return
   end
 
@@ -445,7 +452,7 @@ function frame:file(f)
     end
   end
   self:push_win(b)
-  self:win():toline(nr)
+  self:win():toline(nr, col)
 end
 
 function frame:getfilename()
