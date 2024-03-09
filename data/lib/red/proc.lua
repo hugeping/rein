@@ -75,6 +75,21 @@ local function dump_export(w)
   t = table.concat(ret, '')
   w:clear()
   dump(w, t)
+  return t
+end
+
+local function dump_save(self)
+  if not self.buf:isfile() then
+    return
+  end
+  local r, e = io.file(self.buf.fname, dump_export(self) or '')
+  self.buf:dirty(false)
+  if r then
+    self:nodirty()
+  else
+    self.frame:err(e)
+  end
+  return r, e
 end
 
 function proc.dump(w)
@@ -82,6 +97,7 @@ function proc.dump(w)
   if not data then return end
   w = w:output('+dump')
   w.cmd = { Get = dump_export }
+  w.save = dump_save
   local s, e = data.buf:range()
   local text =
   dump(w, data.buf:gettext(s, e))
