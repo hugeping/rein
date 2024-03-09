@@ -47,16 +47,11 @@ function tcp:poll()
   if not self.sock then
     return false
   end
-  local i = 1
-  local len = self.data:len()
-  local ret
-  ret = self.sock:recv(1024)
+  local ret, e = self.sock:recv(1024)
   if not ret then
-    return false, "Error receiving"
+    return false, e
   end
-  if ret then
-    self.data = self.data .. ret
-  end
+  self.data = self.data .. ret
   return self.data:len()
 end
 
@@ -64,7 +59,22 @@ function tcp:recv(len)
   if not self.sock then
     return false
   end
+  local dlen = self.data:len()
+  local rlen = math.min(len, dlen)
+  if rlen > 0 then
+    local d = self.data:sub(1, rlen)
+    self.data = self.data:sub(rlen + 1)
+    local dd = self.sock:recv(len - rlen)
+    return d .. (dd or '')
+  end
   return self.sock:recv(len)
+end
+
+function tcp:println(fmt, a, ...)
+  if a ~= nil then
+    fmt = string.format(fmt, a, ...)
+  end
+  return self.sock:send((fmt or '')..'\r\n')
 end
 
 function tcp:send(...)
@@ -74,20 +84,32 @@ function tcp:send(...)
   return self.sock:send(...)
 end
 
-function tcp:lines(wait)
+function tcp:readln(wait)
   while wait and not self.data:find("\n") do
-    self:poll()
+    local r, e = self:poll()
+    if not r then
+      return r, e
+    end
     if sys.incoroutine then
       coroutine.yield()
     else
       sys.sleep(DELAY)
     end
   end
-  if not self.data:find("\n") then return function() end end
+  if not self.data:find("\n") then return nil end
   local str = self.data
-  local s = str:gsub("^(.*\n)[^\n]*$", "%1")
-  self.data = str:sub(s:len()+1) or ''
-  return string.lines(s)
+  local s = str:find("\n", 1, true)
+  self.data = str:sub(s + 1)
+  if str:sub(s-1, s-1) == '\r' then
+    s = s - 1
+  end
+  return str:sub(1, s-1)
+end
+
+function tcp:lines(wait)
+  return function()
+    return self:readln(wait)
+  end
 end
 
 return sock
