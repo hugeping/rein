@@ -88,10 +88,10 @@ function core.stop(fn)
 end
 
 function core.running()
-  if _VERSION == "Lua 5.1" then
+  local r, v = coroutine.running()
+  if v == nil then
     return coroutine.running()
   end
-  local _, v = coroutine.running()
   return not v
 end
 
