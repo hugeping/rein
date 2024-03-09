@@ -55,10 +55,36 @@ function tcp:poll()
   return self.data:len()
 end
 
-function tcp:recv(len)
+function tcp:wait(fn)
+  while not fn(self.data) do
+    local r, e = self:poll()
+    if not r then
+      return r, e
+    end
+    if sys.incoroutine then
+      coroutine.yield()
+    else
+      sys.sleep(DELAY)
+    end
+  end
+end
+
+function tcp:recv(len, wait)
   if not self.sock then
     return false
   end
+
+  if wait then
+    local r, e = self:wait(function(s) return s:len() >= len end)
+    if not r then
+      if self.data ~= '' then
+        r, self.data = self.data, ''
+        return r
+      end
+      return r, e
+    end
+  end
+
   local dlen = self.data:len()
   local rlen = math.min(len, dlen)
   if rlen > 0 then
@@ -85,15 +111,14 @@ function tcp:send(...)
 end
 
 function tcp:readln(wait)
-  while wait and not self.data:find("\n") do
-    local r, e = self:poll()
+  if wait then
+    local r, e = self:wait(function(s) return s:find "\n" end)
     if not r then
+      if self.data ~= '' then
+        r, self.data = self.data, ''
+        return r
+      end
       return r, e
-    end
-    if sys.incoroutine then
-      coroutine.yield()
-    else
-      sys.sleep(DELAY)
     end
   end
   if not self.data:find("\n") then return nil end
