@@ -523,7 +523,7 @@ function buf:selpar(delim)
     return
   end
 
-  if self.text[self.cur] == '\n' then -- whole line
+  if not delim.noline and self.text[self.cur] == '\n' then -- whole line
     self:sel_line()
     return
   end
