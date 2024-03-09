@@ -686,7 +686,7 @@ function win:mousedown(mb, x, y)
     return
   end
   if x < scr.spw then
-    self:scroller()
+    self:scroller(true)
     if not self.scroll_top then
       return
     end
