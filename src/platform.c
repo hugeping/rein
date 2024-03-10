@@ -974,6 +974,25 @@ Thread(int (*fn) (void *), void *data)
 	return han_open(&threads, thread);
 }
 
+static void
+nonblock(int fd)
+{
+#if defined(O_NONBLOCK)
+	fcntl(fd, F_SETFL, O_NONBLOCK);
+#elif defined(WIN32)
+	{
+		unsigned long mode = 1;
+		ioctlsocket(fd, FIONBIO, &mode);
+	}
+#endif
+#ifdef TCP_NODELAY
+	{
+		int yes = 1;
+		setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char*)&yes, sizeof(yes));
+	}
+#endif
+}
+
 int
 Dial(const char *host, const char *port)
 {
@@ -995,28 +1014,15 @@ Dial(const char *host, const char *port)
 	for (r = res; r; r = r->ai_next) {
 		if ((fd = socket(r->ai_family, r->ai_socktype, r->ai_protocol)) < 0)
 			continue;
-		if (!connect(fd, r->ai_addr, r->ai_addrlen))
+		nonblock(fd);
+		if (!connect(fd, r->ai_addr, r->ai_addrlen) ||
+			errno == EINPROGRESS)
 			break;
 		close(fd);
 	}
-
 	freeaddrinfo(res);
 	if (!r)
 		return -1;
-#if defined(O_NONBLOCK)
-	fcntl(fd, F_SETFL, O_NONBLOCK);
-#elif defined(WIN32)
-	{
-		unsigned long mode = 1;
-		ioctlsocket(fd, FIONBIO, &mode);
-	}
-#endif
-#ifdef TCP_NODELAY
-	{
-		int yes = 1;
-		setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char*)&yes, sizeof(yes));
-	}
-#endif
 	return fd;
 }
 
@@ -1025,7 +1031,8 @@ Send(int fd, const void *data, int size)
 {
 	int rc;
 	rc = send(fd, (const char *)data, (size_t)size, 0);
-	if (rc < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+	if (rc < 0 && (errno == EAGAIN || errno == EWOULDBLOCK ||
+		errno == EINPROGRESS))
 		return 0;
 	return rc;
 }
