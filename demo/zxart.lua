@@ -190,7 +190,14 @@ end
 while sys.running() do
   local r, v = inp(true)
   if r == 'keydown' then
-    if v == 'right' or v == 'space' then
+    if slides then
+      if v == 'z' or v == 'left' or v == 'right' or v == 'space'
+        or v == 'backspace' or v == 'down' or v == 'up' then
+        slides = false
+      else
+        last = -SLIDESHOW_DELAY
+      end
+    elseif v == 'right' or v == 'space' then
       cur = cur + delta
       delta = delta
     elseif v == 'left' or v == 'backspace' then
@@ -208,8 +215,8 @@ while sys.running() do
       cur = (tonumber(inputln()) or cur+1) - 1
       fill_rect(0, title_y+32, 255, title_y + 32+7, 0)
     elseif v == 'z' then -- slideshow
-      slides = not slides
-      last = -100;
+      slides = true
+      last = -SLIDESHOW_DELAY;
     end
   end
   slide_note()
