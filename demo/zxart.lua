@@ -131,8 +131,9 @@ local function get_pict()
   printf(0, 0, 16, "Connecting..")
   json, e = sk:recv(e, true)
   if not json then
-    printf(0, 10, 16, "Error: "..e)
-    return json, e
+    sk:close()
+    printf(0, 10, 16, "Error: %s", e)
+    return false, e
   end
   printf(0, 0, 16, "Connecting...")
   local id = json_num(json, "id")
