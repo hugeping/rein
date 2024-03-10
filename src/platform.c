@@ -1014,12 +1014,12 @@ Dial(const char *host, const char *port)
 	for (r = res; r; r = r->ai_next) {
 		if ((fd = socket(r->ai_family, r->ai_socktype, r->ai_protocol)) < 0)
 			continue;
-		nonblock(fd);
 		if (!connect(fd, r->ai_addr, r->ai_addrlen) ||
 			errno == EINPROGRESS)
 			break;
 		close(fd);
 	}
+	nonblock(fd);
 	freeaddrinfo(res);
 	if (!r)
 		return -1;
