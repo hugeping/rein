@@ -67,6 +67,7 @@ function tcp:wait(fn)
       sys.sleep(DELAY)
     end
   end
+  return true
 end
 
 function tcp:recv(len, wait)
