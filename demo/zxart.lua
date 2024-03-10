@@ -124,7 +124,7 @@ local function get_pict()
     return false, e
   end
   printf(0, 0, 16, "Connecting.")
-  e = http_get(sk, string.format("/api/types:zxPicture/export:zxPicture/start:%d/limit:1/order:date,asc/filter:zxPictureType=standard;zxPictureTagsExclude=18+,;", cur))
+  e = http_get(sk, string.format("/api/types:zxPicture/export:zxPicture/start:%d/limit:1/order:date,asc/filter:zxPictureType=standard;zxPictureTagsExclude=%%D0%%9E%%D0%%B1%%D0%%BD%%D0%%B0%%D0%%B6%%D0%%B5%%D0%%BD%%D0%%BA%%D0%%B0,", cur))
   local json
   printf(0, 0, 16, "Connecting..")
   json, e = sk:recv(e, true)
@@ -172,7 +172,7 @@ border(0)
 fill_rect(0, 0, 255, 255, 0)
 gfx.fg(16)
 gfx.bg(0)
-cur = 14000-1
+cur = 0
 show()
 
 local last = time()
