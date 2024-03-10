@@ -490,12 +490,12 @@ function buff:keyup(k)
 end
 
 function buff:exec(prog, ...)
+  local state = sys.prepare()
   mixer.init()
-  gfx.win(256, 256)
-  screen:clear(conf.bg)
-  sys.input(true)
+  sys.reset()
   sys.exec(prog, ...)
   sys.suspend()
+  sys.resume(state)
 end
 
 function buff:readsel(fname)
@@ -801,11 +801,6 @@ while sys.running() do
     b:show_flush()
     inp:show_flush()
     mixer.done()
-    sys.hidemouse(false)
-    screen:nooffset()
-    screen:noclip()
-    sys.input(true) -- clear input
-    sys.event_filter().resized = conf.scalable
     gfx.win(W, H, sfont)
     if idle_mode == 'voices' then
       if not b:selected() then

@@ -1178,6 +1178,9 @@ function run()
   while sys.running() do
     local r, v, a, b = sys.input()
     local mx, my, mb = input.mouse()
+    if v == 'middle' then
+      mb[v] = r == 'mousedown'
+    end
     if help_mode then
       screen:clear {0xff, 0xff, 0xe8, 0xff}
       if r == 'keydown' or r == 'mousedown' then
