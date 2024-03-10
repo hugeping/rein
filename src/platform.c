@@ -979,7 +979,7 @@ nonblock(int fd)
 {
 #if defined(O_NONBLOCK)
 	fcntl(fd, F_SETFL, O_NONBLOCK);
-#elif defined(WIN32)
+#elif defined(_WIN32)
 	{
 		unsigned long mode = 1;
 		ioctlsocket(fd, FIONBIO, &mode);
@@ -1053,7 +1053,11 @@ Recv(int fd, void *data, int size)
 void
 Shutdown(int fd)
 {
+#ifdef _WIN32
+	closesocket(fd);
+#else
 	close(fd);
+#endif
 }
 
 char *
