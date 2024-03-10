@@ -78,7 +78,7 @@ local logo = gfx.new
 local function header()
   logo:blend(screen, 4, 6)
   gfx.printf(40, 4, 1, [[REIN Version:%s
-(c)2023 Peter Kosyh
+(c)2023-2024 Peter Kosyh
 https://hugeping.ru
 
 Peter Sovietov
