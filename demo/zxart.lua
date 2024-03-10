@@ -218,7 +218,7 @@ local slides
 local function slide_note()
   clear(0, 256-8, 256, 8, 0)
   if slides then
-    print("Slideshow", 0, 256 - 8, 2)
+    print("Slideshow", 192, 256 - 8, 2)
   end
 end
 
