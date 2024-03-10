@@ -195,7 +195,8 @@ while sys.running() do
   if r == 'keydown' then
     if slides then
       if v == 'z' or v == 'left' or v == 'right' or v == 'space'
-        or v == 'backspace' or v == 'down' or v == 'up' then
+        or v == 'backspace' or v == 'down' or v == 'up' or
+        v == 'escape' then
         slides = false
       else
         last = -SLIDESHOW_DELAY
