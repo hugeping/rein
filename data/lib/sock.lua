@@ -8,7 +8,11 @@ tcp.__index = tcp
 
 function sock.dial(addr, port)
   local s = { data = '' }
-  s.sock = net.dial(addr, port)
+  local e
+  s.sock, e = net.dial(addr, port)
+  if not s.sock then
+    return false, e
+  end
   setmetatable(s, tcp)
   return s
 end

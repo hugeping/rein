@@ -116,11 +116,12 @@ end
 
 local function get_pict()
   nr = nr or 0
+  fill_rect(0, 0, 256, 256, 0)
   local sk, e = sock.dial('zxart.ee', 80)
   if not sk then
+    printf(0, 10, 16, "Error: "..e)
     return false, e
   end
-  fill_rect(0, 0, 256, 256, 0)
   printf(0, 0, 16, "Connecting.")
   e = http_get(sk, string.format("/api/types:zxPicture/export:zxPicture/start:%d/limit:1/order:date,asc/filter:zxPictureType=standard;", cur))
   local json
