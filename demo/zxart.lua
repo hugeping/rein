@@ -1,4 +1,5 @@
 require "tiny"
+local SLIDESHOW_DELAY = 4
 local title_y = 256-60
 local sock = require "sock"
 local total = 0
@@ -83,6 +84,7 @@ local function url_unesc(l)
   l = l:gsub("#([0-9]+);", function(s)
     return string.char(tonumber(s))
   end)
+  l = l:gsub("#", "%%23")
   return l
 end
 
@@ -116,14 +118,13 @@ end
 
 local function get_pict()
   nr = nr or 0
-  fill_rect(0, 0, 256, 256, 0)
   local sk, e = sock.dial('zxart.ee', 80)
   if not sk then
     printf(0, 10, 16, "Error: "..e)
     return false, e
   end
   printf(0, 0, 16, "Connecting.")
-  e = http_get(sk, string.format("/api/types:zxPicture/export:zxPicture/start:%d/limit:1/order:date,asc/filter:zxPictureType=standard;", cur))
+  e = http_get(sk, string.format("/api/types:zxPicture/export:zxPicture/start:%d/limit:1/order:date,asc/filter:zxPictureType=standard;zxPictureTagsExclude=18+,;", cur))
   local json
   printf(0, 0, 16, "Connecting..")
   json, e = sk:recv(e, true)
@@ -166,22 +167,33 @@ local function show()
   bank(2, f);
   return true
 end
+
 border(0)
+fill_rect(0, 0, 255, 255, 0)
 gfx.fg(16)
 gfx.bg(0)
 cur = 14000-1
 show()
+
+local last = time()
 local old = cur
 local delta = 1
+local slides
+
+local function slide_note()
+  fill_rect(0, 256-8, 255, 255, 0)
+  if slides then
+    print("Slideshow", 0, 256 - 8, 2)
+  end
+end
+
 while sys.running() do
-  local r, v
-  r, v = inp()
-  if r == 'text' and v == 'z' then r, v = 'keydown', 'return' end
+  local r, v = inp(true)
   if r == 'keydown' then
-    if v == 'right' then
+    if v == 'right' or v == 'space' then
       cur = cur + delta
       delta = delta
-    elseif v == 'left' then
+    elseif v == 'left' or v == 'backspace' then
       cur = cur - delta
       delta = delta
     elseif v == 'down' then
@@ -195,18 +207,30 @@ while sys.running() do
       print("Number:", 0, title_y+32, 16)
       cur = (tonumber(inputln()) or cur+1) - 1
       fill_rect(0, title_y+32, 255, title_y + 32+7, 0)
+    elseif v == 'z' then -- slideshow
+      slides = not slides
+      last = -100;
     end
   end
+  slide_note()
   cur = min(cur, total-1)
   cur = max(cur, 0)
+  if slides and time() - last  > SLIDESHOW_DELAY then
+    cur = rnd(total) - 1
+    r = 'keyup'
+  end
   if old ~= cur then
     fill_rect(0, title_y, 255, title_y + 7, 0)
     printf(0,title_y,16, "%d/%d", cur + 1, total)
     if r == 'keyup' then
       delta = 1
+      fill_rect(0, 0, 255, 255-8, 0)
+      dprint("get picture ".. tostring(cur))
       show()
+      last = time()
       old = cur
     end
+    slide_note()
   end
   flip(1, true)
 end
