@@ -34,36 +34,10 @@ local select = 1
 local D = FH + 2
 local NR = math.floor((H - 70)/ D) - 4
 
-local oldevents
-local function prepare()
-  screen:clear(16)
-  gfx.border{ 0xde, 0xde, 0xde }
-  sys.input(true) -- clear input
-  oldevents = table.clone(sys.event_filter())
-end
-
 local function init()
   rescan_dirs()
   sys.title "REIN"
   gfx.icon(gfx.new(DATADIR..'/icon.png'))
-end
-
-local function resume()
-  init()
-  gfx.border{ 0xde, 0xde, 0xde }
-  mixer.done()
-  mixer.init()
-  sys.hidemouse(false)
-  screen:nooffset()
-  screen:noclip()
-  sys.input(true) -- clear input
-  local w, h = screen:size()
-  if w ~= W or h ~= H then
-    gfx.win(W, H) -- resume screen
-  else
-    screen:clear(16)
-  end
-  sys.event_filter(oldevents)
 end
 
 local logo = gfx.new
@@ -208,17 +182,20 @@ shift+esc-return to this launcher]])
     elseif v == 'f1' then
       help_mode = true
     elseif v == 'z' or v == 'return' or v == 'space' then
-      prepare()
+      local state = sys.prepare()
+      sys.reset()
       sys.exec(apps[select][1])
       sys.suspend()
       -- resumed
-      resume()
+      init()
+      sys.resume(state)
     elseif v == 'x' then
-      prepare()
+      local state = sys.prepare()
+      sys.reset()
       sys.exec("edit", apps[select][1])
       sys.suspend()
       -- resumed
-      resume()
+      sys.resume(state)
     elseif (v == 'delete' or v == 'backspace') then -- and not apps[select].tag then
       delete_mode = 2
     elseif v == 'y' and delete_mode then

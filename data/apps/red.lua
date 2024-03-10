@@ -1216,34 +1216,15 @@ function mainwin:active_frame()
   return self:win(i)
 end
 
-local oldevents
-local function prepare()
-  screen:clear(16)
-  gfx.border{ 0xde, 0xde, 0xde }
-  sys.input(true) -- clear input
-  oldevents = table.clone(sys.event_filter())
-  gfx.win(256, 256)
-end
-
-local function resume()
-  win:init(conf)
-  main:geom(0, 0, scr.w, scr.h)
-  gfx.border{ 0xde, 0xde, 0xde }
-  mixer.done()
-  mixer.init()
-  sys.hidemouse(false)
-  screen:nooffset()
-  screen:noclip()
-  sys.input(true) -- clear input
-  sys.event_filter(oldevents)
-end
-
 function win:Run(cmd, ...)
-  prepare()
+  local state = sys.prepare()
+  sys.reset()
   sys.exec(cmd, ...)
   sys.suspend()
   -- resumed
-  resume()
+  sys.resume(state)
+  win:init(conf)
+  main:geom(0, 0, scr.w, scr.h)
 end
 
 function mainmenu.cmd:Run(t)

@@ -531,6 +531,45 @@ function env.sys.suspend()
   return coroutine.yield 'suspend'
 end
 
+function env.sys.resume(t)
+  if t then
+    env.gfx.win(t.w, t.h)
+    env.gfx.border(t.border)
+    env.gfx.fg(t.fg)
+    env.gfx.bg(t.bg)
+    env.sys.event_filter(t.events)
+  end
+  env.mixer.done()
+  env.mixer.init()
+  env.sys.hidemouse(false)
+  env.screen:nooffset()
+  env.screen:noclip()
+  env.sys.input(true) -- clear input
+end
+
+function env.sys.prepare()
+  local t = { }
+  t.w, t.h = env.screen:size()
+  t.border = table.clone(env.gfx.border())
+  t.fg, t.bg = table.clone(env.gfx.fg()), table.clone(env.gfx.bg())
+  env.sys.input(true) -- clear input
+  t.events = table.clone(env.sys.event_filter())
+  return t
+end
+
+function env.sys.reset()
+  local w, h = env.screen:size()
+  if w ~= 256 or h ~= 256 then
+    env.gfx.win(256, 256)
+  end
+  env.gfx.fg(0)
+  env.gfx.bg(16)
+  env.screen:clear(16)
+  env.gfx.border{ 0xde, 0xde, 0xde }
+  env.screen:nooffset()
+  env.screen:noclip()
+  env.sys.input(true)
+end
 
 function env.sys.exec(fn, ...)
   local newenv = {
