@@ -1,3 +1,5 @@
+local blacklist = { [2322] = true, }
+
 require "tiny"
 local SLIDESHOW_DELAY = 4
 local title_y = 256-60
@@ -133,16 +135,21 @@ local function get_pict()
     return json, e
   end
   printf(0, 0, 16, "Connecting...")
+  local id = json_num(json, "id")
   total = json_num(json, "totalAmount")
   url = url_unesc(json_string(json, "originalUrl"))
   title = html_unesc(json_string(json, "title"))
-
+  if blacklist[tonumber(id or -1)] then
+    print("Blacklisted", 0, 10, 16)
+    sk:close()
+    return false, "Wrong data"
+  end
   if not url then
     print("No url", 0, 10, 16)
     sk:close()
     return false, "Wrong data"
   end
-  print(fmt("%d/%d\n%s", cur+1, total, title), 0, title_y, 16, true)
+  print(fmt("%d/%d id:%d\n%s", cur+1, total, id, title), 0, title_y, 16, true)
 
   url = url:gsub("^https://zxart.ee", "")
   printf(0, 0, 16, "Connecting....")
@@ -181,15 +188,17 @@ print([[            ВНИМАНИЕ!!!!
 
 Не смотря на то, что из выборки исключены соответствующие категории, некоторые изображения всё-таки могут содержать материалы недопустимые для просмотра детьми или носить оскорбительный характер!
 
+Если вы столкнулись с подобными нежелательными картинками, вы можете сообщить их id для добавления в чёрный список.
 
+  Автор rein: pkosyh@yandex.ru
 
 Если вы готовы продолжить, нажмите z или пробел.
 
-Помощь:
+  Помощь:
 
 стрелки/пробел/backspace - навигация
 ввод - ввести номер картинки
-z - слайд-шоу]], 0, 32, 15, true)
+z - слайд-шоу]], 0, 8, 15, true)
 while sys.running() do
   local r, v = sys.input(true)
   if r == 'keyup' and (v == 'z' or v == 'x' or
