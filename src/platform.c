@@ -1017,7 +1017,7 @@ Dial(const char *host, const char *port)
 		if (!connect(fd, r->ai_addr, r->ai_addrlen) ||
 			errno == EINPROGRESS)
 			break;
-		close(fd);
+		Shutdown(fd);
 	}
 	freeaddrinfo(res);
 	if (!r)
