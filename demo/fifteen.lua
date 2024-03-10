@@ -146,11 +146,11 @@ function run()
   restart()
   while sys.running() do
     update()
-    screen:clear(16)
+    clear(16)
     draw_title()
     board.draw()
     draw_win_message()
-    gfx.flip(1/30)
+    flip(1/30)
   end
 end
 
