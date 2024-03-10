@@ -182,6 +182,35 @@ utf_codepoint(lua_State *L)
 	return 2;
 }
 
+static int
+utf_from_codepoint(lua_State *L)
+{
+	char out[4];
+	int len = 0;
+	int cp = luaL_checknumber(L, 1);
+	if (cp <= 0x7F) {
+		out[0] = (char) cp;
+		len = 1;
+	} else if (cp <= 0x07FF) {
+		out[0] = (char) (((cp >> 6) & 0x1F) | 0xC0);
+		out[1] = (char) (((cp >> 0) & 0x3F) | 0x80);
+		len = 2;
+	} else if (cp <= 0xFFFF) {
+		out[0] = (char) (((cp >> 12) & 0x0F) | 0xE0);
+		out[1] = (char) (((cp >>  6) & 0x3F) | 0x80);
+		out[2] = (char) (((cp >>  0) & 0x3F) | 0x80);
+		len = 3;
+	} else if (cp <= 0x10FFFF) {
+		out[0] = (char) (((cp >> 18) & 0x07) | 0xF0);
+		out[1] = (char) (((cp >> 12) & 0x3F) | 0x80);
+		out[2] = (char) (((cp >>  6) & 0x3F) | 0x80);
+		out[3] = (char) (((cp >>  0) & 0x3F) | 0x80);
+		len = 4;
+	}
+	lua_pushlstring(L, out, len);
+	return 1;
+}
+
 static const luaL_Reg
 utf_lib[] = {
 	{ "next", utf_next },
@@ -190,6 +219,7 @@ utf_lib[] = {
 	{ "sym", utf_sym },
 	{ "chars", utf_chars },
 	{ "codepoint", utf_codepoint },
+	{ "from_codepoint", utf_from_codepoint },
 	{ NULL, NULL }
 };
 
