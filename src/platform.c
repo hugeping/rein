@@ -1019,10 +1019,10 @@ Dial(const char *host, const char *port)
 			break;
 		close(fd);
 	}
-	nonblock(fd);
 	freeaddrinfo(res);
 	if (!r)
 		return -1;
+	nonblock(fd);
 	return fd;
 }
 

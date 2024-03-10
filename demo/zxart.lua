@@ -145,7 +145,7 @@ local function get_pict()
     sk:close()
     return false, "Wrong data"
   end
-  if not url then
+  if not url or not total then
     print("No url", 0, 10, 16)
     sk:close()
     return false, "Wrong data"
@@ -202,7 +202,7 @@ print([[            ВНИМАНИЕ!!!!
 z - слайд-шоу]], 0, 8, 15, true)
 while sys.running() do
   local r, v = sys.input(true)
-  if r == 'keyup' and (v == 'z' or v == 'x' or
+  if r == 'keydown' and (v == 'z' or v == 'x' or
     v == 'space' or v == 'return') then
     break
   end
