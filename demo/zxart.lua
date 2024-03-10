@@ -139,6 +139,7 @@ local function get_pict()
 
   if not url then
     print("No url", 0, 10, 16)
+    sk:close()
     return false, "Wrong data"
   end
   print(fmt("%d/%d\n%s", cur+1, total, title), 0, title_y, 16, true)
@@ -148,10 +149,12 @@ local function get_pict()
   e = http_get(sk, url, true)
   if e ~= 6912 then
     print(fmt("Wrong data\n%s", url), 0, 10, 16, true)
+    sk:close()
     return false, "Wrong data"
   end
   printf(0, 0, 16, "Connecting.....")
   local d = sk:recv(e, true)
+  sk:close()
   if not d or d:len() ~= 6912 then
     printf(0, 10, 16, "No data")
     return false, "No data"
@@ -188,7 +191,7 @@ local function slide_note()
 end
 
 while sys.running() do
-  local r, v = inp(true)
+  local r, v = inp()
   if r == 'keydown' then
     if slides then
       if v == 'z' or v == 'left' or v == 'right' or v == 'space'
