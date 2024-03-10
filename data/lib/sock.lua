@@ -73,7 +73,9 @@ function tcp:wait(fn)
   end
   return true
 end
-
+function tcp:read(len)
+  return self:recv(len, true)
+end
 function tcp:recv(len, wait)
   if not self.sock then
     return false

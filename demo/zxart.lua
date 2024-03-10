@@ -1,4 +1,4 @@
-local blacklist = { [2322] = true, }
+local blacklist = { [2322] = true, [3315] = true}
 local exclude = "%%D0%%9E%%D0%%B1%%D0%%BD%%D0%%B0%%D0%%B6%%D0%%B5%%D0%%BD%%D0%%BA%%D0%%B0,%%D0%%A1%%D0%%B5%%D0%%BA%%D1%%81,%%D0%%A1%%D0%%B8%%D1%%81%%D1%%8C%%D0%%BA%%D0%%B8"
 require "tiny"
 local SLIDESHOW_DELAY = 4
@@ -129,7 +129,7 @@ local function get_pict()
   e = http_get(sk, string.format("/api/types:zxPicture/export:zxPicture/start:%d/limit:1/order:date,asc/filter:zxPictureType=standard;zxPictureTagsExclude="..(exclude or ''), cur))
   local json
   printf(0, 0, 16, "Connecting..")
-  json, e = sk:recv(e, true)
+  json, e = sk:read(e)
   if not json then
     sk:close()
     printf(0, 10, 16, "Error: %s", e)
@@ -161,7 +161,7 @@ local function get_pict()
     return false, "Wrong data"
   end
   printf(0, 0, 16, "Connecting.....")
-  local d = sk:recv(e, true)
+  local d = sk:read(e)
   sk:close()
   if not d or d:len() ~= 6912 then
     printf(0, 10, 16, "No data")
@@ -271,6 +271,7 @@ while sys.running() do
       clear(0, 0, 256, 256-8, 0)
       dprint("get picture ".. tostring(cur))
       show()
+      total = total or 0
       last = time()
       old = cur
     end
