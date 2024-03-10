@@ -105,7 +105,7 @@ function tcp:println(fmt, a, ...)
   if a ~= nil then
     fmt = string.format(fmt, a, ...)
   end
-  return self.sock:send((fmt or '')..'\r\n')
+  return self:write((fmt or '')..'\r\n')
 end
 
 function tcp:send(...)
