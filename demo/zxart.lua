@@ -124,7 +124,7 @@ local function get_pict()
     return false, e
   end
   printf(0, 0, 16, "Connecting.")
-  e = http_get(sk, string.format("/api/types:zxPicture/export:zxPicture/start:%d/limit:1/order:date,asc/filter:zxPictureType=standard;zxPictureTagsExclude=%%D0%%9E%%D0%%B1%%D0%%BD%%D0%%B0%%D0%%B6%%D0%%B5%%D0%%BD%%D0%%BA%%D0%%B0,", cur))
+  e = http_get(sk, string.format("/api/types:zxPicture/export:zxPicture/start:%d/limit:1/order:date,asc/filter:zxPictureType=standard;zxPictureTagsExclude=%%D0%%9E%%D0%%B1%%D0%%BD%%D0%%B0%%D0%%B6%%D0%%B5%%D0%%BD%%D0%%BA%%D0%%B0,%%D0%%A1%%D0%%B5%%D0%%BA%%D1%%81", cur))
   local json
   printf(0, 0, 16, "Connecting..")
   json, e = sk:recv(e, true)
@@ -172,19 +172,42 @@ local function show()
 end
 
 border(0)
-fill_rect(0, 0, 255, 255, 0)
+clear(0)
 gfx.fg(16)
 gfx.bg(0)
+print([[            ВНИМАНИЕ!!!!
+
+Это приложение показывает картинки с внешнего ресурса http://zxart.ee!
+
+Не смотря на то, что из выборки исключены соответствующие категории, некоторые изображения всё-таки могут содержать материалы недопустимые для просмотра детьми или носить оскорбительный характер!
+
+
+
+Если вы готовы продолжить, нажмите z или пробел.
+
+Помощь:
+
+стрелки/пробел/backspace - навигация
+ввод - ввести номер картинки
+z - слайд-шоу]], 0, 32, 15, true)
+while sys.running() do
+  local r, v = sys.input(true)
+  if r == 'keyup' and (v == 'z' or v == 'x' or
+    v == 'space' or v == 'return') then
+    break
+  end
+  gfx.flip(1, true)
+end
+clear(0)
 cur = 0
 show()
-
 local last = time()
 local old = cur
 local delta = 1
 local slides
 
 local function slide_note()
-  fill_rect(0, 256-8, 255, 255, 0)
+  clear(0, 256-8, 256, 8, 0)
   if slides then
     print("Slideshow", 0, 256 - 8, 2)
   end
@@ -214,10 +237,10 @@ while sys.running() do
       cur = cur - delta*10
       delta = delta + 1
     elseif v == 'return' then
-      fill_rect(0, title_y+32, 255, title_y + 32+7, 0)
+      clear(0, title_y+32, 256, 8, 0)
       print("Number:", 0, title_y+32, 16)
       cur = (tonumber(inputln()) or cur+1) - 1
-      fill_rect(0, title_y+32, 255, title_y + 32+7, 0)
+      clear(0, title_y+32, 256, 8, 0)
     elseif v == 'z' then -- slideshow
       slides = true
       last = -SLIDESHOW_DELAY;
@@ -231,11 +254,11 @@ while sys.running() do
     r = 'keyup'
   end
   if old ~= cur then
-    fill_rect(0, title_y, 255, title_y + 7, 0)
+    clear(0, title_y, 256, 8, 0)
     printf(0,title_y,16, "%d/%d", cur + 1, total)
     if r == 'keyup' then
       delta = 1
-      fill_rect(0, 0, 255, 255-8, 0)
+      clear(0, 0, 256, 256-8, 0)
       dprint("get picture ".. tostring(cur))
       show()
       last = time()
