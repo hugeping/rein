@@ -42,7 +42,8 @@ static int
 sock_free(lua_State *L)
 {
 	struct lua_sock *usock = luaL_checkudata(L, 1, "socket metatable");
-	Shutdown(usock->fd);
+	if (usock->fd != -1)
+		Shutdown(usock->fd);
 	usock->fd = -1;
 	return 0;
 }
