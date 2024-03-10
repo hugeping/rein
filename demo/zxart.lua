@@ -1,5 +1,6 @@
 local blacklist = { [2322] = true, }
-
+local exclude = "%%D0%%9E%%D0%%B1%%D0%%BD%%D0%%B0%%D0%%B6%%D0%%B5%%D0%%BD%%D0%%BA%%D0%%B0,"..
+  "%%D0%%A1%%D0%%B5%%D0%%BA%%D1%%81"
 require "tiny"
 local SLIDESHOW_DELAY = 4
 local title_y = 256-60
@@ -126,7 +127,7 @@ local function get_pict()
     return false, e
   end
   printf(0, 0, 16, "Connecting.")
-  e = http_get(sk, string.format("/api/types:zxPicture/export:zxPicture/start:%d/limit:1/order:date,asc/filter:zxPictureType=standard;zxPictureTagsExclude=%%D0%%9E%%D0%%B1%%D0%%BD%%D0%%B0%%D0%%B6%%D0%%B5%%D0%%BD%%D0%%BA%%D0%%B0,%%D0%%A1%%D0%%B5%%D0%%BA%%D1%%81", cur))
+  e = http_get(sk, string.format("/api/types:zxPicture/export:zxPicture/start:%d/limit:1/order:date,asc/filter:zxPictureType=standard;zxPictureTagsExclude="..(exclude or ''), cur))
   local json
   printf(0, 0, 16, "Connecting..")
   json, e = sk:recv(e, true)
