@@ -259,6 +259,7 @@ function win:save()
       end
       self.buf.cur = self.buf.cur + 1
     end
+    self:dirty(true)
     --self:visible()
   end
   local r, e = self.buf:save()
