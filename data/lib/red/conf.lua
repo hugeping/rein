@@ -19,7 +19,7 @@ return {
   unknown_sym = "?",
   cr_sym = '^',
   nodump = false,
---  syntax = true,
+  syntax = true,
   colorize_win = 4096,
 --  histfile = true,
 --  wrap = false,
