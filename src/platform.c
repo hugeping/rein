@@ -974,7 +974,29 @@ Thread(int (*fn) (void *), void *data)
 		return -1;
 	return han_open(&threads, thread);
 }
-
+static int
+sock_err(int r)
+{
+	if (r >= 0)
+		return 0;
+#if defined(_WIN32)
+	int e = WSAGetLastError();
+	switch (e) {
+	case WSAEWOULDBLOCK:
+		return EWOULDBLOCK;
+	case WSAEINPROGRESS:
+		return EINPROGRESS;
+	case WSAEINTR:
+		return EINTR;
+	case WSAENOBUFS:
+		return ENOBUFS;
+	default:
+		return EINVAL;
+	}
+#else
+	return errno;
+#endif
+}
 static void
 nonblock(int fd)
 {
@@ -1019,7 +1041,7 @@ Dial(const char *host, const char *port)
 			nonblock(fd);
 		#endif
 		if (!connect(fd, r->ai_addr, r->ai_addrlen) ||
-			errno == EINPROGRESS)
+			sock_err(-1) == EINPROGRESS)
 			break;
 		Shutdown(fd);
 	}
@@ -1033,10 +1055,11 @@ Dial(const char *host, const char *port)
 int
 Send(int fd, const void *data, int size)
 {
-	int rc;
+	int rc, err;
 	rc = send(fd, (const char *)data, (size_t)size, 0);
-	if (rc < 0 && (errno == EAGAIN || errno == EWOULDBLOCK ||
-		errno == EINPROGRESS || !errno))
+	err = sock_err(rc);
+	if (rc < 0 && (err == EAGAIN || err == EWOULDBLOCK ||
+		err == EINPROGRESS))
 		return 0;
 	return rc;
 }
@@ -1044,12 +1067,13 @@ Send(int fd, const void *data, int size)
 int
 Recv(int fd, void *data, int size)
 {
-	int rc;
+	int rc, err;
 	rc = recv(fd, data, size, 0);
 	if (rc == 0) /* closed */
 		return -1;
-	if (rc < 0 && (errno == EAGAIN ||
-		errno == EWOULDBLOCK || errno == ENOENT || !errno))
+	err = sock_err(rc);
+	if (rc < 0 && (err == EAGAIN ||
+		err == EWOULDBLOCK || err == ENOENT))
 		return 0;
 	return rc;
 }
