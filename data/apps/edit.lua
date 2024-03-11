@@ -446,7 +446,7 @@ function buff:show()
     px = 0
     cols = self:colorize(l, nl)
     x = 0
-    for i=s, self.columns do
+    for i=s, s + self.columns - 1 do
       x = x + 1
       g = glyph(l[i] or ' ', cols[i]) or glyph('?', cols[i])
       self:update_glyph(cl[x], px, py, g, self.edit:insel(i, nl))
