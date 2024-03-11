@@ -190,9 +190,11 @@ shift+esc-return to this launcher]])
       init()
       sys.resume(state)
     elseif v == 'x' then
+      local alt = input.keydown 'alt'
       local state = sys.prepare()
       sys.reset()
-      sys.exec("edit", apps[select][1])
+      sys.exec(alt and "red" or "edit",
+        apps[select][1])
       sys.suspend()
       -- resumed
       sys.resume(state)
