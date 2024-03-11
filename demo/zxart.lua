@@ -1,5 +1,5 @@
 local blacklist = { [2322] = true, [3315] = true, [6352] = true }
-local exclude = "%%D0%%9E%%D0%%B1%%D0%%BD%%D0%%B0%%D0%%B6%%D0%%B5%%D0%%BD%%D0%%BA%%D0%%B0,%%D0%%A1%%D0%%B5%%D0%%BA%%D1%%81,%%D0%%A1%%D0%%B8%%D1%%81%%D1%%8C%%D0%%BA%%D0%%B8"
+local exclude = "%%D0%%9E%%D0%%B1%%D0%%BD%%D0%%B0%%D0%%B6%%D0%%B5%%D0%%BD%%D0%%BA%%D0%%B0,%%D0%%A1%%D0%%B5%%D0%%BA%%D1%%81,%%D0%%A1%%D0%%B8%%D1%%81%%D1%%8C%%D0%%BA%%D0%%B8,%%D0%%A7%%D0%%BB%%D0%%B5%%D0%%BD"
 require "tiny"
 local SLIDESHOW_DELAY = 4
 local title_y = 256-60
