@@ -984,6 +984,7 @@ sock_err(int r)
 	switch (e) {
 	case WSAEWOULDBLOCK:
 		return EWOULDBLOCK;
+	case WSAENOTCONN:
 	case WSAEINPROGRESS:
 		return EINPROGRESS;
 	case WSAEINTR:
@@ -1038,17 +1039,20 @@ Dial(const char *host, const char *port)
 		if ((fd = socket(r->ai_family, r->ai_socktype, r->ai_protocol)) < 0)
 			continue;
 		#ifndef _WIN32
-			nonblock(fd);
+		nonblock(fd);
 		#endif
 		if (!connect(fd, r->ai_addr, r->ai_addrlen) ||
-			sock_err(-1) == EINPROGRESS)
+			sock_err(-1) == EINPROGRESS || sock_err(-1) == EWOULDBLOCK) {
 			break;
+		}
 		Shutdown(fd);
 	}
 	freeaddrinfo(res);
 	if (!r)
 		return -1;
+	#ifdef _WIN32
 	nonblock(fd);
+	#endif
 	return fd;
 }
 
@@ -1073,7 +1077,8 @@ Recv(int fd, void *data, int size)
 		return -1;
 	err = sock_err(rc);
 	if (rc < 0 && (err == EAGAIN ||
-		err == EWOULDBLOCK || err == ENOENT))
+		err == EWOULDBLOCK || err == ENOENT ||
+		err == EINPROGRESS))
 		return 0;
 	return rc;
 }
