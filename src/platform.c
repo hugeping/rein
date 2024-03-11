@@ -1036,7 +1036,7 @@ Send(int fd, const void *data, int size)
 	int rc;
 	rc = send(fd, (const char *)data, (size_t)size, 0);
 	if (rc < 0 && (errno == EAGAIN || errno == EWOULDBLOCK ||
-		errno == EINPROGRESS))
+		errno == EINPROGRESS || !errno))
 		return 0;
 	return rc;
 }
@@ -1049,7 +1049,7 @@ Recv(int fd, void *data, int size)
 	if (rc == 0) /* closed */
 		return -1;
 	if (rc < 0 && (errno == EAGAIN ||
-		errno == EWOULDBLOCK || errno == ENOENT))
+		errno == EWOULDBLOCK || errno == ENOENT || !errno))
 		return 0;
 	return rc;
 }
