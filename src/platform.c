@@ -375,7 +375,7 @@ PlatformInit(int argc, const char **argv)
 	if (SetProcessDPIAware)
 		SetProcessDPIAware();
 
-	if (WSAStartup(MAKEWORD(1,1), &wsaData) != 0) {
+	if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
 		fprintf(stderr, "Couldn't initialize Winsock 1.1\n");
 	}
 #endif
@@ -414,6 +414,7 @@ PlatformDone(void)
 #ifdef _WIN32
 	if (user32_lib)
 		FreeLibrary(user32_lib);
+	WSACleanup();
 #endif
 	if (winbuff)
 		SDL_FreeSurface(winbuff);
