@@ -889,6 +889,9 @@ function win:input(t)
   self.input_start = self.input_start or self.buf.cur
   self.buf:input(t)
   self.autox = false
+  if self.pos > self:cur() then
+    self:visible()
+  end
 end
 
 function win:getconf(name)
