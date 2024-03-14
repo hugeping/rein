@@ -24,7 +24,7 @@ end
 local col = {
   col = scheme.default,
   keywords = {
-    { '\\*', '\\#', '\\-', '\\\\' },
+    { '\\*', '\\#', '\\-', '\\\\', '\\`', '\\_' },
   },
   { -- section
     linestart = '#',
@@ -72,6 +72,14 @@ local col = {
     stop = '```',
     col = scheme.string,
   },
+  { -- inline code
+    start = '`',
+    stop = '`',
+    col = scheme.string,
+    keywords = {
+      { '\\`', '\\\\', },
+    },
+  },
   { -- strong
     start = '*',
     stop = '*',
@@ -80,6 +88,16 @@ local col = {
       { '\\*', '\\\\', },
     },
   },
+
+  { -- em
+    start = '_',
+    stop = '_',
+    col = scheme.keyword,
+    keywords = {
+      { '\\_', '\\\\', },
+    },
+  },
+
 }
 
 return col
