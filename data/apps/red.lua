@@ -970,18 +970,19 @@ end
 
 function mainwin:getnewfile()
   local max = 0
+  local new = conf.new_prefix or 'new'
   for f in self:for_win() do
     for w in f:for_win() do
       if w.buf and w.buf.fname and
-        w.buf.fname:startswith 'new' then
-        local nr = tonumber(w.buf.fname:sub(4))
+        w.buf.fname:startswith(new) then
+        local nr = tonumber(w.buf.fname:sub(new:len()+1))
         if nr and nr > max then
           max = nr
         end
       end
     end
   end
-  return string.format("new%d", max + 1)
+  return string.format(new..'%d', max + 1)
 end
 
 function mainwin:vgeom(x, y, w, h)
