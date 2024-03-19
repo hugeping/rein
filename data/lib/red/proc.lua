@@ -350,9 +350,11 @@ local function piped(w, out, prog)
   end
   local txt = w.buf:gettext(w.buf:range())
   out:run(function()
-    while txt ~= '' and ret.fifo do
-      ret.fifo:write(txt:sub(1, 256))
-      txt = txt:sub(257)
+    local s = 1
+    local len = txt:len()
+    while s <= txt:len() and ret.fifo do
+      ret.fifo:write(txt:sub(s, s + 2047))
+      s = s + 2048
       coroutine.yield(true)
     end
     ret:close()
