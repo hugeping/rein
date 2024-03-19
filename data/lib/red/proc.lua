@@ -150,8 +150,12 @@ function proc.sub(w, text, glob)
     end
     local t = {}
     for l in text:lines(true) do
+      local nl = l:endswith '\n'
+      if nl then
+        l = l:sub(1, l:len() - 1)
+      end
       l = l:gsub(a, b)
-      table.insert(t, l)
+      table.insert(t, l..(nl and '\n' or ''))
     end
     return table.concat(t, '')
   end, a[1], a[2])
