@@ -41,6 +41,7 @@ local function parse_options(args)
     fs = conf.font_sz,
     nodump = true,
     confdir = false,
+    fifo = false,
   })
   local ret = {}
   for i = optarg, #args do
@@ -52,6 +53,7 @@ local function parse_options(args)
   end
   conf.font_sz = ops.fs
   conf.nodump = ops.nodump
+  conf.fifo = ops.fifo
   return ret
 end
 
@@ -886,6 +888,7 @@ Arguments:
   -platform-nojoystick - no joystick, start faster!
   -platform-nosound - no sound, start faster!
   -nodump - do not load red.dump
+  -fifo <fifo> - Unix only, create fifo and open files from it
 
 -confdir <directory>
   You can put files in confdir:
@@ -1384,8 +1387,37 @@ end
 
 sys.event_filter().wake = true -- wake on thread write
 
+local fifo
+if conf.fifo and PLATFORM ~= 'Windows' then
+  os.remove(conf.fifo)
+  if os.execute("mkfifo "..conf.fifo) then
+    print("Listen fifo: "..conf.fifo)
+    fifo = thread.start(function()
+      local name = thread:read()
+      while true do
+        local f = io.open(name, "r")
+        if not f then
+          print("Cant open fifo on read")
+          break
+        end
+        local l = f:read '*l'
+        if l == 'quit' then
+          f:close()
+          break
+        end
+        thread:write(l)
+        f:close()
+      end
+    end)
+  end
+  fifo:write(conf.fifo)
+end
+
 while not conf.stop do
   local r, v, a, b
+  if fifo and fifo:poll() then
+    main:win():file(fifo:read())
+  end
   repeat
     r, v, a, b = sys.input()
   until r ~= 'wake'
@@ -1403,5 +1435,11 @@ while not conf.stop do
 end
 
 mainmenu.cmd.Exit(mainmenu)
+
+if fifo then
+  io.file(conf.fifo, "quit\n")
+  os.remove(conf.fifo)
+end
+
 mixer.done()
 -- print "Quit..."
