@@ -208,6 +208,8 @@ thread_write(lua_State *L)
 		other->poll --;
 	}
 	MutexUnlock(chan->m);
+	if (thr->tid < 0)
+		WakeEvent(); /* wake sys_poll */
 	SemWait(self->sem, -1);
 	MutexLock(chan->m);
 	self->write --;

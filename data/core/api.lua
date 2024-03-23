@@ -648,6 +648,7 @@ local event_filter = {
   mouseup = true,
   mousewheel = true,
   mousemotion = true,
+--  wake = true,
 }
 
 function env.sys.event_filter(t)

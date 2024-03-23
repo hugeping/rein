@@ -1382,8 +1382,13 @@ else
   end
 end
 
+sys.event_filter().wake = true -- wake on thread write
+
 while not conf.stop do
-  local r, v, a, b = sys.input()
+  local r, v, a, b
+  repeat
+    r, v, a, b = sys.input()
+  until r ~= 'wake'
   if r == 'quit' then
     mainmenu.cmd.Exit(mainmenu)
   elseif r == 'resized' or r == 'exposed' then

@@ -102,6 +102,16 @@ SDL_WaitEventTo(int timeout)
 }
 #endif
 
+void
+WakeEvent(void)
+{
+	SDL_Event event;
+	memset(&event, 0, sizeof(event));
+	event.type = SDL_USEREVENT;
+	SDL_PushEvent(&event);
+	return;
+}
+
 int
 WaitEvent(float n)
 {
@@ -788,6 +798,10 @@ top:
 		}
 		lua_pushinteger(L, my);
 		return 2;
+	case SDL_USEREVENT:
+		while (SDL_PeepEvents(&e, 1, SDL_GETEVENT, SDL_USEREVENT, SDL_USEREVENT) > 0);
+		lua_pushstring(L, "wake");
+		return 1;
 	default:
 		goto top;
 	}
