@@ -6,6 +6,7 @@ extern void PlatformDone(void);
 
 extern void Delay(float n);
 extern int WaitEvent(float n);
+extern void WakeEvent(void);
 
 extern int WindowCreate(void);
 extern void WindowResize(int w, int h);

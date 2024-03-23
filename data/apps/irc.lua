@@ -267,9 +267,9 @@ local thr = thread.start(function()
   local err
   while true do
      local r, v = thread:poll(delay)
-     if r then
+     if r then -- get command
        r, v = thread:read()
-     elseif v then -- read new msg
+     elseif #lines > 0 then -- read new msg
        r = 'read'
      end
      if r == 'quit' then
@@ -281,7 +281,7 @@ local thr = thread.start(function()
          thread:write(true, l)
        end
        lines = {}
-       thread:write(false, err)
+       thread:write(false, err) -- eof
      end
      if not err and not s:poll() then
        err = "Error reading from socket!"
@@ -500,6 +500,7 @@ if JOIN then
   buf:input(":s "..JOIN)
   buf:newline()
 end
+sys.event_filter().wake = true
 while r do
   while help_mode do
     screen:clear(conf.bg)
@@ -562,11 +563,11 @@ while r do
   elseif e == 'mousemotion' then
     buf:motion()
   end
-  local delay = 1/20
+  local delay = 5
   local inp = e
   local tosrv
   local reply = {}
-  while true do -- get all msg
+  while thr:poll() do -- get all msg
     e, v = thr:read()
     if not e then
       if v then -- fatal error
@@ -577,7 +578,6 @@ while r do
       end
       break
     end
-    delay = 0
     v, tosrv = irc_rep(v)
     if v then
       if tosrv then
