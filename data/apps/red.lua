@@ -478,6 +478,7 @@ function frame:show()
 end
 
 function frame:sort()
+  self.prev_win = nil
   table.sort(self.childs, function(a, b)
     if not a.buf.fname then return true end
     if not b.buf.fname then return false end
