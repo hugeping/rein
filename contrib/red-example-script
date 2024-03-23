@@ -1,0 +1,8 @@
+#!/bin/sh
+if test -e /tmp/red.fifo; then
+	for f in "$@"; do
+		echo "$f" > /tmp/red.fifo
+	done
+else
+	exec ~/Devel/rein/rein red -platform-xclip -platform-nosound -platform-nojoysticks -fifo /tmp/red.fifo -fs 14 -confdir ~/.red "$@" >/tmp/red.log 2>&1 &
+fi
