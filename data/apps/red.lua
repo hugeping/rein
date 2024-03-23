@@ -1394,18 +1394,20 @@ if conf.fifo and PLATFORM ~= 'Windows' then
     print("Listen fifo: "..conf.fifo)
     fifo = thread.start(function()
       local name = thread:read()
-      while true do
+      local run = true
+      while run do
         local f = io.open(name, "r")
         if not f then
           print("Cant open fifo on read")
           break
         end
-        local l = f:read '*l'
-        if l == 'quit' then
-          f:close()
-          break
+        for l in f:lines() do
+          if l == 'quit' then
+            run = false
+            break
+          end
+          thread:write(l)
         end
-        thread:write(l)
         f:close()
       end
     end)
