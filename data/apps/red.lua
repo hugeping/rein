@@ -477,6 +477,16 @@ function frame:show()
   end
 end
 
+function frame:sort()
+  table.sort(self.childs, function(a, b)
+    if not a.buf.fname then return true end
+    if not b.buf.fname then return false end
+    return a.buf.fname < b.buf.fname
+  end)
+  self:update(true, true)
+  self:refresh()
+end
+
 function frame:update(force, pop)
   local sel
   if pop then
@@ -664,6 +674,10 @@ function framemenu.cmd:Syntax()
   end
 end
 
+function framemenu.cmd:Sort()
+  self.frame:sort()
+end
+
 function framemenu.cmd:Put()
   local b = self.frame:win()
   if not b then
@@ -786,6 +800,12 @@ function mainmenu.cmd:GetAll()
   end
 end
 
+function mainmenu.cmd:Sort()
+  for f in self.frame:for_win() do
+    f:sort()
+  end
+end
+
 function mainmenu.cmd:Help()
   local w = self.frame:open_err("+Help")
   w.conf.wrap = true
@@ -869,6 +889,7 @@ Note:
   Line                - get current line in buffer
   Codepoint           - get codepoint of the sym
   Clear               - clear window
+  Sort                - sort buffers by names
   Tab [nr]            - tab on for current bufferr
   Wrap                - wrap text on/off
   Spaces              - spaces tab mode
