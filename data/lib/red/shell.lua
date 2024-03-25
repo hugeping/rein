@@ -8,12 +8,15 @@ local function pipe_shell()
   local function read_sym(f)
     local t, b = '', ''
     while b and (t == '' or t:byte(#t) >= 128) do
-      while b and poll(f) do
+      while true do
+        local p, ok = poll(f)
+        if not ok then b = false break end
+        if not p then break end
         b = f:read(1)
         if not b then break end
         t = t .. b
         if (not poll_mode or t:len() > 256) and
-          b:byte(1) < 128 then b = false end
+          b:byte(1) < 128 then b = false break end
       end
     end
     return t ~= '' and t
