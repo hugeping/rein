@@ -342,6 +342,7 @@ function proc.win(w)
     shell.prompt(w)
   end
   shell.win(w)
+  return true
 end
 
 --luacheck: pop

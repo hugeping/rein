@@ -6,20 +6,22 @@ local function pipe_shell()
   local poll_mode = not not poll
   poll = poll or function() return true end
   local function read_sym(f)
-    local t, b = '', ''
-    while b and (t == '' or t:byte(#t) >= 128) do
-      while true do
-        local p, ok = poll(f)
-        if not ok then b = false break end
-        if not p then break end
-        b = f:read(1)
+    local t = {}
+    while true do
+      local p, ok = poll(f)
+      if not ok then break end
+      if p then
+        local b = f:read(1)
         if not b then break end
-        t = t .. b
-        if (not poll_mode or t:len() > 256) and
-          b:byte(1) < 128 then b = false break end
+        table.insert(t, b)
+        if b == '\n' then break end
+        if (not poll_mode or #t > 256) and
+          b:byte(1) < 128 then
+            break
+        end
       end
     end
-    return t ~= '' and t
+    return #t > 0 and table.concat(t, '')
   end
   local prog, cwd = thread:read()
   if cwd then
@@ -153,7 +155,7 @@ function shell.pipe(w, prog, inp, sh)
           w.output_pos = w:cur(c)
         end
       end
-      coroutine.yield(inp ~= true or data)
+      coroutine.yield()
     end
     if sh then
       shell.prompt(w)
