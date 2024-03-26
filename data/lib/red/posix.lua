@@ -24,7 +24,7 @@ function posix.poll(f)
   local fds = ffi.new("struct pollfd[1]")
   fds[0].fd = ffi.C.fileno(f)
   fds[0].events = 1
-  local ret = ffi.C.poll(fds, 1, 200)
+  local ret = ffi.C.poll(fds, 1, 2000)
   return ret > 0 and bit.band(fds[0].revents, 1) == 1,
     bit.band(fds[0].revents, 0x8) ~= 8 and
     bit.band(fds[0].revents, 0x11) ~= 0x10
