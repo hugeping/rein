@@ -424,6 +424,7 @@ function env.input.keypress(name) -- single press
 end
 
 function env.sys.dirname(f)
+  if not f then return './' end
   if not f:find("[/\\]") then
     local ff = f:gsub("^([A-Z]:).*$", "%1") -- win?
     if ff == f then return './' end
