@@ -101,6 +101,7 @@ function proc.dump(w)
   local s, e = data.buf:range()
   local text =
   dump(w, data.buf:gettext(s, e))
+  return true
 end
 
 function proc.grep(w, rex)
@@ -111,6 +112,7 @@ function proc.grep(w, rex)
   w:tail()
   w.cwd = nil
   w:run(function() grep(path, rex, w) end)
+  return true
 end
 
 --luacheck: push
@@ -159,6 +161,7 @@ function proc.sub(w, text, glob)
     end
     return table.concat(t, '')
   end, a[1], a[2])
+  return true
 end
 
 function proc.find(w, pat)
@@ -213,6 +216,7 @@ function proc.fmt(w, width)
   w:cur(s)
   w:input(t)
   w:history 'end'
+  return true
 end
 
 proc['!'] = function(w, pat)
@@ -229,6 +233,7 @@ proc['!'] = function(w, pat)
   end)
   p:write(pat:unesc(), w.cwd)
   p:detach()
+  return true
 end
 
 proc["dos2unix"] = function(w)
@@ -238,6 +243,7 @@ proc["dos2unix"] = function(w)
     local t = text:gsub("\r", "")
     return t
   end)
+  return true
 end
 
 proc["i+"] = function(w)
@@ -256,6 +262,7 @@ proc["i+"] = function(w)
     end
     return t
   end)
+  return true
 end
 
 proc["i-"] = function(w)
@@ -277,6 +284,7 @@ proc["i-"] = function(w)
     end
     return t
   end)
+  return true
 end
 
 proc['@'] = function(w, prog)
@@ -291,10 +299,12 @@ proc['@'] = function(w, prog)
   f:write(data.buf:gettext(data.buf:range()))
   f:close()
   shell.pipe(w:output('+Output'), prog..' '..tmp, tmp)
+  return true
 end
 
 proc['<'] = function(w, prog)
   shell.pipe(w:output(), prog)
+  return true
 end
 
 function proc.Codepoint(w)
@@ -305,6 +315,7 @@ function proc.Codepoint(w)
   local cur = w:cur()
   w.buf:input(" "..string.format("0x%x", cp))
   w:cur(cur)
+  return true
 end
 
 function proc.Line(w)
@@ -314,6 +325,7 @@ function proc.Line(w)
   local cur = w:cur()
   w.buf:input(" :"..tostring(w.frame:win().buf:line_nr()))
   w:cur(cur)
+  return true
 end
 
 function proc.Clear(w)
@@ -323,6 +335,7 @@ function proc.Clear(w)
   w.buf:cut()
   w.buf.cur = 1
   w:visible()
+  return true
 end
 
 function proc.cat(w, f)
@@ -334,6 +347,7 @@ function proc.cat(w, f)
   local s = w:cur()
   w.buf:input(d)
   w:setsel(s, w:cur() + 1)
+  return true
 end
 
 function proc.win(w)
@@ -370,6 +384,7 @@ proc['>'] = function(w, prog)
   local data = w:data()
   if not data then return end
   piped(data, w:output '+Output', prog)
+  return true
 end
 
 proc['|'] = function(w, prog)
@@ -378,6 +393,7 @@ proc['|'] = function(w, prog)
   local s, e = data.buf:range()
   data.buf:setsel(s, e + 1)
   piped(data, data, prog)
+  return true
 end
 end
 
