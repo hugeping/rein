@@ -371,7 +371,7 @@ local function piped(w, out, prog)
   out:run(function()
     local s = 1
     local len = txt:len()
-    while s <= txt:len() and ret.fifo do
+    while s <= len and ret.fifo do
       ret.fifo:write(txt:sub(s, s + 2047))
       s = s + 2048
       coroutine.yield(true)
