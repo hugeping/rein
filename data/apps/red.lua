@@ -734,7 +734,11 @@ function framemenu.cmd:Close()
 end
 
 function framemenu.cmd:New()
-  self.frame:file(self.frame.frame:getnewfile())
+  print("0")
+  local d = self.frame.frame:getnewfile()
+  print("d = ", d)
+  self.frame:file(d)
+  print("2")
   self.frame:refresh()
 end
 
