@@ -137,9 +137,8 @@ function shell.pipe(w, prog, inp, sh)
   w.input_start = w.buf:issel() and w.buf:selrange() or w:cur()
   r = w:run(function()
     w:history 'start'
-    local l
-    while l ~= '\1eof' and not ret.stopped do
-      local data
+    while not ret.stopped do
+      local data, l
       while p:poll() do
         l = p:read()
         data = true
@@ -155,6 +154,7 @@ function shell.pipe(w, prog, inp, sh)
           w.output_pos = w:cur(c)
         end
       end
+      if l == '\1eof' then break end
       coroutine.yield()
     end
     if sh then
@@ -260,7 +260,7 @@ function shell:newline()
   self.buf:input '\n'
   self.output_pos = self.buf.cur
   local h = self.shell.hist
-  if h[#h] ~= t then
+  if h[#h] ~= t and t ~= '' then
     table.insert(h, t)
     if #h > 256 then
       table.remove(h, 1)
