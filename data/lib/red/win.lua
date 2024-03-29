@@ -331,13 +331,10 @@ function win:prevpage(jump)
     self.pos = self.pos - 1
     self:posln()
     local x, y = 0, 0
-    for k = self.pos, last do
+    for k = self.pos, last - 1 do
       x, y = self:next(k, x, y)
     end
     len = len + y
-    if self.buf.text[self.pos] == '\n' then
-      len = len - 1
-    end
     if len >= jump then
       self:posln()
       break
@@ -439,6 +436,20 @@ function win:flushline(x0, y0)
   end
 end
 
+function win:make_epos()
+  local text = self.buf.text
+  local x, y = 0, 0
+  local epos = #text + 1
+  for i = self.pos, #text do
+    x, y = self:next(i, x, y)
+    if y >= self.rows then
+      epos = i
+      break
+    end
+  end
+  self.epos = epos
+end
+
 function win:colorize()
   local colorizer = self.colorizer
   local start = 1
@@ -459,27 +470,18 @@ function win:colorize()
   if not colorizer then
     return
   end
-  local text = self.buf.text
-  local x, y = 0, 0
-  local epos = #text
-  for i = self.pos, #text do
-    x, y = self:next(i, x, y)
-    if y >= self.rows then
-      epos = i
-      break
-    end
-  end
+  self:make_epos()
   local state
 --  print("Colorize:", start, epos, #colorizer.stack)
   colorizer.saved = nil
-  for i = start, epos do
+  for i = start, self.epos do
     if not state and
       i < self.pos and
       i >= self.pos - self:getconf 'colorize_win' then
       state = true
       colorizer.saved = colorizer:state()
     end
-    colorizer:process(i, epos)
+    colorizer:process(i, self.epos)
   end
   self.colorizer = colorizer
   return colorizer
@@ -863,11 +865,11 @@ function win:curvisible()
     self.buf.cur <= self.epos
 end
 
-function win:visible()
+function win:visible(off)
   if not self:curvisible() then
     self.pos = self.buf.cur
     self:posln()
-    self:prevpage(math.floor(self.rows / 2))
+    self:prevpage(math.floor(off or (self.rows/2)))
     return true
   end
 end
@@ -885,13 +887,11 @@ function win:right()
 end
 
 function win:input(t)
-  self:visible()
   self.input_start = self.input_start or self.buf.cur
   self.buf:input(t)
+  self:make_epos()
+  self:visible()
   self.autox = false
-  if self.pos > self:cur() then
-    self:visible()
-  end
 end
 
 function win:getconf(name)
@@ -953,8 +953,9 @@ function win:escape()
 end
 
 function win:newline()
-  self:visible()
   self.buf:newline()
+  self:make_epos()
+  self:visible(self.rows - 1)
   self.autox = false
 end
 
