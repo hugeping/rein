@@ -154,6 +154,10 @@ function shell.pipe(w, prog, inp, sh)
           w.output_pos = w:cur(c)
         end
       end
+      if w.scroll_mode then
+        w:make_epos()
+        w:visible(w.rows - 1)
+      end
       if l == '\1eof' then break end
       coroutine.yield()
     end
@@ -203,6 +207,10 @@ end
 function shell:prompt()
   self.buf:append('$ ', true)
   self.output_pos = self:cur()
+  if self.scroll_mode then
+    self:make_epos()
+    self:visible(self.rows - 1)
+  end
 end
 
 function shell:execute(t)
@@ -307,6 +315,11 @@ function shell.win(w)
   w.up = shell.up
   w.down = shell.down
   w.conf.ts = 8
+  w.scroll_mode = true
+  w.cmd.Noscroll = function(s) s.scroll_mode = false end
+  w.cmd.Scroll = function(s) s.scroll_mode = true end
+  w.cmdline = 'Noscroll'
+  w.frame:update();
 end
 
 return shell
