@@ -474,14 +474,14 @@ function win:colorize()
   local state
 --  print("Colorize:", start, epos, #colorizer.stack)
   colorizer.saved = nil
-  for i = start, self.epos do
+  for i = start, self.epos - 1 do
     if not state and
       i < self.pos and
       i >= self.pos - self:getconf 'colorize_win' then
       state = true
       colorizer.saved = colorizer:state()
     end
-    colorizer:process(i, self.epos)
+    colorizer:process(i, self.epos - 1)
   end
   self.colorizer = colorizer
   return colorizer
