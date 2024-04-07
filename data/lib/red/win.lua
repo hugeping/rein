@@ -29,6 +29,8 @@ local delim_compl = {
   [" "] = true,
   ["\n"] = true,
   ["\t"] = true,
+  ["'"] = true,
+  ['"'] = true,
 }
 
 function scr:init()
