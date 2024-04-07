@@ -154,7 +154,7 @@ function shell.pipe(w, prog, inp, sh)
           w.output_pos = w:cur(c)
         end
       end
-      if w.scroll_mode then
+      if w.scroll_mode and data then
         w:make_epos()
         w:visible(w.rows - 1)
       end
