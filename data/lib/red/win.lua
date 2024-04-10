@@ -329,12 +329,16 @@ function win:prevpage(jump)
   jump = jump or self.rows
   local len = 0
   while self.pos > 1 do
-    local last = self.pos
     self.pos = self.pos - 1
+    local last = self.pos
     self:posln()
     local x, y = 0, 0
-    for k = self.pos, last - 1 do
+    for k = self.pos, last do
       x, y = self:next(k, x, y)
+      if len + y >= jump then
+        self.pos = k
+        break
+      end
     end
     len = len + y
     if len >= jump then
