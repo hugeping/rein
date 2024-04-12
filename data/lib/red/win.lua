@@ -978,8 +978,9 @@ function win:linestart()
 end
 
 function win:undo()
-  self:visible()
   self.buf:undo()
+  self:make_epos()
+  self:visible()
   self.autox = false
   self.input_start = false
 end
