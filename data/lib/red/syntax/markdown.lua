@@ -98,6 +98,12 @@ local col = {
     },
   },
 
+  { -- comment
+    start = '<!--',
+    stop = '-->',
+    col = scheme.comment,
+  },
+
 }
 
 return col
