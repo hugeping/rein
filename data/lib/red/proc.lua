@@ -22,11 +22,11 @@ local function grep(path, rex, err)
       local f = io.open(p, "rb")
       if f then
         local nr = 0
-        local path = err:path(p) --err:path(sys.realpath(p))
+        local epath = err:path(p) --err:path(sys.realpath(p))
         for l in f:lines() do
           nr = nr + 1
           if l:find(rex) then
-            err:printf("%s:%d %s\n", path, nr, l)
+            err:printf("%s:%d %s\n", epath, nr, l)
           end
           if nr % 1000 == 0 then
             coroutine.yield(true)
@@ -99,7 +99,6 @@ function proc.dump(w)
   w.cmd = { Get = dump_export }
   w.save = dump_save
   local s, e = data.buf:range()
-  local text =
   dump(w, data.buf:gettext(s, e))
   return true
 end
@@ -216,6 +215,41 @@ function proc.fmt(w, width)
   w:cur(s)
   w:input(t)
   w:history 'end'
+  w.buf:setsel(s, s + #t)
+  return true
+end
+
+function proc.par(w)
+  w = w:winmenu()
+  if not w then return end
+  local s, e = w.buf:range()
+  local t = {}
+  local c
+  local i = s
+  while i <= e do
+    local oi = i
+    while i <= #w.buf.text do
+      c = w.buf.text[i]
+      if c == '\t' or c == ' ' then
+        i = i + 1
+      else
+        break
+      end
+    end
+    if oi ~= i then
+      table.append(t, ' ')
+    end
+    if c ~= '\n' then
+      table.append(t, c)
+    elseif w.buf.text[i+1] == '\n' then
+      table.append(t, '\n', '\n')
+    elseif oi == i then
+      table.append(t, ' ')
+    end
+    i = i + 1
+  end
+  w:input(t)
+  w.buf:setsel(s, s + #t)
   return true
 end
 

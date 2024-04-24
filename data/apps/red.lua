@@ -881,6 +881,7 @@ Note:
   end
   w:printf([[
   fmt [width]         - fmt text by width
+  par                 - remove newlines and extra spaces
   cat <file>          - insert file into the cursor
   dos2unix            - remove \r
   i+/i-               - indent inc/dec
