@@ -1,3 +1,4 @@
+local proc = require "red/proc"
 return {
   { 'home',
     function(self)
@@ -80,6 +81,13 @@ return {
         t = ' ' .. t
       end
       m:append(t)
+    end
+  },
+  { 'alt+v',
+    function(self)
+      if PLATFORM ~= 'Windows' then
+        self:run(proc['<'], 'xclip -o -selection clipboard')
+      end
     end
   },
 }
