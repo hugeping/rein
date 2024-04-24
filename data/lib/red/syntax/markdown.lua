@@ -1,5 +1,28 @@
 local scheme = require "red/syntax/scheme"
 
+local function linkstart(ctx, txt, s, e)
+  if txt[s] ~= '[' then
+    return
+  end
+  local esc
+  local link = false
+  for i = s + 1, e do
+    if esc then
+      esc = false
+    elseif txt[i] == '\\' then
+      esc = true
+    elseif not link then
+      if txt[i] == ']' then
+        link = true
+      end
+    elseif txt[i] ~= '(' then
+      break
+    else
+      return i - s
+    end
+  end
+end
+
 local function endsect(ctx, txt, i)
   if txt[i] == '\n' and txt[i+1] ~= ' ' then
     return 1
@@ -24,7 +47,8 @@ end
 local col = {
   col = scheme.default,
   keywords = {
-    { '\\*', '\\#', '\\-', '\\\\', '\\`', '\\_' },
+    { '\\*', '\\#', '\\-', '\\\\', '\\`', '\\_',
+      '\\(', '\\)', '\\[', '\\]' },
   },
   { -- section
     linestart = '#',
@@ -72,6 +96,11 @@ local col = {
     stop = '```',
     col = scheme.string,
   },
+  { -- code
+    linestart = '~~~',
+    stop = '~~~',
+    col = scheme.string,
+  },
   { -- inline code
     start = '`',
     stop = '`',
@@ -97,7 +126,14 @@ local col = {
       { '\\_', '\\\\', },
     },
   },
-
+  { -- link
+    start = linkstart,
+    stop = ')',
+    col = scheme.number,
+    keywords = {
+      { '\\)', '\\]', '\\\\', },
+    },
+  },
   { -- comment
     start = '<!--',
     stop = '-->',
