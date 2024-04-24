@@ -23,6 +23,7 @@ read_globals = {
     fields = {
       del = {},
       find = {},
+      append = {},
     }
   },
   string = {
