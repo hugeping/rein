@@ -3,8 +3,7 @@ local shell = {}
 local function pipe_shell()
   local posix = require("red/posix")
   local poll, sighup = posix.poll, posix.sighup
-  local poll_mode = not not poll
-  poll = poll or function() return true end
+  local poll_mode = posix.have_poll
   local function read_sym(f)
     local t = {}
     while true do
@@ -46,7 +45,9 @@ end
 
 local function pipe_proc()
   require "std"
-  local sighup = require("red/posix").sighup
+  local posix = require("red/posix")
+  local sighup, nonblock = posix.sighup, posix.nonblock
+
   local prog, cwd = thread:read()
   if cwd and PLATFORM ~= 'Windows' then
     prog = string.format("cd %q && %s", cwd, prog)
@@ -58,7 +59,10 @@ local function pipe_proc()
   if not f then return end
   f:setvbuf 'no'
   local pre
+  nonblock(f, true)
   while true do
+    local _, ok = posix.poll(f)
+    if not ok then break end
     local chunk = f:read(512)
     if not chunk then
       if pre then
@@ -76,6 +80,7 @@ local function pipe_proc()
       thread:write(l)
     end
   end
+  nonblock(f, false)
   f:close()
   thread:write '\1eof'
 end
