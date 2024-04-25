@@ -607,7 +607,13 @@ end
 
 function buf:load(fname)
   fname = fname or self.fname
-  local f, e = io.open(fname, "rb")
+  local f, e
+  if fname == '-' and PLATFORM ~= 'Windows'then
+    f = io.stdin
+  end
+  if not f then
+    f, e = io.open(fname, "rb")
+  end
   if not f then
     return f, e
   end
@@ -616,7 +622,9 @@ function buf:load(fname)
   self.redo_hist = {}
   self.text = utf.chars(f:read '*all') or {}
   self:dirty(false)
-  f:close()
+  if f ~= io.stdin then
+    f:close()
+  end
   return true
 end
 
