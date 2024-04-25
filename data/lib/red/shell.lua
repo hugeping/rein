@@ -2,19 +2,17 @@ local shell = {}
 
 local function pipe_shell()
   local posix = require("red/posix")
-  local poll, sighup = posix.poll, posix.sighup
-  local poll_mode = posix.have_poll
   local function read_sym(f)
     local t = {}
     while true do
-      local p, ok = poll(f)
+      local p, ok = posix.poll(f)
       if not ok then break end
       if p then
         local b = f:read(1)
         if not b then break end
         table.insert(t, b)
         if b == '\n' then break end
-        if (not poll_mode or #t > 256) and
+        if (not posix.have_poll or #t > 256) and
           b:byte(1) < 128 then
             break
         end
@@ -26,9 +24,9 @@ local function pipe_shell()
   if cwd then
     prog = string.format("cd %q && %s", cwd, prog)
   end
-  sighup(true)
+  posix.sighup(true)
   local f, e = io.popen(prog, "r")
-  sighup(false)
+  posix.sighup(false)
   thread:write(not not f, e)
   if not f then return end
   f:setvbuf 'no'
@@ -46,24 +44,22 @@ end
 local function pipe_proc()
   require "std"
   local posix = require("red/posix")
-  local sighup, nonblock = posix.sighup, posix.nonblock
 
   local prog, cwd = thread:read()
   if cwd and PLATFORM ~= 'Windows' then
     prog = string.format("cd %q && %s", cwd, prog)
   end
-  sighup(true)
+  posix.sighup(true)
   local f, e = io.popen(prog, "r")
-  sighup(false)
+  posix.sighup(false)
   thread:write(not not f, e)
   if not f then return end
   f:setvbuf 'no'
   local pre
-  nonblock(f, true)
   while true do
     local _, ok = posix.poll(f)
     if not ok then break end
-    local chunk = f:read(512)
+    local chunk = posix.read(f, 512)
     if not chunk then
       if pre then
         thread:write(pre)
@@ -80,7 +76,6 @@ local function pipe_proc()
       thread:write(l)
     end
   end
-  nonblock(f, false)
   f:close()
   thread:write '\1eof'
 end
