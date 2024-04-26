@@ -1433,6 +1433,7 @@ if conf.fifo and PLATFORM ~= 'Windows' then
         end
         f:close()
       end
+      thread:write '\1quit'
     end)
   end
   fifo:write(conf.fifo)
@@ -1441,7 +1442,12 @@ end
 while not conf.stop do
   local r, v, a, b
   if fifo and fifo:poll() then
-    main:win():file(fifo:read())
+    local l = fifo:read()
+    if l == '\1quit' then
+      fifo = false
+    else
+      main:win():file(l)
+    end
   end
   repeat
     r, v, a, b = sys.input()
