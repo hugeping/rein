@@ -1,6 +1,6 @@
 <img src="data/icon.png">
 
-![Build status](https://github.com/gl00my/rein/actions/workflows/CI.yml/badge.svg)
+![Build status](https://github.com/hugeping/rein/actions/workflows/CI.yml/badge.svg)
 
 __Warning! Project is under heavy development and is in the alpha stage!__
 
@@ -20,7 +20,7 @@ See ./make.sh if any problems.
 
 # Downloads
 
-[Continuous builds](https://github.com/gl00my/rein/releases/download/continuous/rein.zip)
+[Continuous builds](https://github.com/hugeping/rein/releases/download/continuous/rein.zip)
 
 # Doc
 
