@@ -135,7 +135,12 @@ function core.init()
     s = true,
     nosound = true,
     vpad = true,
+    fs = true,
   })
+  core.fullscreen = opts.fs
+  if core.fullscreen then
+    sys.window_mode 'fullscreen'
+  end
   core.scale = opts.s
   core.nosound = opts.nosound
   core.vpad_enabled = opts.vpad
@@ -278,10 +283,8 @@ function core.render(force)
   local w, h = env.screen:size()
   local xs, ys = ww/w, hh/h
   local scale = (xs <= ys) and xs or ys
-  if scale > 1.0 then
-    local oscale = scale
+  if scale > 1.0 and not core.scale then
     scale = math.floor(scale)
-    if core.scale and scale + 0.5 <= oscale then scale = scale + 0.5 end
   end
   local dw = w * scale
   local dh = h * scale

@@ -92,7 +92,7 @@ local function help()
   rein sprited     - gfx editor
   rein voiced      - sfx editor
   rein irc         - irc client
-  rein <lua file>
+  rein [-s] [-fs] <lua file>
 
 Try:
   rein demo/aadv.lua - run&play
@@ -145,7 +145,7 @@ while sys.running() do
     gfx.printf(4, H - 2*FH, 1, [[Remove file? Press Y to confirm!]])
   else
     gfx.printf(4, H - 2*FH, 1, [[F1-help ⬇,⬆,z-run,x-edit,del-remove
-shift+esc-return to this launcher]])
+shift+esc-exit]])
   end
 
   local xoff, yoff = 26 + 7, 72
