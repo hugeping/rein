@@ -19,7 +19,6 @@ local conf = {
   fps = 1/50;
   w = 256;
   h = 256;
-  fullscreen = false;
   pal = {
     [-1] = { 0, 0, 0, 0 }, -- transparent
     [0] = { 0, 0, 0, 0xff },
@@ -677,7 +676,7 @@ function api.event(e, v, a, b, c)
     input.fifo  = {}
     mixer.done()
   elseif e == 'keydown' and (v == 'escape' and input.kbd.shift)
-    and #core.suspended > 0 then
+    then -- and #core.suspended > 0 then
     mixer.done()
     core.stop()
     return true
@@ -688,8 +687,8 @@ function api.event(e, v, a, b, c)
   end
 
   if e == 'keydown' and v == 'return' and input.kbd.alt then
-    conf.fullscreen = not conf.fullscreen
-    if conf.fullscreen then
+    core.fullscreen = not core.fullscreen
+    if core.fullscreen then
       sys.window_mode 'fullscreen'
     else
       sys.window_mode 'normal'
