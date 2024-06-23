@@ -822,6 +822,7 @@ end
 function win:set(text)
   self.buf:set(text)
   self:cur(self:cur())
+  self.colorizer = nil
 end
 
 function win:gettext(...)

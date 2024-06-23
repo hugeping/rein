@@ -53,4 +53,10 @@ return {
     syntax = "diff"
     }
   },
+  {"/$", { ts = 8,
+    spaces_tab = false,
+    trim_spaces = false,
+    syntax = "dir"
+    }
+  },
 }
