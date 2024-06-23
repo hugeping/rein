@@ -441,12 +441,12 @@ function frame:file(f)
 
   b = win:new(fn)
   b.menu = self:menu().buf:gettext() -- clone menu
+  b.conf = presets.get(fn) or {}
   if dir then
     b:set ""
     b:readdir(fn)
     b:cur(1)
   elseif not fn:startswith '+' then
-    b.conf = presets.get(fn) or {}
     b:file(fn)
     if nr == 0 and b:histfile_get() then
       self:push_win(b)
