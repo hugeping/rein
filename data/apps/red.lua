@@ -1075,7 +1075,9 @@ function mainwin:hgeom(x, y, w, h)
       r.posx, c.posx = c.posx - scr.spw, r.posx + scr.spw
       d = r.w
     end
-    c:geom(c.posx, y + pos, d, h)
+    if d then
+      c:geom(c.posx, y + pos, d, h)
+    end
   end
 end
 

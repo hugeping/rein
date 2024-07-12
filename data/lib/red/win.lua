@@ -366,7 +366,7 @@ function win:off2cur(x, y)
   local nl
   local gl = self.glyphs[y]
   for i = x, 0, -1 do
-    if gl[i].pos then
+    if gl[i] and gl[i].pos then
       return gl[i].pos, nl
     end
     nl = true
