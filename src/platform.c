@@ -1077,7 +1077,7 @@ Send(int fd, const void *data, int size)
 	rc = send(fd, (const char *)data, (size_t)size, 0);
 	err = sock_err(rc);
 	if (rc < 0 && (err == EAGAIN || err == EWOULDBLOCK ||
-		err == EINPROGRESS))
+		err == EINPROGRESS || err == ENOTCONN))
 		return 0;
 	return rc;
 }
