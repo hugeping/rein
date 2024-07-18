@@ -67,7 +67,7 @@ WindowTitle(const char *title)
 	SDL_SetWindowTitle(window, title);
 }
 
-#if 1
+#ifdef _WIN32
 /* SDL2 realization after 2.0.16 may sleep. BUG? */
 int
 SDL_WaitEventTo(int timeout)
@@ -115,11 +115,12 @@ WakeEvent(void)
 int
 WaitEvent(float n)
 {
+#ifdef _WIN32
 /* standard function may sleep longer than 20ms (in Windows) */
-//	if (n >= 0.05f)
-//		return SDL_WaitEventTimeout(NULL, (int)(n * 1000));
-//	else
-		return SDL_WaitEventTo((int)(n * 1000));
+	return SDL_WaitEventTo((int)(n * 1000));
+#else
+	return SDL_WaitEventTimeout(NULL, (int)(n * 1000));
+#endif
 }
 
 void
