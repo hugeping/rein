@@ -1,4 +1,4 @@
-#include "lualib.h"
+#include "external.h"
 #ifndef LUA_BITLIBNAME_OWN
 /*
 * Stripped down code from the Lua BitOp library (MIT)
