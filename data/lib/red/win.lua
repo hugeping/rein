@@ -478,7 +478,7 @@ function win:colorize()
   end
   self:make_epos()
   local state
---  print("Colorize:", start, epos, #colorizer.stack)
+  -- print("Colorize:", start, self.epos, #colorizer.stack, colorizer.dirty)
   colorizer.saved = nil
   for i = start, self.epos - 1 do
     if not state and
