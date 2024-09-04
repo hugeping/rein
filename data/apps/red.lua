@@ -360,11 +360,9 @@ function win:exec(t)
   end
 
   if not sys.isdir(ff) then
-    local f = io.open(ff, "r")
-    if not f then
+    if not io.access(ff, "r") and not ff:startswith '+' then
       return
     end
-    f:close()
   elseif self.buf:isdir() then
     self.cwd = sys.realpath(ff)
     self.buf.fname = (ff .. '/'):gsub("/+", "/")
