@@ -25,11 +25,15 @@ if [ ! -f external/.stamp_SDL2 ]; then
 fi
 
 if [ ! -f external/.stamp_luajit ]; then
-	test -f LuaJIT-${luajit_ver}.tar.gz || wget https://luajit.org/download/LuaJIT-${luajit_ver}.tar.gz
+#	test -f LuaJIT-${luajit_ver}.tar.gz || wget https://luajit.org/download/LuaJIT-${luajit_ver}.tar.gz
 	rm -rf LuaJIT-${luajit_ver}
 
-	tar xf LuaJIT-${luajit_ver}.tar.gz
+	git clone https://luajit.org/git/luajit.git LuaJIT-${luajit_ver}
 	cd LuaJIT-${luajit_ver}
+	git checkout "v"${luajit_ver}
+
+#	tar xf LuaJIT-${luajit_ver}.tar.gz
+#	cd LuaJIT-${luajit_ver}
 	make DEFAULT_CC="gcc" BUILDMODE=static V=1
 	cp src/libluajit.a ../external/lib/
 	for f in lua.h luaconf.h lualib.h lauxlib.h; do
