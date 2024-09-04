@@ -868,6 +868,12 @@ function win:file(fname)
 end
 
 function win:curvisible()
+  local sel = self.buf:getsel()
+  if sel and sel.s then
+    return self.epos and ((sel.s >= self.pos and
+      sel.s <= self.epos) or
+        (sel.e-1 >= self.pos and sel.e-1 <= self.epos))
+  end
   return self.epos and self.buf.cur >= self.pos and
     self.buf.cur <= self.epos
 end
@@ -1149,6 +1155,7 @@ function win:event(r, v, a, b)
       self.buf.cur = self.pos
       self:tox(self.autox)
       self:movesel(true)
+      self:visible()
     elseif v == 'pagedown' or v == 'keypad 3' then
       if self:nextpage() then
         self.buf.cur = self.pos
@@ -1156,7 +1163,9 @@ function win:event(r, v, a, b)
       else
         self:cur(#self.buf.text+1)
       end
-      self:movesel(true)
+      if self:movesel(true) then
+        self:visible()
+      end
     elseif v == 'return' then
       self:newline()
     elseif v == 'backspace' then
@@ -1169,8 +1178,10 @@ function win:event(r, v, a, b)
       end
     elseif v == 'e' and input.keydown 'ctrl' then
       self:lineend()
+      self:movesel()
     elseif v == 'a' and input.keydown 'ctrl' then
       self:linestart()
+      self:movesel()
     elseif v == 'z' and input.keydown 'ctrl' then
       self:undo()
     elseif v == 'y' and input.keydown 'ctrl' then

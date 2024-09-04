@@ -1,18 +1,30 @@
 local proc = require "red/proc"
 return {
+  { 'shift+home',
+    function(self)
+      self:linestart()
+      self:movesel()
+    end
+  },
   { 'home',
     function(self)
       self:linestart()
     end
   },
-  { 'insert',
-    function(self)
-      self.buf:insmode(not self.buf:insmode())
-    end
-  },
   { 'end',
     function(self)
       self:lineend()
+    end
+  },
+  { 'shift+end',
+    function(self)
+      self:lineend()
+      self:movesel()
+    end
+  },
+  { 'insert',
+    function(self)
+      self.buf:insmode(not self.buf:insmode())
     end
   },
   { 'escape',
@@ -32,15 +44,15 @@ return {
       self.frame:menu():exec 'i-'
     end
   },
+  { 'ctrl+escape',
+    function(self)
+      self:setsel(1, #self.buf.text+1)
+    end
+  },
   { 'ctrl+home',
     function(self)
       self:cur(1)
       self:visible()
-    end
-  },
-  { 'ctrl+escape',
-    function(self)
-      self:setsel(1, #self.buf.text+1)
     end
   },
   { 'ctrl+end',
@@ -48,6 +60,21 @@ return {
       self:cur(#self.buf.text)
       self:lineend()
       self:visible()
+    end
+  },
+  { 'shift+ctrl+home',
+    function(self)
+      self:cur(1)
+      self:visible()
+      self:movesel()
+    end
+  },
+  { 'shift+ctrl+end',
+    function(self)
+      self:cur(#self.buf.text)
+      self:lineend()
+      self:visible()
+      self:movesel()
     end
   },
   { 'ctrl+s',
