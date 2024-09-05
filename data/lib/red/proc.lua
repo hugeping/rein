@@ -265,7 +265,7 @@ proc['!'] = function(w, pat)
     end
     os.execute(prog)
   end)
-  p:write(pat:unesc(), w.cwd)
+  p:write(pat:unesc(), w.cwd or w:getcwd())
   p:detach()
   return true
 end
