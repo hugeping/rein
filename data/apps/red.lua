@@ -363,7 +363,7 @@ function win:exec(t)
     if not io.access(ff, "r") and not ff:startswith '+' then
       return
     end
-  elseif self.buf:isdir() then
+  elseif self.buf:isdir() and not input.keydown 'alt' then
     self.cwd = sys.realpath(ff)
     self.buf.fname = (ff .. '/'):gsub("/+", "/")
     self:set ""
