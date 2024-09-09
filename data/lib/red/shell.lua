@@ -76,6 +76,9 @@ local function pipe_proc()
       thread:write(l)
     end
   end
+  if pre then
+    thread:write(pre)
+  end
   f:close()
   thread:write '\1eof'
 end
