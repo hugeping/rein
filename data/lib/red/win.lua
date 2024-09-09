@@ -868,8 +868,8 @@ function win:file(fname)
 end
 
 function win:curvisible()
-  local sel = self.buf:getsel()
-  if sel and sel.s then
+  local sel = self.buf:issel() and self.buf:getsel()
+  if sel then
     return self.epos and ((sel.s >= self.pos and
       sel.s <= self.epos) or
         (sel.e-1 >= self.pos and sel.e-1 <= self.epos))
