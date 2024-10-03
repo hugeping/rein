@@ -53,11 +53,11 @@ function posix.read(f, size)
 	return nil
 end
 
-function posix.poll(f)
+function posix.poll(f, to)
   local fds = ffi.new("struct pollfd[1]")
   fds[0].fd = ffi.C.fileno(f)
   fds[0].events = 1
-  local ret = ffi.C.poll(fds, 1, 1000)
+  local ret = ffi.C.poll(fds, 1, to or 1000)
   return ret > 0 and bit.band(fds[0].revents, 1) == 1,
     ret >= 0 and
     bit.band(fds[0].revents, 0x8) ~= 0x8 and

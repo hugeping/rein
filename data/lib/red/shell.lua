@@ -4,14 +4,18 @@ local function pipe_shell()
   local posix = require("red/posix")
   local function read_sym(f)
     local t = {}
+    local last_b='\xff'
     while true do
-      local p, ok = posix.poll(f)
+      local p, ok = posix.poll(f, 200)
       if not ok then break end
+      if not p and (t[#t] == '\n' or last_b:byte(1) < 128) then
+        break
+      end
       if p then
         local b = f:read(1)
         if not b then break end
+        last_b = b
         table.insert(t, b)
-        if b == '\n' then break end
         if (not posix.have_poll or #t > 256) and
           b:byte(1) < 128 then
             break
