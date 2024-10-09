@@ -247,7 +247,7 @@ local io_delim = {
 
 function win:save()
   if not self.buf:isfile() then
-    return
+    return false, "Buffer is not writable file"
   end
   local trim = self:getconf 'trim_spaces'
   if trim then
