@@ -632,35 +632,48 @@ function win:exec(txt)
   print("EXEC", txt)
 end
 
-function win:compl()
+-- fill completion
+function win:completion(txt)
+  local res = {}
+  txt = txt:gsub("/+", "/")
+  if txt == '' then return res end
+  local d = sys.dirname(txt)
+  local dir = self:path(d)
+  --(not sys.is_absolute_path(d) and self.cwd or '').. d
+  for _, f in ipairs(sys.readdir(dir) or {}) do
+    local path = (d ..'/'.. f):gsub("/+", "/"):esc()
+    table.insert(res, path)
+  end
+  return res
+end
+
+function win:compl(fn)
+  fn = fn or self.completion
   local txt = self.buf:getseltext()
   if not self.buf:issel() then
     self.buf:selpar(delim_compl)
     txt = self.buf:getseltext()
   end
-  if txt == self.last_compl then
-    txt = self.last_compl_path
-  else
+  if txt ~= self.last_compl then
     self.last_compl = false
-    txt = txt:gsub("/+", "/")
+  else
+    txt = self.last_compl_base
   end
-  if txt == '' then return end
-  local d = sys.dirname(txt)
-  self.last_compl_path = txt
-  local dir = self:path(d)
-  --(not sys.is_absolute_path(d) and self.cwd or '').. d
-  for _, f in ipairs(sys.readdir(dir) or {}) do
-    local path = (d ..'/'.. f):gsub("/+", "/"):esc()
+  local ret = fn(self, txt)
+  self.last_compl_base = txt
+  for _, p in ipairs(ret) do
     if self.last_compl then
-      if self.last_compl == path then
+      if self.last_compl == p then
         self.last_compl = false
       end
-    elseif (path:startswith(txt) or path:startswith("./"..txt)) then
-      self:input(path)
-      self.last_compl = path
-      break
+    elseif (p:startswith(txt) or p:startswith("./"..txt)) then
+      self:input(p)
+      self.last_compl = p
+      return
     end
   end
+  self:input(self.last_compl_base)
+  self.last_compl = false
 end
 
 function win:mouseup(mb, x, y)

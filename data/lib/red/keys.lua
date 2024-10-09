@@ -117,4 +117,22 @@ return {
       end
     end
   },
+  { -- completion via global
+    'alt+f',
+    function(self)
+      if PLATFORM == 'Windows' then
+        return {}
+      end
+      self:compl(function(_, txt)
+        local ret = {}
+        local f, _ = io.popen(string.format("global -t -c %q", txt), "r")
+        if not f then return ret end
+        for l in f:lines() do
+          table.insert(ret, l)
+        end
+        f:close()
+        return ret
+      end)
+    end
+  }
 }
