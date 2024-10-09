@@ -739,7 +739,7 @@ end
 local mainmenu = menu:new()
 mainmenu.cmd = {}
 
-mainmenu.buf:set 'Help GetAll PutAll Dump Exit Horizont Sort New'
+mainmenu.buf:set 'Help GetAll PutAll Dump Exit Sort New Horizont'
 
 function mainmenu:scroller(click)
   if click then
