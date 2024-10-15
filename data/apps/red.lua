@@ -731,8 +731,8 @@ function framemenu.cmd:Close()
   self.frame:refresh()
 end
 
-function framemenu.cmd:New()
-  self.frame:file(self.frame.frame:getnewfile())
+function framemenu.cmd:New(w)
+  self.frame:file(w or self.frame.frame:getnewfile())
   self.frame:refresh()
 end
 
