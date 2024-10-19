@@ -165,7 +165,7 @@ function pal:showcolor()
   return
 end
 
-function pal:click(x, y, mb, click)
+function pal:click(x, y, mb, click, e)
   local x, y = self:pos2col(x, y)
   local c
   local py = HCOLORS
@@ -204,9 +204,9 @@ function pal:click(x, y, mb, click)
   elseif y == py+3 and x == 1 and click then
     draw_mode = draw_mode ~= 'fill' and 'fill' or false
     sel_mode, grid.sel_x1 = false, false
-  elseif y == py + 4 and x == 0 and not click then
+  elseif y == py + 4 and x == 0 and e == 'mouseup' then
     switch_mode()
-  elseif y == py + 4 and x == 1 and not click then
+  elseif y == py + 4 and x == 1 and e == 'mouseup' then
     help_mode = not help_mode
   end
   return true
@@ -705,9 +705,9 @@ function grid:mousewheel(e)
   return true
 end
 
-function grid:click(x, y, mb, click)
+function grid:click(x, y, mb, click, e)
   local s = self
-  if pan_mode then
+  if pan_mode or e == 'mouseup' then
     return
   end
   x, y = s:pos2cell(x, y)
@@ -1193,9 +1193,9 @@ function run()
       gfx.print("Here is the status line.", 0, h - 16, 0)
       screen:clear(0, h - 8, w, h - 8, 1)
       title:show()
-    else
+    elseif r then
       proc_inp(r, v, a, b)
-      if (mb.left or mb.right or mb.middle or r == 'mousewheel') then
+      if (mb.left or mb.right or mb.middle or r == 'mousewheel' or r == 'mouseup') then
         for _, o in ipairs(obj) do
           local mx, my, mb = input.mouse()
           if mx >= o.x and my >= o.y and
@@ -1205,7 +1205,7 @@ function run()
               if o.mousewheel and o:mousewheel(v, mx, my) then
                 break
               end
-            elseif o:click(mx, my, mb, r == 'mousedown') then
+            elseif o:click(mx, my, mb, r == 'mousedown', r) then
               break
             end
           end
