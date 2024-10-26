@@ -305,8 +305,9 @@ function win:toline(nr, sel)
 
   local start = self.buf.cur
   if type(sel) == 'number' and sel ~= 0 then
-    self.buf:linestart()
+    start = self.buf:linestart()
     self:cur(self:cur()+sel)
+    self.buf:setsel(start, self.buf.cur)
   elseif sel ~= false then
     self.buf:lineend()
     self.buf:setsel(start, self.buf.cur)
