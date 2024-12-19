@@ -969,12 +969,12 @@ function win:backspace()
 end
 
 function win:escape()
-  self:visible()
   if self.buf:issel() then
     self.buf:cut()
   elseif self.input_start then
     self.buf:setsel(self.input_start, self.buf.cur)
   end
+  self:visible()
   self.autox = false
   self.input_start = false
 end
