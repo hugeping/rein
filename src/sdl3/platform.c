@@ -1,7 +1,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gamepad.h>
-#include "external.h"
-#include "platform.h"
+#include "../external.h"
+#include "../platform.h"
 
 #ifdef __ANDROID__
 #include <jni.h>
