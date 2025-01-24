@@ -356,7 +356,7 @@ sound_init(void)
 	if (audiostream) {
 		printf("Audio: %dHz channels: %d\n",
 			spec.freq, spec.channels);
-		audiobuff.size = 2048;
+		audiobuff.size = 4096;
 		audiobuff.free = audiobuff.size;
 		audiobuff.data = malloc(audiobuff.size);
 		audiobuff.head = 0;
@@ -480,6 +480,9 @@ WindowCreate(void)
 		SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY, &window, &renderer))
 #endif
 		return -1;
+#ifndef __ANDROID__
+	SDL_StartTextInput(window);
+#endif
 	fprintf(stdout, "Video: %s\n", SDL_GetRendererName(renderer));
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 	SDL_ShowWindow(window);
