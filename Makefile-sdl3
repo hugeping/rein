@@ -22,7 +22,7 @@ uninstall:
 endif
 
 CFILES= \
-	src/platform-sdl3.c \
+	src/sdl3/platform.c \
 	src/stb_image.c \
 	src/lua-compat.c \
 	src/stb_image_resize.c \
