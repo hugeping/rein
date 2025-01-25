@@ -4,13 +4,61 @@
 #include "stb_vorbis.h"
 #undef L
 
+#define ZV_SAMPLER_LOAD (ZV_END + 1)
+
 #define CHANNELS_MAX 33 /* 1..32 in lua, 0 is always free */
+
+#define WAV_BANK_SIZE 128
+static struct {
+	void *data;
+	int size;
+	int ref;
+} wav_bank[WAV_BANK_SIZE] = { };
 
 enum {
 	ZV_BYPASS = ZV_END + 1,
 };
 
 static int mutex;
+
+static int
+wav_get(int i, void **data, int *size)
+{
+	if (i < 0 || i >= WAV_BANK_SIZE)
+		return -1;
+	MutexLock(mutex);
+	if (wav_bank[i].data) {
+		if (data)
+			*data = wav_bank[i].data;
+		if (size)
+			*size = wav_bank[i].size;
+		wav_bank[i].ref ++;
+	} else
+		i = -1;
+	MutexUnlock(mutex);
+	return i;
+}
+
+static int
+wav_put(int i)
+{
+	int rc = -1;
+	if (i < 0 || i >= WAV_BANK_SIZE)
+		return rc;
+	MutexLock(mutex);
+	if (wav_bank[i].data) {
+		wav_bank[i].ref --;
+		if (wav_bank[i].ref <= 0) {
+			free(wav_bank[i].data);
+			wav_bank[i].data = NULL;
+			wav_bank[i].size = 0;
+		}
+		rc = wav_bank[i].ref;
+	} else
+		rc = -1;
+	MutexUnlock(mutex);
+	return rc;
+}
 
 static double
 empty_mono(void *s, double x)
@@ -52,6 +100,7 @@ static struct sfx_proto bypass_box = {
 
 struct sfx_ogg_sampler_state {
 	void *data;
+	int id;
 	int size;
 	int pos;
 	stb_vorbis *v;
@@ -65,17 +114,15 @@ static void
 sfx_ogg_sampler_free(struct sfx_ogg_sampler_state *s)
 {
 	stb_vorbis_close(s->v);
-	free(s->data);
+	wav_put(s->id);
+	s->data = NULL;
+	s->size = 0;
 }
 
 static void
-sfx_ogg_sampler_load(struct sfx_ogg_sampler_state *s, void *data, int size)
+sfx_ogg_sampler_init(struct sfx_ogg_sampler_state *s)
 {
-	sfx_ogg_sampler_free(s);
-	s->data = malloc(size);
-	s->size = size;
-	s->pos = size;
-	memcpy(s->data, data, size);
+	s->id = -1;
 }
 
 static void
@@ -111,13 +158,22 @@ sfx_ogg_sampler_change(struct sfx_ogg_sampler_state *s, int param, int elem, dou
 {
 	int used, error;
 	switch (param) {
-	case ZV_NOTE_ON:
-		stb_vorbis_close(s->v);
-		s->v = stb_vorbis_open_pushdata(s->data, s->size, &used, &error, NULL);
-		s->pos = used;
-		s->frame = 0;
-		s->frames = 0;
+	case ZV_NOTE_OFF:
+		s->pos = s->size;
 		break;
+	case ZV_NOTE_ON:
+		if (s->data) {
+			stb_vorbis_close(s->v);
+			s->v = stb_vorbis_open_pushdata(s->data, s->size, &used, &error, NULL);
+			s->pos = used;
+			s->frame = 0;
+			s->frames = 0;
+		}
+		break;
+	case ZV_SAMPLER_LOAD:
+		sfx_ogg_sampler_free(s);
+		s->id = wav_get((int)val, &s->data, &s->size);
+		s->pos = s->size;
 	default:
 		break;
 	}
@@ -125,10 +181,9 @@ sfx_ogg_sampler_change(struct sfx_ogg_sampler_state *s, int param, int elem, dou
 
 struct sfx_proto sfx_ogg_sampler = {
 	.name = "ogg-sampler",
-	.init = (sfx_init_func) empty_init,
+	.init = (sfx_init_func) sfx_ogg_sampler_init,
 	.stereo = (sfx_stereo_func) sfx_ogg_sampler_stereo,
 	.change = (sfx_change_func) sfx_ogg_sampler_change,
-	.load = (sfx_load_func) sfx_ogg_sampler_load,
 	.free = (sfx_free_func) sfx_ogg_sampler_free,
 	.state_size = sizeof(struct sfx_ogg_sampler_state)
 };
@@ -141,7 +196,8 @@ lua_ogg_sampler_status(lua_State *L, void *state)
 {
 	struct sfx_ogg_sampler_state *s = state;
 	lua_pushboolean(L, s->pos < s->size);
-	return 1;
+	lua_pushinteger(L, s->pos);
+	return 2;
 }
 
 static struct {
@@ -219,26 +275,38 @@ synth_change(lua_State *L)
 static int
 synth_load(lua_State *L)
 {
-	const int chan = luaL_checkinteger(L, 1);
-	int nr = luaL_checkinteger(L, 2);
 	size_t sz = 0;
-	const char *data = luaL_checklstring(L, 3, &sz);
+	const char *data = luaL_checklstring(L, 1, &sz);
 
-	struct sfx_box *box;
-
-	if (chan < 0 || chan >= CHANNELS_MAX)
-		return luaL_error(L, "Wrong channel number");
+	if (!sz)
+		return 0;
 
 	MutexLock(mutex);
-	nr = synth_chan(chan, nr);
-	if (nr < 0) {
+	for (int i = 0; i < WAV_BANK_SIZE; i++) {
+		if (wav_bank[i].data)
+			continue;
+		wav_bank[i].data = malloc(sz);
+		wav_bank[i].size = sz;
+		wav_bank[i].ref = 1;
+		memcpy(wav_bank[i].data, data, sz);
 		MutexUnlock(mutex);
-		return luaL_error(L, "Wrong stack position");
+		lua_pushinteger(L, i);
+		return 1;
 	}
-	box = &channels[chan].stack[nr];
-	sfx_box_load(box, data, sz);
 	MutexUnlock(mutex);
-	return 0;
+	lua_pushboolean(L, 0);
+	return 1;
+}
+
+static int
+synth_unload(lua_State *L)
+{
+	int i = luaL_checkinteger(L, 1);
+
+	if (i < 0 || i >= WAV_BANK_SIZE)
+		return luaL_error(L, "Wrong resource handle");
+	lua_pushboolean(L, wav_put(i) <= 0);
+	return 1;
 }
 
 static int
@@ -451,6 +519,7 @@ synth_lib[] = {
 	{ "pan", synth_set_pan },
 	{ "change", synth_change },
 	{ "load", synth_load },
+	{ "unload", synth_unload },
 	{ "chan_change", synth_chan_change },
 	{ "status", synth_status },
 	{ "mix", synth_mix },
@@ -525,6 +594,7 @@ static struct {
 	{ "LFO_TRIANGLE", LFO_TRIANGLE },
 	{ "LFO_SEQ", LFO_SEQ },
 	{ "LFO_LIN_SEQ", LFO_LIN_SEQ },
+	{ "SAMPLER_LOAD", ZV_SAMPLER_LOAD },
 	{ NULL }
 };
 
@@ -539,6 +609,10 @@ synth_init()
 void
 synth_done()
 {
+	for (int i = 0; i < CHANNELS_MAX; i ++)
+		chan_drop(&channels[i]);
+	for (int i = 0; i < WAV_BANK_SIZE; i ++)
+		free(wav_bank[i].data);
 	MutexDestroy(mutex);
 }
 
