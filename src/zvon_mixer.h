@@ -6,7 +6,6 @@
 #include "zvon.h"
 
 typedef void (*sfx_change_func)(void *state, int param, int elem, double val);
-typedef void (*sfx_load_func)(void *state, const void *data, int size);
 typedef double (*sfx_mono_func)(void *state, double l);
 typedef void (*sfx_stereo_func)(void *state, double *l, double *r);
 typedef void (*sfx_init_func)(void *state);
@@ -19,7 +18,6 @@ struct sfx_proto {
     sfx_stereo_func stereo;
     sfx_init_func init;
     sfx_free_func free;
-    sfx_load_func load;
     int state_size;
 };
 
@@ -54,7 +52,6 @@ double mix_process(struct chan_state *chans, int num_chans, double vol, float *s
 #define SFX_BOX_VOLUME 0
 
 void sfx_box_change(struct sfx_box *box, int param, int elem, double val);
-void sfx_box_load(struct sfx_box *box, const void *data, int size);
 void chan_change(struct chan_state *c, int param, int elem, double val);
 
 #endif
