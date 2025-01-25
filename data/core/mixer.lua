@@ -164,13 +164,76 @@ end
 function mixer.srv.write(text, file)
   local id, e = mixer.srv.play(text, 1)
   if not id then return id, e end
-  local f, e = io.open(file, 'wb')
+  local f
+  f, e = io.open(file, 'wb')
   if not f then return f, e end
   f:write("RIFF0000WAVEfmt \x10\x00\x00\x00\x01\x00\x02\x00\x44\xac\x00\x00\x10\xb1\x02\x00\x04\x00\x10\x00data0000")
   mixer.write_req = { id = id, filename = file, file = f,
     frames = 0 }
   print(string.format("Writing file: %s", file))
   return id
+end
+
+function mixer.srv.get_chan()
+  local chans = mixer.get_channels(1)
+  if not chans then
+    return false, "No free channels"
+  end
+  return chans[1]
+end
+
+function mixer.srv.free_chan(c)
+  mixer.free_channels({c})
+end
+
+function mixer.srv.aplay(id, ...)
+  local chans = mixer.get_channels(1)
+  if not chans then
+    return false, "No free channels"
+  end
+  return mixer.srv.aplay_chan(chans[1], id, ...)
+end
+
+function mixer.srv.aplay_chan(c, id, vol, ...)
+  local chans = { c }
+  -- mixer.get_channels(1)
+  if not chans then
+    return false, "No free channels"
+  end
+  local state
+  synth.push(chans[1], 'ogg-sampler')
+  synth.change(chans[1], 0, synth.SAMPLER_LOAD, id)
+  if vol then
+    synth.vol(chans[1], vol)
+  end
+  synth.change(chans[1], 0, synth.NOTE_ON, 0)
+  synth.on(chans[1], true)
+  local f, e = coroutine.create(function(nr)
+    nr = nr or 1
+    while true do
+      local _, s = synth.status(state.chans[1], 0)
+      if not s then
+        if nr > 0 then
+          nr = nr - 1
+        end
+        if nr == 0 then
+          break
+        end
+        synth.change(state.chans[1], 0, synth.NOTE_ON, 0)
+      end
+      coroutine.yield()
+    end
+    return true
+  end)
+  if not f then
+    error(e)
+  end
+  mixer.req_nextid()
+  state = { id = mixer.id, fn = f, chans = chans,
+    audio = true, args = { ...  } }
+  table.insert(mixer.fn, state)
+  mixer.ids[mixer.id] = state
+  return mixer.id
 end
 
 function mixer.srv.play(text, nr)
@@ -234,6 +297,10 @@ function mixer.srv.status(id)
     local e = r.status
     r.status = nil
     return false, e or "Sfx is canceled"
+  end
+  if r.audio then
+    local _, a, b = synth.status(r.chans[1], 0)
+    return a, b
   end
   return r.args[2].row or 1
 end
@@ -357,6 +424,14 @@ function mixer.play(...)
   return mixer.clireq("play", {...})
 end
 
+function mixer.aplay(...)
+  return mixer.clireq("aplay", {...})
+end
+
+function mixer.aplay_chan(...)
+  return mixer.clireq("aplay_chan", {...})
+end
+
 function mixer.write(...)
   return mixer.clireq("write", {...})
 end
@@ -399,6 +474,14 @@ end
 
 function mixer.status(nr)
   return mixer.clireq("status", { nr })
+end
+
+function mixer.get_chan(...)
+  return mixer.clireq("get_chan", { ... })
+end
+
+function mixer.free_chan(...)
+  return mixer.clireq("free_chan", { ... })
 end
 
 function mixer.init()
