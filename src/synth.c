@@ -1,7 +1,7 @@
 #include "external.h"
 #include "platform.h"
 #include "zvon_sfx.h"
-#include "stb_vorbis.c"
+#include "stb_vorbis.h"
 #undef L
 
 #define CHANNELS_MAX 33 /* 1..32 in lua, 0 is always free */
