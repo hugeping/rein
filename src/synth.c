@@ -279,7 +279,7 @@ synth_change(lua_State *L)
 }
 
 static int
-synth_load(lua_State *L)
+synth_data_load(lua_State *L)
 {
 	size_t sz = 0;
 	const char *data = luaL_checklstring(L, 1, &sz);
@@ -524,7 +524,7 @@ synth_lib[] = {
 	{ "mul_vol", synth_mul_vol },
 	{ "pan", synth_set_pan },
 	{ "change", synth_change },
-	{ "load", synth_load },
+	{ "data", synth_data_load },
 	{ "unload", synth_unload },
 	{ "chan_change", synth_chan_change },
 	{ "status", synth_status },
