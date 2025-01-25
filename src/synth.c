@@ -1,6 +1,8 @@
 #include "external.h"
 #include "platform.h"
 #include "zvon_sfx.h"
+#include "stb_vorbis.c"
+#undef L
 
 #define CHANNELS_MAX 33 /* 1..32 in lua, 0 is always free */
 
@@ -48,7 +50,107 @@ static struct sfx_proto bypass_box = {
 	.state_size = 0,
 };
 
-static struct sfx_proto *boxes[] = { &empty_box, &bypass_box, &sfx_delay, &sfx_dist, &sfx_synth, &sfx_filter, NULL };
+struct sfx_ogg_sampler_state {
+	void *data;
+	int size;
+	int pos;
+	stb_vorbis *v;
+	float **outputs;
+	int channels;
+	int frames;
+	int frame;
+};
+
+static void
+sfx_ogg_sampler_free(struct sfx_ogg_sampler_state *s)
+{
+	stb_vorbis_close(s->v);
+	free(s->data);
+}
+
+static void
+sfx_ogg_sampler_load(struct sfx_ogg_sampler_state *s, void *data, int size)
+{
+	sfx_ogg_sampler_free(s);
+	s->data = malloc(size);
+	s->size = size;
+	s->pos = size;
+	memcpy(s->data, data, size);
+}
+
+static void
+sfx_ogg_sampler_stereo(struct sfx_ogg_sampler_state *s, double *l, double *r)
+{
+	if (!s->v || s->pos >= s->size)
+		return;
+	if (s->frame >= s->frames) {
+		s->frames = 0;
+		s->frame = 0;
+		s->outputs = NULL;
+		while (s->pos < s->size && !s->frames) {
+			int used = stb_vorbis_decode_frame_pushdata(s->v, s->data + s->pos,
+				s->size - s->pos, &s->channels, &s->outputs, &s->frames);
+			if (!used) {
+				s->pos = s->size;
+				break;
+			}
+			s->pos += used;
+		}
+	}
+	if (!s->outputs)
+		return;
+
+	*l = s->outputs[0][s->frame];
+	*r = (s->channels > 1)?s->outputs[1][s->frame]:*l;
+
+	s->frame ++;
+}
+
+static void
+sfx_ogg_sampler_change(struct sfx_ogg_sampler_state *s, int param, int elem, double val)
+{
+	int used, error;
+	switch (param) {
+	case ZV_NOTE_ON:
+		stb_vorbis_close(s->v);
+		s->v = stb_vorbis_open_pushdata(s->data, s->size, &used, &error, NULL);
+		s->pos = used;
+		s->frame = 0;
+		s->frames = 0;
+		break;
+	default:
+		break;
+	}
+}
+
+struct sfx_proto sfx_ogg_sampler = {
+	.name = "ogg-sampler",
+	.init = (sfx_init_func) empty_init,
+	.stereo = (sfx_stereo_func) sfx_ogg_sampler_stereo,
+	.change = (sfx_change_func) sfx_ogg_sampler_change,
+	.load = (sfx_load_func) sfx_ogg_sampler_load,
+	.free = (sfx_free_func) sfx_ogg_sampler_free,
+	.state_size = sizeof(struct sfx_ogg_sampler_state)
+};
+
+static struct sfx_proto *boxes[] = { &empty_box, &bypass_box, &sfx_delay, &sfx_dist, &sfx_synth,
+	&sfx_filter, &sfx_ogg_sampler, NULL };
+
+static int
+lua_ogg_sampler_status(lua_State *L, void *state)
+{
+	struct sfx_ogg_sampler_state *s = state;
+	lua_pushboolean(L, s->pos < s->size);
+	return 1;
+}
+
+static struct {
+	const char *name;
+	int (*status)(lua_State *L, void *state);
+} boxes_lua_status[] = {
+	{ "ogg-sampler", lua_ogg_sampler_status },
+	{ "", NULL },
+};
 
 static struct chan_state channels[CHANNELS_MAX];
 
@@ -74,6 +176,15 @@ synth_chan_change(lua_State *L)
 	return 0;
 }
 
+static int
+synth_chan(int chan, int nr)
+{
+	if (nr < 0)
+		nr = channels[chan].stack_size + nr;
+	if (nr < 0 || nr >= channels[chan].stack_size)
+		return -1;
+	return nr;
+}
 
 static int
 synth_change(lua_State *L)
@@ -94,9 +205,8 @@ synth_change(lua_State *L)
 	} else
 		val = luaL_checknumber(L, 4);
 	MutexLock(mutex);
-	if (nr < 0)
-		nr = channels[chan].stack_size + nr;
-	if (nr < 0 || nr >= channels[chan].stack_size) {
+	nr = synth_chan(chan, nr);
+	if (nr < 0) {
 		MutexUnlock(mutex);
 		return luaL_error(L, "Wrong stack position");
 	}
@@ -106,10 +216,35 @@ synth_change(lua_State *L)
 	return 0;
 }
 
-#if 0
 static int
-synth_peek(lua_State *L)
+synth_load(lua_State *L)
 {
+	const int chan = luaL_checkinteger(L, 1);
+	int nr = luaL_checkinteger(L, 2);
+	size_t sz = 0;
+	const char *data = luaL_checklstring(L, 3, &sz);
+
+	struct sfx_box *box;
+
+	if (chan < 0 || chan >= CHANNELS_MAX)
+		return luaL_error(L, "Wrong channel number");
+
+	MutexLock(mutex);
+	nr = synth_chan(chan, nr);
+	if (nr < 0) {
+		MutexUnlock(mutex);
+		return luaL_error(L, "Wrong stack position");
+	}
+	box = &channels[chan].stack[nr];
+	sfx_box_load(box, data, sz);
+	MutexUnlock(mutex);
+	return 0;
+}
+
+static int
+synth_status(lua_State *L)
+{
+	int rc = 1;
 	const int chan = luaL_checkinteger(L, 1);
 	int nr = luaL_checkinteger(L, 2);
 	struct sfx_box *box;
@@ -118,18 +253,23 @@ synth_peek(lua_State *L)
 		return 0;
 
 	MutexLock(mutex);
-	if (nr < 0)
-		nr = channels[chan].stack_size + nr;
-	if (nr < 0 || nr >= channels[chan].stack_size) {
+	nr = synth_chan(chan, nr);
+	if (nr < 0) {
 		MutexUnlock(mutex);
 		return 0;
 	}
 	box = &channels[chan].stack[nr];
 	lua_pushstring(L, box->proto->name);
+	for (int i = 0; boxes_lua_status[i].status; i ++) {
+		if (!strcmp(boxes_lua_status[i].name, box->proto->name)) {
+			rc += boxes_lua_status[i].status(L, box->state);
+			break;
+		}
+	}
 	MutexUnlock(mutex);
-	return 1;
+	return rc;
 }
-#endif
+
 static int
 synth_push(lua_State *L)
 {
@@ -310,8 +450,9 @@ synth_lib[] = {
 	{ "mul_vol", synth_mul_vol },
 	{ "pan", synth_set_pan },
 	{ "change", synth_change },
+	{ "load", synth_load },
 	{ "chan_change", synth_chan_change },
-//	{ "peek", synth_peek },
+	{ "status", synth_status },
 	{ "mix", synth_mix },
 	{ "mix_table", synth_mix_table },
 	{ "stop", synth_stop },

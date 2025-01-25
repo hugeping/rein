@@ -91,13 +91,19 @@ double mix_process(struct chan_state *chans, int num_chans, double vol, float *s
     return max_samp;
 }
 
+void sfx_box_load(struct sfx_box *box, const void *data, int sz) {
+    if (box->proto->load) {
+        box->proto->load(box->state, data, sz);
+    }
+}
+
 void sfx_box_change(struct sfx_box *box, int param, int elem, double val) {
     switch (param) {
     case SFX_BOX_VOLUME:
         sfx_box_set_vol(box, val);
         break;
     default:
-        if (box->state) {
+        if (box->state && box->proto->change) {
             box->proto->change(box->state, param, elem, val);
         }
     }
