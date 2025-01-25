@@ -114,6 +114,7 @@ static void
 sfx_ogg_sampler_free(struct sfx_ogg_sampler_state *s)
 {
 	stb_vorbis_close(s->v);
+	s->v = NULL;
 	wav_put(s->id);
 	s->data = NULL;
 	s->size = 0;
@@ -157,6 +158,7 @@ static void
 sfx_ogg_sampler_change(struct sfx_ogg_sampler_state *s, int param, int elem, double val)
 {
 	int used, error;
+	MutexLock(mutex);
 	switch (param) {
 	case ZV_NOTE_OFF:
 		s->pos = s->size;
@@ -171,12 +173,16 @@ sfx_ogg_sampler_change(struct sfx_ogg_sampler_state *s, int param, int elem, dou
 		}
 		break;
 	case ZV_SAMPLER_LOAD:
-		sfx_ogg_sampler_free(s);
-		s->id = wav_get((int)val, &s->data, &s->size);
+		if (s->id != (int)val) {
+			sfx_ogg_sampler_free(s);
+			s->id = wav_get((int)val, &s->data, &s->size);
+		}
 		s->pos = s->size;
+		break;
 	default:
 		break;
 	}
+	MutexUnlock(mutex);
 }
 
 struct sfx_proto sfx_ogg_sampler = {
