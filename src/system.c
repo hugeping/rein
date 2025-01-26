@@ -54,6 +54,16 @@ sys_window_mode(lua_State *L)
 }
 
 static int
+sys_window_size(lua_State *L)
+{
+	int w = 0, h = 0;
+	WindowSize(&w, &h);
+	lua_pushinteger(L, w);
+	lua_pushinteger(L, h);
+	return 2;
+}
+
+static int
 sys_chdir(lua_State *L)
 {
 	const char *path = luaL_checkstring(L, 1);
@@ -252,6 +262,7 @@ sys_lib[] = {
 	{ "poll", sys_poll },
 	{ "wait", sys_wait },
 	{ "title", sys_title },
+	{ "window_size", sys_window_size },
 	{ "window_mode", sys_window_mode },
 	{ "chdir", sys_chdir },
 	{ "mkdir", sys_mkdir },

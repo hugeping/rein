@@ -548,30 +548,6 @@ _img_flip(img_t *src, int h, int v, img_t *dst)
 }
 
 static int
-gfx_pixels_win(lua_State *L)
-{
-	struct lua_pixels *hdr;
-	unsigned char *ptr;
-	int w, h;
-	hdr = lua_newuserdata(L, sizeof(*hdr));
-	if (!hdr)
-		return 0;
-	ptr = WindowPixels(&w, &h);
-	if (!ptr)
-		return 0;
-	hdr->type = PIXELS_MAGIC;
-	img_init(&hdr->img, w, h);
-	hdr->size = w * h * 4;
-	hdr->img.ptr = ptr;
-	hdr->img.used = 0; /* do not free pixels!!! */
-	//memset(hdr->img.ptr, 0, hdr->size);
-	luaL_getmetatable(L, "pixels metatable");
-	lua_setmetatable(L, -2);
-	return 1;
-}
-
-
-static int
 pixels_size(lua_State *L)
 {
 	struct lua_pixels *hdr = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
@@ -821,6 +797,21 @@ pixels_blend(lua_State *L)
 	if (dst->type != PIXELS_MAGIC)
 		return 0;
 	return img_pixels_blend(&src->img, x, y, w, h, &dst->img, xx, yy, PXL_BLEND_BLEND);
+}
+
+static int
+pixels_expose(lua_State *L)
+{
+	int dx = 0, dy = 0, dw = 0, dh = 0;
+	struct lua_pixels *src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
+
+	dx = luaL_optnumber(L, 2, 0);
+	dy = luaL_optnumber(L, 3, 0);
+	dw = luaL_optnumber(L, 4, src->img.w);
+	dh = luaL_optnumber(L, 5, src->img.h);
+
+	WindowExpose(src->img.ptr, src->img.w, src->img.h, src->img.w * 4, dx, dy, dw, dh);
+	return 0;
 }
 
 static __inline void
@@ -1823,6 +1814,7 @@ static const luaL_Reg pixels_mt[] = {
 	{ "clear", pixels_clear },
 	{ "copy", pixels_copy },
 	{ "blend", pixels_blend },
+	{ "expose", pixels_expose },
 	{ "line", pixels_line },
 	{ "lineAA", pixels_lineAA },
 	{ "fill_triangle", pixels_triangle },
@@ -1851,45 +1843,26 @@ pixels_create_meta(lua_State *L)
 	lua_setfield(L, -2, "__index");
 }
 
-static int
-gfx_pixels_expose(lua_State *L)
-{
-	int x, y, w, h;
-	struct lua_pixels *src;
-	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
-	x = luaL_optnumber(L, 2, 0);
-	y = luaL_optnumber(L, 3, 0);
-	w = luaL_optnumber(L, 4, -1);
-	h = luaL_optnumber(L, 5, -1);
-	WindowExpose(src->img.ptr, src->img.w, src->img.h, x, y, w, h);
-	return 0;
-}
+static color_t bgcol = {};
 
 static int
 gfx_background(lua_State *L)
 {
-	color_t col;
-	checkcolor(L, 1, &col);
-	WindowBackground(col.r, col.g, col.b);
+	checkcolor(L, 1, &bgcol);
+	return 0;
+}
+
+static int
+gfx_clear(lua_State *L)
+{
+	WindowClear(bgcol.r, bgcol.g, bgcol.b);
 	return 0;
 }
 
 static int
 gfx_flip(lua_State *L)
 {
-	WindowUpdate(0, 0, 0, 0);
-	return 0;
-}
-
-static int
-gfx_update(lua_State *L)
-{
-	int x, y, w, h;
-	x = luaL_optnumber(L, 1, 0);
-	y = luaL_optnumber(L, 2, 0);
-	w = luaL_optnumber(L, 3, -1);
-	h = luaL_optnumber(L, 4, -1);
-	WindowUpdate(x, y, w, h);
+	Flip();
 	return 0;
 }
 
@@ -2030,13 +2003,11 @@ gfx_pal(lua_State *L)
 
 static const luaL_Reg
 gfx_lib[] = {
-	{ "win",  gfx_pixels_win },
 	{ "new", gfx_pixels_new },
 	{ "icon", gfx_icon },
 	{ "flip", gfx_flip },
-	{ "update", gfx_update },
-	{ "expose", gfx_pixels_expose },
 	{ "background", gfx_background },
+	{ "clear", gfx_clear },
 	{ "pal", gfx_pal },
 	{ "font", gfx_font },
 	{ NULL, NULL }
