@@ -84,6 +84,7 @@ local env = {
   gfx = {
     pal = gfx.pal,
     icon = gfx.icon,
+    clear = gfx.clear,
   };
   sys = {
     running = sys.running,
@@ -361,6 +362,9 @@ function env.gfx.render()
 end
 
 function env.gfx.sync(fps, interrupt)
+  if interrupt or not framedrop then -- drop every 2nd frame if needed
+    gfx.flip()
+  end
   local cur_time = sys.time()
   local delta = (fps or conf.fps) - (cur_time - last_flip)
   framedrop = delta < 0 and not framedrop
@@ -453,6 +457,9 @@ function env.sys.sleep(to, interrupt)
 end
 
 function env.error(text)
+  if not env.screen then
+    env.screen = gfx.new(conf.w, conf.h)
+  end
   env.screen:noclip()
   env.screen:nooffset()
   env.screen:clear(conf.bg)

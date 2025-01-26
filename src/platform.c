@@ -544,7 +544,6 @@ SpriteCreate(void *pixels, int w, int h)
 	spr = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32,
 		SDL_TEXTUREACCESS_STREAMING, w, h);
 	SDL_UpdateTexture(spr, NULL, pixels, w*4);
-//	SDL_SetTextureScaleMode(spr, SDL_SCALEMODE_NEAREST);
 	SDL_SetTextureBlendMode(spr, SDL_BLENDMODE_BLEND);
 	return spr;
 }

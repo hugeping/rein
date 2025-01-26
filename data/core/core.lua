@@ -319,17 +319,20 @@ function core.render(force)
     local vw, vh = ww, hh - vy
     local vpad_spr = core.vpad(vx, vy, vw, vh)
     vpad_spr:blend(vx, vy, vw, vh)
-    gfx.flip()
+--    gfx.flip()
   else
     gfx.clear()
     screen_spr:blend(core.view_x, core.view_y, core.view_w, core.view_h)
-    gfx.flip()
+--    gfx.flip()
   end
   last_render = start
   return true
 end
 
 function core.abs2rel(x, y)
+  if not env.screen then
+    return x, y
+  end
   local w, h = env.screen:size()
   if not core.view_w or
     core.view_w == 0 or
@@ -391,6 +394,7 @@ function core.run()
   end
 
   if core.render() then
+    gfx.flip()
     sys.sleep(fps)
   end
   return api.event() -- check is running
