@@ -174,10 +174,13 @@ function mixer.srv.write(text, file)
   return id
 end
 
-function mixer.srv.get_chan()
+function mixer.srv.get_chan(t)
   local chans = mixer.get_channels(1)
   if not chans then
     return false, "No free channels"
+  end
+  if t then
+    synth.push(chans[1], t)
   end
   return chans[1]
 end
@@ -187,11 +190,11 @@ function mixer.srv.free_chan(c)
 end
 
 function mixer.srv.aplay(id, ...)
-  local chans = mixer.get_channels(1)
-  if not chans then
+  local chan = mixer.srv.get_chan('ogg-sampler')
+  if not chan then
     return false, "No free channels"
   end
-  return mixer.srv.aplay_chan(chans[1], id, ...)
+  return mixer.srv.aplay_chan(chan, id, ...)
 end
 
 function mixer.srv.aplay_chan(c, id, vol, ...)
@@ -201,7 +204,9 @@ function mixer.srv.aplay_chan(c, id, vol, ...)
     return false, "No free channels"
   end
   local state
-  synth.push(chans[1], 'ogg-sampler')
+  if not synth.status(chans[1], 0) then
+    synth.push(chans[1], 'ogg-sampler')
+  end
   synth.change(chans[1], 0, synth.SAMPLER_LOAD, id)
   if vol then
     synth.vol(chans[1], vol)
