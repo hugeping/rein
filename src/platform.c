@@ -25,6 +25,7 @@ tolow(char *p)
 
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
+static SDL_Texture *expose_texture = NULL;
 static SDL_RendererInfo renderer_info;
 
 static float scalew = 1.0f, scaleh = 1.0f;
@@ -422,6 +423,8 @@ PlatformDone(void)
 		FreeLibrary(user32_lib);
 	WSACleanup();
 #endif
+	if (expose_texture)
+		SDL_DestroyTexture(expose_texture);
 	if (renderer)
 		SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
@@ -537,38 +540,38 @@ WindowClear(int r, int g, int b)
 	SDL_RenderClear(renderer);
 }
 
-void *
-SpriteCreate(void *pixels, int w, int h)
-{
-	static SDL_Texture *spr = NULL;
-	spr = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32,
-		SDL_TEXTUREACCESS_STREAMING, w, h);
-	SDL_UpdateTexture(spr, NULL, pixels, w*4);
-	SDL_SetTextureBlendMode(spr, SDL_BLENDMODE_BLEND);
-	return spr;
-}
-
 void
-SpriteUpdate(void *s, void *pixels, int w, int h)
+WindowExpose(void *pixels, int w, int h, int pitch, int dx, int dy, int dw, int dh)
 {
-	int ww, hh;
-	struct SDL_Texture *spr = s;
-	SDL_QueryTexture(s, NULL, NULL, &ww, &hh);
-	if (ww == w && hh == h)
-		SDL_UpdateTexture(spr, NULL, pixels, w * 4);
-}
-
-void
-SpriteFree(void *spr)
-{
-	SDL_DestroyTexture(spr);
-}
-
-void
-SpriteBlend(void *spr, int x, int y, int w, int h)
-{
-	SDL_Rect rect = { .x = x, .y = y, .w = w, .h = h };
-	SDL_RenderCopy(renderer, (struct SDL_Texture *)spr, NULL, &rect);
+	SDL_Rect rect, drect;
+	int ww = 0, hh = 0, rc = 1;
+	if (expose_texture) {
+		rc = SDL_QueryTexture(expose_texture, NULL, NULL, &ww, &hh);
+		if (rc || w > ww || h > hh) {
+			SDL_DestroyTexture(expose_texture);
+			rc = 1;
+		}
+	}
+	if (rc) {
+		expose_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32,
+			SDL_TEXTUREACCESS_STREAMING, w, h);
+		if (!expose_texture)
+			return;
+	}
+	rect.x = 0; rect.y = 0; rect.w = w; rect.h = h;
+	SDL_UpdateTexture(expose_texture, &rect, pixels, pitch);
+//	SDL_RenderClear(renderer);
+	if (dx || dy || dw > 0 || dh > 0) {
+		drect.x = dx;
+		drect.y = dy;
+		if (dw <= 0 || dh <= 0)
+			SDL_GetRendererOutputSize(renderer, &dw, &dh);
+		drect.w = dw;
+		drect.h = dh;
+		SDL_RenderCopy(renderer, expose_texture, &rect, &drect);
+	} else
+		SDL_RenderCopy(renderer, expose_texture, &rect, NULL);
+//	SDL_RenderPresent(renderer);
 }
 
 void

@@ -141,14 +141,6 @@ struct lua_pixels {
 	img_t img;
 };
 
-struct lua_sprite {
-	void *spr;
-	int w;
-	int h;
-};
-
-
-
 static int
 checkcolorpat(lua_State *L, int idx, color_t *col, img_t **pat)
 {
@@ -219,74 +211,6 @@ pixel_textured(img_t *img, unsigned char *d, int x, int y)
 	unsigned char *src = img->ptr;
 	src += (((y % img->h) * img->w + (x % img->w)) * 4);
 	pixel(src, d);
-}
-
-static int
-sprite_free(lua_State *L)
-{
-	struct lua_sprite *src;
-	src = (struct lua_sprite*)luaL_checkudata(L, 1, "sprite metatable");
-	SpriteFree(src->spr);
-	return 0;
-}
-
-static int
-sprite_blend(lua_State *L)
-{
-	struct lua_sprite *src;
-	src = (struct lua_sprite*)luaL_checkudata(L, 1, "sprite metatable");
-	int x = luaL_optnumber(L, 2, 0);
-	int y = luaL_optnumber(L, 3, 0);
-	int w = luaL_optnumber(L, 4, -1);
-	int h = luaL_optnumber(L, 5, -1);
-	if (w < 0)
-		w = src->w;
-	if (h < 0)
-		h = src->h;
-	SpriteBlend(src->spr, x, y, w, h);
-	return 0;
-}
-
-static int
-sprite_update(lua_State *L)
-{
-	struct lua_sprite *s;
-	struct lua_pixels *p;
-	s = (struct lua_sprite*)luaL_checkudata(L, 1, "sprite metatable");
-	p = (struct lua_pixels*)luaL_checkudata(L, 2, "pixels metatable");
-	SpriteUpdate(s->spr, p->img.ptr, p->img.w, p->img.h);
-	return 0;
-}
-
-static int
-sprite_size(lua_State *L)
-{
-	struct lua_sprite *s = (struct lua_sprite*)luaL_checkudata(L, 1, "sprite metatable");
-	lua_pushinteger(L, s->w);
-	lua_pushinteger(L, s->h);
-	return 2;
-}
-
-static const luaL_Reg sprites_mt[] = {
-	{ "blend", sprite_blend },
-	{ "update", sprite_update },
-	{ "size", sprite_size },
-	{ "__gc", sprite_free },
-	{ NULL, NULL }
-};
-
-
-static int
-pixels_spr(lua_State *L)
-{
-	struct lua_pixels *hdr = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
-	struct lua_sprite *spr = lua_newuserdata(L, sizeof(*spr));
-	spr->spr = SpriteCreate(hdr->img.ptr, hdr->img.w, hdr->img.h);
-	spr->w = hdr->img.w;
-	spr->h = hdr->img.h;
-	luaL_getmetatable(L, "sprite metatable");
-	lua_setmetatable(L, -2);
-	return 1;
 }
 
 static int
@@ -873,6 +797,21 @@ pixels_blend(lua_State *L)
 	if (dst->type != PIXELS_MAGIC)
 		return 0;
 	return img_pixels_blend(&src->img, x, y, w, h, &dst->img, xx, yy, PXL_BLEND_BLEND);
+}
+
+static int
+pixels_expose(lua_State *L)
+{
+	int dx = 0, dy = 0, dw = 0, dh = 0;
+	struct lua_pixels *src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
+
+	dx = luaL_optnumber(L, 2, 0);
+	dy = luaL_optnumber(L, 3, 0);
+	dw = luaL_optnumber(L, 4, src->img.w);
+	dh = luaL_optnumber(L, 5, src->img.h);
+
+	WindowExpose(src->img.ptr, src->img.w, src->img.h, src->img.w * 4, dx, dy, dw, dh);
+	return 0;
 }
 
 static __inline void
@@ -1863,7 +1802,6 @@ pixels_free(lua_State *L)
 }
 
 static const luaL_Reg pixels_mt[] = {
-	{ "spr", pixels_spr },
 	{ "val", pixels_value },
 	{ "clip", pixels_clip },
 	{ "noclip", pixels_noclip },
@@ -1876,6 +1814,7 @@ static const luaL_Reg pixels_mt[] = {
 	{ "clear", pixels_clear },
 	{ "copy", pixels_copy },
 	{ "blend", pixels_blend },
+	{ "expose", pixels_expose },
 	{ "line", pixels_line },
 	{ "lineAA", pixels_lineAA },
 	{ "fill_triangle", pixels_triangle },
@@ -1898,11 +1837,6 @@ static const luaL_Reg pixels_mt[] = {
 void
 pixels_create_meta(lua_State *L)
 {
-	luaL_newmetatable (L, "sprite metatable");
-	luaL_setfuncs_int(L, sprites_mt, 0);
-	lua_pushvalue(L, -1);
-	lua_setfield(L, -2, "__index");
-
 	luaL_newmetatable (L, "pixels metatable");
 	luaL_setfuncs_int(L, pixels_mt, 0);
 	lua_pushvalue(L, -1);

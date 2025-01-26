@@ -26,6 +26,7 @@ tolow(char *p)
 
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
+static SDL_Texture *expose_texture = NULL;
 
 static float scalew = 1.0f, scaleh = 1.0f;
 
@@ -422,6 +423,8 @@ PlatformDone(void)
 		FreeLibrary(user32_lib);
 	WSACleanup();
 #endif
+	if (expose_texture)
+		SDL_DestroyTexture(expose_texture);
 	if (renderer)
 		SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
@@ -523,6 +526,38 @@ WindowSize(int *w, int *h)
 		SDL_GetWindowSizeInPixels(window, w, h);
 }
 
+void
+WindowExpose(void *pixels, int w, int h, int pitch, int dx, int dy, int dw, int dh)
+{
+	SDL_Rect rect;
+	SDL_FRect drect;
+	SDL_FRect srect;
+	static int expose_w = 0, expose_h = 0;
+	if (!expose_texture || w > expose_w || h > expose_h) {
+		SDL_DestroyTexture(expose_texture);
+		expose_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32,
+			SDL_TEXTUREACCESS_STREAMING, w, h);
+		if (!expose_texture)
+			return;
+		SDL_SetTextureScaleMode(expose_texture, SDL_SCALEMODE_NEAREST);
+		expose_w = w; expose_h = h;
+	}
+	rect.x = 0; rect.y = 0;
+	rect.w = w; rect.h = h;
+	SDL_UpdateTexture(expose_texture, &rect, pixels, pitch);
+	if (dx || dy || dw > 0 || dh > 0) {
+		srect.x = 0; srect.y = 0;
+		srect.w = w; srect.h = h;
+		drect.x = dx; drect.y = dy;
+		if (dw <= 0 || dh <= 0)
+			SDL_GetCurrentRenderOutputSize(renderer, &dw, &dh);
+		drect.w = dw;
+		drect.h = dh;
+		SDL_RenderTexture(renderer, expose_texture, &srect, &drect);
+	} else
+		SDL_RenderTexture(renderer, expose_texture, &srect, NULL);
+}
+
 unsigned int
 GetMouse(int *ox, int *oy)
 {
@@ -543,42 +578,6 @@ WindowClear(int r, int g, int b)
 {
 	SDL_SetRenderDrawColor(renderer, r, g, b, 255);
 	SDL_RenderClear(renderer);
-}
-
-
-void *
-SpriteCreate(void *pixels, int w, int h)
-{
-	static SDL_Texture *spr = NULL;
-	spr = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32,
-		SDL_TEXTUREACCESS_STREAMING, w, h);
-	SDL_UpdateTexture(spr, NULL, pixels, w*4);
-	SDL_SetTextureScaleMode(spr, SDL_SCALEMODE_NEAREST);
-	SDL_SetTextureBlendMode(spr, SDL_BLENDMODE_BLEND);
-	return spr;
-}
-
-void
-SpriteUpdate(void *s, void *pixels, int w, int h)
-{
-	float ww, hh;
-	struct SDL_Texture *spr = s;
-	SDL_GetTextureSize(s, &ww, &hh);
-	if (ww == w && hh == h)
-		SDL_UpdateTexture(spr, NULL, pixels, w * 4);
-}
-
-void
-SpriteFree(void *spr)
-{
-	SDL_DestroyTexture(spr);
-}
-
-void
-SpriteBlend(void *spr, int x, int y, int w, int h)
-{
-	SDL_FRect rect = { .x = x, .y = y, .w = w, .h = h };
-	SDL_RenderTexture(renderer, (struct SDL_Texture *)spr, NULL, &rect);
 }
 
 void
