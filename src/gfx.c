@@ -141,6 +141,14 @@ struct lua_pixels {
 	img_t img;
 };
 
+struct lua_sprite {
+	void *spr;
+	int w;
+	int h;
+};
+
+
+
 static int
 checkcolorpat(lua_State *L, int idx, color_t *col, img_t **pat)
 {
@@ -211,6 +219,74 @@ pixel_textured(img_t *img, unsigned char *d, int x, int y)
 	unsigned char *src = img->ptr;
 	src += (((y % img->h) * img->w + (x % img->w)) * 4);
 	pixel(src, d);
+}
+
+static int
+sprite_free(lua_State *L)
+{
+	struct lua_sprite *src;
+	src = (struct lua_sprite*)luaL_checkudata(L, 1, "sprite metatable");
+	SpriteFree(src->spr);
+	return 0;
+}
+
+static int
+sprite_blend(lua_State *L)
+{
+	struct lua_sprite *src;
+	src = (struct lua_sprite*)luaL_checkudata(L, 1, "sprite metatable");
+	int x = luaL_optnumber(L, 2, 0);
+	int y = luaL_optnumber(L, 3, 0);
+	int w = luaL_optnumber(L, 4, -1);
+	int h = luaL_optnumber(L, 5, -1);
+	if (w < 0)
+		w = src->w;
+	if (h < 0)
+		h = src->h;
+	SpriteBlend(src->spr, x, y, w, h);
+	return 0;
+}
+
+static int
+sprite_update(lua_State *L)
+{
+	struct lua_sprite *s;
+	struct lua_pixels *p;
+	s = (struct lua_sprite*)luaL_checkudata(L, 1, "sprite metatable");
+	p = (struct lua_pixels*)luaL_checkudata(L, 2, "pixels metatable");
+	SpriteUpdate(s->spr, p->img.ptr, p->img.w, p->img.h);
+	return 0;
+}
+
+static int
+sprite_size(lua_State *L)
+{
+	struct lua_sprite *s = (struct lua_sprite*)luaL_checkudata(L, 1, "sprite metatable");
+	lua_pushinteger(L, s->w);
+	lua_pushinteger(L, s->h);
+	return 2;
+}
+
+static const luaL_Reg sprites_mt[] = {
+	{ "blend", sprite_blend },
+	{ "update", sprite_update },
+	{ "size", sprite_size },
+	{ "__gc", sprite_free },
+	{ NULL, NULL }
+};
+
+
+static int
+pixels_spr(lua_State *L)
+{
+	struct lua_pixels *hdr = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
+	struct lua_sprite *spr = lua_newuserdata(L, sizeof(*spr));
+	spr->spr = SpriteCreate(hdr->img.ptr, hdr->img.w, hdr->img.h);
+	spr->w = hdr->img.w;
+	spr->h = hdr->img.h;
+	luaL_getmetatable(L, "sprite metatable");
+	lua_setmetatable(L, -2);
+	return 1;
 }
 
 static int
@@ -546,30 +622,6 @@ _img_flip(img_t *src, int h, int v, img_t *dst)
 		}
 	}
 }
-
-static int
-gfx_pixels_win(lua_State *L)
-{
-	struct lua_pixels *hdr;
-	unsigned char *ptr;
-	int w, h;
-	hdr = lua_newuserdata(L, sizeof(*hdr));
-	if (!hdr)
-		return 0;
-	ptr = WindowPixels(&w, &h);
-	if (!ptr)
-		return 0;
-	hdr->type = PIXELS_MAGIC;
-	img_init(&hdr->img, w, h);
-	hdr->size = w * h * 4;
-	hdr->img.ptr = ptr;
-	hdr->img.used = 0; /* do not free pixels!!! */
-	//memset(hdr->img.ptr, 0, hdr->size);
-	luaL_getmetatable(L, "pixels metatable");
-	lua_setmetatable(L, -2);
-	return 1;
-}
-
 
 static int
 pixels_size(lua_State *L)
@@ -1811,6 +1863,7 @@ pixels_free(lua_State *L)
 }
 
 static const luaL_Reg pixels_mt[] = {
+	{ "spr", pixels_spr },
 	{ "val", pixels_value },
 	{ "clip", pixels_clip },
 	{ "noclip", pixels_noclip },
@@ -1845,51 +1898,37 @@ static const luaL_Reg pixels_mt[] = {
 void
 pixels_create_meta(lua_State *L)
 {
+	luaL_newmetatable (L, "sprite metatable");
+	luaL_setfuncs_int(L, sprites_mt, 0);
+	lua_pushvalue(L, -1);
+	lua_setfield(L, -2, "__index");
+
 	luaL_newmetatable (L, "pixels metatable");
 	luaL_setfuncs_int(L, pixels_mt, 0);
 	lua_pushvalue(L, -1);
 	lua_setfield(L, -2, "__index");
 }
 
-static int
-gfx_pixels_expose(lua_State *L)
-{
-	int x, y, w, h;
-	struct lua_pixels *src;
-	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
-	x = luaL_optnumber(L, 2, 0);
-	y = luaL_optnumber(L, 3, 0);
-	w = luaL_optnumber(L, 4, -1);
-	h = luaL_optnumber(L, 5, -1);
-	WindowExpose(src->img.ptr, src->img.w, src->img.h, x, y, w, h);
-	return 0;
-}
+static color_t bgcol = {};
 
 static int
 gfx_background(lua_State *L)
 {
-	color_t col;
-	checkcolor(L, 1, &col);
-	WindowBackground(col.r, col.g, col.b);
+	checkcolor(L, 1, &bgcol);
+	return 0;
+}
+
+static int
+gfx_clear(lua_State *L)
+{
+	WindowClear(bgcol.r, bgcol.g, bgcol.b);
 	return 0;
 }
 
 static int
 gfx_flip(lua_State *L)
 {
-	WindowUpdate(0, 0, 0, 0);
-	return 0;
-}
-
-static int
-gfx_update(lua_State *L)
-{
-	int x, y, w, h;
-	x = luaL_optnumber(L, 1, 0);
-	y = luaL_optnumber(L, 2, 0);
-	w = luaL_optnumber(L, 3, -1);
-	h = luaL_optnumber(L, 4, -1);
-	WindowUpdate(x, y, w, h);
+	Flip();
 	return 0;
 }
 
@@ -2030,13 +2069,11 @@ gfx_pal(lua_State *L)
 
 static const luaL_Reg
 gfx_lib[] = {
-	{ "win",  gfx_pixels_win },
 	{ "new", gfx_pixels_new },
 	{ "icon", gfx_icon },
 	{ "flip", gfx_flip },
-	{ "update", gfx_update },
-	{ "expose", gfx_pixels_expose },
 	{ "background", gfx_background },
+	{ "clear", gfx_clear },
 	{ "pal", gfx_pal },
 	{ "font", gfx_font },
 	{ NULL, NULL }

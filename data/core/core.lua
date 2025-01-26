@@ -165,20 +165,22 @@ end
 
 local last_render = 0
 
-local vpad = { fingers = {} }
+local vpad = { fingers = {}, btn = {} }
 local vpad_col = { 192, 192, 192, 255 }
+
 function core.vpad(x, y, w, h)
   if vpad.x == x and vpad.y == y and
     vpad.w == w and vpad.h == h then
-    return
+    return vpad.spr
   end
-  local win = gfx.win()
-  win:clear(x, y, w, h, { 0, 0, 0, 255 })
+
+  local win = gfx.new(w, h)
+  win:clear(0, 0, w, h, { 0, 0, 0, 255 })
   vpad.x, vpad.y, vpad.w, vpad.h = x, y, w, h
-  local xc = w/4 + x
-  local yc = h/2 + y
+  local xc = w/4
+  local yc = h/2
   local r = h/4 < w/4 and h/4 or w/4
-  vpad.stick = { x = xc, y = yc, r = r }
+  vpad.stick = { x = xc + x, y = yc + y, r = r }
   win:circle(xc, yc, r, {255, 255, 255 })
   local d = r/4
   win:circle(xc, yc, r / 2, vpad_col)
@@ -188,22 +190,24 @@ function core.vpad(x, y, w, h)
   win:fill_poly( {xc - r, yc, xc - r + d, yc - d, xc - r + d, yc + d }, vpad_col)
   win:fill_poly( {xc + r, yc, xc + r - d, yc - d, xc + r - d, yc + d }, vpad_col)
   r = h/8 < w/8 and h/8 or w/8
-  xc = x + 7*w/8
-  yc = y + h/2 - r
-  vpad.z = { x = xc, y = yc, r = r }
+  xc = 7*w/8
+  yc = h/2 - r
+  vpad.btn.z = { x = xc + x, y = yc + y, r = r }
   win:circle(xc, yc, r, vpad_col)
   win:circle(xc, yc, r/2, vpad_col)
-  xc = x + 6*w/8
-  yc = y + h/2 + r
-  vpad.x = { x = xc, y = yc, r = r }
+  xc = 6*w/8
+  yc = h/2 + r
+  vpad.btn.x = { x = xc + x, y = yc + y, r = r }
   win:circle(xc, yc, r, vpad_col)
   win:rect(xc - r/2, yc - r/2, xc + r/2, yc + r/2, vpad_col)
   r = r / 2
-  xc = x + w - 1.5*r
-  yc = y + h - 1.5*r
-  vpad.escape = { x = xc, y = yc, r = r }
+  xc = w - 1.5*r
+  yc = h - 1.5*r
+  vpad.escape = { x = xc + x, y = yc + y, r = r }
   win:circle(xc, yc, r, vpad_col)
   win:rect(xc - r/1.5, yc - r/4, xc + r/1.5, yc + r/4, vpad_col)
+  vpad.spr = win:spr()
+  return vpad.spr
 end
 
 local function finger_process(old, new)
@@ -228,13 +232,13 @@ function core.touch_inp(e, tid, fid, x, y)
     e ~= 'fingermotion'  then
     return true
   end
-  local w, h = gfx.win():size()
+  local w, h = sys.window_size()
   x, y = w * x, h * y
   local fng = vpad.fingers[fid] or {}
   local new = {}
   if e == 'fingerdown' or e == 'fingermotion' then
     for _, b in ipairs { "z", "x", "escape" } do
-      if ((x - vpad[b].x)^2 + (y - vpad[b].y)^2)^0.5 <= vpad[b].r then
+      if ((x - vpad.btn[b].x)^2 + (y - vpad.btn[b].y)^2)^0.5 <= vpad.btn[b].r then
         new[b] = true
         vpad.fingers[fid] = new
         return finger_process(fng, new)
@@ -269,6 +273,8 @@ function core.touch_inp(e, tid, fid, x, y)
   return true
 end
 
+local screen_spr
+
 function core.render(force)
   if not env.screen then
     return
@@ -277,9 +283,7 @@ function core.render(force)
   if not force and start - last_render < fps then
     return
   end
-  local win = gfx.win()
-  if not win then return end -- minimized?
-  local ww, hh = win:size()
+  local ww, hh = sys:window_size()
   local w, h = env.screen:size()
   local xs, ys = ww/w, hh/h
   local scale = (xs <= ys) and xs or ys
@@ -295,24 +299,30 @@ function core.render(force)
   core.view_w, core.view_h = dw, dh
   core.view_x, core.view_y = math.floor((ww - dw)/2), math.floor((hh - dh)/2)
 
-  if not gfx.expose then
-    local win = gfx.win()
-    win:clip(core.view_x, core.view_y,
-      core.view_w, core.view_h)
-    env.screen:stretch(win,
-      core.view_x, core.view_y,
-      core.view_w, core.view_h)
-    gfx.update() -- no flip needed
-  elseif core.vpad_enabled then
+  local sw, sh = 0, 0
+
+  if screen_spr then
+    sw, sh = screen_spr:size()
+  end
+
+  if sw == ww and sh == hh then
+    screen_spr:update(env.screen)
+  else
+    screen_spr = env.screen:spr()
+  end
+
+  if core.vpad_enabled then
+    gfx.clear()
     core.view_y = 0
-    gfx.expose(env.screen, core.view_x, core.view_y, core.view_w, core.view_h)
+    screen_spr:blend(core.view_x, core.view_y, core.view_w, core.view_h)
     local vx, vy = 0, core.view_h + core.view_y
     local vw, vh = ww, hh - vy
-    core.vpad(vx, vy, vw, vh)
-    gfx.update(vx, vy, vw, vh)
+    local vpad_spr = core.vpad(vx, vy, vw, vh)
+    vpad_spr:blend(vx, vy, vw, vh)
     gfx.flip()
   else
-    gfx.expose(env.screen, core.view_x, core.view_y, core.view_w, core.view_h)
+    gfx.clear()
+    screen_spr:blend(core.view_x, core.view_y, core.view_w, core.view_h)
     gfx.flip()
   end
   last_render = start

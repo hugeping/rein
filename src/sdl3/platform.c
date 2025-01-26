@@ -14,7 +14,6 @@ static int opt_nosound = 0;
 static int opt_nojoystick = 0;
 static int opt_xclip = 0;
 
-static int destroyed = 0;
 static void
 tolow(char *p)
 {
@@ -27,10 +26,8 @@ tolow(char *p)
 
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
-static SDL_Texture *texture = NULL;
-static SDL_Texture *expose_texture = NULL;
 
-static float scalew, scaleh;
+static float scalew = 1.0f, scaleh = 1.0f;
 
 void
 Log(const char *msg)
@@ -415,8 +412,6 @@ PlatformInit(int argc, const char **argv)
 	return 0;
 }
 
-static SDL_Surface *winbuff = NULL;
-
 void
 PlatformDone(void)
 {
@@ -427,12 +422,6 @@ PlatformDone(void)
 		FreeLibrary(user32_lib);
 	WSACleanup();
 #endif
-	if (winbuff)
-		SDL_DestroySurface(winbuff);
-	if (texture)
-		SDL_DestroyTexture(texture);
-	if (expose_texture)
-		SDL_DestroyTexture(expose_texture);
 	if (renderer)
 		SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
@@ -528,15 +517,10 @@ GetExePath(const char *progname)
 }
 
 void
-WindowResize(int w, int h)
+WindowSize(int *w, int *h)
 {
-	if (winbuff)
-		SDL_DestroySurface(winbuff);
-	winbuff = NULL;
-	if (texture)
-		SDL_DestroyTexture(texture);
-	texture = NULL;
-	destroyed = 1;
+	if (window)
+		SDL_GetWindowSizeInPixels(window, w, h);
 }
 
 unsigned int
@@ -555,75 +539,58 @@ GetMouse(int *ox, int *oy)
 }
 
 void
-WindowBackground(int r, int g, int b)
+WindowClear(int r, int g, int b)
 {
 	SDL_SetRenderDrawColor(renderer, r, g, b, 255);
-}
-
-void
-WindowExpose(void *pixels, int w, int h, int dx, int dy, int dw, int dh)
-{
-	SDL_FRect rect;
-	static int expose_w = 0, expose_h = 0;
-
-	if (!expose_texture || w != expose_w || h != expose_h) {
-		SDL_DestroyTexture(expose_texture);
-		expose_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888,
-			SDL_TEXTUREACCESS_STREAMING, w, h);
-		if (!expose_texture)
-			return;
-		SDL_SetTextureScaleMode(expose_texture, SDL_SCALEMODE_NEAREST);
-		expose_w = w; expose_h = h;
-	}
-	SDL_UpdateTexture(expose_texture, NULL, pixels, w*4);
 	SDL_RenderClear(renderer);
-	if (dx || dy || dw > 0 || dh > 0) {
-		rect.x = dx;
-		rect.y = dy;
-		if (dw <= 0 || dh <= 0)
-			SDL_GetCurrentRenderOutputSize(renderer, &dw, &dh);
-		rect.w = dw;
-		rect.h = dh;
-		SDL_RenderTexture(renderer, expose_texture, NULL, &rect);
-	} else
-		SDL_RenderTexture(renderer, expose_texture, NULL, NULL);
+}
+
+
+void *
+SpriteCreate(void *pixels, int w, int h)
+{
+	static SDL_Texture *spr = NULL;
+	spr = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32,
+		SDL_TEXTUREACCESS_STREAMING, w, h);
+	SDL_UpdateTexture(spr, NULL, pixels, w*4);
+	SDL_SetTextureScaleMode(spr, SDL_SCALEMODE_NEAREST);
+	SDL_SetTextureBlendMode(spr, SDL_BLENDMODE_BLEND);
+	return spr;
 }
 
 void
-WindowUpdate(int x, int y, int w, int h)
+SpriteUpdate(void *s, void *pixels, int w, int h)
 {
-	SDL_Rect rect;
-	int pitch, psize;
-	unsigned char *pixels;
-	if (!winbuff || !texture)
-		return;
-	pitch = winbuff->pitch;
-	psize = 4;
-	pixels = winbuff->pixels;
+	float ww, hh;
+	struct SDL_Texture *spr = s;
+	SDL_GetTextureSize(s, &ww, &hh);
+	if (ww == w && hh == h)
+		SDL_UpdateTexture(spr, NULL, pixels, w * 4);
+}
 
-	if (w > 0 && h > 0) { /* do not flip on partial updates */
-		rect.x = x;
-		rect.y = y;
-		rect.w = w;
-		rect.h = h;
-		pixels += pitch * y + x * psize;
-		SDL_UpdateTexture(texture, &rect, pixels, pitch);
-		const SDL_FRect frect = { .x = x, .y = y, .w = w, .h = h };
-		SDL_RenderTexture(renderer, texture, &frect, &frect);
-		return;
-	} else if (w < 0 || h < 0) { /* all screen */
-		SDL_UpdateTexture(texture, NULL, pixels, pitch);
-		SDL_RenderClear(renderer);
-		SDL_RenderTexture(renderer, texture, NULL, NULL);
-		if (destroyed) { /* problem with double buffering */
-			SDL_RenderPresent(renderer);
-			SDL_UpdateTexture(texture, NULL, pixels, pitch);
-			SDL_RenderClear(renderer);
-			SDL_RenderTexture(renderer, texture, NULL, NULL);
-		}
-	} /* else - nothing */
+void
+SpriteFree(void *spr)
+{
+	SDL_DestroyTexture(spr);
+}
+
+void
+SpriteBlend(void *spr, int x, int y, int w, int h)
+{
+	SDL_FRect rect = { .x = x, .y = y, .w = w, .h = h };
+	SDL_RenderTexture(renderer, (struct SDL_Texture *)spr, NULL, &rect);
+}
+
+void
+Flip(void)
+{
+	if (window) {
+		int ww, wh, rw, rh;
+		SDL_GetWindowSize(window, &ww, &wh);
+		SDL_GetCurrentRenderOutputSize(renderer, &rw, &rh);
+		scalew = (float)rw/ww, scaleh = (float)rh/wh;
+	}
 	SDL_RenderPresent(renderer);
-	destroyed = 0;
 }
 
 void
@@ -631,41 +598,13 @@ Icon(unsigned char *ptr, int w, int h)
 {
 	SDL_Surface *surf;
 	surf = SDL_CreateSurfaceFrom(w, h,
-			SDL_PIXELFORMAT_ABGR8888,
+			SDL_PIXELFORMAT_RGBA32,
 			ptr, w * 4);
 	if (!surf)
 		return;
 	SDL_SetWindowIcon(window, surf);
 	SDL_DestroySurface(surf);
 	return;
-}
-
-unsigned char *
-WindowPixels(int *w, int *h)
-{
-	int ww, wh;
-	SDL_GetWindowSizeInPixels(window, &ww, &wh);
-	SDL_GetCurrentRenderOutputSize(renderer, w, h);
-	scalew = (float)*w/ww, scaleh = (float)*h/wh;
-	if (winbuff && (winbuff->w != *w || winbuff->h != *h)) {
-		SDL_DestroySurface(winbuff);
-		winbuff = NULL;
-		if (texture)
-			SDL_DestroyTexture(texture);
-		texture = NULL;
-		destroyed = 1;
-	}
-	if (!winbuff)
-		winbuff = SDL_CreateSurface(*w, *h, SDL_PIXELFORMAT_ABGR8888);
-	if (!winbuff)
-		return NULL;
-	if (!texture) {
-		texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888,
-			SDL_TEXTUREACCESS_STREAMING, *w, *h);
-		if (texture)
-			SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
-	}
-	return (unsigned char*)winbuff->pixels;
 }
 
 #ifdef __ANDROID__
@@ -693,7 +632,6 @@ top:
 		return 1;
 	case SDL_EVENT_DID_ENTER_FOREGROUND:
 		lua_pushstring(L, "exposed");
-		destroyed = 1;
 		return 1;
 	case SDL_EVENT_FINGER_MOTION:
 	case SDL_EVENT_FINGER_DOWN:
@@ -713,7 +651,6 @@ top:
 		lua_pushstring(L, "resized");
 		lua_pushinteger(L, e.window.data1);
 		lua_pushinteger(L, e.window.data2);
-		WindowResize(e.window.data1, e.window.data2);
 		return 3;
 	case SDL_EVENT_WINDOW_EXPOSED:
 	case SDL_EVENT_WINDOW_RESTORED:

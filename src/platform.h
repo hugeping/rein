@@ -8,12 +8,11 @@ extern void Delay(float n);
 extern int WaitEvent(float n);
 extern void WakeEvent(void);
 
+extern void Flip(void);
 extern int WindowCreate(void);
+extern void WindowSize(int *w, int *h);
 extern void WindowResize(int w, int h);
-extern void WindowUpdate(int x, int y, int w, int h);
-extern unsigned char *WindowPixels(int *w, int *h);
-extern void WindowExpose(void *pixels, int pw, int ph, int x, int y, int w, int h);
-extern void WindowBackground(int r, int g, int b);
+extern void WindowClear(int r, int g, int b);
 
 enum { WIN_NORMAL, WIN_MAXIMIZED, WIN_FULLSCREEN };
 extern void WindowMode(int n);
@@ -59,5 +58,10 @@ extern char *Clipboard(const char *text);
 
 extern char *GetRealpath(const char *path);
 extern int IsAbsolutePath(const char *path);
+
+extern void *SpriteCreate(void *pixels, int w, int h);
+extern void SpriteFree(void *spr);
+extern void SpriteBlend(void *spr, int x, int y, int w, int h);
+extern void SpriteUpdate(void *s, void *pixels, int w, int h);
 
 #endif

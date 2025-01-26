@@ -197,7 +197,7 @@ function thread.start(code)
 end
 
 function env.sys.window_size()
-  return gfx.win():size()
+  return sys.window_size()
 end
 
 function env.gfx.win(w, h, fnt, sz) -- create new win or change
@@ -340,11 +340,7 @@ function env.gfx.border(col)
     return conf.brd
   end
   conf.brd = { gfx.pal(col or conf.brd) }
-  if not gfx.expose then
-    gfx.win():clear(conf.brd)
-  else
-    gfx.background(conf.brd)
-  end
+  gfx.background(conf.brd)
 end
 
 function env.gfx.font(fname, ...)
@@ -364,10 +360,7 @@ function env.gfx.render()
   core.render(true)
 end
 
-function env.gfx.flip(fps, interrupt)
-  if interrupt or not framedrop then -- drop every 2nd frame if needed
-    core.render(true)
-  end
+function env.gfx.sync(fps, interrupt)
   local cur_time = sys.time()
   local delta = (fps or conf.fps) - (cur_time - last_flip)
   framedrop = delta < 0 and not framedrop
@@ -381,6 +374,13 @@ function env.gfx.flip(fps, interrupt)
     return 0
   end
   return math.floor(#flips / math.abs(last_flip - flips[1]))
+end
+
+function env.gfx.flip(fps, interrupt)
+  if interrupt or not framedrop then -- drop every 2nd frame if needed
+    core.render(true)
+  end
+  return env.gfx.sync(fps, interrupt)
 end
 
 function env.input.mouse()
@@ -702,11 +702,7 @@ function api.event(e, v, a, b, c)
   end
 
   if e == 'resized' or e == 'exposed' then
-    if not gfx.expose then
-      gfx.win():clear(conf.brd)
-    else
-      gfx.background(conf.brd)
-    end
+    gfx.background(conf.brd)
     return true
   end
 
