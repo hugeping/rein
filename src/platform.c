@@ -27,7 +27,7 @@ static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
 static SDL_RendererInfo renderer_info;
 
-static float scalew, scaleh;
+static float scalew = 1.0f, scaleh = 1.0f;
 
 void
 Log(const char *msg)
