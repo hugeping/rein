@@ -88,7 +88,7 @@ function core.stop(fn)
 end
 
 function core.running()
-  local r, v = coroutine.running()
+  local _, v = coroutine.running()
   if v == nil then
     return coroutine.running()
   end
@@ -225,7 +225,7 @@ local function finger_process(old, new)
   return true
 end
 
-function core.touch_inp(e, tid, fid, x, y)
+function core.touch_inp(e, _, fid, x, y)
   core.vpad_enabled = core.vpad_enabled or (e == 'fingerdown')
   if not core.vpad_enabled or not vpad.x or
     e ~= 'fingerup' and e ~= 'fingerdown'and
@@ -273,8 +273,6 @@ function core.touch_inp(e, tid, fid, x, y)
   return true
 end
 
-local screen_spr
-
 function core.render(force)
   if not env.screen then
     return
@@ -302,11 +300,10 @@ function core.render(force)
   gfx.clear()
   if core.vpad_enabled then
     core.view_y = 0
-    --screen_spr:blend(core.view_x, core.view_y, core.view_w, core.view_h)
     local vx, vy = 0, core.view_h + core.view_y
     local vw, vh = ww, hh - vy
-    local vpad = core.vpad(vx, vy, vw, vh)
-    vpad:expose(vx, vy)
+    local vp = core.vpad(vx, vy, vw, vh)
+    vp:expose(vx, vy)
     env.screen:expose(core.view_x, core.view_y, core.view_w, core.view_h)
 --    gfx.flip()
   else
