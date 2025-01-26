@@ -203,7 +203,7 @@ function core.vpad(x, y, w, h)
   r = r / 2
   xc = w - 1.5*r
   yc = h - 1.5*r
-  vpad.escape = { x = xc + x, y = yc + y, r = r }
+  vpad.btn.escape = { x = xc + x, y = yc + y, r = r }
   win:circle(xc, yc, r, vpad_col)
   win:rect(xc - r/1.5, yc - r/4, xc + r/1.5, yc + r/4, vpad_col)
   vpad.pxl = win
