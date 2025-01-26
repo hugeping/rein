@@ -530,7 +530,7 @@ void
 WindowSize(int *w, int *h)
 {
 	if (window)
-		SDL_GetWindowSizeInPixels(window, w, h);
+		SDL_GetWindowSize(window, w, h);
 }
 
 void
