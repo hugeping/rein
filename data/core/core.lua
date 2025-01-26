@@ -305,7 +305,7 @@ function core.render(force)
     sw, sh = screen_spr:size()
   end
 
-  if sw == ww and sh == hh then
+  if sw == w and sh == h then
     screen_spr:update(env.screen)
   else
     screen_spr = env.screen:spr()
