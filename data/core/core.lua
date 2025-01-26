@@ -175,6 +175,7 @@ function core.vpad(x, y, w, h)
   end
 
   local win = gfx.new(w, h)
+  if not win then return end -- 0?
   win:clear(0, 0, w, h, { 0, 0, 0, 255 })
   vpad.x, vpad.y, vpad.w, vpad.h = x, y, w, h
   local xc = w/4
@@ -303,7 +304,7 @@ function core.render(force)
     local vx, vy = 0, core.view_h + core.view_y
     local vw, vh = ww, hh - vy
     local vp = core.vpad(vx, vy, vw, vh)
-    vp:expose(vx, vy)
+    if vp then vp:expose(vx, vy) end
     env.screen:expose(core.view_x, core.view_y, core.view_w, core.view_h)
 --    gfx.flip()
   else
