@@ -8,12 +8,12 @@ extern void Delay(float n);
 extern int WaitEvent(float n);
 extern void WakeEvent(void);
 
+extern void Flip(void);
 extern int WindowCreate(void);
+extern void WindowSize(int *w, int *h);
 extern void WindowResize(int w, int h);
-extern void WindowUpdate(int x, int y, int w, int h);
-extern unsigned char *WindowPixels(int *w, int *h);
-extern void WindowExpose(void *pixels, int pw, int ph, int x, int y, int w, int h);
-extern void WindowBackground(int r, int g, int b);
+extern void WindowClear(int r, int g, int b);
+extern void WindowExpose(void *pixels, int w, int h, int pitch, int dx, int dy, int dw, int dh);
 
 enum { WIN_NORMAL, WIN_MAXIMIZED, WIN_FULLSCREEN };
 extern void WindowMode(int n);
