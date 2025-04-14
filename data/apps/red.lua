@@ -42,6 +42,7 @@ local function parse_options(args)
     nodump = true,
     confdir = false,
     fifo = false,
+    vertical = false,
   })
   local ret = {}
   for i = optarg, #args do
@@ -54,6 +55,7 @@ local function parse_options(args)
   conf.font_sz = ops.fs
   conf.nodump = ops.nodump
   conf.fifo = ops.fifo
+  conf.vertical = ops.vertical
   return ret
 end
 
@@ -739,7 +741,11 @@ end
 local mainmenu = menu:new()
 mainmenu.cmd = {}
 
-mainmenu.buf:set 'Help GetAll PutAll Dump Exit Sort New Vertical'
+if conf.vertical then
+  mainmenu.buf:set 'Help GetAll PutAll Dump Exit Sort New Vertical'
+else
+  mainmenu.buf:set 'Help GetAll PutAll Dump Exit Sort New Horizont'
+end
 
 function mainmenu:scroller(click)
   if click then
@@ -1185,7 +1191,7 @@ function mainmenu:output(n)
 end
 
 local main = mainwin:new(mainmenu)
-main.vertical = true
+main.vertical = conf.vertical
 
 function main:killproc()
   for fr in main:for_win() do
