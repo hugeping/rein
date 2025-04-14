@@ -10,6 +10,6 @@ return {
   { "%.pdf$", "xdg-open %q" },
   { "%.mp[34]$", "xdg-open %q" },
   { "%.avi$", "xdg-open %q" },
-  { "%.mvk$", "xdg-open %q" },
+  { "%.mkv$", "xdg-open %q" },
   { "%.docx$", "xdg-open %q" },
 }
