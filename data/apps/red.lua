@@ -42,7 +42,7 @@ local function parse_options(args)
     nodump = true,
     confdir = false,
     fifo = false,
-    vertical = false,
+    vertical = true,
   })
   local ret = {}
   for i = optarg, #args do
