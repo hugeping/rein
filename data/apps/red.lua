@@ -739,7 +739,7 @@ end
 local mainmenu = menu:new()
 mainmenu.cmd = {}
 
-mainmenu.buf:set 'Help GetAll PutAll Dump Exit Sort New Horizont'
+mainmenu.buf:set 'Help GetAll PutAll Dump Exit Sort New Vertical'
 
 function mainmenu:scroller(click)
   if click then
@@ -1185,7 +1185,7 @@ function mainmenu:output(n)
 end
 
 local main = mainwin:new(mainmenu)
-main.vertical = false
+main.vertical = true
 
 function main:killproc()
   for fr in main:for_win() do
