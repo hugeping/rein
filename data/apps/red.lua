@@ -822,7 +822,7 @@ function mainmenu.cmd:Help()
         /_/|_/___/____/
 
        RED - Rein EDitor
-       by Peter Kosyh (2023-2024)
+       by Peter Kosyh (2023-2025)
        https://hugeping.ru
 
 Arguments:
