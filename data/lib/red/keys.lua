@@ -108,6 +108,19 @@ return {
         t = ' ' .. t
       end
       m:append(t)
+      self.frame:update()
+    end
+  },
+  { 'alt+b',
+    function(self)
+      local fr = self.frame.frame and self.frame.frame or self.frame
+      local m = fr:menu()
+      local t = string.format("%s:%d ", self.buf.fname or '', self.buf:line_nr())
+      if m.buf.text[#m.buf.text] ~= ' ' then
+        t = ' ' .. t
+      end
+      m:append(t)
+      fr:update()
     end
   },
   { 'alt+v',

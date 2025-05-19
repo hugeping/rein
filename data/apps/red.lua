@@ -847,6 +847,7 @@ Keys:
   insert        - toggle overwrite mode
   del,backspace - delete symbol right/left
   ctrl-b        - insert current line in menu (bookmark)
+  alt-b         - insert current fname:line in mainmenu (global bookmark)
   ctrl-f        - completion path
   alt-f         - completion via 'global -t -c'
 
