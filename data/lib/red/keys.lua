@@ -109,6 +109,7 @@ return {
       end
       m:append(t)
       self.frame:update()
+      self.frame:refresh()
     end
   },
   { 'alt+b',
@@ -121,6 +122,7 @@ return {
       end
       m:append(t)
       fr:update()
+      fr:refresh()
     end
   },
   { 'alt+v',
