@@ -294,6 +294,7 @@ end
 
 function win:toline(nr, sel)
   if nr == 0 then return end
+  self.buf:resetsel()
   local found = self.buf:toline(nr)
   if not self:curvisible() or not found then
     self.pos = self.buf.cur
