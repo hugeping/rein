@@ -742,9 +742,9 @@ local mainmenu = menu:new()
 mainmenu.cmd = {}
 
 if conf.vertical then
-  mainmenu.buf:set 'Help GetAll PutAll Dump Exit Sort New Vertical'
+  mainmenu.buf:set 'Help GetAll PutAll Dump Exit Sort Vertical New'
 else
-  mainmenu.buf:set 'Help GetAll PutAll Dump Exit Sort New Horizont'
+  mainmenu.buf:set 'Help GetAll PutAll Dump Exit Sort Horizont New'
 end
 
 function mainmenu:scroller(click)
