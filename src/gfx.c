@@ -500,11 +500,9 @@ skip:
 }
 
 static img_t*
-img_scale(img_t *src, float xscale, float yscale, int smooth)
+img_resize(img_t *src, int w, int h, int smooth)
 {
 	img_t *ret;
-	int w = round(src->w * xscale);
-	int h = round(src->h * yscale);
 	ret = img_new(w, h);
 	if (!ret)
 		return NULL;
@@ -514,6 +512,15 @@ img_scale(img_t *src, float xscale, float yscale, int smooth)
 		stbir_resize_uint8(src->ptr, src->w, src->h, 0,
 			ret->ptr, w, h, 0, 4);
 	return ret;
+}
+
+
+static img_t*
+img_scale(img_t *src, float xscale, float yscale, int smooth)
+{
+	int w = round(src->w * xscale);
+	int h = round(src->h * yscale);
+	return img_resize(src, w, h, smooth);
 }
 
 static void
@@ -1683,26 +1690,17 @@ pixels_flip(lua_State *L)
 }
 
 static int
-pixels_scale(lua_State *L)
+pixels_resize(lua_State *L)
 {
-	float xs, ys;
+	int w, h;
 	int smooth;
-	int h, v;
 	struct lua_pixels *src;
 	img_t *dst;
 	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
-	xs = luaL_optnumber(L, 2, 0.0f);
-	ys = luaL_optnumber(L, 3, 0.0f);
-	if (ys == 0.0)
-		ys = xs;
-	h = (xs < 0);
-	v = (ys < 0);
-	if (h)
-		xs = -xs;
-	if (v)
-		ys = -ys;
+	w = luaL_optinteger(L, 2, src->img.w);
+	h = luaL_optinteger(L, 3, src->img.h);
 	smooth = lua_toboolean(L, 4);
-	dst = img_scale(&src->img, xs, ys, smooth);
+	dst = img_resize(&src->img, abs(w), abs(h), smooth);
 	if (!dst)
 		return 0;
 	src = pixels_new(L, dst->w, dst->h);
@@ -1710,7 +1708,33 @@ pixels_scale(lua_State *L)
 		free(dst);
 		return 0;
 	}
-	_img_flip(dst, h, v, &src->img);
+	_img_flip(dst, w<0, h<0, &src->img);
+	free(dst);
+	return 1;
+}
+
+static int
+pixels_scale(lua_State *L)
+{
+	float xs, ys;
+	int smooth;
+	struct lua_pixels *src;
+	img_t *dst;
+	src = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
+	xs = luaL_optnumber(L, 2, 0.0f);
+	ys = luaL_optnumber(L, 3, 0.0f);
+	if (ys == 0.0)
+		ys = xs;
+	smooth = lua_toboolean(L, 4);
+	dst = img_scale(&src->img, fabs(xs), fabs(ys), smooth);
+	if (!dst)
+		return 0;
+	src = pixels_new(L, dst->w, dst->h);
+	if (!src) {
+		free(dst);
+		return 0;
+	}
+	_img_flip(dst, xs < 0, ys < 0, &src->img);
 	free(dst);
 	return 1;
 }
@@ -1828,6 +1852,7 @@ static const luaL_Reg pixels_mt[] = {
 	{ "rect", pixels_rect },
 	{ "rectAA", pixels_rectAA },
 	{ "scale", pixels_scale },
+	{ "resize", pixels_resize },
 	{ "flip", pixels_flip },
 	{ "stretch", pixels_stretch },
 	{ "__gc", pixels_free },
