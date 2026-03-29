@@ -55,6 +55,7 @@ local env = {
   getfenv = getfenv,
   loadfile = loadfile,
   type = type,
+  next = next,
   rawset = rawset,
   rawget = rawget,
   rawequal = rawequal,
