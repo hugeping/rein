@@ -198,8 +198,12 @@ function thread.start(code)
   return r
 end
 
-function env.sys.window_size(...)
-  return sys.window_size(...)
+function env.sys.window_size(w, h)
+  local ww, hh = sys.window_size()
+  if w and h and (ww < w or hh < h) then
+    ww, hh = sys.window_size(w, h)
+  end
+  return ww, hh
 end
 
 function env.gfx.win(w, h, fnt, sz) -- create new win or change
