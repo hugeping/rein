@@ -452,11 +452,11 @@ GetLanguage(void)
 	return b;
 }
 
+static SDL_DisplayMode mode;
 
 int
 WindowCreate(void)
 {
-	SDL_DisplayMode mode;
 	SDL_GetCurrentDisplayMode(0, &mode);
 	if (SDL_CreateWindowAndRenderer(mode.w * 0.5, mode.h * 0.8,
 #ifdef __EMSCRIPTEN__
@@ -524,6 +524,12 @@ GetMouse(int *ox, int *oy)
 	if (oy)
 		*oy = y;
 	return mb;
+}
+
+void
+SetWindowSize(int w, int h)
+{
+	SDL_SetWindowSize(window, MIN(w, mode.w), MIN(h, mode.h));
 }
 
 void

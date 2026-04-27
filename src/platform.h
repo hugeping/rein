@@ -11,6 +11,7 @@ extern void WakeEvent(void);
 extern void Flip(void);
 extern int WindowCreate(void);
 extern void WindowSize(int *w, int *h);
+extern void SetWindowSize(int w, int h);
 extern void WindowResize(int w, int h);
 extern void WindowClear(int r, int g, int b);
 extern void WindowExpose(void *pixels, int w, int h, int pitch, int dx, int dy, int dw, int dh);

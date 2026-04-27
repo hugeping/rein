@@ -452,11 +452,11 @@ GetLanguage(void)
 	return b;
 }
 
+const SDL_DisplayMode *mode = NULL;
 
 int
 WindowCreate(void)
 {
-	const SDL_DisplayMode *mode;
 	int disp_nr = 0;
 	SDL_DisplayID *disp_list = SDL_GetDisplays(&disp_nr);
 	if (!disp_list)
@@ -517,6 +517,13 @@ GetExePath(const char *progname)
 	path[sizeof(path) - 1] = 0;
 	unix_path(path);
 	return path;
+}
+
+void
+SetWindowSize(int w, int h)
+{
+	SDL_SetWindowSize(window, MIN(w, mode->w), MIN(h, mode->h));
+	SDL_SyncWindow(window);
 }
 
 void

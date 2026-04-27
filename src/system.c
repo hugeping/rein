@@ -56,7 +56,10 @@ sys_window_mode(lua_State *L)
 static int
 sys_window_size(lua_State *L)
 {
-	int w = 0, h = 0;
+	int w = luaL_optnumber(L, 1, -1);
+	int h = luaL_optnumber(L, 2, -1);
+	if (w >= 0 && h >= 0)
+		SetWindowSize(w, h);
 	WindowSize(&w, &h);
 	lua_pushinteger(L, w);
 	lua_pushinteger(L, h);
