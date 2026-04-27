@@ -282,7 +282,7 @@ function core.render(force)
   if not force and start - last_render < fps then
     return
   end
-  local ww, hh = sys:window_size()
+  local ww, hh = sys.window_size()
   local w, h = env.screen:size()
   local xs, ys = ww/w, hh/h
   local scale = (xs <= ys) and xs or ys
