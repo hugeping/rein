@@ -709,8 +709,10 @@ function api.event(e, v, a, b, c)
   end
 
   if event_filter[e] and #input.fifo < 32 then
-    local ev = { nam = e, args = { v, a, b, c } }
-    table.insert(input.fifo, ev)
+    if not e:find 'motion' or #input.fifo == 0 or input.fifo[#input.fifo].nam ~= e then
+      local ev = { nam = e, args = { v, a, b, c } }
+      table.insert(input.fifo, ev)
+    end
   end
 
   if e == 'resized' or e == 'exposed' then
