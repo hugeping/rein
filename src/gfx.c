@@ -561,8 +561,10 @@ _fill(img_t *src, int x, int y, int w, int h,
 	unsigned char *ptr1;
 	int cy, cx;
 
-	x += src->xoff;
-	y += src->yoff;
+	if (w)
+		x += src->xoff;
+	if (h)
+		y += src->yoff;
 
 	if (!w)
 		w = src->w;
