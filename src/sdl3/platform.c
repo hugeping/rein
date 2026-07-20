@@ -273,10 +273,9 @@ audio_read(SDL_AudioStream *stream, int len)
 			chunk_sz = toread;
 		SDL_PutAudioStreamData(stream, audiobuff.data + audiobuff.head, chunk_sz);
 		audiobuff.head += chunk_sz;
-		toread -= chunk_sz;
 		audiobuff.head %= audiobuff.size;
+		toread -= chunk_sz;
 	}
-	SDL_FlushAudioStream(stream);
 }
 
 static void
@@ -368,6 +367,7 @@ sound_init(void)
 static void
 sound_done(void)
 {
+	SDL_FlushAudioStream(audiostream);
 	SDL_PauseAudioStreamDevice(audiostream);
 	if (audiostream)
 		SDL_DestroyAudioStream(audiostream);
