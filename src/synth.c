@@ -157,7 +157,7 @@ sfx_ogg_sampler_stereo(struct sfx_ogg_sampler_state *s, double *l, double *r)
 static void
 sfx_ogg_sampler_change(struct sfx_ogg_sampler_state *s, int param, int elem, double val)
 {
-	int used, error;
+	int used = 0, error;
 	MutexLock(mutex);
 	switch (param) {
 	case ZV_NOTE_OFF:

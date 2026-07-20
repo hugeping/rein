@@ -8,7 +8,7 @@ typedef struct {
 	int xoff;
 	int yoff;
 	int used;
-	unsigned char *ptr;
+	unsigned char ptr[0];
 } img_t;
 
 extern img_t *img_new(int w, int h);
