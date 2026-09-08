@@ -1007,7 +1007,8 @@ lineAA(img_t *src, int x0, int y0, int x1, int y1,
 	err = dx - dy;
 	ed = dx + dy == 0 ? 1: sqrt((float)dx * dx + (float)dy * dy);
 
-	while (y0 < src->clip_y1 || x0 < src->clip_x1 || x0 >= src->clip_x2) {
+	while (y0 < src->clip_y1 || y0 >= src->clip_y2 ||
+		x0 < src->clip_x1 || x0 >= src->clip_x2) {
 		e2 = err;
 		if (2 * e2 >= -dx) {
 			if (x0 == x1)
@@ -1023,7 +1024,8 @@ lineAA(img_t *src, int x0, int y0, int x1, int y1,
 		}
 	}
 
-	if (y0 < src->clip_y1 || x0 < src->clip_x1 || x0 >= src->clip_x2)
+	if (y0 < src->clip_y1 || y0 >= src->clip_y2 ||
+		x0 < src->clip_x1 || x0 >= src->clip_x2)
 		return;
 
 	ptr = (src->ptr);
@@ -1037,7 +1039,7 @@ lineAA(img_t *src, int x0, int y0, int x1, int y1,
 		if (2 * e2 >= -dx) {
 			if (x0 == x1)
 				break;
-			if (e2 + dy < ed) {
+			if (e2 + dy < ed && y0 + 1 < src->clip_y2) {
 				col[3] = a - a * (e2 + dy) / ed;
 				pixel(col, ptr + syp);
 			}
@@ -1050,7 +1052,8 @@ lineAA(img_t *src, int x0, int y0, int x1, int y1,
 		if (2 * e2 <= dy) {
 			if (y0 == y1)
 				break;
-			if (dx - e2 < ed) {
+			if (dx - e2 < ed && x0 + sx >= src->clip_x1 &&
+			    x0 + sx < src->clip_x2) {
 				col[3] = a - a * (dx - e2) / ed;
 				pixel(col, optr + sxp);
 			}
