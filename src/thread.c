@@ -124,11 +124,13 @@ thread_poll(lua_State *L)
 	MutexUnlock(chan->m);
 	rc = SemWait(self->sem, ms);
 	MutexLock(chan->m);
-	if (rc && !self->poll) {
-		SemWait(self->sem, 0);
-	}
-	if (self->poll)
+	if (rc && !self->poll) /* timeout race? */
+		rc = SemWait(self->sem, 0);
+	if (self->poll) {
+		if (!rc)
+			SemPost(self->sem); /* just peek if it read/write*/
 		self->poll --;
+	}
 	lua_pushboolean(L, !!other->write);
 	lua_pushboolean(L, !!other->read);
 	MutexUnlock(chan->m);
@@ -287,7 +289,10 @@ thread_err(lua_State *L)
 	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
 	const char *err = luaL_optstring(L, 2, NULL);
 	struct lua_channel *chan = thr->chan;
-	struct lua_peer *other = (thr->tid >= 0)?&chan->peers[1]:&chan->peers[0];
+	struct lua_peer *other;
+	if (!chan)
+		return 0;
+	other = (thr->tid >= 0)?&chan->peers[1]:&chan->peers[0];
 
 	MutexLock(chan->m);
 	if (err) {
