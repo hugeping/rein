@@ -244,7 +244,7 @@ void lfo_init(struct lfo_state *s) {
         s->seq[i] = 0;
     }
     s->edit_pos = 0;
-    lfo_set_seq_size(s, 0);
+    lfo_set_seq_size(s, 1);
     lfo_set_type(s, LFO_ZERO);
     lfo_set_freq(s, 0);
     lfo_set_low(s, 0);
@@ -293,7 +293,7 @@ void lfo_set_seq_val(struct lfo_state *s, double val) {
 }
 
 void lfo_set_seq_size(struct lfo_state *s, int size) {
-    s->seq_size = limit(size, 0, LFO_MAX_SEQ_STEPS);
+    s->seq_size = limit(size, 1, LFO_MAX_SEQ_STEPS);
 }
 
 static double lfo_func(struct lfo_state *s) {
