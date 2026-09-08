@@ -67,7 +67,6 @@ struct lua_peer {
 	int write;
 	int read;
 	int poll;
-	int parked;
 	lua_State *L;
 };
 
@@ -125,10 +124,9 @@ thread_poll(lua_State *L)
 	MutexUnlock(chan->m);
 	rc = SemWait(self->sem, ms);
 	MutexLock(chan->m);
-	if (rc && !self->poll)
+	if (rc && !self->poll) {
 		SemWait(self->sem, 0);
-	if (rc == 0 && !(other->write || other->read))
-		SemPost(self->sem); /* peek: don't eat wakeups meant for read/write */
+	}
 	if (self->poll)
 		self->poll --;
 	lua_pushboolean(L, !!other->write);
@@ -140,7 +138,6 @@ thread_poll(lua_State *L)
 static int
 thread_read(lua_State *L)
 {
-	int rc;
 	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
 	struct lua_channel *chan = thr->chan;
 	struct lua_peer *other = (thr->tid >= 0)?&chan->peers[1]:&chan->peers[0];
@@ -168,25 +165,16 @@ thread_read(lua_State *L)
 		SemPost(other->sem);
 		other->poll --;
 	}
-	self->parked = 1;
 	MutexUnlock(chan->m);
 	SemPost(other->sem);
-	rc = SemWait(self->sem, -1);
-	MutexLock(chan->m);
-	self->parked = 0;
-	if (rc) {
-		self->read --;
-		MutexUnlock(chan->m);
-		return luaL_error(L, "No peer on thread read");
-	}
-	MutexUnlock(chan->m);
+	SemWait(self->sem, -1);
 	return lua_gettop(L) - 1;
 }
 
 static int
 thread_write(lua_State *L)
 {
-	int i, top, rc;
+	int i, top;
 	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
 	struct lua_channel *chan = thr->chan;
 	struct lua_peer *other = (thr->tid >= 0)?&chan->peers[1]:&chan->peers[0];
@@ -211,15 +199,6 @@ thread_write(lua_State *L)
 		MutexUnlock(chan->m);
 		return luaL_error(L, "Deadlock on thread write: both writing");
 	}
-	if (other->read > 1) {
-		MutexUnlock(chan->m);
-		return luaL_error(L, "Deadlock thread on write: too many reads");
-	}
-
-	if (self->write > 0) {
-		MutexUnlock(chan->m);
-		return luaL_error(L, "Deadlock thread on write: write already pending");
-	}
 
 	self->write ++;
 	if (self->L != L) /* coroutines? */
@@ -231,18 +210,14 @@ thread_write(lua_State *L)
 	MutexUnlock(chan->m);
 	if (thr->tid < 0)
 		WakeEvent(); /* wake sys_poll */
-	rc = SemWait(self->sem, -1);
+	SemWait(self->sem, -1);
 	MutexLock(chan->m);
 	self->write --;
-	if (rc) {
-		MutexUnlock(chan->m);
-		return luaL_error(L, "No peer on thread write");
-	}
 	if (chan->err) {
 		MutexUnlock(chan->m);
 		return luaL_error(L, "No peer on thread write: %s", chan->err);
 	}
-	if (!other->L || !other->read || !other->parked) {
+	if (!other->L) {
 		MutexUnlock(chan->m);
 		return luaL_error(L, "No peer on thread write");
 	}
@@ -312,10 +287,7 @@ thread_err(lua_State *L)
 	struct lua_thread *thr = (struct lua_thread*)luaL_checkudata(L, 1, "thread metatable");
 	const char *err = luaL_optstring(L, 2, NULL);
 	struct lua_channel *chan = thr->chan;
-	struct lua_peer *other;
-	if (!chan)
-		return 0;
-	other = (thr->tid >= 0)?&chan->peers[1]:&chan->peers[0];
+	struct lua_peer *other = (thr->tid >= 0)?&chan->peers[1]:&chan->peers[0];
 
 	MutexLock(chan->m);
 	if (err) {
