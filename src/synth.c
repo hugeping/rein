@@ -138,7 +138,7 @@ sfx_ogg_sampler_stereo(struct sfx_ogg_sampler_state *s, double *l, double *r)
 		while (s->pos < s->size && !s->frames) {
 			int used = stb_vorbis_decode_frame_pushdata(s->v, s->data + s->pos,
 				s->size - s->pos, &s->channels, &s->outputs, &s->frames);
-			if (!used) {
+			if (used <= 0) {
 				s->pos = s->size;
 				break;
 			}
