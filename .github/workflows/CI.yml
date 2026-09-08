@@ -6,7 +6,7 @@ on:
     branches: [master]
 
 env:
-    luajit_ver: 2.1.0-beta3
+    luajit_ver: 2.1
     sdl_ver: 2.24.0
     emsdk_ver: 3.1.28
 
