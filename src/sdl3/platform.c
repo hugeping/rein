@@ -860,7 +860,9 @@ SemWait(int id, int ms)
 	SDL_Semaphore *sem = han_get(&sems, id);
 	if (!sem)
 		return -1;
-	return SDL_WaitSemaphoreTimeout(sem, ms);
+	if (!SDL_WaitSemaphoreTimeout(sem, ms))
+		return -1;
+	return 0;
 }
 
 int
