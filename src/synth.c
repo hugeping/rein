@@ -4,6 +4,8 @@
 #include "stb_vorbis.h"
 #undef L
 
+#define CLAMP_PAR(x, low, high) (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
+
 #define ZV_SAMPLER_LOAD (ZV_END + 1)
 
 #define CHANNELS_MAX 33 /* 1..32 in lua, 0 is always free */
@@ -138,7 +140,7 @@ sfx_ogg_sampler_stereo(struct sfx_ogg_sampler_state *s, double *l, double *r)
 		while (s->pos < s->size && !s->frames) {
 			int used = stb_vorbis_decode_frame_pushdata(s->v, s->data + s->pos,
 				s->size - s->pos, &s->channels, &s->outputs, &s->frames);
-			if (!used) {
+			if (used <= 0) {
 				s->pos = s->size;
 				break;
 			}
@@ -420,11 +422,12 @@ synth_mul_vol(lua_State *L)
 	return 0;
 }
 
+
 static int
 synth_set_pan(lua_State *L)
 {
 	const int chan = luaL_checkinteger(L, 1);
-	const double pan = luaL_checknumber(L, 2);
+	const double pan = CLAMP_PAR(luaL_checknumber(L, 2), -1.0, 1.0);
 	if (chan < 0 || chan >= CHANNELS_MAX)
 		return luaL_error(L, "Wrong channel number");
 	MutexLock(mutex);

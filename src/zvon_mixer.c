@@ -17,6 +17,8 @@ void chan_set_vol(struct chan_state *c, double vol) {
 }
 
 void chan_set_pan(struct chan_state *c, double pan) {
+    if (pan > 1) pan = 1;
+    if (pan < -1) pan = -1;
     pan = (pan + 1) * 0.5;
     c->pan_left = sqrt(1 - pan);
     c->pan_right = sqrt(pan);
