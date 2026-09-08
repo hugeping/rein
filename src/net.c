@@ -55,13 +55,18 @@ sock_send(lua_State *L)
 	int len, idx, rc;
 	size_t sz;
 	const char *data = luaL_checklstring(L, 2, &sz);
-	idx = luaL_optnumber(L, 3, 1);
-	if (lua_isnumber(L, 4)) {
-		len = lua_tonumber(L, 3);
-		if (idx - len - 1 > sz)
-			len = sz - idx + 1;
-	} else
+	idx = luaL_optinteger(L, 3, 1);
+
+	if (lua_isnumber(L, 4))
+		len = luaL_checkinteger(L, 4);
+	else
 		len = sz - idx + 1;
+
+	if (idx < 1 || idx > sz)
+		return luaL_error(L, "invalid send offset %d", idx);
+	if (len < 0 || len > (int)sz - (idx - 1))
+		return luaL_error(L, "send range exceeds string length");
+
 	rc = Send(usock->fd, data + idx - 1, len);
 	if (rc < 0) {
 		lua_pushboolean(L, 0);
