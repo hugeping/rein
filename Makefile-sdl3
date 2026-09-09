@@ -49,4 +49,4 @@ rein:  $(OFILES)
 	$(CC) $(CFLAGS) $(^) $(LDFLAGS) -o $(@)
 
 clean:
-	$(RM) -f src/lua/*.o src/*.o rein
+	$(RM) -f src/lua/*.o src/*.o rein src/sdl/*.o
