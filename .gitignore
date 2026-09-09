@@ -1,0 +1,7 @@
+GPATH
+GRTAGS
+GTAGS
+core.*
+rein
+src/*.o
+src/sdl3/*.o
