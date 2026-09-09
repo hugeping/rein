@@ -28,7 +28,7 @@ if [ ! -f external/.stamp_luajit ]; then
 #	test -f LuaJIT-${luajit_ver}.tar.gz || wget https://luajit.org/download/LuaJIT-${luajit_ver}.tar.gz
 	rm -rf LuaJIT-${luajit_ver}
 
-	git clone https://luajit.org/git/luajit.git LuaJIT-${luajit_ver}
+	git clone https://github.com/LuaJIT/LuaJIT.git LuaJIT-${luajit_ver}
 	cd LuaJIT-${luajit_ver}
 	git checkout "v"${luajit_ver}
 
