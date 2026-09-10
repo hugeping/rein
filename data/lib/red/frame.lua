@@ -69,6 +69,9 @@ function frame:geom(x, y, w, h)
   if #self.childs == 0 then
     return
   end
+  if self.stacked then
+    return self:geom_stacked(x, y, w, h)
+  end
   for _, c in ipairs(self.childs) do
     if h > 0 then
       c:geom(x, y, w, h)
@@ -83,10 +86,54 @@ function frame:geom(x, y, w, h)
   end
 end
 
+function frame:geom_stacked(x, y, w, h)
+  local m = self:menu()
+  if h > 0 then
+    m:geom(x, y, w, h)
+    y = y + m.h
+    h = h - m.h
+  end
+  local n = self:win_nr()
+  if n == 0 then
+    if h > 0 then
+      screen:clear(x, y, w, h, 7)
+    end
+    return
+  end
+  local wh = math.floor(h / n)
+  for i = 2, #self.childs do
+    local c = self.childs[i]
+    local cm = self:win_menu(c)
+    if h > 0 then
+      local ch = wh
+      if cm then
+        cm:geom(x, y, w, ch)
+        ch = ch - cm.h
+        y = y + cm.h
+        h = h - cm.h
+      end
+      c:geom(x, y, w, math.max(0, ch))
+      y = y + c.h
+      h = h - c.h
+    else
+      if cm then
+        cm:geom(x, y, 0, 0)
+      end
+      c:geom(x, y, 0, 0) -- invisible
+    end
+  end
+  if h > 0 then
+    screen:clear(x, y, w, h, 7)
+  end
+end
+
 function frame:update()
 end
 
 function frame:event(r, v, a, b)
+  if self.stacked then
+    return self:event_stacked(r, v, a, b)
+  end
   for _, c in ipairs(self.childs) do
     if c:event(r, v, a, b) then
       if c:changed(false) then
@@ -94,6 +141,28 @@ function frame:event(r, v, a, b)
         c.frame:update()
       end
       break
+    end
+  end
+end
+
+function frame:event_stacked(r, v, a, b)
+  local function hit(obj)
+    if obj and obj:event(r, v, a, b) then
+      if obj:changed(false) then
+        obj:dirty(obj.buf:dirty())
+        obj.frame:update()
+      end
+      return true
+    end
+  end
+  if hit(self:menu()) then
+    return
+  end
+  for i = 2, #self.childs do
+    local c = self.childs[i]
+    if not c then break end
+    if hit(c.menu_w) or hit(c) then
+      return
     end
   end
 end
@@ -113,6 +182,9 @@ end
 function frame:add_win(w, c)
   if type(c) == 'number' then
     c = c + 1
+  end
+  if w.menu_w then
+    w.menu_w.frame = self
   end
   return self:add(w, c)
 end
@@ -141,6 +213,22 @@ end
 
 function frame:menu()
   return self.childs[1]
+end
+
+function frame:win_menu(w)
+  if not w.menu_w then
+    w.menu_w = self:new_win_menu(w)
+  end
+  return w.menu_w
+end
+
+function frame:new_win_menu()
+end
+
+function frame:stacked_toggle()
+  self.stacked = not self.stacked
+  self:update(true, true)
+  self:refresh()
 end
 
 return frame

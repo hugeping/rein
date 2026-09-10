@@ -468,6 +468,16 @@ end
 
 function frame:show()
   if scr.grab then return end
+  if self.stacked then
+    self:menu():show()
+    for i = 2, #self.childs do
+      local c = self.childs[i]
+      local cm = self:win_menu(c)
+      if cm then cm:show() end
+      c:show()
+    end
+    return
+  end
   for _, v in ipairs(self.childs) do
     if v:show() then
       break
@@ -488,48 +498,63 @@ end
 
 function frame:update(force, pop)
   local sel
-  if pop then
-    self:menu():set(self:win() and self:win().menu or
-      conf.emptymenu)
-  elseif self:menu().buf:issel() then
-    local s = self:menu().buf:getsel()
-    sel = { s = s.s, e = s.e }
-  end
-  local o = self:menu().buf:gettext()
-  local d = o:find('|', 1, true)
-  if d then
-    o = o:sub(d)
-  end
   local t = ''
-  local fn = not force and self:getfilename()
-  for c, i in self:for_win() do
-    if i == 1 and fn and fn ~= c.buf.fname then
-      while self.frame:win_by_name(fn) do
-        fn = '~' .. fn
+  local o, d
+
+  if self.stacked then
+    -- stacked: column menu = Del | <command line>
+    local cur_text = self:menu().buf:gettext()
+    d = cur_text:find('|', 1, true)
+    if d then
+      o = cur_text:sub(d)
+    else
+      o = ' New '
+    end
+    t = 'Del '
+  else
+    if pop then
+      self:menu():set(self:win() and self:win().menu or
+        conf.emptymenu)
+    elseif self:menu().buf:issel() then
+      local s = self:menu().buf:getsel()
+      sel = { s = s.s, e = s.e }
+    end
+    o = self:menu().buf:gettext()
+    d = o:find('|', 1, true)
+    if d then
+      o = o:sub(d)
+    end
+    local fn = not force and self:getfilename()
+    for c, i in self:for_win() do
+      if i == 1 and fn and fn ~= c.buf.fname then
+        while self.frame:win_by_name(fn) do
+          fn = '~' .. fn
+        end
+        c.buf.fname = fn
+        c.conf = presets.get(fn) or {}
       end
-      c.buf.fname = fn
-      c.conf = presets.get(fn) or {}
+      t = t .. c.buf.fname:esc() .. ' '
     end
-    t = t .. c.buf.fname:esc() .. ' '
-  end
-  if self:win() then
-    local cur = self:win()
-    if self:win():dirty() and cur.buf:isfile() then
-      t = t .. 'Put '
+    if self:win() then
+      local cur = self:win()
+      if self:win():dirty() and cur.buf:isfile() then
+        t = t .. 'Put '
+      end
+      t = t .. 'Close '
+      t = t .. 'Get '
+      if self:win().cmdline then
+        t = t .. self:win().cmdline .. ' '
+      end
     end
-    t = t .. 'Close '
-    t = t .. 'Get '
-    if self:win().cmdline then
-      t = t .. self:win().cmdline .. ' '
+    if self.frame:win_nr() > 1 then
+      t = t .. 'Del ' -- Delcol
+    end
+    if not d then
+      t = t .. '| '
+      o = o:strip()
     end
   end
-  if self.frame:win_nr() > 1 then
-    t = t .. 'Del ' -- Delcol
-  end
-  if not d then
-    t = t .. '| '
-    o = o:strip()
-  end
+
   local old = utf.chars(self:menu().buf:gettext())
   local new = utf.chars(t..o)
   local menu_delta = #new - #old
@@ -547,7 +572,7 @@ function frame:update(force, pop)
 --    sel = nil
 --  end
   self:menu():set(new)
-  if self:win() then
+  if self:win() and not self.stacked then
     self:win().menu = self:menu():gettext()
     if force then
       self:win().cwd = self:win().cwd or self:win():getcwd()
@@ -563,6 +588,12 @@ function frame:update(force, pop)
     end
     self:menu().buf:setsel(sel.s, sel.e)
   end
+
+  if self.stacked then
+    for c, i in self:for_win() do
+      self:sync_win_menu(c)
+    end
+  end
 end
 
 local framemenu = menu:new()
@@ -570,11 +601,13 @@ framemenu.cmd = {}
 
 function framemenu:event(r, v, a, b)
   local mx, my, mb = input.mouse()
-  if r == 'mousedown' and (v == 'left' or v == 'right') then
+  if r == 'mousedown' and (v == 'left' or v == 'right' or v == 'middle') then
     local x, y = a - self.x, b - self.y
     if x >= 0 and x < scr.spw and y >= 0 and y < self.h then
       self.grab = true
       scr.grab = true
+      self.grab_x, self.grab_y = a, b
+      self.grab_btn = v
       return true
     end
   elseif r == 'mousemotion' then
@@ -589,8 +622,8 @@ function framemenu:event(r, v, a, b)
         return true
       end
     end
-  elseif r == 'mouseup' and (v == 'left' or v == 'right') then
-    if self.grab then
+  elseif r == 'mouseup' and (v == 'left' or v == 'right' or v == 'middle') then
+    if self.grab and self.grab_btn == v then
       self.grab = false
       scr.grab = false
       self:show_cursor()
@@ -603,6 +636,12 @@ function framemenu:event(r, v, a, b)
         self.frame.frame:move(math.max(scr.spw, a),
           b, self.frame)
         return true
+      elseif v == 'middle' then -- click = toggle
+        if math.abs(a - self.grab_x) < 4 and
+          math.abs(b - self.grab_y) < 4 then
+          self.frame:stacked_toggle()
+        end
+        return true
       end
     end
   end
@@ -613,6 +652,46 @@ function framemenu:new(...)
   local r = menu.new(self, ...)
   r:set(conf.emptymenu)
   return r
+end
+
+function frame:new_win_menu(w)
+  local m = menu:new()
+  m.frame = self
+  m.win = w
+  m.cmd = framemenu.cmd
+  function m:winmenu() return self.win end
+  function m:scroller()
+    if not self.x or not self.h or self.h == 0 then return end
+    screen:clear(self.x, self.y, scr.spw, self.h,
+      self.win and self.win:dirty() and conf.active or conf.button)
+    screen:rect(self.x, self.y,
+      self.x + scr.spw - 1,
+      self.y + self.h - 1, conf.fg)
+  end
+  return m
+end
+
+function frame:sync_win_menu(w)
+  local m = self:win_menu(w)
+  if not m then return end
+  local t = ''
+  if w.buf.fname then
+    t = w.buf.fname:esc() .. ' '
+  end
+  if w:dirty() then
+    t = t .. 'Put '
+  end
+  t = t .. 'Close '
+  t = t .. 'Get '
+  if w.cmdline then
+    t = t .. w.cmdline .. ' '
+  end
+  local want = t .. '| New '
+  local cur = m:gettext()
+  if cur ~= want and cur == (w.prevmenu or '') then
+    m:set(want)
+  end
+  w.prevmenu = want
 end
 
 function framemenu.cmd:Del() -- Delcol
@@ -634,24 +713,31 @@ function framemenu.cmd:Del() -- Delcol
 end
 
 function framemenu.cmd:Wrap()
-  self.frame:win().conf.wrap = not self.frame:win().conf.wrap
+  local w = self:winmenu()
+  if not w then return end
+  w.conf.wrap = not w.conf.wrap
   self.frame:update()
 end
 
 function framemenu.cmd:Tab(nr)
+  local w = self:winmenu()
+  if not w then return end
   if tonumber(nr) then
-    self.frame:win().conf.ts = math.max(1, math.min(nr, 8))
+    w.conf.ts = math.max(1, math.min(nr, 8))
     self.frame:update()
   end
-  self.frame:win().conf.spaces_tab = false
+  w.conf.spaces_tab = false
 end
 
 function framemenu.cmd:Spaces()
-  self.frame:win().conf.spaces_tab = true
+  local w = self:winmenu()
+  if not w then return end
+  w.conf.spaces_tab = true
 end
 
 function framemenu.cmd:Syntax()
-  local w = self.frame:win()
+  local w = self:winmenu()
+  if not w then return end
   if w.syntax then
     w.conf.syntax = w.syntax
     w.syntax = nil
@@ -666,11 +752,11 @@ function framemenu.cmd:Sort()
 end
 
 function framemenu.cmd:Put()
-  local b = self.frame:win()
+  local b = self:winmenu()
   if not b then
     return
   end
-  local f = self.frame:getfilename()
+  local f = b.buf.fname or (self.frame:getfilename())
   if f then
     local r, e = b:save(f)
     if not r then
@@ -699,14 +785,14 @@ function win:Get()
 end
 
 function framemenu.cmd:Get()
-  local b = self.frame:win()
+  local b = self:winmenu()
   if not b then return end
   b:Get()
   self.frame:update()
 end
 
 function framemenu.cmd:Close()
-  local c = self.frame:win()
+  local c = self:winmenu()
   if not c then return end
   if c.buf:isfile() and c:dirty() and not c:clean() then
     self.frame:err("File %q is not saved!", c.buf.fname)
@@ -1197,7 +1283,7 @@ function mainmenu.cmd:Run(t)
 end
 
 function framemenu.cmd:Run(t)
-  local w = self.frame:win()
+  local w = self:winmenu()
   if not t and (not w or not w.buf:isfile()) then
     return
   end
