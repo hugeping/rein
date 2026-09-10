@@ -34,6 +34,7 @@
 #include "emscripten/html5.h"
 #endif
 #include <fcntl.h>
+#include <limits.h>
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))

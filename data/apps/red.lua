@@ -42,7 +42,6 @@ local function parse_options(args)
     nodump = true,
     confdir = false,
     fifo = false,
-    vertical = true,
   })
   local ret = {}
   for i = optarg, #args do
@@ -55,7 +54,6 @@ local function parse_options(args)
   conf.font_sz = ops.fs
   conf.nodump = ops.nodump
   conf.fifo = ops.fifo
-  conf.vertical = ops.vertical
   return ret
 end
 
@@ -582,14 +580,8 @@ function framemenu:event(r, v, a, b)
   elseif r == 'mousemotion' then
     if self.grab then
       if mb.left and not mb.right then -- resize
-        if self.frame.frame.vertical then
-          local mh = self.frame.frame:menu().h
-          self.frame.posy = math.min(math.max(a - mh, self.h),
-            self.frame.frame.h - mh - self.h)
-        else
-          self.frame.posx = math.min(math.max(scr.spw, v),
-            self.frame.frame.w - scr.spw)
-        end
+        self.frame.posx = math.min(math.max(scr.spw, v),
+          self.frame.frame.w - scr.spw)
         self.frame.frame:refresh()
         return true
       elseif mb.right then
@@ -603,14 +595,8 @@ function framemenu:event(r, v, a, b)
       scr.grab = false
       self:show_cursor()
       if v == 'left' then -- resize
-        if self.frame.frame.vertical then
-          local mh = self.frame.frame:menu().h
-          self.frame.posy = math.min(math.max(b - mh, self.h),
-            self.frame.frame.h - mh - self.h)
-        else
-          self.frame.posx = math.min(math.max(scr.spw, a),
-            self.frame.frame.w - scr.spw)
-        end
+        self.frame.posx = math.min(math.max(scr.spw, a),
+          self.frame.frame.w - scr.spw)
         self.frame.frame:refresh()
         return true
       elseif v == 'right' then -- move
@@ -741,11 +727,7 @@ end
 local mainmenu = menu:new()
 mainmenu.cmd = {}
 
-if conf.vertical then
-  mainmenu.buf:set 'Help GetAll PutAll Dump Exit Sort Vertical New'
-else
-  mainmenu.buf:set 'Help GetAll PutAll Dump Exit Sort Horizont New'
-end
+mainmenu.buf:set 'Help GetAll PutAll Dump Exit Sort New'
 
 function mainmenu:scroller(click)
   if click then
@@ -972,18 +954,6 @@ function mainmenu.cmd:Exit()
   conf.stop = true
 end
 
-function mainmenu.cmd:Horizont()
-  self.frame.vertical = true
-  self.buf:set(self.buf:gettext():gsub("Horizont", "Vertical"))
-  self.frame:refresh()
-end
-
-function mainmenu.cmd:Vertical()
-  self.frame.vertical = false
-  self.buf:set(self.buf:gettext():gsub("Vertical", "Horizont"))
-  self.frame:refresh()
-end
-
 function mainmenu.cmd:New() -- Newcol
   self.frame:add(frame:new(framemenu:new()))
   for v in self.frame:for_win() do
@@ -1016,44 +986,6 @@ function mainwin:getnewfile()
     end
   end
   return string.format(new..'%d', max + 1)
-end
-
-function mainwin:vgeom(x, y, w, h)
-  local scale = 1
-
-  local menu = self:menu()
-  local pos = menu:bottom()
-  local dh = math.floor((h - pos) / self:win_nr())
-  local lasty = 0
-  for c, i in self:for_win() do
-    if c.posy and c.posy <= (h - pos) then
-      c.posy = math.floor(c.posy * scale) else
-      c.posy = y + (i-1)*dh
-    end
-    c.posy = c.posy or c.y
-    if c.posy < lasty then
-      c.posy = lasty
-    end
-    c:menu():geom(x, y + pos + c.posy, w, 0)
-    lasty = lasty + c:menu().h
-  end
-  table.sort(self.childs, function(a, b)
-    return (a.posy or -1) < (b.posy or -1)
-  end)
-  for c, i in self:for_win() do
-    local r = self:win(i+1) or { posy = self.h - pos }
-    if i == 1 then
-      c.posy = 0
-    end
-    local d = r.posy - c.posy
-    if i ~= self:win_nr() then
-      if d < c:menu().h then
-        r.posy, c.posy = c.posy - c:menu().h, r.posy + r:menu().h
-        d = r:menu().h
-      end
-    end
-    c:geom(x, y + pos + c.posy, w, d)
-  end
 end
 
 function mainwin:hgeom(x, y, w, h)
@@ -1105,11 +1037,7 @@ function mainwin:geom(x, y, w, h)
     screen:clear(x, pos, w, h - pos, 7)
     return
   end
-  if self.vertical then
-    return self:vgeom(x, y, w, h)
-  else
-    return self:hgeom(x, y, w, h)
-  end
+  return self:hgeom(x, y, w, h)
 end
 
 function mainwin:move(x, y, w)
@@ -1192,7 +1120,6 @@ function mainmenu:output(n)
 end
 
 local main = mainwin:new(mainmenu)
-main.vertical = conf.vertical
 
 function main:killproc()
   for fr in main:for_win() do
