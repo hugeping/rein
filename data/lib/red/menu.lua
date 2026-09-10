@@ -19,7 +19,7 @@ end
 
 function menu:exec(t)
   local a = t:strip():split(1)
-  local w = self.frame:win()
+  local w = self:winmenu()
   if w and w.cmd and w.cmd[a[1]] then
     if w.cmd[a[1]](w, a[2]) then
       return true
@@ -34,27 +34,27 @@ function menu:exec(t)
 end
 
 function menu:toline(nr)
-  local c = self.frame:menu()
-  if not c then
+  local w = self:winmenu()
+  if not w then
     return
   end
-  return self.frame:win():toline(nr)
+  return w:toline(nr)
 end
 
 function menu:search(text, back)
-  local c = self.frame:win()
-  if not c or not c.buf then
+  local w = self:winmenu()
+  if not w or not w.buf then
     return
   end
-  if c.buf:issel() then
-    local t = c:get_active_text()
+  if w.buf:issel() then
+    local t = w:get_active_text()
     if t == text then
-      return c:search(t, back)
+      return w:search(t, back)
     else
-      c.buf:resetsel()
+      w.buf:resetsel()
     end
   end
-  return c:search(text, back)
+  return w:search(text, back)
 end
 
 function menu:get_active_text(_)
