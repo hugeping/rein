@@ -701,7 +701,7 @@ top:
 		return 2;
 #endif
 	case SDL_MOUSEBUTTONDOWN:
-		if (e.button.button == 1) { SDL_CaptureMouse(1); }
+		if (e.button.button <= 3) { SDL_CaptureMouse(1); }
 		lua_pushstring(L, "mousedown");
 		lua_pushstring(L, button_name(e.button.button));
 		lua_pushinteger(L, scalew*e.button.x);
@@ -709,7 +709,7 @@ top:
 		lua_pushinteger(L, e.button.clicks);
 		return 5;
 	case SDL_MOUSEBUTTONUP:
-		if (e.button.button == 1) { SDL_CaptureMouse(0); }
+		if (e.button.button <= 3) { SDL_CaptureMouse(0); }
 		lua_pushstring(L, "mouseup");
 		lua_pushstring(L, button_name(e.button.button));
 		lua_pushinteger(L, scalew*e.button.x);
