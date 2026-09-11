@@ -645,8 +645,8 @@ function framemenu:event(r, v, a, b)
           b, self.frame)
         return true
       elseif v == 'middle' then -- click = toggle
-        if math.abs(a - self.grab_x) < 4 and
-          math.abs(b - self.grab_y) < 4 then
+        if math.abs(a - self.grab_x) < conf.drag_delta * SCALE and
+          math.abs(b - self.grab_y) < conf.drag_delta * SCALE then
           self.frame:stacked_toggle()
         end
         return true
@@ -662,73 +662,107 @@ function framemenu:new(...)
   return r
 end
 
+-- window menu in stacked mode (one per window); `self.win` is its window
+local win_menu = menu:new()
+win_menu.cmd = framemenu.cmd
+
+function win_menu:scroller()
+  if not self.x or not self.h or self.h == 0 then return end
+  screen:clear(self.x, self.y, scr.spw, self.h,
+    self.win and self.win:dirty() and conf.active or conf.button)
+  screen:rect(self.x, self.y,
+    self.x + scr.spw - 1,
+    self.y + self.h - 1, conf.fg)
+end
+
+-- press on the menu bar: the square starts a size press, the rest of the
+-- menu starts a move press
+function win_menu:press(v, a, b)
+  local x, y = a - self.x, b - self.y
+  if x < 0 or x >= self.w or y < 0 or y >= self.h then
+    return
+  end
+  local f = self.frame
+  if v == 'left' and x < scr.spw then
+    f.press = { menu = self, win = self.win, kind = 'resize', x = a, y = b }
+  elseif v == 'right' then
+    f.press = { menu = self, win = self.win, kind = 'move', x = a, y = b }
+  end
+end
+
+function win_menu:event(r, v, a, b)
+  if r == 'mousedown' and self.frame.stacked then
+    self:press(v, a, b)
+  end
+  return menu.event(self, r, v, a, b)
+end
+
+-- continue a press: resize follows the mouse, move shows the cursor and
+-- drops the window on release
+function frame:press_event(r, v, a, b)
+  local p = self.press
+  local d = conf.drag_delta * SCALE
+  if r == 'mouseup' then
+    self.press = nil
+    if p.kind == 'resize' then
+      scr.grab = false
+      return p.active
+    end
+    p.menu:show_cursor()
+    if p.active then
+      self.frame:move_win(self, p.win, a, b)
+      return true
+    end
+    return
+  end
+  if r ~= 'mousemotion' then
+    return
+  end
+  local _, _, mb = input.mouse()
+  if p.kind == 'move' then
+    if not mb.right then
+      p.menu:show_cursor()
+      self.press = nil
+      return true
+    end
+    if not p.active then
+      if math.abs(v - p.x) < d and math.abs(a - p.y) < d then
+        return true
+      end
+      p.active = true
+    end
+    p.menu:show_cursor(v, a, conf.move_cursor)
+    return true
+  end
+  if not (mb.left and not mb.right) then
+    self.press = nil
+    scr.grab = false
+    return
+  end
+  if not p.active then
+    if math.abs(v - p.x) < d and math.abs(a - p.y) < d then
+      return
+    end
+    p.active = true
+    p.last_x, p.last_y = p.x, p.y
+    p.menu.autoscroll_on = false
+    scr.grab = true
+  end
+  local dx, dy = v - p.last_x, a - p.last_y
+  p.last_x, p.last_y = v, a
+  if dx ~= 0 then
+    self.frame:resize_col(self, dx)
+  end
+  if dy ~= 0 and (self:find_win(p.win) or 0) > 1 then
+    self:resize_win(p.win, dy)
+  end
+  return true
+end
+
 function frame:new_win_menu(w)
-  local m = menu:new()
+  local m = win_menu:new()
   m.frame = self
   m.win = w
-  m.cmd = framemenu.cmd
-  function m:winmenu() return self.win end
-  function m:scroller()
-    if not self.x or not self.h or self.h == 0 then return end
-    screen:clear(self.x, self.y, scr.spw, self.h,
-      self.win and self.win:dirty() and conf.active or conf.button)
-    screen:rect(self.x, self.y,
-      self.x + scr.spw - 1,
-      self.y + self.h - 1, conf.fg)
-  end
-  function m:event(r, v, a, b)
-    local f = self.frame
-    if r == 'mousedown' and f.stacked then
-      local x, y = a - self.x, b - self.y
-      if x >= 0 and x < self.w and y >= 0 and y < self.h then
-        if v == 'left' and x < scr.spw then
-          -- drag the menu square: resize the column width and the window
-          -- height at the same time, following the mouse
-          f.drag_menu = self
-          f.drag_x, f.drag_y = a, b
-          f.drag_active = false
-        elseif v == 'right' then
-          f.mv_menu, f.mv_src, f.mv_win = self, f, self.win
-          f.mv_x, f.mv_y, f.mv_active = a, b, false
-        end
-      end
-    elseif f.drag_menu == self then
-      if r == 'mousemotion' then
-        local _, _, mb = input.mouse()
-        if not (mb.left and not mb.right) then
-          f.drag_menu, f.drag_active = nil, false
-          scr.grab = false
-        else
-          if not f.drag_active and
-              (math.abs(v - f.drag_x) >= 4 or math.abs(a - f.drag_y) >= 4) then
-            f.drag_active = true
-            f.drag_last_x, f.drag_last_y = f.drag_x, f.drag_y
-            self.autoscroll_on = false
-            scr.grab = true
-          end
-          if f.drag_active then
-            local dx, dy = v - f.drag_last_x, a - f.drag_last_y
-            f.drag_last_x, f.drag_last_y = v, a
-            if dx ~= 0 then
-              f.frame:resize_col(f, dx)
-            end
-            if dy ~= 0 and (f:find_win(self.win) or 0) > 1 then
-              f:resize_win(self.win, dy)
-            end
-            return true
-          end
-        end
-      elseif r == 'mouseup' then
-        f.drag_menu = nil
-        scr.grab = false
-        if f.drag_active then
-          f.drag_active = false
-          return true
-        end
-      end
-    end
-    return menu.event(self, r, v, a, b)
-  end
   return m
 end
 
@@ -1271,7 +1305,7 @@ function frame:dirty()
 end
 
 function menu:winmenu()
-  return self.frame:win()
+  return self.win or self.frame:win()
 end
 function win:winmenu()
 end

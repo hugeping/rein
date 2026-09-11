@@ -135,7 +135,7 @@ win:event -> win:mouseup -> win:get_active_text -> menu:exec
 
 `keydown_event` — встроенные клавиши редактирования; всё остальное уходит в `win:handlekey`, где ищутся пользовательские биндинги `keybind` (`win:make_keybinds`).
 
-События доставляются по иерархии `mainwin:event -> frame:event`. В stacked у `frame:event_stacked` события идут по `menu_w` и окнам; до рассылки он обрабатывает перенос окна (`mv_*`, ПКМ), а ресайз (ЛКМ) — в обработчике меню окна (`m:event`, состояние `drag_*` у фрейма).
+События доставляются по иерархии `mainwin:event -> frame:event`. В stacked `frame:event_stacked` до рассылки по `menu_w` и окнам обрабатывает нажатие на меню окна (`frame.press` и `frame:press_event` в `red.lua`): ЛКМ за квадратик — ресайз колонки и окна, ПКМ — перенос; ниже порога `conf.drag_delta * SCALE` это считается кликом.
 
 Важная особенность: `mousedown` получает только окно под курсором, а `mouseup`/`mousemotion` — все; поэтому обработчики сами проверяют координаты и состояние.
 

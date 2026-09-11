@@ -8,6 +8,7 @@ return {
   active = { 0xff, 0x88, 0xcc},
   font = DATADIR..'/fonts/iosevka-light.ttf',
   font_sz = 14,
+  drag_delta = 4,
   ts = 4,
   spaces_tab = false, -- don't be evil!
   trim_spaces = false,

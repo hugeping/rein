@@ -260,32 +260,10 @@ function frame:event(r, v, a, b)
 end
 
 function frame:event_stacked(r, v, a, b)
-  if self.mv_menu then
-    local menu, src, win = self.mv_menu, self.mv_src, self.mv_win
-    if r == 'mousemotion' then
-      local _, _, mb = input.mouse()
-      if not mb.right then
-        menu:show_cursor()
-        self.mv_menu = nil
-      else
-        if not self.mv_active and
-            (math.abs(v - self.mv_x) >= 4 or math.abs(a - self.mv_y) >= 4) then
-          self.mv_active = true
-        end
-        if self.mv_active then
-          menu:show_cursor(v, a, conf.move_cursor)
-        end
-      end
-      return true
-    elseif r == 'mouseup' then
-      local active = self.mv_active
-      self.mv_menu, self.mv_active = nil, nil
-      menu:show_cursor()
-      if active then
-        self.frame:move_win(src, win, a, b)
-        return true
-      end
-    end
+  -- a press on a window menu (resize with LMB, move with RMB) is handled
+  -- before the menus and windows
+  if self.press and self:press_event(r, v, a, b) then
+    return true
   end
   local function hit(obj)
     if obj and obj:event(r, v, a, b) then
