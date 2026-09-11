@@ -333,7 +333,7 @@ function win:nextpage(jump)
 end
 
 function win:prevpage(jump)
-  jump = jump or self.rows
+  jump = math.max(1, jump or self.rows or 1)
   local len = 0
   while self.pos > 1 do
     self.pos = self.pos - 1

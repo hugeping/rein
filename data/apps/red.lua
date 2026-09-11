@@ -1,6 +1,7 @@
 local win = require "red/win"
 local frame = require "red/frame"
 local proc = require "red/proc"
+local shell = require "red/shell"
 local uri = require "red/uri"
 local conf = require "red/conf"
 local win_keys = require "red/keys"
@@ -959,6 +960,10 @@ function mainmenu.cmd:Dump()
         cwd = w.cwd,
         cmdline = w.cmdline,
         frac = w.frac,
+        shell = w.shell and true,
+        output_pos = w.shell and w.output_pos,
+        hist = w.shell and w.shell.hist,
+        scroll = w.shell and w.scroll_mode,
       })
     end
     table.insert(d, c)
@@ -1557,6 +1562,16 @@ local function load_dump(f)
         w.cwd = b.cwd
         w.cmdline = b.cmdline
         w.frac = b.frac
+        if b.shell then
+          shell.win(w)
+          w.cmdline = b.cmdline or w.cmdline
+          w.shell.hist = b.hist or {}
+          w.output_pos = b.output_pos
+          w:cur(#w.buf.text + 1)
+          if b.scroll ~= nil then
+            w.scroll_mode = b.scroll
+          end
+        end
       end
     end
     if v.menu then
@@ -1571,6 +1586,12 @@ local function load_dump(f)
     main:menu():set(d.menu)
   end
   main:refresh()
+  -- geometry is only final now; put every viewport on its cursor line
+  for fr in main:for_win() do
+    for w in fr:for_win() do
+      w:visible()
+    end
+  end
   return true
 end
 
