@@ -1201,7 +1201,9 @@ end
 
 -- move the active window of frame w to the column under (x, y)
 function mainwin:move(x, y, w)
-  return self:move_win(w, w:win(), x, y)
+  local b = w:win()
+  if not b then return end
+  return self:move_win(w, b, x, y)
 end
 
 function mainwin:frame_at(x, y)
@@ -1215,7 +1217,7 @@ end
 
 function mainwin:move_win(src, w, x, y)
   local dst = self:frame_at(x, y)
-  if not dst then return end
+  if not dst or not w then return end
   if dst ~= src and w.buf.fname and dst:win_by_name(w.buf.fname) then
     return
   end
