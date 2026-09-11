@@ -439,7 +439,7 @@ function frame:file(f, pos)
   if b then -- already opened
     self:push_win(b)
     self:win():toline(nr, col)
-    return
+    return b
   end
 
   b = win:new(fn)
@@ -454,7 +454,7 @@ function frame:file(f, pos)
     if nr == 0 and b:histfile_get() then
       self:push_win(b)
       self:win():visible()
-      return
+      return b
     end
   end
   if pos then
@@ -465,6 +465,7 @@ function frame:file(f, pos)
     self:push_win(b)
   end
   b:toline(nr, col)
+  return b
 end
 
 function frame:getfilename()
