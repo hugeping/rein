@@ -602,8 +602,10 @@ function frame:tab_menu_text(force, pop)
   end
   local t = self:win_menu_words(force)
   if not d then
+    -- the command line is gone (the whole menu was replaced): start it
+    -- empty instead of copying the typed file name into it
     t = t .. '| '
-    o = o:strip()
+    o = ''
   end
   return t .. o, sel
 end
