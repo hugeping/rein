@@ -424,7 +424,7 @@ function frame:push_win(b)
   self:refresh()
 end
 
-function frame:file(f)
+function frame:file(f, pos)
   local fn, nr, col = filename_line(f)
   local dir = sys.isdir(fn)
   if dir then
@@ -452,8 +452,14 @@ function frame:file(f)
       return
     end
   end
-  self:push_win(b)
-  self:win():toline(nr, col)
+  if pos then
+    self:add_win(b, pos)
+    self:update(true, true)
+    self:refresh()
+  else
+    self:push_win(b)
+  end
+  b:toline(nr, col)
 end
 
 function frame:getfilename()
@@ -811,8 +817,19 @@ function framemenu.cmd:Close()
 end
 
 function framemenu.cmd:New(w)
-  self.frame:file(w or self.frame.frame:getnewfile())
-  self.frame:refresh()
+  local f = self.frame
+  local nf = w or f.frame:getnewfile()
+  if self.win and f.stacked then
+    local k = f:find_win(self.win)
+    if k then
+      f:file(nf, k + 1)
+    else
+      f:file(nf)
+    end
+  else
+    f:file(nf)
+  end
+  f:refresh()
 end
 
 local mainmenu = menu:new()
