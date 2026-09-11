@@ -166,6 +166,13 @@ function win:process()
     self:flush()
     self:show()
   end
+  if self.menu_w then
+    local mhz, me = self.menu_w:process()
+    if mhz == false then return false, me end
+    if mhz and (not hz or mhz < hz) then
+      hz = mhz
+    end
+  end
   return hz
 end
 
