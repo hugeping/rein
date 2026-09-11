@@ -39,9 +39,15 @@ function frame:show()
 end
 
 function frame:open_err(name)
-  self:file(name or '+Errors')
-  self:win():tail()
-  return self:win()
+  -- in stacked mode new service windows go to the end, not to the top
+  local pos
+  if self.stacked then
+    pos = self:win_nr() + 1
+  end
+  local w = self:file(name or '+Errors', pos)
+  if not w then return end
+  w:tail()
+  return w
 end
 
 function frame:err(fmt, ...)
