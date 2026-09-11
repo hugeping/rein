@@ -102,7 +102,7 @@ win:event -> win:mouseup -> win:get_active_text -> menu:exec
 
 Мышь по меню окна в stacked:
 
-* ЛКМ-протяжка — одновременно ширина колонки (`mainwin:resize_col` по `dx`) и высота окна (`frame:resize_win(win, dy)`);
+* ЛКМ-протяжка за квадратик меню (скроллер, `x < scr.spw`) — одновременно ширина колонки (`mainwin:resize_col` по `dx`) и высота окна (`frame:resize_win(win, dy)`); остальная часть меню — только текст и команды;
 * ПКМ-протяжка — перенос окна: `mainwin:move_win` находит колонку под курсором (`mainwin:frame_at`) и позицию вставки (`frame:win_at` — «под окном, в чьей области брошено»).
 
 # События
