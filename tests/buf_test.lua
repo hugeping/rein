@@ -190,6 +190,17 @@ describe("buf", function()
     eq(b:gettext(), "abc")
   end)
 
+  it("undo/redo restores a cut", function()
+    local b = nb("hello")
+    b:setsel(1, 3)
+    b:cut()
+    eq(b:gettext(), "llo")
+    b:undo()
+    eq(b:gettext(), "hello")
+    b:redo()
+    eq(b:gettext(), "llo")
+  end)
+
   it("undo/redo roundtrip of multiple inputs", function()
     local b = buf:new("x")
     for _, c in ipairs({ "a", "b", "c" }) do b:input(c) end
