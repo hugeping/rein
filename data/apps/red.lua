@@ -1193,21 +1193,9 @@ function mainwin:geom(x, y, w, h)
   return self:hgeom(x, y, w, h)
 end
 
+-- move the active window of frame w to the column under (x, y)
 function mainwin:move(x, y, w)
-  for c in self:for_win() do
-    if x >= c.x and x < c.x + c.w and
-      y >= c.y and y < c.y + c.h then -- move it!
-      if w:win() and c:win_by_name(w:win().buf.fname) then
-        return
-      end
-      local b = w:del_win()
-      if not b then return end
-      c:push_win(b)
-      w:update(true, true)
-      self:refresh()
-      return true
-    end
-  end
+  return self:move_win(w, w:win(), x, y)
 end
 
 function mainwin:frame_at(x, y)
@@ -1222,6 +1210,9 @@ end
 function mainwin:move_win(src, w, x, y)
   local dst = self:frame_at(x, y)
   if not dst then return end
+  if dst ~= src and w.buf.fname and dst:win_by_name(w.buf.fname) then
+    return
+  end
   local cur = src:find_win(w)
   if not cur then return end
   if dst == src then
