@@ -214,6 +214,42 @@ describe("buf", function()
     eq(b:gettext(), "abc")
   end)
 
+  it("mark remembers the earliest changed position", function()
+    local b = buf:new("t")
+    b:input("hello")
+    b.changed_from = nil
+    b.cur = 3
+    b:input("X")
+    eq(b.changed_from, 3)
+    b.cur = 1
+    b:input("Y")
+    eq(b.changed_from, 1)
+  end)
+
+  it("undo/redo mark the changed position", function()
+    local b = buf:new("t")
+    b:input("hello")
+    b.changed_from = nil
+    b:undo()
+    eq(b.changed_from, 1)
+    b.changed_from = nil
+    b:redo()
+    eq(b.changed_from, 1)
+  end)
+
+  it("cut and backspace mark the changed position", function()
+    local b = buf:new("t")
+    b:input("hello")
+    b.changed_from = nil
+    b.cur = 4
+    b:backspace()
+    eq(b.changed_from, 3)
+    b.changed_from = nil
+    b:setsel(2, 4)
+    b:cut()
+    eq(b.changed_from, 2)
+  end)
+
   it("history is trimmed to history_len", function()
     local b = buf:new("x")
     b.history_len = 8

@@ -8,7 +8,7 @@ local function fake_win()
   }
   setmetatable(w, { __index = win })
   local function rec(name)
-    return function(self, ...) table.insert(w.calls, { name, ... }) end
+    return function(_, ...) table.insert(w.calls, { name, ... }) end
   end
   for _, n in ipairs {
     "left", "right", "up", "down", "movesel", "prevpage", "nextpage",

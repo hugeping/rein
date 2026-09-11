@@ -10,6 +10,11 @@ globals = {
   "SCALE",
 }
 
+-- helpers defined by tests/harness.lua
+read_globals = {
+  "describe", "it", "eq", "ne", "ok", "match", "fail",
+}
+
 -- Helpers installed at runtime by lib/std.lua and red.lua.
 globals.math = { fields = { "round" } }
 globals.table = { fields = { "append", "find", "del", "clone", "merge", "unpack" } }

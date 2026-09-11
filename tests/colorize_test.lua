@@ -1,4 +1,5 @@
 local win = require "red/win"
+local scheme = require "red/syntax/scheme"
 
 -- minimal window good enough for colorize(): no geometry/font needed
 local function make(text, conf)
@@ -8,7 +9,7 @@ local function make(text, conf)
   w.pos = 1
   w.cols = 1000
   w.rows = 10
-  w.conf = conf or { syntax = 'lua', colorize_win = 16 }
+  w.conf = conf or { syntax = 'lua', colorize_checkpoint = 64 }
   return w
 end
 
@@ -48,7 +49,7 @@ describe("win:colorize", function()
     local w = make(text)
     w.pos = 500
     local c = w:colorize()
-    ok(c.saved, "anchor state saved")
+    ok(#c.checkpoints > 1, "checkpoints recorded")
     local calls = count_process(c)
     c.dirty = true
     local c2 = w:colorize()
@@ -78,5 +79,52 @@ describe("win:colorize", function()
     w:colorize()
     ok(calls() > 0, "colored more after scroll")
     ok(c.pos >= w.epos, "colored up to the new epos")
+  end)
+
+  it("picks up a context change above the viewport", function()
+    local text = ("x = 1\n"):rep(300)
+    local w = make(text)
+    w.rows = 5
+    w.pos = 1500
+    w:colorize()
+    local v = w.pos + 5
+    ne(w.colorizer.cols[v], scheme.comment, "code before the edit")
+    -- open a block comment at position 100, above the viewport
+    local ins = utf.chars("--[[")
+    for i = #ins, 1, -1 do
+      table.insert(w.buf.text, 100, ins[i])
+    end
+    w.buf:mark(100)
+    w.colorizer.dirty = true
+    w:colorize()
+    eq(w.colorizer.cols[v + #ins], scheme.comment,
+      "comment color after the edit above")
+  end)
+
+  it("re-lexes only from the last checkpoint after an edit", function()
+    local text = ("x = 1\n"):rep(300)
+    local w = make(text)
+    w.rows = 5
+    w.pos = 1500
+    local c = w:colorize()
+    local calls = count_process(c)
+    table.insert(w.buf.text, w.pos, 'y')
+    w.buf:mark(w.pos)
+    c.dirty = true
+    w:colorize()
+    local n = calls()
+    ok(n > 0, "reprocessed")
+    ok(n < 200, "bounded re-lex, calls=" .. n)
+  end)
+
+  it("state restore does not alias the checkpoint stack", function()
+    local text = ("--[[ block\n"):rep(50)
+    local w = make(text)
+    local c = w:colorize()
+    local cp = c:state()
+    local n = #cp.stack
+    c:state(cp)
+    c:process(c.pos, #text)
+    eq(#cp.stack, n, "checkpoint stack not mutated")
   end)
 end)

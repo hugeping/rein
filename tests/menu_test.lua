@@ -1,5 +1,4 @@
 local menu = require "red/menu"
-local win = require "red/win"
 
 describe("menu", function()
   it("exec dispatches to the window command first", function()

@@ -103,8 +103,12 @@ end
 
 function syntax:state(s)
   if s then
+    local stack = {}
+    for _, v in ipairs(s.stack) do
+      table.insert(stack, { v[1], v[2] })
+    end
     self.pos = s.pos
-    self.stack = s.stack
+    self.stack = stack
     self.ctx = s.ctx
     return
   end
@@ -167,8 +171,10 @@ function syntax.new(txt, pos, scheme)
   end
   local s = { stack = {}, txt = txt,
     pos = pos, start = pos, cols = {},
+    checkpoints = {},
     ctx = ctx }
   setmetatable(s, syntax)
+  s.checkpoints[1] = s:state()
   return s
 end
 
