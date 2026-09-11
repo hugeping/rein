@@ -513,61 +513,13 @@ function frame:sort()
 end
 
 function frame:update(force, pop)
-  local sel
-  local t = ''
-  local o, d
-
+  local text, sel
   if self.stacked then
-    -- stacked: column menu = Del | <command line>
-    local cur_text = self:menu().buf:gettext()
-    d = cur_text:find('|', 1, true)
-    if d then
-      o = cur_text:sub(d)
-    else
-      o = ' New '
-    end
-    t = 'Del '
+    text = self:stacked_menu_text()
   else
-    if pop then
-      self:menu():set(self:win() and self:win().menu or
-        conf.emptymenu)
-    elseif self:menu().buf:issel() then
-      local s = self:menu().buf:getsel()
-      sel = { s = s.s, e = s.e }
-    end
-    o = self:menu().buf:gettext()
-    d = o:find('|', 1, true)
-    if d then
-      o = o:sub(d)
-    end
-    local fn = not force and self:getfilename()
-    for c, i in self:for_win() do
-      if i == 1 and fn and fn ~= c.buf.fname then
-        self:rename_win(c, fn)
-      end
-      t = t .. c.buf.fname:esc() .. ' '
-    end
-    if self:win() then
-      local cur = self:win()
-      if self:win():dirty() and cur.buf:isfile() then
-        t = t .. 'Put '
-      end
-      t = t .. 'Close '
-      t = t .. 'Get '
-      if self:win().cmdline then
-        t = t .. self:win().cmdline .. ' '
-      end
-    end
-    if self.frame:win_nr() > 1 then
-      t = t .. 'Del ' -- Delcol
-    end
-    if not d then
-      t = t .. '| '
-      o = o:strip()
-    end
+    text, sel = self:tab_menu_text(force, pop)
   end
-
-  self:menu():set_keep(t..o, sel)
+  self:menu():set_keep(text, sel)
   if self:win() and not self.stacked then
     self:win().menu = self:menu():gettext()
     if force then
@@ -576,10 +528,66 @@ function frame:update(force, pop)
   end
 
   if self.stacked then
-    for c, i in self:for_win() do
+    for c in self:for_win() do
       self:sync_win_menu(c)
     end
   end
+end
+
+-- stacked column menu: "Del " + the existing command line
+function frame:stacked_menu_text()
+  local cur = self:menu().buf:gettext()
+  local d = cur:find('|', 1, true)
+  local o = d and cur:sub(d) or ' New '
+  return 'Del ' .. o
+end
+
+-- words for the tabbed column menu: file names and window commands
+function frame:win_menu_words(force)
+  local t = ''
+  local fn = not force and self:getfilename()
+  for c, i in self:for_win() do
+    if i == 1 and fn and fn ~= c.buf.fname then
+      self:rename_win(c, fn)
+    end
+    t = t .. c.buf.fname:esc() .. ' '
+  end
+  local w = self:win()
+  if w then
+    if w:dirty() and w.buf:isfile() then
+      t = t .. 'Put '
+    end
+    t = t .. 'Close Get '
+    if w.cmdline then
+      t = t .. w.cmdline .. ' '
+    end
+  end
+  if self.frame:win_nr() > 1 then
+    t = t .. 'Del ' -- Delcol
+  end
+  return t
+end
+
+-- tabbed column menu text and the selection to preserve
+function frame:tab_menu_text(force, pop)
+  local sel
+  if pop then
+    self:menu():set(self:win() and self:win().menu or conf.emptymenu)
+  elseif self:menu().buf:issel() then
+    local s = self:menu().buf:getsel()
+    sel = { s = s.s, e = s.e }
+  end
+  local o = self:menu().buf:gettext()
+  local d = o:find('|', 1, true)
+  if d then
+    o = o:sub(d)
+  end
+  local t = self:win_menu_words(force)
+  if not d then
+    t = t .. '| '
+    o = o:strip()
+  end
+  return t .. o, sel
 end
 
 local framemenu = menu:new()

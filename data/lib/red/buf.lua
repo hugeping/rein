@@ -71,6 +71,38 @@ function buf:history(op, pos, nr, append)
   return h
 end
 
+-- apply one history entry: forward (redo) or backward (undo)
+function buf:apply_hist(h, forward)
+  if h.op == 'input' then
+    if forward then
+      for i = 1, h.nr do
+        table.insert(self.text, h.pos + i - 1, h.data[i])
+        self.cur = self.cur + 1
+      end
+    else
+      self.text = self:remove_range(h.pos, h.nr)
+    end
+  elseif h.op == 'cut' then
+    if forward then
+      self.text = self:remove_range(h.pos, h.nr)
+    else
+      for i = 1, h.nr do
+        table.insert(self.text, h.pos + i - 1, h.data[i])
+      end
+    end
+  end
+end
+
+function buf:remove_range(pos, nr)
+  local new = {}
+  for i = 1, #self.text do
+    if i < pos or i >= pos + nr then
+      table.insert(new, self.text[i])
+    end
+  end
+  return new
+end
+
 function buf:redo()
   if #self.redo_hist == 0 then return end
   self:changed(true)
@@ -85,19 +117,8 @@ function buf:redo()
       depth = depth + 1
     elseif h.op == 'end' then
       depth = depth - 1
-    elseif h.op == 'input' then
-      for i = 1, h.nr do
-        table.insert(self.text, h.pos + i - 1, h.data[i])
-        self.cur = self.cur + 1
-      end
-    elseif h.op == 'cut' then
-      local new = {}
-      for i = 1, #self.text do
-        if i < h.pos or i >= h.pos + h.nr then
-          table.insert(new, self.text[i])
-        end
-      end
-      self.text = new
+    else
+      self:apply_hist(h, true)
     end
   until depth == 0
 end
@@ -115,18 +136,8 @@ function buf:undo()
       depth = depth + 1
     elseif h.op == 'end' then
       depth = depth - 1
-    elseif h.op == 'cut' then
-      for i = 1, h.nr do
-        table.insert(self.text, h.pos + i - 1, h.data[i])
-      end
-    elseif h.op == 'input' then
-      local new = {}
-      for i = 1, #self.text do
-        if i < h.pos or i >= h.pos + h.nr then
-          table.insert(new, self.text[i])
-        end
-      end
-      self.text = new
+    else
+      self:apply_hist(h, false)
     end
     self.cur = math.min(h.cur, #self.text + 1)
   until depth == 0
