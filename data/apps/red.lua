@@ -472,6 +472,17 @@ function frame:getfilename()
   return not t:empty() and t
 end
 
+function frame:rename_win(w, fn)
+  if not w or not fn or fn == w.buf.fname then
+    return
+  end
+  while self.frame:win_by_name(fn) do
+    fn = '~' .. fn
+  end
+  w.buf.fname = fn
+  w.conf = presets.get(fn) or {}
+end
+
 function frame:show()
   if scr.grab then return end
   if self.stacked then
@@ -533,11 +544,7 @@ function frame:update(force, pop)
     local fn = not force and self:getfilename()
     for c, i in self:for_win() do
       if i == 1 and fn and fn ~= c.buf.fname then
-        while self.frame:win_by_name(fn) do
-          fn = '~' .. fn
-        end
-        c.buf.fname = fn
-        c.conf = presets.get(fn) or {}
+        self:rename_win(c, fn)
       end
       t = t .. c.buf.fname:esc() .. ' '
     end
@@ -680,6 +687,14 @@ end
 function frame:sync_win_menu(w)
   local m = self:win_menu(w)
   if not m then return end
+  local cur = m:gettext()
+  local fn = cur:split('|', 1)[1]
+  if fn then
+    fn = (fn:escsplit()[1] or ''):strip()
+  end
+  if fn and not fn:empty() and fn ~= w.buf.fname then
+    self:rename_win(w, fn)
+  end
   local t = ''
   if w.buf.fname then
     t = w.buf.fname:esc() .. ' '
@@ -692,13 +707,12 @@ function frame:sync_win_menu(w)
   if w.cmdline then
     t = t .. w.cmdline .. ' '
   end
-local tail = '| New '
+  local tail = '| New '
   local s = frame.menu_tail(w.menu)
   if s and not s:empty() and s:strip() ~= '|' then
     tail = s
   end
   local want = t .. tail
-  local cur = m:gettext()
   if cur ~= want and cur == (w.prevmenu or '') then
     m:set(want)
   end

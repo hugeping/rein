@@ -247,6 +247,7 @@ function frame:stacked_toggle()
     -- per-window menu) so it reappears in the column menu later
     for c in self:for_win() do
       if c.menu_w then
+        self:sync_win_menu(c)
         c.menu = c.menu_w:gettext()
       end
     end
