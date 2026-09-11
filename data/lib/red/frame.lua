@@ -91,7 +91,7 @@ end
 -- body heights for the stacked windows, fitting `h` pixels after menu bars
 function frame:stacked_sizes(h)
   local n = self:win_nr()
-  self:stacked_norm()
+  self:frac_norm()
   local total_mh = 0
   for c in self:for_win() do
     local cm = self:win_menu(c)
@@ -162,7 +162,7 @@ function frame:geom_stacked(x, y, w, h)
 end
 
 -- keep per-window vertical fractions normalized to 1
-function frame:stacked_norm()
+function frame:frac_norm()
   local n = self:win_nr()
   if n == 0 then
     return
