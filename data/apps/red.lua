@@ -541,11 +541,14 @@ function frame:update(force, pop)
   end
 end
 
--- stacked column menu: "Del " + the existing command line
+-- stacked column menu: "Del " + the existing command line; "New" stays
 function frame:stacked_menu_text()
   local cur = self:menu().buf:gettext()
   local d = cur:find('|', 1, true)
-  local o = d and cur:sub(d) or ' New '
+  local o = d and cur:sub(d) or '| New '
+  if not frame.menu_has_word(o, 'New') then
+    o = o:gsub('%s+$', '') .. ' New '
+  end
   return 'Del ' .. o
 end
 

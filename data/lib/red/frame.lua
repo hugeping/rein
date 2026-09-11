@@ -382,6 +382,11 @@ function frame.menu_set_tail(s, tail)
   return (s and s .. ' ' or '') .. tail
 end
 
+-- whether the menu text contains `word` as a separate word
+function frame.menu_has_word(s, word)
+  return s ~= nil and s:find('%f[%w]' .. word .. '%f[%W]') ~= nil
+end
+
 function frame:stacked_toggle()
   if self.stacked then
     -- collapse to tabbed: remember the column command line and save
