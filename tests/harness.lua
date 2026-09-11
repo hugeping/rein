@@ -3,12 +3,6 @@
 
 local harness = { passed = 0, failed = 0, errors = {} }
 
-local function loc(level)
-  local info = debug.getinfo(level + 1, "Sl")
-  if not info then return "?" end
-  return (info.short_src or "?") .. ":" .. (info.currentline or "?")
-end
-
 local function fail(msg, level)
   error(msg, level + 1)
 end

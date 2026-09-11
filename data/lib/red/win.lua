@@ -472,33 +472,43 @@ function win:colorize()
   if colorizer and not colorizer.dirty and colorizer.pos >= self.epos then
     return colorizer
   end
-  local start = 1
-  if colorizer then
-    if colorizer.saved then
-      colorizer:state(colorizer.saved)
-      start = colorizer.pos
-      colorizer.txt = self.buf.text
+  local step = self:getconf 'colorize_checkpoint' or 1024
+  if colorizer and colorizer.dirty then
+    -- resume from the last checkpoint before the earliest change;
+    -- checkpoints after it are invalid
+    colorizer.txt = self.buf.text
+    local p = self.buf.changed_from or 1
+    local k = #colorizer.checkpoints
+    while k > 0 and colorizer.checkpoints[k].pos > p do
+      colorizer.checkpoints[k] = nil
+      k = k - 1
     end
-    if colorizer and colorizer.dirty and self.pos <= start then
-      colorizer = nil
-      start = 1
+    if k == 0 then
+      colorizer = syntax.new(self.buf.text, 1, scheme)
+    else
+      colorizer:state(colorizer.checkpoints[k])
     end
-  end
-  colorizer = colorizer or syntax.new(self.buf.text, 1, scheme)
-  if not colorizer then
-    return
+    self.buf.changed_from = nil
+  elseif not colorizer then
+    colorizer = syntax.new(self.buf.text, 1, scheme)
+    self.buf.changed_from = nil
   end
   colorizer.dirty = false
-  local state
-  colorizer.saved = nil
-  for i = start, self.epos - 1 do
-    if not state and
-      i < self.pos and
-      i >= self.pos - self:getconf 'colorize_win' then
-      state = true
-      colorizer.saved = colorizer:state()
+  local next_cp = colorizer.pos + step
+  while colorizer.pos < self.epos do
+    local before = colorizer.pos
+    colorizer:process(before, self.epos - 1)
+    if colorizer.pos <= before then
+      break -- no context (unknown scheme)
     end
-    colorizer:process(i, self.epos - 1)
+    if colorizer.pos >= next_cp then
+      colorizer.checkpoints[#colorizer.checkpoints + 1] = colorizer:state()
+      next_cp = colorizer.pos + step
+      if #colorizer.checkpoints >
+          (self:getconf 'colorize_checkpoints' or 4096) then
+        table.remove(colorizer.checkpoints, 1)
+      end
+    end
   end
   self.colorizer = colorizer
   return colorizer

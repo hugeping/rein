@@ -29,6 +29,13 @@ function buf:changed(fl)
   return c
 end
 
+-- remember the earliest text change (for incremental colorization)
+function buf:mark(pos)
+  if pos and (not self.changed_from or pos < self.changed_from) then
+    self.changed_from = pos
+  end
+end
+
 --[[
 local hist_delim = {
   [" "] = true,
@@ -40,6 +47,9 @@ function buf:history(op, pos, nr, append)
   local text
   self:changed(true)
   pos = pos or self.cur
+  if op == 'input' or op == 'cut' then
+    self:mark(pos)
+  end
   if op == 'input' then
     text = nr
     nr = #nr
@@ -73,6 +83,9 @@ end
 
 -- apply one history entry: forward (redo) or backward (undo)
 function buf:apply_hist(h, forward)
+  if h.op == 'input' or h.op == 'cut' then
+    self:mark(h.pos)
+  end
   if h.op == 'input' then
     if forward then
       for i = 1, h.nr do
@@ -446,6 +459,7 @@ function buf:set(text)
   else
     self.text = text
   end
+  self:mark(1)
   self:resetsel()
   self.cur = math.min(#self.text + 1, self.cur)
 end
@@ -481,6 +495,7 @@ end
 
 function buf:append(text, cur)
   local u = utf.chars(text)
+  self:mark(#self.text + 1)
   for i = 1, #u do
     table.insert(self.text, u[i])
   end
@@ -662,6 +677,7 @@ function buf:load(fname)
   self.hist = {}
   self.redo_hist = {}
   self.text = utf.chars(f:read '*all') or {}
+  self:mark(1)
   self:dirty(false)
   if f ~= io.stdin then
     f:close()
