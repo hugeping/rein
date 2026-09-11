@@ -476,14 +476,29 @@ function frame:file(f, pos)
   return b
 end
 
+-- file name typed in the tag part of a menu text (before |)
+function frame.menu_filename(text)
+  local fn = text:split('|', 1)[1]
+  if fn then
+    fn = (fn:escsplit()[1] or ''):strip()
+  end
+  return fn
+end
+
 function frame:getfilename()
   if not self.frame then
     return "./"
   end
-  local t = self:menu().buf:gettext():split('|', 1)[1]
-  if not t then return end
-  t = (t:escsplit()[1] or ''):strip()
-  return not t:empty() and t
+  local fn = frame.menu_filename(self:menu().buf:gettext())
+  return fn and not fn:empty() and fn
+end
+
+-- rename the window according to the file name typed in its menu
+function frame:rename_from_menu(w, text)
+  local fn = frame.menu_filename(text)
+  if fn and not fn:empty() and fn ~= w.buf.fname then
+    self:rename_win(w, fn)
+  end
 end
 
 function frame:rename_win(w, fn)
@@ -549,36 +564,36 @@ function frame:update(force, pop)
   end
 end
 
--- stacked column menu: "Del " + the existing command line; "New" stays
+-- stacked column menu: "Del " + the current command line
 function frame:stacked_menu_text()
-  local cur = self:menu().buf:gettext()
-  local d = cur:find('|', 1, true)
-  local o = d and cur:sub(d) or '| New '
-  if not frame.menu_has_word(o, 'New') then
-    o = o:gsub('%s+$', '') .. ' New '
+  return 'Del ' .. (frame.menu_tail(self:menu().buf:gettext()) or '| New ')
+end
+
+-- command words of one window in a menu: "[Put ]Close Get [cmdline]"
+function frame.win_words(w)
+  local t = ''
+  if w:dirty() and w.buf:isfile() then
+    t = t .. 'Put '
   end
-  return 'Del ' .. o
+  t = t .. 'Close Get '
+  if w.cmdline then
+    t = t .. w.cmdline .. ' '
+  end
+  return t
 end
 
 -- words for the tabbed column menu: file names and window commands
 function frame:win_menu_words(force)
   local t = ''
-  local fn = not force and self:getfilename()
-  for c, i in self:for_win() do
-    if i == 1 and fn and fn ~= c.buf.fname then
-      self:rename_win(c, fn)
-    end
+  local w = self:win()
+  if w and not force then
+    self:rename_from_menu(w, self:menu().buf:gettext())
+  end
+  for c in self:for_win() do
     t = t .. c.buf.fname:esc() .. ' '
   end
-  local w = self:win()
   if w then
-    if w:dirty() and w.buf:isfile() then
-      t = t .. 'Put '
-    end
-    t = t .. 'Close Get '
-    if w.cmdline then
-      t = t .. w.cmdline .. ' '
-    end
+    t = t .. frame.win_words(w)
   end
   if self.frame:win_nr() > 1 then
     t = t .. 'Del ' -- Delcol
@@ -595,19 +610,9 @@ function frame:tab_menu_text(force, pop)
     local s = self:menu().buf:getsel()
     sel = { s = s.s, e = s.e }
   end
-  local o = self:menu().buf:gettext()
-  local d = o:find('|', 1, true)
-  if d then
-    o = o:sub(d)
-  end
-  local t = self:win_menu_words(force)
-  if not d then
-    -- the command line is gone (the whole menu was replaced): start it
-    -- empty instead of copying the typed file name into it
-    t = t .. '| '
-    o = ''
-  end
-  return t .. o, sel
+  -- when the separator is gone, the command line starts empty
+  local tail = frame.menu_tail(self:menu().buf:gettext()) or '| '
+  return self:win_menu_words(force) .. tail, sel
 end
 
 local framemenu = menu:new()
@@ -780,35 +785,23 @@ function frame:sync_win_menu(w)
   local m = self:win_menu(w)
   if not m then return end
   local cur = m:gettext()
-  local fn = cur:split('|', 1)[1]
-  if fn then
-    fn = (fn:escsplit()[1] or ''):strip()
-  end
-  if fn and not fn:empty() and fn ~= w.buf.fname then
-    self:rename_win(w, fn)
-  end
+  self:rename_from_menu(w, cur)
   local t = ''
   if w.buf.fname then
     t = w.buf.fname:esc() .. ' '
   end
-  if w:dirty() then
-    t = t .. 'Put '
-  end
-  t = t .. 'Close '
-  t = t .. 'Get '
-  if w.cmdline then
-    t = t .. w.cmdline .. ' '
-  end
-  local tail = '| New '
-  local s = frame.menu_tail(w.menu)
-  if s and not s:empty() and s:strip() ~= '|' then
-    tail = s
+  t = t .. frame.win_words(w)
+  local tail = frame.menu_tail(cur)
+  if not tail then
+    tail = frame.menu_tail(w.menu) or '| New '
+    if tail:strip() == '|' then
+      tail = '| New '
+    end
   end
   local want = t .. tail
-  if cur ~= want and cur == (w.prevmenu or '') then
-    m:set(want)
+  if cur ~= want then
+    m:set_keep(want)
   end
-  w.prevmenu = want
 end
 
 function framemenu.cmd:Del() -- Delcol

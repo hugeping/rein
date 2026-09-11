@@ -403,15 +403,19 @@ function frame:stacked_toggle()
       local tail = frame.menu_tail(cur)
       if tail then
         w.menu = frame.menu_set_tail(w.menu, tail)
-        self:menu():set(frame.menu_set_tail(cur, '|'))
+        self:menu():set(frame.menu_set_tail(cur, '| New '))
       end
     end
   end
   self.stacked = not self.stacked
   if self.stacked and self.stacked_cmdline then
-    -- restore the column command line last used in stacked mode
-    self:menu():set(frame.menu_set_tail(self:menu():gettext(),
-      self.stacked_cmdline))
+    -- restore the column command line last used in stacked mode;
+    -- "New" stays available for creating windows
+    local tail = self.stacked_cmdline
+    if not frame.menu_has_word(tail, 'New') then
+      tail = tail:gsub('%s+$', '') .. ' New '
+    end
+    self:menu():set(frame.menu_set_tail(self:menu():gettext(), tail))
   end
   self:update(true, true)
   self:refresh()
