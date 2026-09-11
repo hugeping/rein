@@ -917,16 +917,23 @@ function mainmenu.cmd:Dump()
   local d = {}
   d.menu = self.buf:gettext()
   for f in self.frame:for_win() do
-    local c = {}
+    local c = {
+      menu = f:menu().buf:gettext(),
+      stacked = f.stacked,
+      frac = f.frac,
+      stacked_cmdline = f.stacked_cmdline,
+    }
     for w in f:for_win() do
-      local b = { fname = string.format("%s", w.buf.fname) }
-      table.insert(c, 1, b)
-      b.line = w.buf:line_nr()
-      b.text = w.buf:gettext()
-      b.menu = w.menu
-      b.cwd = w.cwd
+      table.insert(c, {
+        fname = string.format("%s", w.buf.fname),
+        line = w.buf:line_nr(),
+        text = w.buf:gettext(),
+        menu = w.menu,
+        cwd = w.cwd,
+        cmdline = w.cmdline,
+        frac = w.frac,
+      })
     end
-    c.menu = f:menu().buf:gettext()
     table.insert(d, c)
   end
   dumper.save("red.dump", d)
@@ -1502,26 +1509,41 @@ local function load_dump(f)
   for i, v in ipairs(d) do
     mainmenu.cmd.New(mainmenu) -- Newcol
     local fr = main:win(i)
-    for _, b in ipairs(v) do
-      fr:file(b.fname)
-      if b.text then
-        local ww = main:win(i):win()
-        ww:set(b.text)
-        ww:dirty(ww.buf:dirty())
+    local wins = {}
+    for idx, b in ipairs(v) do
+      local w = fr:file(b.fname, idx)
+      wins[idx] = w
+      if w then
+        if b.text then
+          w:set(b.text)
+          w:dirty(w.buf:dirty())
+        end
+        if b.line then
+          w:toline(b.line, false)
+        end
       end
-      if b.line then
-        fr:win():toline(b.line, false)
+    end
+    for idx, b in ipairs(v) do
+      local w = wins[idx]
+      if w then
+        w.menu = b.menu
+        w.cwd = b.cwd
+        w.cmdline = b.cmdline
+        w.frac = b.frac
       end
-      fr:win().menu = b.menu
-      fr:win().cwd = b.cwd
     end
     if v.menu then
       fr:menu().buf:set(v.menu)
     end
+    fr.stacked = v.stacked
+    fr.frac = v.frac
+    fr.stacked_cmdline = v.stacked_cmdline
+    fr:update(true, true)
   end
   if d.menu then
     main:menu():set(d.menu)
   end
+  main:refresh()
   return true
 end
 
