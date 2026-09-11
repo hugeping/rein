@@ -683,12 +683,54 @@ function frame:new_win_menu(w)
   end
   function m:event(r, v, a, b)
     local f = self.frame
-    if r == 'mousedown' and v == 'left' and f.stacked then
+    if r == 'mousedown' and f.stacked then
       local x, y = a - self.x, b - self.y
-      if x >= 0 and x < self.w and y >= 0 and y < self.h and
-          (f:find_win(self.win) or 0) > 1 then
-        f.rz_menu, f.rz_win = self, self.win
-        f.rz_start, f.rz_last, f.rz_active = b, b, false
+      if x >= 0 and x < self.w and y >= 0 and y < self.h then
+        if v == 'left' then
+          -- drag the menu: resize the column width and the window height
+          -- at the same time, following the mouse
+          f.drag_menu = self
+          f.drag_x, f.drag_y = a, b
+          f.drag_active = false
+        elseif v == 'right' then
+          f.mv_menu, f.mv_src, f.mv_win = self, f, self.win
+          f.mv_x, f.mv_y, f.mv_active = a, b, false
+        end
+      end
+    elseif f.drag_menu == self then
+      if r == 'mousemotion' then
+        local _, _, mb = input.mouse()
+        if not (mb.left and not mb.right) then
+          f.drag_menu, f.drag_active = nil, false
+          scr.grab = false
+        else
+          if not f.drag_active and
+              (math.abs(v - f.drag_x) >= 4 or math.abs(a - f.drag_y) >= 4) then
+            f.drag_active = true
+            f.drag_last_x, f.drag_last_y = f.drag_x, f.drag_y
+            f.posx = f.posx or f.x
+            self.autoscroll_on = false
+            scr.grab = true
+          end
+          if f.drag_active then
+            local dx, dy = v - f.drag_last_x, a - f.drag_last_y
+            f.drag_last_x, f.drag_last_y = v, a
+            f.posx = math.min(math.max(scr.spw, f.posx + dx),
+              f.frame.w - scr.spw)
+            if dy ~= 0 and (f:find_win(self.win) or 0) > 1 then
+              f:resize_win(self.win, dy)
+            end
+            f.frame:refresh()
+            return true
+          end
+        end
+      elseif r == 'mouseup' then
+        f.drag_menu = nil
+        scr.grab = false
+        if f.drag_active then
+          f.drag_active = false
+          return true
+        end
       end
     end
     return menu.event(self, r, v, a, b)
@@ -1191,6 +1233,39 @@ function mainwin:move(x, y, w)
   end
 end
 
+function mainwin:frame_at(x, y)
+  for c in self:for_win() do
+    if x >= c.x and x < c.x + c.w and
+      y >= c.y and y < c.y + c.h then
+      return c
+    end
+  end
+end
+
+function mainwin:move_win(src, w, x, y)
+  local dst = self:frame_at(x, y)
+  if not dst then return end
+  local cur = src:find_win(w)
+  if not cur then return end
+  if dst == src then
+    local idx = dst:win_at(y)
+    if idx > cur then idx = idx - 1 end
+    if idx == cur then return end
+    src:del_win(cur)
+    src:add_win(w, idx)
+    src:update(true, true)
+    self:refresh()
+    return true
+  end
+  local idx = dst:win_at(y)
+  src:del_win(cur)
+  dst:add_win(w, idx)
+  src:update(true, true)
+  dst:update(true, true)
+  self:refresh()
+  return true
+end
+
 function mainwin:dirty()
   for f in self:for_win() do
     local fn = f:dirty()
@@ -1529,6 +1604,14 @@ while not conf.stop do
     main:geom(0, 0, scr.w, scr.h)
   else
     main:event(r, v, a, b)
+  end
+  -- safety net: if a mouse-up got lost, release the grab so frame:show()
+  -- keeps redrawing (also covers the frame menu resizer)
+  if scr.grab and r ~= 'mousedown' and r ~= 'mousemotion' then
+    local _, _, mb = input.mouse()
+    if not (mb.left or mb.right or mb.middle) then
+      scr.grab = false
+    end
   end
   main:show()
   if conf.stop then break end

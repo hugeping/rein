@@ -1,3 +1,5 @@
+local conf = require "red/conf"
+
 local frame = {
 }
 
@@ -213,7 +215,7 @@ function frame:event(r, v, a, b)
   end
   for _, c in ipairs(self.childs) do
     if c:event(r, v, a, b) then
-      if c:changed(false) then
+      if c.buf and c:changed(false) then
         c:dirty(c.buf:dirty())
         c.frame:update()
       end
@@ -223,25 +225,31 @@ function frame:event(r, v, a, b)
 end
 
 function frame:event_stacked(r, v, a, b)
-  if self.rz_menu then
+  if self.mv_menu then
+    local menu, src, win = self.mv_menu, self.mv_src, self.mv_win
     if r == 'mousemotion' then
       local _, _, mb = input.mouse()
-      if not mb.left then
-        self.rz_menu = nil
+      if not mb.right then
+        menu:show_cursor()
+        self.mv_menu = nil
       else
-        if not self.rz_active and math.abs(a - self.rz_start) >= 4 then
-          self.rz_active = true
-          self.rz_menu.autoscroll_on = false
+        if not self.mv_active and
+            (math.abs(v - self.mv_x) >= 4 or math.abs(a - self.mv_y) >= 4) then
+          self.mv_active = true
         end
-        if self.rz_active then
-          self:resize_win(self.rz_win, a - self.rz_last)
-          self.rz_last = a
+        if self.mv_active then
+          menu:show_cursor(v, a, conf.move_cursor)
         end
       end
-      return
+      return true
     elseif r == 'mouseup' then
-      self.rz_menu = nil
-      return
+      local active = self.mv_active
+      self.mv_menu, self.mv_active = nil, nil
+      menu:show_cursor()
+      if active then
+        self.frame:move_win(src, win, a, b)
+        return true
+      end
     end
   end
   local function hit(obj)
@@ -303,6 +311,23 @@ function frame:find_win(w)
   local idx = table.find(self.childs, w)
   if idx then idx = idx - 1 end
   return idx
+end
+
+-- insertion index (1..n+1) for dropping a window at y: the window is
+-- placed right below the window whose slot (menu + body) contains y
+function frame:win_at(y)
+  local n = self:win_nr()
+  if not self.stacked then
+    return 1
+  end
+  for c, i in self:for_win() do
+    local cm = self:win_menu(c)
+    local top = cm and cm.y or c.y
+    if y < top then
+      return i
+    end
+  end
+  return n + 1
 end
 
 function frame:win_nr()
