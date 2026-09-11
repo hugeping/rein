@@ -681,6 +681,18 @@ function frame:new_win_menu(w)
       self.x + scr.spw - 1,
       self.y + self.h - 1, conf.fg)
   end
+  function m:event(r, v, a, b)
+    local f = self.frame
+    if r == 'mousedown' and v == 'left' and f.stacked then
+      local x, y = a - self.x, b - self.y
+      if x >= 0 and x < self.w and y >= 0 and y < self.h and
+          (f:find_win(self.win) or 0) > 1 then
+        f.rz_menu, f.rz_win = self, self.win
+        f.rz_start, f.rz_last, f.rz_active = b, b, false
+      end
+    end
+    return menu.event(self, r, v, a, b)
+  end
   return m
 end
 

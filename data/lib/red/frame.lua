@@ -100,21 +100,41 @@ function frame:geom_stacked(x, y, w, h)
     end
     return
   end
-  local wh = math.floor(h / n)
-  for i = 2, #self.childs do
-    local c = self.childs[i]
+  self:stacked_norm()
+  local total_mh = 0
+  for c in self:for_win() do
     local cm = self:win_menu(c)
-    if h > 0 then
-      local ch = wh
-      if cm then
-        cm:geom(x, y, w, ch)
-        ch = ch - cm.h
-        y = y + cm.h
-        h = h - cm.h
+    if cm then
+      if not cm.cols then
+        cm:geom(x, y, w, 0)
       end
-      c:geom(x, y, w, math.max(0, ch))
+      total_mh = total_mh + cm:realheight()
+    end
+  end
+  local flexible = math.max(0, h - total_mh)
+  self.flexible = flexible
+  local used = 0
+  for c, i in self:for_win() do
+    local cm = self:win_menu(c)
+    local mh = cm and cm:realheight() or 0
+    local bh
+    if i == n then
+      bh = flexible - used
+    else
+      bh = math.floor(flexible * (c.frac or (1 / n)))
+      used = used + bh
+    end
+    if bh < 0 then
+      bh = 0
+    end
+    if h > 0 then
+      if cm then
+        cm:geom(x, y, w, mh + bh)
+        y = y + cm.h
+      end
+      c:geom(x, y, w, bh)
       y = y + c.h
-      h = h - c.h
+      h = h - mh - bh
     else
       if cm then
         cm:geom(x, y, 0, 0)
@@ -125,6 +145,63 @@ function frame:geom_stacked(x, y, w, h)
   if h > 0 then
     screen:clear(x, y, w, h, 7)
   end
+end
+
+-- keep per-window vertical fractions normalized to 1
+function frame:stacked_norm()
+  local n = self:win_nr()
+  if n == 0 then
+    return
+  end
+  local sum, missing = 0, 0
+  for c in self:for_win() do
+    if c.frac then
+      sum = sum + c.frac
+    else
+      missing = missing + 1
+    end
+  end
+  if missing == 0 then
+    if sum <= 0 or math.abs(sum - 1) < 0.0001 then
+      return
+    end
+  else
+    local def = 1 / n
+    for c in self:for_win() do
+      if not c.frac then
+        c.frac = def
+        sum = sum + def
+      end
+    end
+  end
+  if sum > 0 then
+    for c in self:for_win() do
+      c.frac = c.frac / sum
+    end
+  end
+end
+
+-- drag the boundary between w and the window above it by dy pixels
+function frame:resize_win(w, dy)
+  local idx = self:find_win(w)
+  if not idx or idx <= 1 then
+    return
+  end
+  local flexible = self.flexible
+  if not flexible or flexible <= 0 then
+    return
+  end
+  local prev = self:win(idx - 1)
+  if not prev then
+    return
+  end
+  local pf = prev.frac or (1 / self:win_nr())
+  local cf = w.frac or (1 / self:win_nr())
+  local total = pf + cf
+  local nf = math.max(0, math.min(total, pf + dy / flexible))
+  prev.frac = nf
+  w.frac = math.max(0, total - nf)
+  self:refresh()
 end
 
 function frame:update()
@@ -146,6 +223,27 @@ function frame:event(r, v, a, b)
 end
 
 function frame:event_stacked(r, v, a, b)
+  if self.rz_menu then
+    if r == 'mousemotion' then
+      local _, _, mb = input.mouse()
+      if not mb.left then
+        self.rz_menu = nil
+      else
+        if not self.rz_active and math.abs(a - self.rz_start) >= 4 then
+          self.rz_active = true
+          self.rz_menu.autoscroll_on = false
+        end
+        if self.rz_active then
+          self:resize_win(self.rz_win, a - self.rz_last)
+          self.rz_last = a
+        end
+      end
+      return
+    elseif r == 'mouseup' then
+      self.rz_menu = nil
+      return
+    end
+  end
   local function hit(obj)
     if obj and obj:event(r, v, a, b) then
       if obj:changed(false) then
