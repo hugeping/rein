@@ -1206,7 +1206,7 @@ function menu:output(n)
     w.cwd = cwd
     return w
   end
-  w = self.frame.frame:active_frame():open_err(n)
+  w = self.frame:open_err(n)
   w.cwd = cwd
   return w
 end
