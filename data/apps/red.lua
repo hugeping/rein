@@ -387,10 +387,16 @@ function menu:show()
 end
 
 function menu:scroller()
-  screen:clear(self.x, self.y, scr.spw, self.h,
-    self.frame:dirty() and
-    self.frame:win():dirty() and
-    conf.active or conf.button)
+  local color
+  if self.frame.stacked then
+    -- stacked: the frame menu has its own palette color, ignore dirty
+    color = conf.menu
+  else
+    color = self.frame:dirty() and
+      self.frame:win():dirty() and
+      conf.active or conf.button
+  end
+  screen:clear(self.x, self.y, scr.spw, self.h, color)
   screen:rect(self.x, self.y,
     self.x + scr.spw - 1,
     self.y + self.h - 1, conf.fg)
