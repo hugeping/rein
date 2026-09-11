@@ -1,6 +1,7 @@
 return {
   fg = 0,
   bg = 16,
+  void_bg = 7, -- empty area outside windows
   cursor = 0,
   cursor_over = 8,
   button = { 0x88, 0x88, 0xcc},

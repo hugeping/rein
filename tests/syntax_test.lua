@@ -35,4 +35,12 @@ describe("syntax", function()
       ok(s.cols[i] ~= nil, "char " .. i .. " colored")
     end
   end)
+
+  it("does not mutate the scheme keyword tables", function()
+    local scheme = require "red/syntax/lua"
+    local keywords = scheme.keywords[2]
+    ok(type(keywords[2]) == "string", "keyword starts as a string")
+    colorize_text("local x", "lua")
+    eq(type(keywords[2]), "string", "keyword stays a string")
+  end)
 end)

@@ -111,11 +111,10 @@ local function shell_esc(str)
   return "'"..str.."'"
 end
 
-function shell.pipe(w, prog, inp, sh)
+-- prepare the program and its input source (fifo or file).
+-- Returns the program string and the tmp file (or nil).
+local function pipe_setup(prog, inp)
   local tmp
-  if prog:empty() then
-    return
-  end
   if PLATFORM ~= 'Windows' and inp == true then
     tmp = os.tmpname()
     os.remove(tmp)
@@ -127,22 +126,12 @@ function shell.pipe(w, prog, inp, sh)
   elseif type(inp) == 'string' then
     tmp = inp
   end
-  local p = thread.start(sh and pipe_shell or pipe_proc)
-  local ret = { }
-  setmetatable(ret, pipe)
-  p:write(prog, w.cwd or false)
-  local r, e = p:read()
-  if not r then
-    w:input(e..'\n')
-    return
-  end
-  if tmp then
-    ret.fifo = io.open(tmp, "a")
-    ret.fifo:setvbuf 'no'
-  end
-  w.output_pos = w:cur()
-  w.input_start = w.buf:issel() and w.buf:selrange() or w:cur()
-  r = w:run(function()
+  return prog, tmp
+end
+
+-- coroutine body: pump the process output into the buffer
+local function pipe_pump(w, p, ret, sh, tmp)
+  return function()
     w:history 'start'
     while not ret.stopped do
       local data, l
@@ -184,7 +173,37 @@ function shell.pipe(w, prog, inp, sh)
     ret.stopped = true
     ret:close()
     p:wait()
-  end)
+  end
+end
+
+function shell.pipe(w, prog, inp, sh)
+  if prog:empty() then
+    return
+  end
+  local tmp
+  prog, tmp = pipe_setup(prog, inp)
+  if not prog then
+    return
+  end
+  local p = thread.start(sh and pipe_shell or pipe_proc)
+  local ret = { }
+  setmetatable(ret, pipe)
+  p:write(prog, w.cwd or false)
+  local r, e = p:read()
+  if not r then
+    if tmp then
+      os.remove(tmp)
+    end
+    w:input(e..'\n')
+    return
+  end
+  if tmp then
+    ret.fifo = io.open(tmp, "a")
+    ret.fifo:setvbuf 'no'
+  end
+  w.output_pos = w:cur()
+  w.input_start = w.buf:issel() and w.buf:selrange() or w:cur()
+  r = w:run(pipe_pump(w, p, ret, sh, tmp))
   ret.routine = r
   ret.thread = p
   r.kill = function()

@@ -485,7 +485,6 @@ function win:colorize()
   end
   self:make_epos()
   local state
-  -- print("Colorize:", start, self.epos, #colorizer.stack, colorizer.dirty)
   colorizer.saved = nil
   for i = start, self.epos - 1 do
     if not state and
@@ -835,7 +834,6 @@ function win:scroll(off)
     self.pos = math.floor((off / self.h) * #self.buf.text) + 1
   end
   self:posln()
---  self:flush()
 end
 
 function win:set(text)
@@ -1033,7 +1031,6 @@ function win:paste()
 end
 
 function win:cut(copy)
---  self:visible()
   self.buf:cut(copy)
   self:visible()
   self.autox = false
