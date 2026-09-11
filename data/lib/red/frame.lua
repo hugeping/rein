@@ -225,7 +225,44 @@ end
 function frame:new_win_menu()
 end
 
+function frame.menu_tail(s)
+  if not s then return end
+  local d = s:find('|', 1, true)
+  if d then
+    return s:sub(d)
+  end
+end
+
+function frame.menu_set_tail(s, tail)
+  local d = s and s:find('|', 1, true)
+  if s and d then
+    return s:sub(1, d - 1) .. tail
+  end
+  return (s and s .. ' ' or '') .. tail
+end
+
 function frame:stacked_toggle()
+  if self.stacked then
+    -- collapse to tabbed: save every window's own command line (its
+    -- per-window menu) so it reappears in the column menu later
+    for c in self:for_win() do
+      if c.menu_w then
+        c.menu = c.menu_w:gettext()
+      end
+    end
+  else
+    -- expand to stack: carry the column menu tail over to the active
+    -- window's own menu, then clear the column menu's command line
+    local w = self:win()
+    if w then
+      local cur = self:menu():gettext()
+      local tail = frame.menu_tail(cur)
+      if tail then
+        w.menu = frame.menu_set_tail(w.menu, tail)
+        self:menu():set(frame.menu_set_tail(cur, '|'))
+      end
+    end
+  end
   self.stacked = not self.stacked
   self:update(true, true)
   self:refresh()
