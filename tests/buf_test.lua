@@ -143,6 +143,13 @@ describe("buf", function()
     eq(b.cur, 5)
   end)
 
+  it("set_keep moves the cursor past an appended tail", function()
+    local b = nb("Get ")
+    b.cur = 5
+    b:set_keep("Get | New ")
+    eq(b.cur, 11)
+  end)
+
   it("set_keep shifts selection", function()
     local b = nb("abc")
     b.cur = 3

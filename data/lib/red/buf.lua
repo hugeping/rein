@@ -470,7 +470,7 @@ function buf:set_keep(text, sel)
   local chars = utf.chars(text)
   local old = self.text
   local delta = #chars - #old
-  local diff = #chars + 1
+  local diff = math.min(#old, #chars) + 1
   for i = 1, math.min(#old, #chars) do
     if old[i] ~= chars[i] then
       diff = i
