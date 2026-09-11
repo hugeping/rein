@@ -1,0 +1,127 @@
+local frame = require "red/frame"
+
+-- In the real app childs[1] is the column menu; keep a placeholder so
+-- for_win() enumerates the fake windows correctly.
+local function fake_frame()
+  local f = frame:new({})
+  f.stacked = true
+  f.refresh = function() end
+  return f
+end
+
+describe("frame", function()
+  it("menu_tail extracts the command line", function()
+    eq(frame.menu_tail("a b | cmd"), "| cmd")
+    eq(frame.menu_tail("no pipe"), nil)
+    eq(frame.menu_tail(nil), nil)
+  end)
+
+  it("menu_set_tail replaces the command line", function()
+    eq(frame.menu_set_tail("a b | old", "| new"), "a b | new")
+    eq(frame.menu_set_tail("a b", "|new"), "a b |new")
+    eq(frame.menu_set_tail(nil, "|new"), "|new")
+  end)
+
+  it("win_at inserts right below the window whose slot contains y", function()
+    local f = fake_frame()
+    f:add_win({ y = 10, h = 40 })
+    f:add_win({ y = 50, h = 40 })
+    f:add_win({ y = 90, h = 40 })
+    eq(f:win_at(5), 1, "above the first window")
+    eq(f:win_at(20), 2, "inside window 1 -> after it")
+    eq(f:win_at(49), 2, "end of window 1 -> after it")
+    eq(f:win_at(60), 3, "inside window 2 -> after it")
+    eq(f:win_at(100), 4, "inside window 3 -> to the end")
+  end)
+
+  it("win_at returns 1 when not stacked", function()
+    local f = frame:new({})
+    f:add_win({ y = 10, h = 40 })
+    eq(f:win_at(999), 1)
+  end)
+
+  it("stacked_norm distributes evenly when unset", function()
+    local f = fake_frame()
+    local ws = { {}, {}, {} }
+    for _, w in ipairs(ws) do f:add_win(w) end
+    f:stacked_norm()
+    for _, w in ipairs(ws) do
+      ok(math.abs(w.frac - 1 / 3) < 1e-9, "frac " .. tostring(w.frac))
+    end
+  end)
+
+  it("stacked_norm keeps zero as a valid fraction", function()
+    local f = fake_frame()
+    local w1, w2, w3 = { frac = 0.5 }, { frac = 0.5 }, { frac = 0 }
+    f:add_win(w1)
+    f:add_win(w2)
+    f:add_win(w3)
+    f:stacked_norm()
+    eq(w3.frac, 0)
+    eq(w1.frac, 0.5)
+    eq(w2.frac, 0.5)
+  end)
+
+  it("stacked_norm fills missing fractions and normalizes", function()
+    local f = fake_frame()
+    local w1, w2, w3 = { frac = 1 }, { frac = 1 }, {}
+    f:add_win(w1)
+    f:add_win(w2)
+    f:add_win(w3)
+    f:stacked_norm()
+    local sum = w1.frac + w2.frac + w3.frac
+    ok(math.abs(sum - 1) < 1e-9, "sum " .. sum)
+  end)
+
+  it("stacked_sizes distributes body heights and keeps the remainder", function()
+    local f = fake_frame()
+    local function mk()
+      return { frac = 1 / 3, menu_w = {
+        cols = 1,
+        geom = function() end,
+        realheight = function() return 10 end,
+      } }
+    end
+    f:add_win(mk())
+    f:add_win(mk())
+    f:add_win(mk())
+    local flex, sizes = f:stacked_sizes(100)
+    eq(flex, 70, "flexible height")
+    eq(sizes[1], 23)
+    eq(sizes[2], 23)
+    eq(sizes[3], 24, "last window takes the remainder")
+  end)
+
+  it("resize_win moves the boundary between two windows", function()
+    local f = fake_frame()
+    f.flexible = 100
+    local w1, w2 = { frac = 0.5 }, { frac = 0.5 }
+    f:add_win(w1)
+    f:add_win(w2)
+    f:resize_win(w2, 20)
+    ok(math.abs(w1.frac - 0.7) < 1e-9, "w1 " .. w1.frac)
+    ok(math.abs(w2.frac - 0.3) < 1e-9, "w2 " .. w2.frac)
+  end)
+
+  it("resize_win collapses a window down to zero", function()
+    local f = fake_frame()
+    f.flexible = 100
+    local w1, w2 = { frac = 0.5 }, { frac = 0.5 }
+    f:add_win(w1)
+    f:add_win(w2)
+    f:resize_win(w2, -999)
+    eq(w1.frac, 0)
+    ok(math.abs(w2.frac - 1) < 1e-9, "w2 " .. w2.frac)
+  end)
+
+  it("resize_win ignores the first window", function()
+    local f = fake_frame()
+    f.flexible = 100
+    local w1, w2 = { frac = 0.5 }, { frac = 0.5 }
+    f:add_win(w1)
+    f:add_win(w2)
+    f:resize_win(w1, 50)
+    eq(w1.frac, 0.5)
+    eq(w2.frac, 0.5)
+  end)
+end)
