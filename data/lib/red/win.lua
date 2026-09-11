@@ -157,8 +157,6 @@ function win:process()
       table.insert(co, v)
       local nhz = e and conf.proc_hz or conf.idle_hz
       hz = (not hz or (nhz < hz)) and nhz or hz
-    else
---      print("Proc died")
     end
   end
   self.co = co
@@ -638,7 +636,6 @@ function win:search(txt, back)
 end
 
 function win:exec(txt)
-  print("EXEC", txt)
 end
 
 -- fill completion
@@ -845,6 +842,13 @@ function win:set(text)
   self.buf:set(text)
   self:cur(self:cur())
   self.colorizer = nil
+end
+
+function win:set_keep(text, sel)
+  local delta, diff = self.buf:set_keep(text, sel)
+  self:cur(self:cur())
+  self.colorizer = nil
+  return delta, diff
 end
 
 function win:gettext(...)
@@ -1132,6 +1136,89 @@ function win:text_replace(fn, a, b)
   w:visible()
 end
 
+function win:wheel(n)
+  local step = n > 0 and self.prevline or self.nextline
+  for _ = 1, math.abs(n) do
+    step(self)
+  end
+end
+
+function win:keydown_event(v)
+  if v == 'left' then
+    self:left()
+    self:movesel()
+  elseif v == 'right' then
+    self:right()
+    self:movesel()
+  elseif v == 'up' then
+    self:up()
+    self:movesel()
+  elseif v == 'down' then
+    self:down()
+    self:movesel()
+  elseif v == 'pageup' or v == 'keypad 9' then
+    self:prevpage()
+    self.buf.cur = self.pos
+    self:tox(self.autox)
+    self:movesel(true)
+    self:visible()
+  elseif v == 'pagedown' or v == 'keypad 3' then
+    if self:nextpage() then
+      self.buf.cur = self.pos
+      self:tox(self.autox)
+    else
+      self:cur(#self.buf.text+1)
+    end
+    if self:movesel(true) then
+      self:visible()
+    end
+  elseif v == 'return' then
+    self:newline()
+  elseif v == 'backspace' then
+    self:backspace()
+  elseif v == 'delete' then
+    self:delete()
+  elseif v:find 'shift' then
+    if not self.buf:issel() then
+      self.buf:setsel(self.buf.cur, self.buf.cur)
+    end
+  elseif v == 'e' and input.keydown 'ctrl' then
+    self:lineend()
+    self:movesel()
+  elseif v == 'a' and input.keydown 'ctrl' then
+    self:linestart()
+    self:movesel()
+  elseif v == 'z' and input.keydown 'ctrl' then
+    self:undo()
+  elseif v == 'y' and input.keydown 'ctrl' then
+    self:redo()
+  elseif v == 'v' and input.keydown 'ctrl' then
+    self:paste()
+  elseif v == 'c' and input.keydown 'ctrl' then
+    self:cut(true)
+  elseif v == 'x' and input.keydown 'ctrl' then
+    self:cut()
+  elseif v == 'f' and input.keydown 'ctrl' then
+    self:compl()
+  elseif v == 'k' and input.keydown 'ctrl' then
+    self:kill()
+  elseif v == 'tab' then
+    if self:visible() then
+      return
+    end
+    local sp_tab = self:getconf 'spaces_tab'
+    if not sp_tab then
+      self:input '\t'
+    else
+      local ts = self:getconf'ts'
+      local l = ts - (self.cx % ts)
+      self:input(string.rep(' ', l))
+    end
+  else
+    self:handlekey(v)
+  end
+end
+
 function win:event(r, v, a, b)
   if not r then return end
   local mx, my = input.mouse()
@@ -1148,92 +1235,11 @@ function win:event(r, v, a, b)
   elseif r == 'mousemotion' then
     return self:motion(v - self.x, a - self.y)
   elseif r == 'mousewheel' then
-    if v > 0 then
-      for _ = 1, math.abs(v) do
-        self:prevline()
-      end
-    else
-      for _ = 1, math.abs(v) do
-        self:nextline()
-      end
-    end
+    self:wheel(v)
   elseif r == 'text' and not input.keydown 'alt' then
     self:input(v)
   elseif r == 'keydown' then
-    if v == 'left' then
-      self:left()
-      self:movesel()
-    elseif v == 'right' then
-      self:right()
-      self:movesel()
-    elseif v == 'up' then
-      self:up()
-      self:movesel()
-    elseif v == 'down' then
-      self:down()
-      self:movesel()
-    elseif v == 'pageup' or v == 'keypad 9' then
-      self:prevpage()
-      self.buf.cur = self.pos
-      self:tox(self.autox)
-      self:movesel(true)
-      self:visible()
-    elseif v == 'pagedown' or v == 'keypad 3' then
-      if self:nextpage() then
-        self.buf.cur = self.pos
-        self:tox(self.autox)
-      else
-        self:cur(#self.buf.text+1)
-      end
-      if self:movesel(true) then
-        self:visible()
-      end
-    elseif v == 'return' then
-      self:newline()
-    elseif v == 'backspace' then
-      self:backspace()
-    elseif v == 'delete' then
-      self:delete()
-    elseif v:find 'shift' then
-      if not self.buf:issel() then
-        self.buf:setsel(self.buf.cur, self.buf.cur)
-      end
-    elseif v == 'e' and input.keydown 'ctrl' then
-      self:lineend()
-      self:movesel()
-    elseif v == 'a' and input.keydown 'ctrl' then
-      self:linestart()
-      self:movesel()
-    elseif v == 'z' and input.keydown 'ctrl' then
-      self:undo()
-    elseif v == 'y' and input.keydown 'ctrl' then
-      self:redo()
-    elseif v == 'v' and input.keydown 'ctrl' then
-      self:paste()
-    elseif v == 'c' and input.keydown 'ctrl' then
-      self:cut(true)
-    elseif v == 'x' and input.keydown 'ctrl' then
-      self:cut()
-    elseif v == 'f' and input.keydown 'ctrl' then
-      self:compl()
-    elseif v == 'k' and input.keydown 'ctrl' then
-      self:kill()
-    elseif v == 'tab' then
-      if self:visible() then
-        return
-      end
-      local sp_tab = self:getconf 'spaces_tab'
-      if not sp_tab then
-        self:input '\t'
-      else
-        local ts = self:getconf'ts'
-        local l = ts - (self.cx % ts)
-        local t = string.rep(' ', l)
-        self:input(t)
-      end
-    else
-      self:handlekey(v)
-    end
+    self:keydown_event(v)
   end
   return true
 end

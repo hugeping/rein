@@ -568,38 +568,12 @@ function frame:update(force, pop)
     end
   end
 
-  local old = utf.chars(self:menu().buf:gettext())
-  local new = utf.chars(t..o)
-  local menu_delta = #new - #old
-  local diff_idx = #new + 1
-  for i = 1, math.min(#old, #new) do
-    if old[i] ~= new[i] then
-      diff_idx = i
-      break
-    end
-  end
-  if self:menu().buf.cur >= diff_idx then
-    self:menu():cur(self:menu():cur() + menu_delta)
-  end
---  if self:menu().buf:insel(diff_idx) then
---    sel = nil
---  end
-  self:menu():set(new)
+  self:menu():set_keep(t..o, sel)
   if self:win() and not self.stacked then
     self:win().menu = self:menu():gettext()
     if force then
       self:win().cwd = self:win().cwd or self:win():getcwd()
     end
-  end
-
-  if sel then
-    if diff_idx <= sel.s then
-      sel.s = sel.s + menu_delta
-    end
-    if diff_idx <= sel.e then
-      sel.e = sel.e + menu_delta
-    end
-    self:menu().buf:setsel(sel.s, sel.e)
   end
 
   if self.stacked then
@@ -1446,7 +1420,7 @@ local function input_sect(w, name, text)
   if not text or text:empty() then return end
   local old
   select_sect(w, name)
-  t = string.format("local __%s__ = [[\n%s\n]]", name, text)
+  local t = string.format("local __%s__ = [[\n%s\n]]", name, text)
   if not w.buf:issel() then
     old = w:cur()
     w.buf.cur = #w.buf.text
