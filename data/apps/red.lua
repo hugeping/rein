@@ -686,7 +686,12 @@ function frame:sync_win_menu(w)
   if w.cmdline then
     t = t .. w.cmdline .. ' '
   end
-  local want = t .. '| New '
+local tail = '| New '
+  local s = frame.menu_tail(w.menu)
+  if s and not s:empty() and s:strip() ~= '|' then
+    tail = s
+  end
+  local want = t .. tail
   local cur = m:gettext()
   if cur ~= want and cur == (w.prevmenu or '') then
     m:set(want)
