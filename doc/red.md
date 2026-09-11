@@ -215,7 +215,7 @@ end
 
 `conf` — глобальные настройки (шрифт, цвета, частота корутин, `syntax`, `nodump`...). `presets` — таблица правил «маска имени файла → настройки окна». `keys`, `proc`, `uri`, `conf`, `presets` можно расширять файлами из `confdir`.
 
-Сессия сохраняется в `red.dump` (`dumper`): режим и доли колонок/окон (`stacked`, `frac`), командные строки (`stacked_cmdline`, `w.cmdline`), тексты и меню окон, порядок окон. Позиции в файлах — в `red.hist` (`win:histfile_add`/`histfile_get`).
+Сессия сохраняется в `red.dump` (`dumper`): режим и доли колонок/окон (`stacked`, `frac`), командные строки (`stacked_cmdline`, `w.cmdline`), тексты и меню окон, порядок окон. Окна-оболочки дополнительно сохраняют shell-состояние (`output_pos`, историю команд, `scroll_mode`) и восстанавливаются вызовом `shell.win`. Позиции в файлах — в `red.hist` (`win:histfile_add`/`histfile_get`).
 
 # Соглашения
 
