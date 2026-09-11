@@ -152,6 +152,33 @@ describe("buf", function()
     eq(e, 6)
   end)
 
+  it("set_keep drops undo history when the text changes", function()
+    local b = nb("abc")
+    b:input("d")
+    ok(#b.hist > 0)
+    b:set_keep("xy")
+    eq(#b.hist, 0)
+    eq(#b.redo_hist, 0)
+  end)
+
+  it("set_keep keeps undo history when the text is unchanged", function()
+    local b = nb("abc")
+    b:input("d")
+    local n = #b.hist
+    b:set_keep("abcd")
+    eq(#b.hist, n)
+  end)
+
+  it("undo after an external rebuild does not corrupt the text", function()
+    local b = nb("f1.txt Close Get | foo")
+    local d = b:gettext():find("|", 1, true)
+    b.cur = d - 1
+    b:input("Tab ")
+    b:set_keep("f1.txt Close Get | foo")
+    b:undo()
+    eq(b:gettext(), "f1.txt Close Get | foo")
+  end)
+
   it("search forward finds next occurrence", function()
     local b = nb("abc abc")
     b.cur = 2

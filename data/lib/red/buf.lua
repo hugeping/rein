@@ -477,10 +477,16 @@ function buf:set_keep(text, sel)
       break
     end
   end
+  local changed = #old ~= #chars or diff <= #chars
   if self.cur >= diff then
     self.cur = self.cur + delta
   end
   self:set(chars)
+  if changed then
+    -- text was rebuilt from the outside (menu): old undo steps are invalid
+    self.hist = {}
+    self.redo_hist = {}
+  end
   if sel then
     if diff <= sel.s then sel.s = sel.s + delta end
     if diff <= sel.e then sel.e = sel.e + delta end
