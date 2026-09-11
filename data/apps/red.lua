@@ -677,9 +677,9 @@ function frame:new_win_menu(w)
     if r == 'mousedown' and f.stacked then
       local x, y = a - self.x, b - self.y
       if x >= 0 and x < self.w and y >= 0 and y < self.h then
-        if v == 'left' then
-          -- drag the menu: resize the column width and the window height
-          -- at the same time, following the mouse
+        if v == 'left' and x < scr.spw then
+          -- drag the menu square: resize the column width and the window
+          -- height at the same time, following the mouse
           f.drag_menu = self
           f.drag_x, f.drag_y = a, b
           f.drag_active = false
