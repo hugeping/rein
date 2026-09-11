@@ -262,7 +262,6 @@ function win:save()
       self.buf.cur = self.buf.cur + 1
     end
     self:dirty(true)
-    --self:visible()
   end
   local r, e = self.buf:save()
   if r then
@@ -1139,8 +1138,6 @@ function mainwin:getnewfile()
 end
 
 function mainwin:hgeom(x, y, w, h)
-  local scale = 1
-
   local menu = self:menu()
   local pos = menu:bottom()
 
@@ -1148,7 +1145,8 @@ function mainwin:hgeom(x, y, w, h)
   h = h - pos
   for c, i in self:for_win() do
     if c.posx and (c.posx <= w - scr.spw) then
-      c.posx = math.floor(c.posx * scale) else
+      c.posx = math.floor(c.posx)
+    else
       c.posx = x + (i-1)*dw
     end
     c.posx = c.posx or c.x
@@ -1172,9 +1170,6 @@ end
 
 function mainwin:geom(x, y, w, h)
   local menu = self:menu()
---  if self.w then
---    scale = w / self.w
---  end
   self.x, self.y, self.w, self.h = x, y, w, h
   menu:geom(x, y, w, 0)
   menu:geom(x, y, w, menu:realheight())
@@ -1184,7 +1179,7 @@ function mainwin:geom(x, y, w, h)
   local pos = menu:bottom()
 
   if self:win_nr() == 0 then
-    screen:clear(x, pos, w, h - pos, 7)
+    screen:clear(x, pos, w, h - pos, conf.void_bg)
     return
   end
   return self:hgeom(x, y, w, h)
@@ -1270,9 +1265,6 @@ function win:output(n)
 end
 
 function menu:output(n)
---  if not n and self.frame:win() then
---    return self.frame:win()
---  end
   local cwd = self:getcwd()
   n = n or "+Output"
   local w = self.frame.frame:win_by_name(n)

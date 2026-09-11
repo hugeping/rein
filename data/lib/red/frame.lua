@@ -84,7 +84,7 @@ function frame:geom(x, y, w, h)
     end
   end
   if h > 0 then
-    screen:clear(x, y, w, h, 7)
+    screen:clear(x, y, w, h, conf.void_bg)
   end
 end
 
@@ -132,7 +132,7 @@ function frame:geom_stacked(x, y, w, h)
   local n = self:win_nr()
   if n == 0 then
     if h > 0 then
-      screen:clear(x, y, w, h, 7)
+      screen:clear(x, y, w, h, conf.void_bg)
     end
     return
   end
@@ -157,7 +157,7 @@ function frame:geom_stacked(x, y, w, h)
     end
   end
   if h > 0 then
-    screen:clear(x, y, w, h, 7)
+    screen:clear(x, y, w, h, conf.void_bg)
   end
 end
 

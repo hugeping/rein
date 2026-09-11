@@ -1,6 +1,17 @@
 local syntax = {}
 syntax.__index = syntax
 
+-- cache UTF-8 char arrays for scheme strings without mutating the scheme
+local chars_cache = {}
+local function chars(word)
+  local c = chars_cache[word]
+  if not c then
+    c = utf.chars(word)
+    chars_cache[word] = c
+  end
+  return c
+end
+
 local function colorize(col, pos, len, c)
   for i=pos, pos+len-1 do
     col[i] = c
@@ -54,15 +65,16 @@ local function checkword(v, txt, pos, pfx)
 end
 
 function syntax:match_fn(ctx, txt, i, fn, ...)
-  if not ctx[fn] then return end
-  if type(ctx[fn]) == 'string' then
-    ctx[fn] = utf.chars(ctx[fn])
+  local v = ctx[fn]
+  if not v then return end
+  if type(v) == 'string' then
+    v = chars(v)
   end
-  if type(ctx[fn]) == 'function' then
-    return ctx[fn](ctx, txt, i, ...)
+  if type(v) == 'function' then
+    return v(ctx, txt, i, ...)
   end
-  if startswith(txt, i, ctx[fn]) then
-    return #ctx[fn]
+  if startswith(txt, i, v) then
+    return #v
   end
 end
 
@@ -113,21 +125,22 @@ function syntax:context(pos, epos)
   local cols = self.cols
   local found_len, found_col
   for _, v in ipairs(ctx.keywords or {}) do
-    for i, word in ipairs(v) do
-      if type(word) == 'string' then
-        word = utf.chars(word)
-        v[i] = word
-      end
+    for _, word in ipairs(v) do
       if type(word) == 'function' then
         local r = word(ctx, txt, pos)
         if r and (not found_len or found_len < r) then
           found_len = r
           found_col = v.col or ctx.col
         end
-      elseif checkword(v, txt, pos, word) then
-        if not found_len or found_len < #word then
-          found_len = #word
-          found_col = v.col or ctx.col
+      else
+        if type(word) == 'string' then
+          word = chars(word)
+        end
+        if checkword(v, txt, pos, word) then
+          if not found_len or found_len < #word then
+            found_len = #word
+            found_col = v.col or ctx.col
+          end
         end
       end
     end
