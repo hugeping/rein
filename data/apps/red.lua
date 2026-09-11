@@ -865,17 +865,7 @@ function framemenu.cmd:Get()
 end
 
 function framemenu.cmd:Close()
-  local c = self:winmenu()
-  if not c then return end
-  if c.buf:isfile() and c:dirty() and not c:clean() then
-    self.frame:err("File %q is not saved!", c.buf.fname)
-    c:clean(true)
-  else
-    c:killproc()
-    self.frame:del(c)
-  end
-  self.frame:update(true, true)
-  self.frame:refresh()
+  self.frame:close_win(self:winmenu())
 end
 
 function framemenu.cmd:New(w)

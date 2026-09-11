@@ -85,7 +85,7 @@ return {
   },
   { 'ctrl+w',
     function(self)
-      self.frame:menu():exec 'Close'
+      self.frame:close_win(self:winmenu() or self)
     end
   },
   { 'ctrl+o',

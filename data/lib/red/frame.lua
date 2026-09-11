@@ -38,6 +38,23 @@ function frame:show()
   end
 end
 
+function frame:close_win(w)
+  if not w then return end
+  local k = self:find_win(w)
+  if not k or k < 1 then
+    return -- not a window of this frame (menu?)
+  end
+  if w.buf:isfile() and w:dirty() and not w:clean() then
+    self:err("File %q is not saved!", w.buf.fname)
+    w:clean(true)
+  else
+    w:killproc()
+    self:del(w)
+  end
+  self:update(true, true)
+  self:refresh()
+end
+
 function frame:open_err(name)
   -- in stacked mode new service windows go to the end, not to the top
   local pos
