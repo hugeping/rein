@@ -88,6 +88,40 @@ function frame:geom(x, y, w, h)
   end
 end
 
+-- body heights for the stacked windows, fitting `h` pixels after menu bars
+function frame:stacked_sizes(h)
+  local n = self:win_nr()
+  self:stacked_norm()
+  local total_mh = 0
+  for c in self:for_win() do
+    local cm = self:win_menu(c)
+    if cm then
+      if not cm.cols then
+        cm:geom(self.x or 0, self.y or 0, self.w or 0, 0)
+      end
+      total_mh = total_mh + cm:realheight()
+    end
+  end
+  local flexible = math.max(0, h - total_mh)
+  self.flexible = flexible
+  local sizes = {}
+  local used = 0
+  for c, i in self:for_win() do
+    local bh
+    if i == n then
+      bh = flexible - used
+    else
+      bh = math.floor(flexible * (c.frac or (1 / n)))
+      used = used + bh
+    end
+    if bh < 0 then
+      bh = 0
+    end
+    sizes[i] = bh
+  end
+  return flexible, sizes
+end
+
 function frame:geom_stacked(x, y, w, h)
   local m = self:menu()
   if h > 0 then
@@ -102,33 +136,11 @@ function frame:geom_stacked(x, y, w, h)
     end
     return
   end
-  self:stacked_norm()
-  local total_mh = 0
-  for c in self:for_win() do
-    local cm = self:win_menu(c)
-    if cm then
-      if not cm.cols then
-        cm:geom(x, y, w, 0)
-      end
-      total_mh = total_mh + cm:realheight()
-    end
-  end
-  local flexible = math.max(0, h - total_mh)
-  self.flexible = flexible
-  local used = 0
+  local _, sizes = self:stacked_sizes(h)
   for c, i in self:for_win() do
     local cm = self:win_menu(c)
     local mh = cm and cm:realheight() or 0
-    local bh
-    if i == n then
-      bh = flexible - used
-    else
-      bh = math.floor(flexible * (c.frac or (1 / n)))
-      used = used + bh
-    end
-    if bh < 0 then
-      bh = 0
-    end
+    local bh = sizes[i]
     if h > 0 then
       if cm then
         cm:geom(x, y, w, mh + bh)

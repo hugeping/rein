@@ -52,7 +52,7 @@ function buf:history(op, pos, nr, append)
   else
     h.nr = h.nr + nr
   end
-  if #h > self.history_len then
+  if #self.hist > self.history_len then
     table.remove(self.hist, 1)
   end
   if op == 'cut' then
@@ -196,16 +196,13 @@ end
 
 function buf:newline()
   local cur = self.cur
-  local pre = ''
-  if true then -- not is_space(self.text[cur]) then
-    self:linestart()
-    local p1 = scan_spaces(self, self.cur, cur-1)
-    self:lineend()
-    local p2 = scan_spaces(self, self.cur + 1, #self.text)
-    pre = p1
-    if p2:len() > p1:len() and cur == self.cur then
-      pre = p2
-    end
+  self:linestart()
+  local p1 = scan_spaces(self, self.cur, cur-1)
+  self:lineend()
+  local p2 = scan_spaces(self, self.cur + 1, #self.text)
+  local pre = p1
+  if p2:len() > p1:len() and cur == self.cur then
+    pre = p2
   end
   self.cur = cur
   self:input('\n'..pre)
@@ -444,6 +441,31 @@ function buf:set(text)
   self.cur = math.min(#self.text + 1, self.cur)
 end
 
+-- replace the text keeping the cursor (and optionally the selection)
+-- by shifting them over the common UTF-8 prefix. Returns delta, diff.
+function buf:set_keep(text, sel)
+  local chars = utf.chars(text)
+  local old = self.text
+  local delta = #chars - #old
+  local diff = #chars + 1
+  for i = 1, math.min(#old, #chars) do
+    if old[i] ~= chars[i] then
+      diff = i
+      break
+    end
+  end
+  if self.cur >= diff then
+    self.cur = self.cur + delta
+  end
+  self:set(chars)
+  if sel then
+    if diff <= sel.s then sel.s = sel.s + delta end
+    if diff <= sel.e then sel.e = sel.e + delta end
+    self:setsel(sel.s, sel.e)
+  end
+  return delta, diff
+end
+
 function buf:tail()
   self.cur = #self.text + 1
 end
@@ -481,45 +503,70 @@ local right_delim = {
   ['"'] = '"', ["'"] = "'",
 }
 
-function buf:selpar(delim)
-  delim = delim or sel_delim
-
-  local ind
-
-  local function ind_match(c, a, b)
-    if a == b then
-      return c == a
-    end
-    if c == a then ind = ind + 1
-    elseif c == b then ind = ind - 1 end
-    return ind == 0
+-- scan from pos in dir for the bracket matching the one at the cursor.
+-- Returns found, proper (proper = matched pair, not just the same quote).
+function buf:ind_scan(c, delims, pos, dir)
+  if not c or not delims[c] then
+    return
   end
-
-  local function ind_scan(c, delims, pos, dir)
-    if not c or not delims[c] then
-      return
-    end
-    ind = 1
-    local e = dir == 1 and #self.text or 1
-    for i = pos, e, dir do
-      if ind_match(self.text[i], c, delims[c]) then
+  local close = delims[c]
+  local same = (c == close)
+  local ind = 1
+  local e = dir == 1 and #self.text or 1
+  for i = pos, e, dir do
+    local t = self.text[i]
+    if same then
+      if t == c then
         if dir == 1 then
           self:setsel(pos, i)
         else
           self:setsel(i + 1, pos + 1)
         end
-        return true, c ~= delims[c]
+        return true, false
+      end
+    else
+      if t == c then ind = ind + 1
+      elseif t == close then ind = ind - 1 end
+      if ind == 0 then
+        if dir == 1 then
+          self:setsel(pos, i)
+        else
+          self:setsel(i + 1, pos + 1)
+        end
+        return true, true
       end
     end
   end
+end
 
-  local r, v = ind_scan(self.text[self.cur-1], left_delim, self.cur, 1)
+-- select the word between two delimiting characters
+function buf:select_word(delim)
+  local left, right = 1, #self.text + 1
+  for i = self.cur - 1, 1, -1 do
+    if delim[self.text[i]] then
+      left = i + 1
+      break
+    end
+  end
+  for i = self.cur, #self.text do
+    if delim[self.text[i]] then
+      right = i
+      break
+    end
+  end
+  self:setsel(left, right)
+end
+
+function buf:selpar(delim)
+  delim = delim or sel_delim
+
+  local r, v = self:ind_scan(self.text[self.cur-1], left_delim, self.cur, 1)
   if v then
     return
-  elseif ind_scan(self.text[self.cur], right_delim, self.cur - 1, -1) then
+  elseif self:ind_scan(self.text[self.cur], right_delim, self.cur - 1, -1) then
     return
   elseif r then
-    ind_scan(self.text[self.cur-1], left_delim, self.cur, 1)
+    self:ind_scan(self.text[self.cur-1], left_delim, self.cur, 1)
     return
   end
 
@@ -528,22 +575,7 @@ function buf:selpar(delim)
     return
   end
 
-  local left, right = 1, #self.text + 1
-
-  for i = self.cur - 1, 1, -1 do
-    if delim[self.text[i]] then
-      left = i + 1
-      break
-    end
-  end
-
-  for i = self.cur, #self.text, 1 do
-    if delim[self.text[i]] then
-      right = i
-      break
-    end
-  end
-  self:setsel(left, right)
+  self:select_word(delim)
 end
 
 function buf:hash()
