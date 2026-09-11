@@ -243,8 +243,10 @@ end
 
 function frame:stacked_toggle()
   if self.stacked then
-    -- collapse to tabbed: save every window's own command line (its
-    -- per-window menu) so it reappears in the column menu later
+    -- collapse to tabbed: remember the column command line and save
+    -- every window's own command line (its per-window menu) so it
+    -- reappears in the column menu later
+    self.stacked_cmdline = frame.menu_tail(self:menu():gettext()) or '|'
     for c in self:for_win() do
       if c.menu_w then
         self:sync_win_menu(c)
@@ -265,6 +267,11 @@ function frame:stacked_toggle()
     end
   end
   self.stacked = not self.stacked
+  if self.stacked and self.stacked_cmdline then
+    -- restore the column command line last used in stacked mode
+    self:menu():set(frame.menu_set_tail(self:menu():gettext(),
+      self.stacked_cmdline))
+  end
   self:update(true, true)
   self:refresh()
 end
