@@ -607,15 +607,18 @@ function framemenu:event(r, v, a, b)
       self.grab = true
       scr.grab = true
       self.grab_x, self.grab_y = a, b
+      self.grab_last = a
       self.grab_btn = v
       return true
     end
   elseif r == 'mousemotion' then
     if self.grab then
       if mb.left and not mb.right then -- resize
-        self.frame.posx = math.min(math.max(scr.spw, v),
-          self.frame.frame.w - scr.spw)
-        self.frame.frame:refresh()
+        local dx = v - self.grab_last
+        self.grab_last = v
+        if dx ~= 0 then
+          self.frame.frame:resize_col(self.frame, dx)
+        end
         return true
       elseif mb.right then
         self:show_cursor(mx, my, conf.move_cursor)
@@ -628,9 +631,10 @@ function framemenu:event(r, v, a, b)
       scr.grab = false
       self:show_cursor()
       if v == 'left' then -- resize
-        self.frame.posx = math.min(math.max(scr.spw, a),
-          self.frame.frame.w - scr.spw)
-        self.frame.frame:refresh()
+        local dx = a - (self.grab_last or a)
+        if dx ~= 0 then
+          self.frame.frame:resize_col(self.frame, dx)
+        end
         return true
       elseif v == 'right' then -- move
         self.frame.frame:move(math.max(scr.spw, a),
@@ -695,19 +699,18 @@ function frame:new_win_menu(w)
               (math.abs(v - f.drag_x) >= 4 or math.abs(a - f.drag_y) >= 4) then
             f.drag_active = true
             f.drag_last_x, f.drag_last_y = f.drag_x, f.drag_y
-            f.posx = f.posx or f.x
             self.autoscroll_on = false
             scr.grab = true
           end
           if f.drag_active then
             local dx, dy = v - f.drag_last_x, a - f.drag_last_y
             f.drag_last_x, f.drag_last_y = v, a
-            f.posx = math.min(math.max(scr.spw, f.posx + dx),
-              f.frame.w - scr.spw)
+            if dx ~= 0 then
+              f.frame:resize_col(f, dx)
+            end
             if dy ~= 0 and (f:find_win(self.win) or 0) > 1 then
               f:resize_win(self.win, dy)
             end
-            f.frame:refresh()
             return true
           end
         end
@@ -1151,34 +1154,43 @@ function mainwin:getnewfile()
   return string.format(new..'%d', max + 1)
 end
 
+-- drag the border between column c and the previous one by dx pixels
+function mainwin:resize_col(c, dx)
+  local idx = self:find_win(c)
+  if not idx or idx <= 1 then return end
+  local total = self.w
+  if not total or total <= 0 then return end
+  local prev = self:win(idx - 1)
+  if not prev then return end
+  self:frac_norm()
+  local pf = prev.frac or (1 / self:win_nr())
+  local cf = c.frac or (1 / self:win_nr())
+  local sum = pf + cf
+  local minf = math.min(scr.spw / total, sum / 2)
+  local nf = math.max(minf, math.min(sum - minf, pf + dx / total))
+  prev.frac = nf
+  c.frac = sum - nf
+  self:refresh()
+end
+
 function mainwin:hgeom(x, y, w, h)
   local menu = self:menu()
   local pos = menu:bottom()
-
-  local dw = math.floor(w / self:win_nr())
   h = h - pos
+  self:frac_norm()
+  local n = self:win_nr()
+  local cx, used = x, 0
   for c, i in self:for_win() do
-    if c.posx and (c.posx <= w - scr.spw) then
-      c.posx = math.floor(c.posx)
+    local cw
+    if i == n then
+      cw = w - used
     else
-      c.posx = x + (i-1)*dw
+      cw = math.floor(w * (c.frac or (1 / n)))
+      used = used + cw
     end
-    c.posx = c.posx or c.x
-  end
-  table.sort(self.childs, function(a, b) return (a.posx or -1) < (b.posx or -1) end)
-  for c, i in self:for_win() do
-    local r = self:win(i+1) or { posx = self.w }
-    if i == 1 then
-      c.posx = 0
-    end
-    local d = r.posx - c.posx
-    if d < scr.spw then
-      r.posx, c.posx = c.posx - scr.spw, r.posx + scr.spw
-      d = r.w
-    end
-    if d then
-      c:geom(c.posx, y + pos, d, h)
-    end
+    if cw < scr.spw then cw = scr.spw end
+    c:geom(cx, y + pos, cw, h)
+    cx = cx + cw
   end
 end
 

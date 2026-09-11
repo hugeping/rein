@@ -40,35 +40,35 @@ describe("frame", function()
     eq(f:win_at(999), 1)
   end)
 
-  it("stacked_norm distributes evenly when unset", function()
+  it("frac_norm distributes evenly when unset", function()
     local f = fake_frame()
     local ws = { {}, {}, {} }
     for _, w in ipairs(ws) do f:add_win(w) end
-    f:stacked_norm()
+    f:frac_norm()
     for _, w in ipairs(ws) do
       ok(math.abs(w.frac - 1 / 3) < 1e-9, "frac " .. tostring(w.frac))
     end
   end)
 
-  it("stacked_norm keeps zero as a valid fraction", function()
+  it("frac_norm keeps zero as a valid fraction", function()
     local f = fake_frame()
     local w1, w2, w3 = { frac = 0.5 }, { frac = 0.5 }, { frac = 0 }
     f:add_win(w1)
     f:add_win(w2)
     f:add_win(w3)
-    f:stacked_norm()
+    f:frac_norm()
     eq(w3.frac, 0)
     eq(w1.frac, 0.5)
     eq(w2.frac, 0.5)
   end)
 
-  it("stacked_norm fills missing fractions and normalizes", function()
+  it("frac_norm fills missing fractions and normalizes", function()
     local f = fake_frame()
     local w1, w2, w3 = { frac = 1 }, { frac = 1 }, {}
     f:add_win(w1)
     f:add_win(w2)
     f:add_win(w3)
-    f:stacked_norm()
+    f:frac_norm()
     local sum = w1.frac + w2.frac + w3.frac
     ok(math.abs(sum - 1) < 1e-9, "sum " .. sum)
   end)
