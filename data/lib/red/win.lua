@@ -465,6 +465,13 @@ end
 
 function win:colorize()
   local colorizer = self.colorizer
+  local scheme = self:getconf 'syntax'
+  if type(scheme) ~= 'string' then return end
+  self:make_epos()
+  -- nothing changed and the visible range is already colored
+  if colorizer and not colorizer.dirty and colorizer.pos >= self.epos then
+    return colorizer
+  end
   local start = 1
   if colorizer then
     if colorizer.saved then
@@ -477,13 +484,11 @@ function win:colorize()
       start = 1
     end
   end
-  local scheme = self:getconf 'syntax'
-  if type(scheme) ~= 'string' then return end
   colorizer = colorizer or syntax.new(self.buf.text, 1, scheme)
   if not colorizer then
     return
   end
-  self:make_epos()
+  colorizer.dirty = false
   local state
   colorizer.saved = nil
   for i = start, self.epos - 1 do
