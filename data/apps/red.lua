@@ -299,6 +299,7 @@ function win:path(t, from)
       to = sys.realpath(to .. '/' .. t)
     end
   end
+  local abs = to
   to = to:split('/')
   from = sys.realpath(from or './')
   from = from:split('/')
@@ -319,6 +320,10 @@ function win:path(t, from)
     p = p .. to[i]
   end
   if p == '' then return './' end
+  -- relative and canonical paths may trade places
+  if #abs < #p then
+    return abs
+  end
   return p
 end
 
