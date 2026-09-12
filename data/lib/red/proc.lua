@@ -103,6 +103,8 @@ function proc.grep(w, rex)
   local data = w:data()
   local path = data and data:path() or sys.dirname(w.frame:getfilename())
   w = w:output '+grep'
+  w.cmdline = w.scroll_mode and 'Noscroll' or 'Scroll'
+  w.frame:update()
   w:tail()
   w.cwd = nil
   w:run(function() grep(path, rex, w) end)

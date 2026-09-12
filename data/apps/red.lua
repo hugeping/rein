@@ -875,15 +875,23 @@ function framemenu.cmd:Put()
   self.frame:update()
 end
 
--- base window commands to control output following
-function win.cmd.Scroll(s)
-  s.scroll_mode = true
+-- base window commands to control output following; the menu word shows
+-- the action which is available now
+local function set_scroll(s, on)
+  s.scroll_mode = on
+  if s.cmdline == 'Scroll' or s.cmdline == 'Noscroll' then
+    s.cmdline = on and 'Noscroll' or 'Scroll'
+    s.frame:update()
+  end
   return true
 end
 
+function win.cmd.Scroll(s)
+  return set_scroll(s, true)
+end
+
 function win.cmd.Noscroll(s)
-  s.scroll_mode = false
-  return true
+  return set_scroll(s, false)
 end
 
 function win:Get()
