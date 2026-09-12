@@ -40,6 +40,16 @@ describe("frame", function()
     eq(f:win_at(999), 1)
   end)
 
+  it("add does not leave gaps when the position is past the end", function()
+    local f = fake_frame()
+    f:add_win({ y = 0, h = 10 })
+    f:add_win({ y = 0, h = 10 }, 5)
+    eq(#f.childs, 3, "menu and two windows")
+    for i = 1, #f.childs do
+      ok(f.childs[i] ~= nil, "no gap at " .. i)
+    end
+  end)
+
   it("frac_norm distributes evenly when unset", function()
     local f = fake_frame()
     local ws = { {}, {}, {} }

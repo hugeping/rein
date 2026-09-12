@@ -457,13 +457,13 @@ function frame:push_win(b)
   self:refresh()
 end
 
-function frame:file(f, pos)
+function frame:file(f, pos, force)
   local fn, nr, col = filename_line(f)
   local dir = sys.isdir(fn)
   if dir then
     fn = dirpath(fn)
   end
-  local b = self:win_by_name(f)
+  local b = not force and self:win_by_name(f)
   if b then -- already opened
     self:push_win(b)
     self:win():toline(nr, col)
@@ -1522,7 +1522,8 @@ local function load_dump(f)
     local fr = main:win(i)
     local wins = {}
     for idx, b in ipairs(v) do
-      local w = fr:file(b.fname, idx)
+      -- force: a dump may hold two windows with the same relative name
+      local w = fr:file(b.fname, idx, true)
       wins[idx] = w
       if w then
         if b.text then
