@@ -412,7 +412,7 @@ function frame:stacked_toggle()
         if w.menu_w then
           w.menu_w:set(frame.menu_set_tail(w.menu_w:gettext(), tail))
         end
-        self:menu():set(frame.menu_set_tail(cur, '| New '))
+        self:menu():set(frame.menu_set_tail(cur, conf.emptymenu))
       end
     end
   end
