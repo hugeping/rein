@@ -74,7 +74,11 @@ end
 
 function frame:err(fmt, ...)
   local w = self:open_err()
-  w:append(string.format(fmt..'\n', ...), true)
+  if w.scroll_mode == nil then
+    w.scroll_mode = true
+  end
+  w:printf(fmt..'\n', ...)
+  w:scroll_output()
 end
 
 function frame:process()

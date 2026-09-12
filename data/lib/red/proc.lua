@@ -25,6 +25,7 @@ local function grep(path, rex, err)
           nr = nr + 1
           if l:find(rex) then
             err:printf("%s:%d %s\n", epath, nr, l)
+            err:scroll_output()
           end
           if nr % 1000 == 0 then
             coroutine.yield(true)
@@ -93,6 +94,7 @@ function proc.dump(w)
   w.save = dump_save
   local s, e = data.buf:range()
   dump(w, data.buf:gettext(s, e))
+  w:scroll_output()
   return true
 end
 

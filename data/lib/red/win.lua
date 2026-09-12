@@ -940,6 +940,16 @@ function win:visible(off)
   end
 end
 
+-- if scroll mode is on, follow the end of the text keeping the cursor
+function win:scroll_output()
+  if not self.scroll_mode or not self.rows or self.rows <= 0 then return end
+  local cur = self.buf.cur
+  self.buf:tail()
+  self:make_epos()
+  self:visible(self.rows - 1)
+  self.buf.cur = cur
+end
+
 function win:left()
   self:visible()
   self.buf:left()
