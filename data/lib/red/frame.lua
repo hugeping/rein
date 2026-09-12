@@ -117,7 +117,7 @@ function frame:stacked_sizes(h)
   self:frac_norm()
   local total_mh = 0
   for c in self:for_win() do
-    local cm = self:win_menu(c)
+    local cm = self:cmd_menu(c)
     if cm then
       if not cm.cols then
         cm:geom(self.x or 0, self.y or 0, self.w or 0, 0)
@@ -161,7 +161,7 @@ function frame:geom_stacked(x, y, w, h)
   end
   local _, sizes = self:stacked_sizes(h)
   for c, i in self:for_win() do
-    local cm = self:win_menu(c)
+    local cm = self:cmd_menu(c)
     local mh = cm and cm:realheight() or 0
     local bh = sizes[i]
     if h > 0 then
@@ -334,7 +334,7 @@ function frame:win_at(y)
     return 1
   end
   for c, i in self:for_win() do
-    local cm = self:win_menu(c)
+    local cm = self:cmd_menu(c)
     local top = cm and cm.y or c.y
     if y < top then
       return i
@@ -351,11 +351,18 @@ function frame:menu()
   return self.childs[1]
 end
 
-function frame:win_menu(w)
-  if not w.menu_w then
-    w.menu_w = self:new_win_menu(w)
+-- menu which holds the command line for window (or menu) w:
+-- its own menu in stacked mode, the frame menu in tabbed
+function frame:cmd_menu(w)
+  local k = w.win or w
+  local i = self:find_win(k)
+  if self.stacked and i and i > 0 then
+    if not k.menu_w then
+      k.menu_w = self:new_win_menu(k)
+    end
+    return k.menu_w
   end
-  return w.menu_w
+  return self:menu()
 end
 
 function frame:new_win_menu()

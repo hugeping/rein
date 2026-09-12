@@ -102,7 +102,7 @@ return {
   },
   { 'ctrl+b',
     function(self)
-      local m = self.frame:menu()
+      local m = self.frame:cmd_menu(self)
       local t = string.format(":%d ", self.buf:line_nr())
       if m.buf.text[#m.buf.text] ~= ' ' then
         t = ' ' .. t
