@@ -39,29 +39,21 @@ local function startswith(txt, pos, pfx)
   return true
 end
 
-local function isword(v, txt, pos, pfx)
-  if not startswith(txt, pos, pfx) then
-    return false
-  end
-  if isalpha(txt[pos + #pfx], v.alpha) or
-    isalpha(txt[pos - 1], v.alpha) then
-    return false
-  end
-  return true
-end
-
 local function checkword(v, txt, pos, pfx)
-  if not pfx then return false end
-  if not v.word then
-    return startswith(txt, pos, pfx)
-  elseif v.word == 'left' then
-    return startswith(txt, pos, pfx) and
-      not isalpha(txt[pos-1], v.alpha)
-  elseif v.word == 'right' then
-    return startswith(txt, pos, pfx) and
-      not isalpha(txt[pos+#pfx], v.alpha)
+  if not pfx or not startswith(txt, pos, pfx) then
+    return false
   end
-  return isword(v, txt, pos, pfx)
+  if not v.word then
+    return true
+  end
+  if v.word == 'left' then
+    return not isalpha(txt[pos-1], v.alpha)
+  end
+  if v.word == 'right' then
+    return not isalpha(txt[pos+#pfx], v.alpha)
+  end
+  return not isalpha(txt[pos + #pfx], v.alpha) and
+    not isalpha(txt[pos - 1], v.alpha)
 end
 
 function syntax:match_fn(ctx, txt, i, fn, ...)
@@ -102,19 +94,14 @@ function syntax:match_end(ctx, txt, i)
 end
 
 function syntax:state(s)
-  if s then
-    local stack = {}
-    for _, v in ipairs(s.stack) do
-      table.insert(stack, { v[1], v[2] })
-    end
-    self.pos = s.pos
-    self.stack = stack
-    self.ctx = s.ctx
-    return
-  end
+  local src = s or self
   local stack = {}
-  for _, v in ipairs(self.stack) do
+  for _, v in ipairs(src.stack) do
     table.insert(stack, { v[1], v[2] })
+  end
+  if s then
+    self.pos, self.stack, self.ctx = s.pos, stack, s.ctx
+    return
   end
   return {
     stack = stack,
