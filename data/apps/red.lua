@@ -1290,21 +1290,17 @@ function mainwin:move_win(src, w, x, y)
   end
   local cur = src:find_win(w)
   if not cur then return end
+  local idx = dst:win_at(y)
   if dst == src then
-    local idx = dst:win_at(y)
     if idx > cur then idx = idx - 1 end
     if idx == cur then return end
-    src:del_win(cur)
-    src:add_win(w, idx)
-    src:update(true, true)
-    self:refresh()
-    return true
   end
-  local idx = dst:win_at(y)
   src:del_win(cur)
   dst:add_win(w, idx)
   src:update(true, true)
-  dst:update(true, true)
+  if dst ~= src then
+    dst:update(true, true)
+  end
   self:refresh()
   return true
 end
