@@ -266,20 +266,24 @@ function env.gfx.spr(data, nr, x, y, w, h, flipx, flipy)
   end
   flips[data] = flips[data] or {}
   flips = flips[data]
+  flips[nr] = flips[nr] or {}
+  local cache = flips[nr]
+  local key = w .. "x" .. h
 
-  if flips[nr] then
-    flips[nr]:blend(env.screen, x, y)
+  if cache[key] then
+    cache[key]:blend(env.screen, x, y)
     return
   end
-  flips[nr] = gfx.new(w*8, h*8)
-  data:blend(fx * 8, fy * 8, w * 8, h * 8, flips[nr], 0, 0)
+  local flipped = gfx.new(w*8, h*8)
+  data:blend(fx * 8, fy * 8, w * 8, h * 8, flipped, 0, 0)
   if flipx then
-    flips[nr] = flips[nr]:flip(true, false)
+    flipped = flipped:flip(true, false)
   end
   if flipy then
-    flips[nr] = flips[nr]:flip(false, true)
+    flipped = flipped:flip(false, true)
   end
-  flips[nr]:blend(env.screen, x, y)
+  cache[key] = flipped
+  flipped:blend(env.screen, x, y)
   return
 end
 
