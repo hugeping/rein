@@ -877,6 +877,15 @@ function win:setsel(...)
   return self.buf:setsel(...)
 end
 
+-- copy of the current selection (nil if there is none); may be passed
+-- to set_keep to keep it across a rebuild
+function win:getsel()
+  if self.buf:issel() then
+    local s = self.buf:getsel()
+    return { s = s.s, e = s.e }
+  end
+end
+
 function win:resetsel(text)
   self.buf:resetsel(text)
 end
