@@ -877,7 +877,7 @@ function framemenu.cmd:Put()
   end
   local f = b.buf.fname or (self.frame:getfilename())
   if f then
-    local r, e = b:save_atomic(f)
+    local r, e = b:save()
     if not r then
       self.frame:err(e)
     end
