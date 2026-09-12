@@ -247,7 +247,7 @@ function syntax:process(pos, epos)
     return
   end
   local d, aux
-  cols[i] = self.ctx.col or 0
+  cols[i] = self.ctx.col
   for _, e in ipairs(starts(self.ctx)) do
     local c = e.c
     d, aux = nil, nil
