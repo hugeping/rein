@@ -518,7 +518,7 @@ function frame:show()
     self:menu():show()
     for i = 2, #self.childs do
       local c = self.childs[i]
-      local cm = self:win_menu(c)
+      local cm = self:cmd_menu(c)
       if cm then cm:show() end
       c:show()
     end
@@ -782,7 +782,7 @@ function frame:new_win_menu(w)
 end
 
 function frame:sync_win_menu(w)
-  local m = self:win_menu(w)
+  local m = self:cmd_menu(w)
   if not m then return end
   local cur = m:gettext()
   self:rename_from_menu(w, cur)
