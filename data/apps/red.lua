@@ -264,7 +264,7 @@ function win:save()
     end
     self:dirty(true)
   end
-  local r, e = self.buf:save()
+  local r, e = self.buf:save_atomic()
   if r then
     self:nodirty()
   else
@@ -860,7 +860,7 @@ function framemenu.cmd:Put()
   end
   local f = b.buf.fname or (self.frame:getfilename())
   if f then
-    local r, e = b:save(f)
+    local r, e = b:save_atomic(f)
     if not r then
       self.frame:err(e)
     end

@@ -630,19 +630,17 @@ function buf:dirty(fl)
 end
 
 function buf:save_atomic(fname)
-  self.fname = fname or self.fname
-  local r
-  local f, e = io.open(self.fname..'.red', "wb")
-  if not f then
-    return f, e
+  fname = fname or self.fname
+  local r, e = self:save(fname .. '.red')
+  self.fname = fname
+  if not r then
+    return r, e
   end
-  r, e = f:write(self:gettext())
-  if not r then return r, e end
-  r, e = f:close()
-  if not r then return r, e end
-  r, e = os.rename(self.fname..'.red', self.fname)
-  if not r then return r, e end
-  self:dirty(false)
+  r, e = os.rename(fname .. '.red', fname)
+  if not r then
+    self:dirty(true)
+    return r, e
+  end
   return true
 end
 
