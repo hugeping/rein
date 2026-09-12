@@ -2,13 +2,11 @@ local shell = require "red/shell"
 
 local proc = {}
 
+local grep_bin = { o = true, ko = true, exe = true, a = true }
+
 local function grep_filter(fn)
   if fn == 'red.dump' then return false end
-  local ext = { 'o', 'ko', 'exe', 'a' }
-  for _, v in ipairs(ext) do
-    if fn:endswith('.'..v) then return false end
-  end
-  return true
+  return not grep_bin[fn:match('%.([^.]+)$')]
 end
 
 local function grep(path, rex, err)
@@ -41,12 +39,12 @@ end
 
 local function dump(w, text)
   for i = 1, #text, 16 do
-    local a, t = ''
-    t = string.format("%04x | ", (i - 1)/16)
+    local a = ''
+    local t = string.format("%04x | ", (i - 1)/16)
     for k = 0, 15 do
       local b = string.byte(text, i + k)
       if not b then
-        t = t .. string.rep('   ', 15 - k + 1)
+        t = t .. string.rep('   ', 16 - k)
         break
       end
       t = t .. string.format("%02x", b) .. ' '
@@ -60,19 +58,15 @@ local function dump(w, text)
 end
 
 local function dump_export(w)
-  local t = w:gettext()
   local ret = {}
-  for l in t:lines() do
-    l = l:split('|', 2)
-    if not l[2] then break end
-    l = l[2]:split()
-    for _, v in ipairs(l) do
-      if not v:empty() then
-        table.insert(ret, string.char(tonumber('0x'..v) or 32))
-      end
+  for l in w:gettext():lines() do
+    local hex = l:match('|(.-)|')
+    if not hex then break end
+    for v in hex:gmatch('%S+') do
+      table.insert(ret, string.char(tonumber('0x'..v) or 32))
     end
   end
-  t = table.concat(ret, '')
+  local t = table.concat(ret, '')
   w:clear()
   dump(w, t)
   return t
@@ -83,7 +77,6 @@ local function dump_save(self)
     return
   end
   local r, e = io.file(self.buf.fname, dump_export(self) or '')
-  self.buf:dirty(false)
   if r then
     self:nodirty()
   else
@@ -105,8 +98,8 @@ end
 
 function proc.grep(w, rex)
   if not rex then return end
-  local path = w:data() and w:data():path() or
-    sys.dirname(w.frame:getfilename())
+  local data = w:data()
+  local path = data and data:path() or sys.dirname(w.frame:getfilename())
   w = w:output '+grep'
   w:tail()
   w.cwd = nil
@@ -114,11 +107,15 @@ function proc.grep(w, rex)
   return true
 end
 
---luacheck: push
---luacheck: ignore 432
 local sub_delims = {
   ["/"] = true,
   [":"] = true,
+}
+
+local sub_esc = {
+  ["\\t"] = "\t",
+  ["\\n"] = "\n",
+  ["\\r"] = "\r",
 }
 
 function proc.gsub(w, text)
@@ -128,7 +125,7 @@ end
 function proc.sub(w, text, glob)
   w = w:data()
   if not w then return end
-  text = text:strip():gsub("\\[tnr]", { ["\\t"] = "\t", ["\\n"] = "\n", ["\\r"] = "\r" })
+  text = text:strip():gsub("\\[tnr]", sub_esc)
   local c = text:sub(1,1)
   local a
   if sub_delims[c] then
@@ -138,24 +135,24 @@ function proc.sub(w, text, glob)
   else
     a = { text }
   end
-  w:text_replace(function(text, a, b)
+  w:text_replace(function(txt, from, to)
     if glob then
-      if not b then
-        return text:find(a)
+      if not to then
+        return txt:find(from)
       end
-      text = text:gsub(a, b)
-      return text
+      txt = txt:gsub(from, to)
+      return txt
     end
-    if not b then
-      return text:findln(a)
+    if not to then
+      return txt:findln(from)
     end
     local t = {}
-    for l in text:lines(true) do
+    for l in txt:lines(true) do
       local nl = l:endswith '\n'
       if nl then
         l = l:sub(1, l:len() - 1)
       end
-      l = l:gsub(a, b)
+      l = l:gsub(from, to)
       table.insert(t, l..(nl and '\n' or ''))
     end
     return table.concat(t, '')
@@ -179,43 +176,32 @@ function proc.fmt(w, width)
   w = w:data()
   if not w then return end
   local s, e = w.buf:range()
-  local b = {}
   local len = 0
   local t = {}
-  local c, last
-  for i = 1, #w.buf.text do
-    c = w.buf.text[i]
-    if i >= s and i <= e then
-      if c == '\n' and not is_space(w.buf.text[i+1])
-        and not is_space(w.buf.text[i-1]) then c = ' ' end
-      table.insert(t, c)
-      len = len + 1
-      if len >= width then
-        if not last then
-          table.insert(t, '\n')
-          len = 0
-        else
-          len = #t - last
-          table.insert(t, last + 1, '\n')
-          last = false
-        end
-      elseif c == '\n' then
+  local last
+  for i = s, e do
+    local c = w.buf.text[i]
+    if c == '\n' and not is_space(w.buf.text[i+1])
+      and not is_space(w.buf.text[i-1]) then c = ' ' end
+    table.insert(t, c)
+    len = len + 1
+    if len >= width then
+      if not last then
+        table.insert(t, '\n')
         len = 0
+      else
+        len = #t - last
+        table.insert(t, last + 1, '\n')
         last = false
-      elseif c == ' ' or c == '\t' then
-        last = #t
       end
-    else
-      table.insert(b, c)
+    elseif c == '\n' then
+      len = 0
+      last = false
+    elseif c == ' ' or c == '\t' then
+      last = #t
     end
   end
-  w:history 'start'
-  w:history('cut', s, e - s + 1)
-  w:set(b)
-  w:cur(s)
-  w:input(t)
-  w:history 'end'
-  w.buf:setsel(s, s + #t)
+  w:text_replace(function() return table.concat(t) end)
   return true
 end
 
@@ -274,21 +260,22 @@ proc["dos2unix"] = function(w)
   w = w:data()
   if not w then return end
   w:text_replace(function(text)
-    local t = text:gsub("\r", "")
-    return t
+    return (text:gsub("\r", ""))
   end)
   return true
+end
+
+local function get_tab(w)
+  if w:getconf 'spaces_tab' then
+    return string.rep(" ", w:getconf 'ts')
+  end
+  return '\t'
 end
 
 proc["i+"] = function(w)
   w = w:data()
   if not w then return end
-  local ts = w:getconf 'ts'
-  local tab_sp = w:getconf 'spaces_tab'
-  local tab = '\t'
-  if tab_sp then
-    tab = string.rep(" ", ts)
-  end
+  local tab = get_tab(w)
   w:text_replace(function(text)
     local t = ''
     for l in text:lines(true) do
@@ -302,12 +289,7 @@ end
 proc["i-"] = function(w)
   w = w:data()
   if not w then return end
-  local ts = w:getconf 'ts'
-  local tab_sp = w:getconf 'spaces_tab'
-  local tab = '\t'
-  if tab_sp then
-    tab = string.rep(" ", ts)
-  end
+  local tab = get_tab(w)
   w:text_replace(function(text)
     local t = ''
     for l in text:lines(true) do
@@ -326,12 +308,9 @@ proc['@'] = function(w, prog)
   if not data then return end
 
   local tmp = os.tmpname()
-  local f = io.open(tmp, "wb")
-  if not f then
+  if not io.file(tmp, data.buf:gettext(data.buf:range())) then
     return
   end
-  f:write(data.buf:gettext(data.buf:range()))
-  f:close()
   shell.pipe(w:output('+Output'), prog..' '..tmp, tmp)
   return true
 end
@@ -345,6 +324,7 @@ function proc.Codepoint(w)
   local data = w:data()
   if not data then return end
   local sym = data.buf.text[data:cur()]
+  if not sym then return end
   local cp = utf.codepoint(sym)
   local cur = w:cur()
   w.buf:input(" "..string.format("0x%x", cp))
@@ -356,8 +336,10 @@ function proc.Line(w)
   if w.frame:main() == w.frame then -- main menu
     return
   end
+  local data = w:data()
+  if not data or not data.buf then return end
   local cur = w:cur()
-  w.buf:input(" :"..tostring(w.frame:win().buf:line_nr()))
+  w.buf:input(" :"..tostring(data.buf:line_nr()))
   w:cur(cur)
   return true
 end
@@ -367,7 +349,6 @@ function proc.Clear(w)
   if not w then return end
   w.buf:setsel(1, #w.buf.text + 1)
   w.buf:cut()
-  w.buf.cur = 1
   w:visible()
   return true
 end
@@ -392,8 +373,6 @@ function proc.win(w)
   shell.win(w)
   return true
 end
-
---luacheck: pop
 
 if PLATFORM ~= 'Windows' then
 local function piped(w, out, prog)
