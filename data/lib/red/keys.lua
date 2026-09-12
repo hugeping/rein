@@ -114,7 +114,7 @@ return {
   },
   { 'alt+b',
     function(self)
-      local fr = self.frame.frame and self.frame.frame or self.frame
+      local fr = self.frame:main()
       local m = fr:menu()
       local t = string.format("%s:%d ", self.buf.fname or '', self.buf:line_nr())
       if m.buf.text[#m.buf.text] ~= ' ' then

@@ -15,6 +15,11 @@ function frame:new(...)
   return f
 end
 
+-- the main (top, mainwin) frame this frame belongs to
+function frame:main()
+  return self.frame and self.frame:main() or self
+end
+
 function frame:add(child, pos)
   child.frame = self
   if pos then

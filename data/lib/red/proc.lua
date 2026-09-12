@@ -353,7 +353,7 @@ function proc.Codepoint(w)
 end
 
 function proc.Line(w)
-  if not w.frame.frame then -- main menu
+  if w.frame:main() == w.frame then -- main menu
     return
   end
   local cur = w:cur()
