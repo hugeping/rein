@@ -5,61 +5,8 @@ local conf = require "red/conf"
 local scheme = require "red/syntax/scheme"
 
 local themes = {
-  default = {
-    conf = {
-      fg = 0,
-      bg = 16,
-      scroll_bg = 16,
-      scroll_fg = 0,
-      scroll_brd = 0,
-      cursor = 0,
-      cursor_over = 8,
-      menu = 17,
-      menu_brd = { 0x88, 0x88, 0xcc },
-      brd = { 0xde, 0xde, 0xde },
-      button = { 0x88, 0x88, 0xcc },
-      button_brd = 0,
-      active = { 0xff, 0x88, 0xcc },
-      hl = { 0xee, 0xee, 0x9e },
-      break_hl = { 0xff, 0xee, 0xcc },
-    },
-    scheme = {
-      keyword = { 102, 102, 22 },
-      comment = { 64, 136, 64 },
-      string = { 124, 102, 187 },
-      number = { 2, 135, 200 },
-      operator = { 0x6d, 0x1d, 0x1d },
-      lib = { 184, 92, 97 },
-    },
-  },
-  -- based on the default Helix theme
-  dark = {
-    conf = {
-      fg = { 0xa4, 0xa0, 0xe8 },
-      bg = { 0x28, 0x17, 0x33 },--{ 0x3b, 0x22, 0x4c },
-      scroll_bg = { 0x28, 0x17, 0x33 },
-      scroll_fg = { 0x5a, 0x59, 0x77 },
-      scroll_brd = { 0xa4, 0xa0, 0xe8 },--{ 0x5a, 0x59, 0x77 },
-      cursor = { 0xff, 0xff, 0xff },
-      cursor_over = { 0x6f, 0x44, 0xf0 },
-      menu = { 0x3b, 0x22, 0x4c }, --{ 0x28, 0x17, 0x33 },
-      menu_brd = 0, --{ 0x5a, 0x59, 0x77 },
-      brd = { 0x28, 0x17, 0x33 },
-      button = { 0x5a, 0x59, 0x77 }, --{ 0xa4, 0xa0, 0xe8 },
-      button_brd = { 0xa4, 0xa0, 0xe8 }, --{ 0x5a, 0x59, 0x77 },
-      active = { 0xdb, 0xbf, 0xef },
-      hl = { 0x54, 0x00, 0x99 },
-      break_hl = { 0x45, 0x28, 0x59 },
-    },
-    scheme = {
-      keyword = { 0xec, 0xcd, 0xba }, -- almond
-      comment = { 0x69, 0x7c, 0x81 }, -- sirocco
-      string = { 0xcc, 0xcc, 0xcc }, -- silver
-      number = { 0xe8, 0xdc, 0xa0 }, -- chamois
-      operator = { 0xdb, 0xbf, 0xef }, -- lilac
-      lib = { 0x9f, 0xf2, 0x8f }, -- mint
-    },
-  },
+  default = require "red/themes/default",
+  dark = require "red/themes/dark",
 }
 
 local order = { 'default', 'dark' }
