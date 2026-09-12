@@ -1,7 +1,9 @@
 return {
   fg = 0,
   bg = 16,
-  void_bg = 7, -- empty area outside windows
+  scroll_bg = 16, -- background of the window scroller
+  scroll_fg = 0, -- its thumb
+  scroll_brd = 0, -- its frame
   cursor = 0,
   cursor_over = 8,
   button = { 0x88, 0x88, 0xcc},
@@ -22,6 +24,7 @@ return {
   cr_sym = '^',
   nodump = false,
   syntax = true,
+  theme = 'default',
   new_prefix = 'new',
 --  histfile = true,
 --  wrap = false,

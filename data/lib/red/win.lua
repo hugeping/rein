@@ -437,11 +437,12 @@ function win:scroller()
   self.scroll_bottom = bottom
 
   screen:offset(self.x, self.y)
-  screen:clear(0, 0, scr.spw, self.h, conf.bg)
-  screen:rect(0, 0, scr.spw - 1, self.h - 1, conf.fg)
+  screen:clear(0, 0, scr.spw, self.h, conf.scroll_bg or conf.bg)
+  screen:rect(0, 0, scr.spw - 1, self.h - 1,
+    conf.scroll_brd or conf.scroll_fg or conf.fg)
 
   if self.pos ~= 1 or len > self.epos + 1 then
-    screen:fill_rect(2, 2 + top, 2 + scr.spw - 5, 2 + bottom, conf.fg)
+    screen:fill_rect(2, 2 + top, 2 + scr.spw - 5, 2 + bottom, conf.scroll_fg or conf.fg)
   end
   screen:nooffset()
 end

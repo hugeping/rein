@@ -1,5 +1,6 @@
 return {
-  default = 0,
+  -- false means "use conf.fg", so themes may recolor the default text
+  default = false,
   keyword = { 102, 102, 22 },
   comment = { 64, 136, 64 },
   string = { 124, 102, 187 },

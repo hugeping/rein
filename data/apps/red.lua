@@ -4,6 +4,7 @@ local proc = require "red/proc"
 local shell = require "red/shell"
 local uri = require "red/uri"
 local conf = require "red/conf"
+local theme = require "red/theme"
 local win_keys = require "red/keys"
 
 local presets = require "red/presets"
@@ -59,6 +60,7 @@ local function parse_options(args)
 end
 
 ARGS = parse_options(ARGS)
+theme.apply(conf.theme or 'default')
 
 function presets.get(fname)
   for _, v in ipairs(presets) do
@@ -405,7 +407,7 @@ menu.bg = conf.menu
 function menu:show()
   win.show(self)
   screen:offset(self.x, self.y)
-  screen:line(scr.spw, self.h - 1, self.w, self.h - 1, conf.button)
+  screen:line(scr.spw, self.h - 1, self.w, self.h - 1, conf.menu_brd)
   screen:nooffset()
 end
 
@@ -414,7 +416,7 @@ function menu:draw_scroller(color)
   screen:clear(self.x, self.y, scr.spw, self.h, color)
   screen:rect(self.x, self.y,
     self.x + scr.spw - 1,
-    self.y + self.h - 1, conf.fg)
+    self.y + self.h - 1, conf.button_brd or conf.scroll_brd)
 end
 
 function menu:scroller()
@@ -706,6 +708,37 @@ end
 local win_menu = menu:new()
 win_menu.cmd = framemenu.cmd
 
+-- apply a theme and refresh everything that captured a color at
+-- creation time: cursor images, borders, glyph sprites, menus and
+-- window backgrounds
+local function apply_theme(name, root)
+  theme.apply(name)
+  conf.move_cursor = make_move_cursor()
+  conf.text_cursor = make_text_cursor(conf.cursor)
+  conf.text_cursor_over = make_text_cursor(conf.cursor_over)
+  menu.bg, framemenu.bg, win_menu.bg = conf.menu, conf.menu, conf.menu
+  gfx.border(conf.brd)
+  scr.glyphs = {}
+  if not root then
+    return
+  end
+  local function recolor(m)
+    if m then
+      m.fg, m.bg = conf.fg, conf.menu
+      m:flush()
+    end
+  end
+  recolor(root:menu())
+  for f in root:for_win() do
+    recolor(f:menu())
+    for w in f:for_win() do
+      w.fg, w.bg = conf.fg, conf.bg
+      w:flush()
+      recolor(w.menu_w)
+    end
+  end
+end
+
 function win_menu:scroller()
   self:draw_scroller(self.win and self.win:dirty() and
     conf.active or conf.button)
@@ -891,6 +924,19 @@ function framemenu.cmd:Sort()
   self.frame:sort()
 end
 
+-- Theme [name] -- switch the color theme, with no argument cycles them
+function framemenu.cmd:Theme(name)
+  if name then
+    name = name:strip()
+  end
+  if not name or name == '' then
+    name = theme.next()
+  end
+  if theme.themes[name] then
+    apply_theme(name, self.frame:main())
+  end
+end
+
 function framemenu.cmd:Put()
   local b = self:data()
   if not b then
@@ -971,7 +1017,9 @@ end
 local mainmenu = menu:new()
 mainmenu.cmd = {}
 
-mainmenu.buf:set 'Help GetAll PutAll Dump Exit Sort New'
+mainmenu.buf:set 'Help GetAll PutAll Dump Exit Theme Sort New'
+
+mainmenu.cmd.Theme = framemenu.cmd.Theme
 
 function mainmenu:scroller(click)
   if click then
@@ -1133,6 +1181,7 @@ To move file buffer between columns use mouse 2nd button drag&drop of menu butto
 - Wrap                - wrap text on/off
 - Spaces              - spaces tab mode
 - Syntax              - toggle syntax hl
+- Theme [name]        - color theme (default, dark)
 - dump                - hex-dump
 - win                 - pseudo acme win-shell
 
@@ -1283,7 +1332,7 @@ function mainwin:geom(x, y, w, h)
   local pos = menu:bottom()
 
   if self:win_nr() == 0 then
-    screen:clear(x, pos, w, h - pos, conf.void_bg)
+    screen:clear(x, pos, w, h - pos, conf.bg)
     return
   end
   return self:hgeom(x, y, w, h)
