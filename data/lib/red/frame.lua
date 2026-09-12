@@ -195,6 +195,30 @@ function frame:geom_stacked(x, y, w, h)
   end
 end
 
+-- toggle the layout: the first window takes all the remaining height
+-- and the others become a stack of menu bars; repeated call restores
+-- the saved fractions
+function frame:normalize()
+  local n = self:win_nr()
+  if n == 0 then return end
+  if self.norm_fracs then
+    for _, e in ipairs(self.norm_fracs) do
+      e[1].frac = e[2]
+    end
+    self.norm_fracs = nil
+  else
+    local saved = {}
+    local i = 1
+    for c in self:for_win() do
+      saved[i] = { c, c.frac }
+      c.frac = i == 1 and 1 or 0
+      i = i + 1
+    end
+    self.norm_fracs = saved
+  end
+  self:refresh()
+end
+
 -- keep per-window vertical fractions normalized to 1
 function frame:frac_norm()
   local n = self:win_nr()

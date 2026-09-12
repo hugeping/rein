@@ -710,11 +710,26 @@ function win_menu:press(v, a, b)
   end
 end
 
+-- a middle click on the square executes the first word on release (the
+-- file name, which moves the window to the top). On the square of the
+-- first window it also toggles the "first window full height, others
+-- as a stack of menus" layout afterwards, when the layout is no longer
+-- needed; on other windows it only moves them to the top
 function win_menu:event(r, v, a, b)
   if r == 'mousedown' and self.frame.stacked then
     self:press(v, a, b)
   end
-  return menu.event(self, r, v, a, b)
+  local even = r == 'mouseup' and v == 'middle' and self.frame.stacked
+  if even then
+    local x, y = a - self.x, b - self.y
+    even = x >= 0 and x < scr.spw and y >= 0 and y < self.h and
+      self.frame:win() == self.win
+  end
+  local ret = menu.event(self, r, v, a, b)
+  if even then
+    self.frame:normalize()
+  end
+  return ret
 end
 
 -- continue a press: resize follows the mouse, move shows the cursor and
