@@ -875,6 +875,17 @@ function framemenu.cmd:Put()
   self.frame:update()
 end
 
+-- base window commands to control output following
+function win.cmd.Scroll(s)
+  s.scroll_mode = true
+  return true
+end
+
+function win.cmd.Noscroll(s)
+  s.scroll_mode = false
+  return true
+end
+
 function win:Get()
   local f = self.buf.fname
   if not f then return end
@@ -958,7 +969,7 @@ function mainmenu.cmd:Dump()
         shell = w.shell and true,
         output_pos = w.shell and w.output_pos,
         hist = w.shell and w.shell.hist,
-        scroll = w.shell and w.scroll_mode,
+        scroll = w.scroll_mode,
       })
     end
     table.insert(d, c)
@@ -1528,9 +1539,9 @@ local function load_dump(f)
           w.shell.hist = b.hist or {}
           w.output_pos = b.output_pos
           w:cur(#w.buf.text + 1)
-          if b.scroll ~= nil then
-            w.scroll_mode = b.scroll
-          end
+        end
+        if b.scroll ~= nil then
+          w.scroll_mode = b.scroll
         end
       end
     end

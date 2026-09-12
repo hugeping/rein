@@ -150,9 +150,8 @@ local function pipe_pump(w, p, ret, sh, tmp)
           w.output_pos = w:cur(c)
         end
       end
-      if w.scroll_mode and data then
-        w:make_epos()
-        w:visible(w.rows - 1)
+      if data then
+        w:scroll_output()
       end
       if l == '\1eof' then break end
       coroutine.yield()
@@ -233,10 +232,7 @@ end
 function shell:prompt()
   self.buf:append('$ ', true)
   self.output_pos = self:cur()
-  if self.scroll_mode then
-    self:make_epos()
-    self:visible(self.rows - 1)
-  end
+  self:scroll_output()
 end
 
 function shell:execute(t)
@@ -342,8 +338,6 @@ function shell.win(w)
   w.down = shell.down
   w.conf.ts = 8
   w.scroll_mode = true
-  w.cmd.Noscroll = function(s) s.scroll_mode = false end
-  w.cmd.Scroll = function(s) s.scroll_mode = true end
   w.cmdline = 'Noscroll'
   w.frame:update();
 end
