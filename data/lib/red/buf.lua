@@ -88,10 +88,8 @@ function buf:apply_hist(h, forward)
   end
   if h.op == 'input' then
     if forward then
-      for i = 1, h.nr do
-        table.insert(self.text, h.pos + i - 1, h.data[i])
-        self.cur = self.cur + 1
-      end
+      self:insert_range(h.pos, h.data)
+      self.cur = self.cur + h.nr
     else
       self.text = self:remove_range(h.pos, h.nr)
     end
@@ -99,21 +97,27 @@ function buf:apply_hist(h, forward)
     if forward then
       self.text = self:remove_range(h.pos, h.nr)
     else
-      for i = 1, h.nr do
-        table.insert(self.text, h.pos + i - 1, h.data[i])
-      end
+      self:insert_range(h.pos, h.data)
     end
   end
 end
 
 function buf:remove_range(pos, nr)
-  local new = {}
-  for i = 1, #self.text do
-    if i < pos or i >= pos + nr then
-      table.insert(new, self.text[i])
-    end
+  local text = self.text
+  local n = #text
+  if pos > n or nr <= 0 then
+    return text
   end
-  return new
+  if pos + nr - 1 > n then
+    nr = n - pos + 1
+  end
+  for i = pos + nr, n do
+    text[i - nr] = text[i]
+  end
+  for i = n, n - nr + 1, -1 do
+    text[i] = nil
+  end
+  return text
 end
 
 function buf:redo()
@@ -353,20 +357,24 @@ function buf:insmode(over)
   return o
 end
 
--- insert a large chunk by rebuilding the text once
+-- insert a chunk at pos shifting the tail in place
+function buf:insert_range(pos, u)
+  local text = self.text
+  local n = #u
+  if n == 0 then return end
+  for i = #text, pos, -1 do
+    text[i + n] = text[i]
+  end
+  for i = 1, n do
+    text[pos + i - 1] = u[i]
+  end
+end
+
+-- insert a large chunk at the cursor
 function buf:insert_bulk(u)
-  local text, cur = {}, self.cur
-  for i = 1, cur - 1 do
-    table.insert(text, self.text[i])
-  end
-  for i = 1, #u do
-    table.insert(text, u[i])
-    self.cur = self.cur + 1
-  end
-  for i = cur, #self.text do
-    table.insert(text, self.text[i])
-  end
-  self.text = text
+  local cur = self.cur
+  self:insert_range(cur, u)
+  self.cur = cur + #u
 end
 
 function buf:input(txt)
