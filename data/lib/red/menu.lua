@@ -19,7 +19,7 @@ end
 
 function menu:exec(t)
   local a = t:strip():split(1)
-  local w = self:winmenu()
+  local w = self:data()
   if w and w.cmd and w.cmd[a[1]] then
     if w.cmd[a[1]](w, a[2]) then
       return true
@@ -33,8 +33,14 @@ function menu:exec(t)
   return win.exec(self, t)
 end
 
+-- data window associated with the menu: its own window in stacked,
+-- the active window of the frame otherwise
+function menu:data()
+  return self.win or self.frame:win()
+end
+
 function menu:toline(nr)
-  local w = self:winmenu()
+  local w = self:data()
   if not w then
     return
   end
@@ -42,7 +48,7 @@ function menu:toline(nr)
 end
 
 function menu:search(text, back)
-  local w = self:winmenu()
+  local w = self:data()
   if not w or not w.buf then
     return
   end

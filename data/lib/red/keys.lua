@@ -85,7 +85,7 @@ return {
   },
   { 'ctrl+w',
     function(self)
-      self.frame:close_win(self:winmenu() or self)
+      self.frame:close_win(self:data() or self)
     end
   },
   { 'ctrl+o',

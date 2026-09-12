@@ -93,7 +93,7 @@ local function dump_save(self)
 end
 
 function proc.dump(w)
-  local data = w:winmenu()
+  local data = w:data()
   if not data then return end
   w = w:output('+dump')
   w.cmd = { Get = dump_export }
@@ -126,7 +126,7 @@ function proc.gsub(w, text)
 end
 
 function proc.sub(w, text, glob)
-  w = w:winmenu()
+  w = w:data()
   if not w then return end
   text = text:strip():gsub("\\[tnr]", { ["\\t"] = "\t", ["\\n"] = "\n", ["\\r"] = "\r" })
   local c = text:sub(1,1)
@@ -176,7 +176,7 @@ local function is_space(c)
 end
 function proc.fmt(w, width)
   width = tonumber(width) or 60
-  w = w:winmenu()
+  w = w:data()
   if not w then return end
   local s, e = w.buf:range()
   local b = {}
@@ -220,7 +220,7 @@ function proc.fmt(w, width)
 end
 
 function proc.par(w)
-  w = w:winmenu()
+  w = w:data()
   if not w then return end
   local s, e = w.buf:range()
   local t = {}
@@ -271,7 +271,7 @@ proc['!'] = function(w, pat)
 end
 
 proc["dos2unix"] = function(w)
-  w = w:winmenu()
+  w = w:data()
   if not w then return end
   w:text_replace(function(text)
     local t = text:gsub("\r", "")
@@ -281,7 +281,7 @@ proc["dos2unix"] = function(w)
 end
 
 proc["i+"] = function(w)
-  w = w:winmenu()
+  w = w:data()
   if not w then return end
   local ts = w:getconf 'ts'
   local tab_sp = w:getconf 'spaces_tab'
@@ -300,7 +300,7 @@ proc["i+"] = function(w)
 end
 
 proc["i-"] = function(w)
-  w = w:winmenu()
+  w = w:data()
   if not w then return end
   local ts = w:getconf 'ts'
   local tab_sp = w:getconf 'spaces_tab'
@@ -342,7 +342,7 @@ proc['<'] = function(w, prog)
 end
 
 function proc.Codepoint(w)
-  local data = w:winmenu()
+  local data = w:data()
   if not data then return end
   local sym = data.buf.text[data:cur()]
   local cp = utf.codepoint(sym)
@@ -363,7 +363,7 @@ function proc.Line(w)
 end
 
 function proc.Clear(w)
-  w = w:winmenu()
+  w = w:data()
   if not w then return end
   w.buf:setsel(1, #w.buf.text + 1)
   w.buf:cut()

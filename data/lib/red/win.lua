@@ -652,6 +652,11 @@ end
 function win:exec(txt)
 end
 
+-- data window for a window (itself); menus override this
+function win:data()
+  return self
+end
+
 -- fill completion
 function win:completion(txt)
   local res = {}
