@@ -50,6 +50,22 @@ describe("frame", function()
     end
   end)
 
+  it("normalize toggles the first window layout", function()
+    local f = fake_frame()
+    local w1, w2, w3 = { frac = 0.5 }, { frac = 0.3 }, { frac = 0.2 }
+    f:add_win(w1)
+    f:add_win(w2)
+    f:add_win(w3)
+    f:normalize()
+    eq(w1.frac, 1)
+    eq(w2.frac, 0)
+    eq(w3.frac, 0)
+    f:normalize()
+    eq(w1.frac, 0.5)
+    eq(w2.frac, 0.3)
+    eq(w3.frac, 0.2)
+  end)
+
   it("frac_norm distributes evenly when unset", function()
     local f = fake_frame()
     local ws = { {}, {}, {} }
