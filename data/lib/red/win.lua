@@ -886,8 +886,8 @@ function win:getsel()
   end
 end
 
-function win:resetsel(text)
-  self.buf:resetsel(text)
+function win:resetsel(...)
+  self.buf:resetsel(...)
 end
 
 function win:append(text, cur)

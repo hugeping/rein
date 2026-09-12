@@ -1372,15 +1372,6 @@ function mainwin:file(n)
   return fr:file(n)
 end
 
-function mainwin:empty_frame()
-  for f, k in self:for_win() do
-    local nr = f:win_nr()
-    if nr == 0 then
-      return self:win(k)
-    end
-  end
-end
-
 function mainwin:active_frame()
   local i, min = 1, 10000
   for f, k in self:for_win() do
