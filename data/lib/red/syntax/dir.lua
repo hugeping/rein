@@ -5,6 +5,11 @@ local function match(ext)
     ext = { ext }
   end
   return function(ctx, txt, i)
+    -- the patterns are anchored to the end of the line, so the earliest
+    -- match is at its start; no need to rebuild the tail at every symbol
+    if i > 1 and txt[i - 1] ~= '\n' then
+      return
+    end
     local d = 0
     local n = {}
     while txt[i] ~= '\n' and txt[i] do
