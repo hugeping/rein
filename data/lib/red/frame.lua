@@ -23,6 +23,8 @@ end
 function frame:add(child, pos)
   child.frame = self
   if pos then
+    -- never insert past the end: a gap in childs would stop ipairs
+    pos = math.max(1, math.min(pos, #self.childs + 1))
     table.insert(self.childs, pos, child)
   else
     table.insert(self.childs, child)
