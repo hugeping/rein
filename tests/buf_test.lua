@@ -84,6 +84,28 @@ describe("buf", function()
     eq(b:gettext(), "ac")
   end)
 
+  it("overwrite input can be undone and redone", function()
+    local b = nb("abcdef")
+    b.cur = 3
+    b.over_mode = true
+    b:input("XY")
+    eq(b:gettext(), "abXYef")
+    b:undo()
+    eq(b:gettext(), "abcdef")
+    b:redo()
+    eq(b:gettext(), "abXYef")
+  end)
+
+  it("overwrite input past the end is undone correctly", function()
+    local b = nb("abc")
+    b.cur = 2
+    b.over_mode = true
+    b:input("12345")
+    eq(b:gettext(), "a12345")
+    b:undo()
+    eq(b:gettext(), "abc")
+  end)
+
   it("setsel/issel/selrange work", function()
     local b = nb("hello")
     b:setsel(4, 2)
