@@ -22,7 +22,6 @@ return {
   cr_sym = '^',
   nodump = false,
   syntax = true,
-  colorize_win = 4096,
   new_prefix = 'new',
 --  histfile = true,
 --  wrap = false,
