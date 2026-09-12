@@ -576,14 +576,30 @@ end
 -- without w it is the frame (column) menu
 function frame:menu_text(w)
   local m = w and self:cmd_menu(w) or self:menu()
-  local tail = frame.menu_cmdline(m)
+  local t
   if self.stacked then
     if not w then
-      return 'Del ' .. tail
+      t = 'Del '
+    else
+      t = ''
+      if w.buf.fname then
+        t = w.buf.fname:esc() .. ' '
+      end
+      t = t .. frame.win_words(w)
     end
-    return frame.win_tag(w) .. tail
+  else
+    t = ''
+    for c in self:for_win() do
+      t = t .. c.buf.fname:esc() .. ' '
+    end
+    if w then
+      t = t .. frame.win_words(w)
+    end
+    if self.frame:win_nr() > 1 then
+      t = t .. 'Del ' -- Delcol
+    end
   end
-  return self:tab_menu_words(w) .. tail
+  return t .. frame.menu_cmdline(m)
 end
 
 -- rebuild the menu which holds the command line of window w, taking
@@ -608,30 +624,6 @@ function frame.win_words(w)
   t = t .. 'Close Get '
   if w.cmdline then
     t = t .. w.cmdline .. ' '
-  end
-  return t
-end
-
--- tag of one window's own menu: "<fname> [Put ]Close Get [cmdline]"
-function frame.win_tag(w)
-  local t = ''
-  if w.buf.fname then
-    t = t .. w.buf.fname:esc() .. ' '
-  end
-  return t .. frame.win_words(w)
-end
-
--- words for the tabbed column menu: file names and window commands
-function frame:tab_menu_words(w)
-  local t = ''
-  for c in self:for_win() do
-    t = t .. c.buf.fname:esc() .. ' '
-  end
-  if w then
-    t = t .. frame.win_words(w)
-  end
-  if self.frame:win_nr() > 1 then
-    t = t .. 'Del ' -- Delcol
   end
   return t
 end
