@@ -384,11 +384,6 @@ function frame.menu_set_tail(s, tail)
   return (s and s .. ' ' or '') .. tail
 end
 
--- whether the menu text contains `word` as a separate word
-function frame.menu_has_word(s, word)
-  return s ~= nil and s:find('%f[%w]' .. word .. '%f[%W]') ~= nil
-end
-
 function frame:stacked_toggle()
   if self.stacked then
     -- collapse to tabbed: remember the column command line and save
@@ -402,7 +397,7 @@ function frame:stacked_toggle()
     end
   else
     -- expand to stack: carry the column menu tail over to the active
-    -- window's own menu, then clear the column menu's command line
+    -- window's own menu, then restore the column command line
     local w = self:win()
     if w then
       local cur = self:menu():gettext()
@@ -412,20 +407,12 @@ function frame:stacked_toggle()
         if w.menu_w then
           w.menu_w:set(frame.menu_set_tail(w.menu_w:gettext(), tail))
         end
-        self:menu():set(frame.menu_set_tail(cur, conf.emptymenu))
       end
+      self:menu():set(frame.menu_set_tail(cur,
+        self.stacked_cmdline or conf.emptymenu))
     end
   end
   self.stacked = not self.stacked
-  if self.stacked and self.stacked_cmdline then
-    -- restore the column command line last used in stacked mode;
-    -- "New" stays available for creating windows
-    local tail = self.stacked_cmdline
-    if not frame.menu_has_word(tail, 'New') then
-      tail = tail:gsub('%s+$', '') .. ' New '
-    end
-    self:menu():set(frame.menu_set_tail(self:menu():gettext(), tail))
-  end
   self:update(true, true)
   self:refresh()
 end
