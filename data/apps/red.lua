@@ -544,25 +544,17 @@ end
 
 function frame:update(force, pop)
   if self.stacked then
-    self:menu():set_keep(self:stacked_menu_text(), self:menu():getsel())
+    self:update_menu(nil, false)
     for c in self:for_win() do
-      local m = self:cmd_menu(c)
-      self:rename_from_menu(c, m:gettext())
-      self:sync_menu(c, frame.win_tag(c) .. self:win_tail(c), m:getsel())
+      self:update_menu(c, true)
     end
     return
   end
   if pop then
     self:menu():set(self:win() and self:win().menu or conf.emptymenu)
   end
-  local sel = self:menu():getsel()
   local w = self:win()
-  if w and not force then
-    self:rename_from_menu(w, self:menu().buf:gettext())
-  end
-  -- when the separator is gone, the command line starts empty
-  local tail = frame.menu_tail(self:menu().buf:gettext()) or '| '
-  self:sync_menu(w, self:tab_menu_words(w) .. tail, sel)
+  self:update_menu(w, not force)
   if w then
     w.menu = self:menu():gettext()
     if force then
@@ -571,9 +563,43 @@ function frame:update(force, pop)
   end
 end
 
+-- desired text of the menu which holds the command line of window w;
+-- without w it is the frame (column) menu
+function frame:menu_text(w)
+  if self.stacked then
+    if not w then
+      return self:stacked_menu_text()
+    end
+    return frame.win_tag(w) .. self:win_tail(w)
+  end
+  -- a lost or empty command line falls back to the default one
+  local tail = frame.menu_tail(self:menu().buf:gettext())
+  if not tail or tail:strip() == '|' then
+    tail = conf.emptymenu
+  end
+  return self:tab_menu_words(w) .. tail
+end
+
+-- rebuild the menu which holds the command line of window w, taking
+-- the file name typed in it into account when `rename` is set
+function frame:update_menu(w, rename)
+  local m = w and self:cmd_menu(w) or self:menu()
+  if rename and w then
+    self:rename_from_menu(w, m:gettext())
+  end
+  local text = self:menu_text(w)
+  if m:gettext() ~= text then
+    m:set_keep(text, m:getsel())
+  end
+end
+
 -- stacked column menu: "Del " + the current command line
 function frame:stacked_menu_text()
-  return 'Del ' .. (frame.menu_tail(self:menu().buf:gettext()) or '| New ')
+  local tail = frame.menu_tail(self:menu().buf:gettext())
+  if not tail or tail:strip() == '|' then
+    tail = conf.emptymenu
+  end
+  return 'Del ' .. tail
 end
 
 -- command words of one window in a menu: "[Put ]Close Get [cmdline]"
@@ -598,27 +624,14 @@ function frame.win_tag(w)
   return t .. frame.win_words(w)
 end
 
--- command line of a window's own menu: the current one, else the one
--- remembered in w.menu, else the default
+-- command line of a window's own menu: the current one; a lost or
+-- empty one falls back to the default
 function frame:win_tail(w)
   local tail = frame.menu_tail(self:cmd_menu(w):gettext())
-  if tail and tail:strip() ~= '|' then
-    return tail
+  if not tail or tail:strip() == '|' then
+    return conf.emptymenu
   end
-  tail = frame.menu_tail(w.menu)
-  if tail and tail:strip() ~= '|' then
-    return tail
-  end
-  return '| New '
-end
-
--- apply rebuilt menu text to the menu of window w (or to the frame
--- menu when w has no window), keeping the cursor/selection
-function frame:sync_menu(w, text, sel)
-  local m = w and self:cmd_menu(w) or self:menu()
-  if m:gettext() ~= text then
-    m:set_keep(text, sel)
-  end
+  return tail
 end
 
 -- words for the tabbed column menu: file names and window commands
@@ -799,6 +812,8 @@ function frame:new_win_menu(w)
   local m = win_menu:new()
   m.frame = self
   m.win = w
+  -- start from the command line remembered for this window
+  m:set(frame.menu_tail(w.menu) or conf.emptymenu)
   return m
 end
 
