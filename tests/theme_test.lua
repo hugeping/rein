@@ -61,15 +61,17 @@ describe("theme", function()
   it("does not corrupt the theme tables on switching", function()
     local dark = theme.themes.dark.conf
     local def = theme.themes.default.conf
-    local dark_brd, dark_menu = dark.brd[1], dark.menu_brd[1]
     local def_menu = def.menu_brd[1]
+    local dark_brd = dark.brd[1]
+    local dark_button_brd = dark.button_brd[1]
     theme.apply "default"
     theme.apply "dark"
     theme.apply "default"
     theme.apply "dark"
-    eq(dark.brd[1], dark_brd, "dark theme border intact")
-    eq(dark.menu_brd[1], dark_menu, "dark theme menu border intact")
     eq(def.menu_brd[1], def_menu, "default theme menu border intact")
+    eq(dark.brd[1], dark_brd, "dark theme border intact")
+    eq(dark.button_brd[1], dark_button_brd, "dark theme button border intact")
+    eq(dark.menu_brd, 0, "dark theme menu border intact")
     restore()
   end)
 

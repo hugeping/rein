@@ -1,0 +1,27 @@
+return {
+  conf = {
+    fg = 0,
+    bg = 16,
+    scroll_bg = 16,
+    scroll_fg = 0,
+    scroll_brd = 0,
+    cursor = 0,
+    cursor_over = 8,
+    menu = 17,
+    menu_brd = { 0x88, 0x88, 0xcc },
+    brd = { 0xde, 0xde, 0xde },
+    button = { 0x88, 0x88, 0xcc },
+    button_brd = 0,
+    active = { 0xff, 0x88, 0xcc },
+    hl = { 0xee, 0xee, 0x9e },
+    break_hl = { 0xff, 0xee, 0xcc },
+  },
+  scheme = {
+    keyword = { 102, 102, 22 },
+    comment = { 64, 136, 64 },
+    string = { 124, 102, 187 },
+    number = { 2, 135, 200 },
+    operator = { 0x6d, 0x1d, 0x1d },
+    lib = { 184, 92, 97 },
+  },
+}
