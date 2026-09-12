@@ -34,6 +34,7 @@ function buf:mark(pos)
   if pos and (not self.changed_from or pos < self.changed_from) then
     self.changed_from = pos
   end
+  self.hash_cache = nil
 end
 
 --[[
@@ -117,6 +118,7 @@ function buf:remove_range(pos, nr)
   for i = n, n - nr + 1, -1 do
     text[i] = nil
   end
+  self.hash_cache = nil
   return text
 end
 
@@ -368,6 +370,7 @@ function buf:insert_range(pos, u)
   for i = 1, n do
     text[pos + i - 1] = u[i]
   end
+  self.hash_cache = nil
 end
 
 -- insert a large chunk at the cursor
@@ -610,13 +613,22 @@ function buf:selpar(delim)
   self:select_word(delim)
 end
 
+-- djb2 over the UTF-8 bytes; the result is cached until the text changes
 function buf:hash()
-  local hval = 0x811c9dc5
-  for i=1, #self.text do
-    hval = bit.band((hval * 0x01000193), 0xffffffff)
-    hval = bit.bxor(hval, utf.codepoint(self.text[i]))
+  if self.hash_cache ~= nil then
+    return self.hash_cache
   end
-  return hval
+  local str = table.concat(self.text)
+  local h = 5381
+  for i = 1, #str do
+    h = h * 33 + str:byte(i)
+    if i % 4 == 0 then
+      h = h % 2147483647
+    end
+  end
+  h = h % 2147483647
+  self.hash_cache = h
+  return h
 end
 
 function buf:dirty(fl)
@@ -624,17 +636,15 @@ function buf:dirty(fl)
     return #self.text ~= self.written_len or
       self:hash() ~= self.written
   end
-
-  local hash = self:hash()
   local last = self.written
   if fl == false then
-     self.written = hash
-     self.written_len = #self.text
-  elseif fl == true then
-     self.written = false
-     self.written_len = false
+    self.written = self:hash()
+    self.written_len = #self.text
+  else -- marking dirty does not need the content hash
+    self.written = false
+    self.written_len = false
   end
-  return hash ~= last
+  return self.written ~= last
 end
 
 function buf:save_atomic(fname)
