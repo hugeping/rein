@@ -2,6 +2,12 @@ local shell = require "red/shell"
 
 local proc = {}
 
+-- show the Scroll/Noscroll toggle in the command line of an output window
+local function scroll_cmdline(w)
+  w.cmdline = w.scroll_mode and 'Noscroll' or 'Scroll'
+  w.frame:update()
+end
+
 local grep_bin = { o = true, ko = true, exe = true, a = true }
 
 local function grep_filter(fn)
@@ -103,8 +109,7 @@ function proc.grep(w, rex)
   local data = w:data()
   local path = data and data:path() or sys.dirname(w.frame:getfilename())
   w = w:output '+grep'
-  w.cmdline = w.scroll_mode and 'Noscroll' or 'Scroll'
-  w.frame:update()
+  scroll_cmdline(w)
   w:tail()
   w.cwd = nil
   w:run(function() grep(path, rex, w) end)
@@ -315,12 +320,18 @@ proc['@'] = function(w, prog)
   if not io.file(tmp, data.buf:gettext(data.buf:range())) then
     return
   end
-  shell.pipe(w:output('+Output'), prog..' '..tmp, tmp)
+  local out = w:output('+Output')
+  scroll_cmdline(out)
+  shell.pipe(out, prog..' '..tmp, tmp)
   return true
 end
 
 proc['<'] = function(w, prog)
-  shell.pipe(w:output(), prog)
+  local out = w:output()
+  if out ~= w then -- a menu writes into +Output, a window into itself
+    scroll_cmdline(out)
+  end
+  shell.pipe(out, prog)
   return true
 end
 
@@ -400,7 +411,9 @@ end
 proc['>'] = function(w, prog)
   local data = w:data()
   if not data then return end
-  piped(data, w:output '+Output', prog)
+  local out = w:output '+Output'
+  scroll_cmdline(out)
+  piped(data, out, prog)
   return true
 end
 
