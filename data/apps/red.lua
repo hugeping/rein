@@ -416,7 +416,7 @@ function menu:draw_scroller(color)
   screen:clear(self.x, self.y, scr.spw, self.h, color)
   screen:rect(self.x, self.y,
     self.x + scr.spw - 1,
-    self.y + self.h - 1, conf.button_brd or conf.scroll_brd)
+    self.y + self.h - 2, conf.button_brd or conf.scroll_brd)
 end
 
 function menu:scroller()
