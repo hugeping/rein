@@ -1008,125 +1008,125 @@ function mainmenu.cmd:Sort()
   end
 end
 
-function mainmenu.cmd:Help()
-  local w = self.frame:open_err("+Help")
-  w.conf.wrap = true
-  w:clear()
-  w:printf([==[
+local help_text = [==[```
            ___  _______
           / _ \/ __/ _ \
          / , _/ _// // /
         /_/|_/___/____/
 
        RED - Rein EDitor
-       by Peter Kosyh (2023-2025)
+       by Peter Kosyh (2023-2026)
        https://hugeping.ru
+```
 
-Arguments:
+# SYNOPSYS
+
   rein [-platform-nojoystick] [-platform-nosound] [-platform-xclip[-only]]
       red [-fs <font size>] [-nodump] [-confdir <dir>]
 
-Keys:
-  esc           - cut, select last typed block
-  ctrl-esc      - select all text
-  ctrl-s        - Save (Put) current buffer
-  ctrl-w        - Close current buffer
-  ctrl-o        - Previous buffer
-  ctrl-x,c,v    - cut, copy, paste
-  alt-w         - smart selection
-  ctrl-a,e      - line start, end
-  home,end      - line start, end
-  ctrl-home,end - first line, last line
-  ctrl-k        - kill to eol
-  ctrl-z        - undo
-  ctrl-y        - redo
-  shift-arrows  - select
-  insert        - toggle overwrite mode
-  del,backspace - delete symbol right/left
-  ctrl-b        - insert current line in menu (bookmark)
-  alt-b         - insert current fname:line in mainmenu (global bookmark)
-  ctrl-f        - completion path
-  alt-f         - completion via 'global -t -c'
+# KEYS
 
-Mouse:
-  Plan9 acme like mouse chording and actions
+- esc           - cut, select last typed block
+- ctrl-esc      - select all text
+- ctrl-s        - Save (Put) current buffer
+- ctrl-w        - Close current buffer
+- ctrl-o        - Previous buffer
+- ctrl-x,c,v    - cut, copy, paste
+- alt-w         - smart selection
+- ctrl-a,e      - line start, end
+- home,end      - line start, end
+- ctrl-home,end - first line, last line
+- ctrl-k        - kill to eol
+- ctrl-z        - undo
+- ctrl-y        - redo
+- shift-arrows  - select
+- insert        - toggle overwrite mode
+- del,backspace - delete symbol right/left
+- ctrl-b        - insert current line in menu (bookmark)
+- alt-b         - insert current fname:line in mainmenu (global bookmark)
+- ctrl-f        - completion path
+- alt-f         - completion via 'global -t -c'
 
-  To move file buffer between columns use mouse 2nd button drag&drop of menu button.
+# MOUSE
 
-  right mb     - search
-  alt+rmb      - search back
-  middle mb    - exec command or open
+Plan9 acme like mouse chording and actions
 
-Some built-in commands:
+To move file buffer between columns use mouse 2nd button drag&drop of menu button.
 
-  gfind lua-rexp      - find rexp in text (multilines)
-  gfind /lua-rexp/
-  gsub /lua-rexp/
+- right mb     - search
+- alt+rmb      - search back
+- middle mb    - exec command or open
 
-  find lua-rexp       - find rexp in text (by lines)
-  find /lua-rexp/
-  sub /lua-rexp/
+# BUILT-IN COMMANDS
 
-  sub /lua-rexp/b/    - change rexp to b (by lines)
-  gsub /lua-rexp/b/   - change rexp to b (multilines)
+- gfind lua-rexp      - find rexp in text (multilines)
+- gfind /lua-rexp/
+- gsub /lua-rexp/
 
-Note:
-  You can use ":" delimiter instead of "/" in find, gfind, sub, gsub.
+- find lua-rexp       - find rexp in text (by lines)
+- find /lua-rexp/
+- sub /lua-rexp/
 
-  !cmd                - run cmd
-  <cmd                - run cmd and get output
-  @cmd                - run cmd <text> and get output
-]==])
-  if PLATFORM ~= 'Windows' then
-    w:printf([[
-  >cmd                - cat <text> | cmd > output
-  |cmd                - cat <text> | cmd > edit
-]])
-  end
-  w:printf([[
-  fmt [width]         - fmt text by width
-  par                 - remove newlines and extra spaces
-  cat <file>          - insert file into the cursor
-  dos2unix            - remove \r
-  i+/i-               - indent inc/dec
-  Run <prog>          - run prog in rein
-  sprited             - run sprited (rein)
-  voiced              - run voiced (rein)
-  Line                - get current line in buffer
-  Codepoint           - get codepoint of the sym
-  Clear               - clear window
-  Sort                - sort buffers by names
-  Tab [nr]            - tab on for current bufferr
-  Wrap                - wrap text on/off
-  Spaces              - spaces tab mode
-  Syntax              - toggle syntax hl
-  dump                - hex-dump
-  win                 - pseudo acme win
+- sub /lua-rexp/b/    - change rexp to b (by lines)
+- gsub /lua-rexp/b/   - change rexp to b (multilines)
 
-    ** win notes **
-    In Unix systems stdin is available.
-    esc          - close input
-    delete       - try to kill programm
-    ctrl-up/down - history
-    ls/cd/pwd    - built-in commands
+> Note:
+> You can use ":" delimiter instead of "/" in find, gfind, sub, gsub.
 
-Arguments:
-  -platform-xclip - use X11 clipboard
-  -platform-nojoystick - no joystick, start faster!
-  -platform-nosound - no sound, start faster!
-  -nodump - do not load red.dump
-  -fifo <fifo> - Unix only, create fifo and open files from it
+- !cmd                - run cmd
+- <cmd                - run cmd and get output
+- @cmd                - run cmd <text> and get output
 
--confdir <directory>
-  You can put files in confdir:
-    conf.lua - changes in config
-    presets.lua - presets for files
-    uri.lua - uri handlers
-    keys.lua - keybindings
-    proc.lua - procedures
+> Unix only:
+> - >cmd                - cat <text> | cmd > output
+> - |cmd                - cat <text> | cmd > edit
 
-Example usage:
+- fmt [width]         - fmt text by width
+- par                 - remove newlines and extra spaces
+- cat <file>          - insert file into the cursor
+- dos2unix            - remove \r
+- i+/i-               - indent inc/dec
+- Run <prog>          - run prog in rein
+- sprited             - run sprited (rein)
+- voiced              - run voiced (rein)
+- Line                - get current line in buffer
+- Codepoint           - get codepoint of the sym
+- Clear               - clear window
+- Sort                - sort buffers by names
+- Tab [nr]            - tab on for current bufferr
+- Wrap                - wrap text on/off
+- Spaces              - spaces tab mode
+- Syntax              - toggle syntax hl
+- dump                - hex-dump
+- win                 - pseudo acme win-shell
 
+> win-shell notes (for Unix only):
+>   esc          - close input
+>   delete       - try to kill programm
+>   ctrl-up/down - history
+>   ls/cd/pwd    - built-in commands
+
+# ARGUMENTS
+
+* -platform-xclip - use X11 clipboard
+* -platform-nojoystick - no joystick, start faster!
+* -platform-nosound - no sound, start faster!
+* -nodump - do not load red.dump
+* -fifo <fifo> - Unix only, create fifo and open files from it
+
+* -confdir <directory>
+
+You can put files in confdir:
+
+- conf.lua - changes in config
+- presets.lua - presets for files
+- uri.lua - uri handlers
+- keys.lua - keybindings
+- proc.lua - procedures
+
+# EXAMPLE USAGE
+
+```
 --- [~/.red/conf.lua] ---
   return {
     syntax = true,
@@ -1140,9 +1140,15 @@ Example usage:
 -------------------------
 
 $ red file1.txt file2.txt ...
+```
 
 Happy hacking!
-]])
+]==]
+
+function mainmenu.cmd:Help()
+  local w = self.frame:open_err("+Help.md")
+  w:clear()
+  w:printf("%s", help_text)
   w.buf.cur = 1
   w:toline(1, false)
 end
