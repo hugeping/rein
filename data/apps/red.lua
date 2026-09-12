@@ -823,14 +823,14 @@ function framemenu.cmd:Del() -- Delcol
 end
 
 function framemenu.cmd:Wrap()
-  local w = self:winmenu()
+  local w = self:data()
   if not w then return end
   w.conf.wrap = not w.conf.wrap
   self.frame:update()
 end
 
 function framemenu.cmd:Tab(nr)
-  local w = self:winmenu()
+  local w = self:data()
   if not w then return end
   if tonumber(nr) then
     w.conf.ts = math.max(1, math.min(nr, 8))
@@ -840,13 +840,13 @@ function framemenu.cmd:Tab(nr)
 end
 
 function framemenu.cmd:Spaces()
-  local w = self:winmenu()
+  local w = self:data()
   if not w then return end
   w.conf.spaces_tab = true
 end
 
 function framemenu.cmd:Syntax()
-  local w = self:winmenu()
+  local w = self:data()
   if not w then return end
   if w.syntax then
     w.conf.syntax = w.syntax
@@ -862,7 +862,7 @@ function framemenu.cmd:Sort()
 end
 
 function framemenu.cmd:Put()
-  local b = self:winmenu()
+  local b = self:data()
   if not b then
     return
   end
@@ -895,14 +895,14 @@ function win:Get()
 end
 
 function framemenu.cmd:Get()
-  local b = self:winmenu()
+  local b = self:data()
   if not b then return end
   b:Get()
   self.frame:update()
 end
 
 function framemenu.cmd:Close()
-  self.frame:close_win(self:winmenu())
+  self.frame:close_win(self:data())
 end
 
 function framemenu.cmd:New(w)
@@ -1311,13 +1311,6 @@ function frame:dirty()
   end
 end
 
-function menu:winmenu()
-  return self.win or self.frame:win()
-end
-function win:winmenu()
-end
-function mainmenu:winmenu()
-end
 function win:output(n)
   if n then
     return menu.output(self, n)
@@ -1337,14 +1330,6 @@ function menu:output(n)
   w = self.frame:open_err(n)
   w.cwd = cwd
   return w
-end
-
-function win:data()
-  return self
-end
-
-function menu:data()
-  return self.frame:win()
 end
 
 function mainmenu:data()
@@ -1433,7 +1418,7 @@ function mainmenu.cmd:Run(t)
 end
 
 function framemenu.cmd:Run(t)
-  local w = self:winmenu()
+  local w = self:data()
   if not t and (not w or not w.buf:isfile()) then
     return
   end
@@ -1488,7 +1473,7 @@ local function read_sect(w, name, fname)
 end
 
 function framemenu.cmd.voiced(w)
-  local data = w:winmenu()
+  local data = w:data()
   if not data then return end
 
   data.buf:resetsel()
@@ -1512,7 +1497,7 @@ function framemenu.cmd.voiced(w)
 end
 
 function framemenu.cmd.sprited(w)
-  local data = w:winmenu()
+  local data = w:data()
   if not data then return end
   local sel = data.buf:issel()
   local fname = 'red-rein-data'
