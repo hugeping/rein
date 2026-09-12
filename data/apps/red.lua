@@ -471,8 +471,18 @@ function frame:file(f, pos, force)
   end
   local b = not force and self:win_by_name(f)
   if b then -- already opened
-    self:push_win(b)
-    self:win():toline(nr, col)
+    if pos and self.stacked then -- move to the requested slot there
+      local k = self:find_win(b)
+      if k then
+        self:del_win(k)
+        self:add_win(b, pos)
+        self:update(true, true)
+        self:refresh()
+      end
+    else
+      self:push_win(b)
+    end
+    b:toline(nr, col)
     return b
   end
 
