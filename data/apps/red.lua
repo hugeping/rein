@@ -370,7 +370,7 @@ function win:exec(t)
     end
   elseif self.buf:isdir() and not input.keydown 'alt' then
     self.cwd = sys.realpath(ff)
-    self.buf.fname = (ff .. '/'):gsub("/+", "/")
+    self.buf.fname = dirpath(ff)
     self:set ""
     self:readdir(ff)
     self:cur(1)
