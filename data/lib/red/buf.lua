@@ -318,13 +318,7 @@ function buf:cut(copy)
   end
   clip = table.concat(cl, '')
   if not copy then
-    local new = {}
-    for i = 1, #self.text do
-      if i < s or i >= e then
-        table.insert(new, self.text[i])
-      end
-    end
-    self.text = new
+    self.text = self:remove_range(s, e - s)
   end
   if copy ~= false then
     sys.clipboard(clip)
@@ -359,6 +353,22 @@ function buf:insmode(over)
   return o
 end
 
+-- insert a large chunk by rebuilding the text once
+function buf:insert_bulk(u)
+  local text, cur = {}, self.cur
+  for i = 1, cur - 1 do
+    table.insert(text, self.text[i])
+  end
+  for i = 1, #u do
+    table.insert(text, u[i])
+    self.cur = self.cur + 1
+  end
+  for i = cur, #self.text do
+    table.insert(text, self.text[i])
+  end
+  self.text = text
+end
+
 function buf:input(txt)
   if self.cur < 1 then return end
   local over_mode = self.over_mode
@@ -376,33 +386,17 @@ function buf:input(txt)
     self:history('cut', self.cur, #u)
   end
   self:history('input', self.cur, u)--, #u == 1 and not hist_delim[u[1]])
-  local text = self.text
-  local rebuild
   if #u > 512 and not over_mode then
-    rebuild = true
-    text = {}
-    for i = 1, self.cur - 1 do
-      table.insert(text, self.text[i])
-    end
-  end
-  local cur = self.cur
-  for i = 1, #u do
-    if over_mode then
-      text[self.cur] = u[i]
-    else
-      if rebuild then
-        table.insert(text, u[i])
+    self:insert_bulk(u)
+  else
+    for i = 1, #u do
+      if over_mode then
+        self.text[self.cur] = u[i]
       else
-        table.insert(text, self.cur, u[i])
+        table.insert(self.text, self.cur, u[i])
       end
+      self.cur = self.cur + 1
     end
-    self.cur = self.cur + 1
-  end
-  if rebuild then
-    for i = cur, #self.text do
-      table.insert(text, self.text[i])
-    end
-    self.text = text
   end
   if sel or over_mode then
     self:history 'end'

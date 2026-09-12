@@ -21,6 +21,17 @@ describe("buf", function()
     eq(b:gettext(), "Xhello")
   end)
 
+  it("input rebuilds the text for large chunks", function()
+    local b = buf:new("x")
+    b:input("abcdef")
+    b.cur = 4
+    b:input(string.rep("X", 600))
+    eq(b:gettext(), "abc" .. string.rep("X", 600) .. "def")
+    eq(b.cur, 604)
+    b:undo()
+    eq(b:gettext(), "abcdef")
+  end)
+
   it("input sets changed flag", function()
     local b = buf:new("x")
     b:input("a")

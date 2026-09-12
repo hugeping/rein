@@ -617,24 +617,24 @@ function win:autoscroll()
 end
 
 function win:get_active_text(exec, nl)
-  local buf = self.buf
-  local txt = buf:getseltext()
+  local b = self.buf
+  local txt = b:getseltext()
   local reset, s, e
-  if not buf:issel() or (not buf:insel() and not nl) then
+  if not b:issel() or (not b:insel() and not nl) then
     reset = true
-    s, e = buf:getsel().s, buf:getsel().e
-    buf:selpar(exec and delim_exec)
-    txt = buf:getseltext()
-    buf.cur = buf:getsel().e
+    s, e = b:getsel().s, b:getsel().e
+    b:selpar(exec and delim_exec)
+    txt = b:getseltext()
+    b.cur = b:getsel().e
   end
   if not exec then
     if input.keydown 'alt' then
-      buf.cur = buf:getsel().s
+      b.cur = b:getsel().s
     else
-      buf.cur = buf:getsel().e
+      b.cur = b:getsel().e
     end
   elseif reset then
-    buf:setsel(s, e)
+    b:setsel(s, e)
   end
   return txt
 end
