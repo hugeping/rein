@@ -355,7 +355,7 @@ function win:exec(t)
     return true
   end
 
-  local fr = self.frame.frame and self.frame.frame or self.frame
+  local fr = self.frame:main()
 
   if self.frame:win_by_name(t) then
     return self.frame:file(t)
@@ -666,7 +666,7 @@ function framemenu:event(r, v, a, b)
         local dx = v - self.grab_last
         self.grab_last = v
         if dx ~= 0 then
-          self.frame.frame:resize_col(self.frame, dx)
+          self.frame:main():resize_col(self.frame, dx)
         end
         return true
       elseif mb.right then
@@ -682,11 +682,11 @@ function framemenu:event(r, v, a, b)
       if v == 'left' then -- resize
         local dx = a - (self.grab_last or a)
         if dx ~= 0 then
-          self.frame.frame:resize_col(self.frame, dx)
+          self.frame:main():resize_col(self.frame, dx)
         end
         return true
       elseif v == 'right' then -- move
-        self.frame.frame:move(math.max(scr.spw, a),
+        self.frame:main():move(math.max(scr.spw, a),
           b, self.frame)
         return true
       elseif v == 'middle' then -- click = toggle
@@ -814,7 +814,7 @@ function frame:new_win_menu(w)
 end
 
 function framemenu.cmd:Del() -- Delcol
-  local main = self.frame.frame
+  local main = self.frame:main()
   if main:win_nr() <= 1 then return end
 
   local idx = main:find_win(self.frame)
@@ -828,7 +828,7 @@ function framemenu.cmd:Del() -- Delcol
     v:clean(true)
   end
   main:win(idx):update(true)
-  self.frame.frame:refresh()
+  self.frame:main():refresh()
 end
 
 function framemenu.cmd:Wrap()
@@ -1328,7 +1328,7 @@ end
 function menu:output(n)
   local cwd = self:getcwd()
   n = n or "+Output"
-  local w = self.frame.frame:win_by_name(n)
+  local w = self.frame:main():win_by_name(n)
   if w then
     w = w.frame:open_err(n)
     w.cwd = cwd
