@@ -653,55 +653,29 @@ end
 local framemenu = menu:new()
 framemenu.cmd = {}
 
+-- start a frame square drag: resize with LMB, move the active window of
+-- the column with RMB, toggle stacking with MMB; returns true if started
+function framemenu:press(v, a, b)
+  local x, y = a - self.x, b - self.y
+  if x < 0 or x >= scr.spw or y < 0 or y >= self.h then
+    return
+  end
+  local f = self.frame
+  if v == 'left' then
+    f.press = { menu = self, kind = 'resize', x = a, y = b }
+  elseif v == 'right' then
+    f.press = { menu = self, kind = 'move', x = a, y = b }
+  elseif v == 'middle' then
+    f.press = { menu = self, kind = 'toggle', x = a, y = b }
+  else
+    return
+  end
+  return true
+end
+
 function framemenu:event(r, v, a, b)
-  local mx, my, mb = input.mouse()
-  if r == 'mousedown' and (v == 'left' or v == 'right' or v == 'middle') then
-    local x, y = a - self.x, b - self.y
-    if x >= 0 and x < scr.spw and y >= 0 and y < self.h then
-      self.grab = true
-      scr.grab = true
-      self.grab_x, self.grab_y = a, b
-      self.grab_last = a
-      self.grab_btn = v
-      return true
-    end
-  elseif r == 'mousemotion' then
-    if self.grab then
-      if mb.left and not mb.right then -- resize
-        local dx = v - self.grab_last
-        self.grab_last = v
-        if dx ~= 0 then
-          self.frame:main():resize_col(self.frame, dx)
-        end
-        return true
-      elseif mb.right then
-        self:show_cursor(mx, my, conf.move_cursor)
-        return true
-      end
-    end
-  elseif r == 'mouseup' and (v == 'left' or v == 'right' or v == 'middle') then
-    if self.grab and self.grab_btn == v then
-      self.grab = false
-      scr.grab = false
-      self:show_cursor()
-      if v == 'left' then -- resize
-        local dx = a - (self.grab_last or a)
-        if dx ~= 0 then
-          self.frame:main():resize_col(self.frame, dx)
-        end
-        return true
-      elseif v == 'right' then -- move
-        self.frame:main():move(math.max(scr.spw, a),
-          b, self.frame)
-        return true
-      elseif v == 'middle' then -- click = toggle
-        if math.abs(a - self.grab_x) < conf.drag_delta * SCALE and
-          math.abs(b - self.grab_y) < conf.drag_delta * SCALE then
-          self.frame:stacked_toggle()
-        end
-        return true
-      end
-    end
+  if r == 'mousedown' and self:press(v, a, b) then
+    return true
   end
   return menu.event(self, r, v, a, b)
 end
@@ -755,16 +729,31 @@ function frame:press_event(r, v, a, b)
       return p.active
     end
     p.menu:show_cursor()
-    if p.active then
-      self.frame:move_win(self, p.win, a, b)
+    if p.kind == 'toggle' then -- click = toggle
+      if math.abs(a - p.x) < d and math.abs(b - p.y) < d then
+        self:stacked_toggle()
+      end
       return true
     end
-    return
+    if p.active then
+      if p.win then
+        self.frame:move_win(self, p.win, a, b)
+      else -- the frame square moves the active window of the column
+        self.frame:move(math.max(scr.spw, a), b, self)
+      end
+      return true
+    end
+    -- the frame square consumes the release, the window menu lets the
+    -- menu handle it (right click = search)
+    return not p.win
   end
   if r ~= 'mousemotion' then
     return
   end
   local _, _, mb = input.mouse()
+  if p.kind == 'toggle' then
+    return true
+  end
   if p.kind == 'move' then
     if not mb.right then
       p.menu:show_cursor()
@@ -799,7 +788,7 @@ function frame:press_event(r, v, a, b)
   if dx ~= 0 then
     self.frame:resize_col(self, dx)
   end
-  if dy ~= 0 and (self:find_win(p.win) or 0) > 1 then
+  if p.win and dy ~= 0 and (self:find_win(p.win) or 0) > 1 then
     self:resize_win(p.win, dy)
   end
   return true
