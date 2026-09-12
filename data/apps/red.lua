@@ -583,7 +583,7 @@ function frame.win_words(w)
 end
 
 -- words for the tabbed column menu: file names and window commands
-function frame:win_menu_words(force)
+function frame:tab_menu_words(force)
   local t = ''
   local w = self:win()
   if w and not force then
@@ -612,7 +612,7 @@ function frame:tab_menu_text(force, pop)
   end
   -- when the separator is gone, the command line starts empty
   local tail = frame.menu_tail(self:menu().buf:gettext()) or '| '
-  return self:win_menu_words(force) .. tail, sel
+  return self:tab_menu_words(force) .. tail, sel
 end
 
 local framemenu = menu:new()
