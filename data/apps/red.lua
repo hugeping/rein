@@ -563,19 +563,25 @@ function frame:update(force, pop)
   end
 end
 
+-- command line of a menu: the tail after | or the default one
+function frame.menu_cmdline(m)
+  local tail = frame.menu_tail(m:gettext())
+  if not tail or tail:strip() == '|' then
+    return conf.emptymenu
+  end
+  return tail
+end
+
 -- desired text of the menu which holds the command line of window w;
 -- without w it is the frame (column) menu
 function frame:menu_text(w)
+  local m = w and self:cmd_menu(w) or self:menu()
+  local tail = frame.menu_cmdline(m)
   if self.stacked then
     if not w then
-      return self:stacked_menu_text()
+      return 'Del ' .. tail
     end
-    return frame.win_tag(w) .. self:win_tail(w)
-  end
-  -- a lost or empty command line falls back to the default one
-  local tail = frame.menu_tail(self:menu().buf:gettext())
-  if not tail or tail:strip() == '|' then
-    tail = conf.emptymenu
+    return frame.win_tag(w) .. tail
   end
   return self:tab_menu_words(w) .. tail
 end
@@ -591,15 +597,6 @@ function frame:update_menu(w, rename)
   if m:gettext() ~= text then
     m:set_keep(text, m:getsel())
   end
-end
-
--- stacked column menu: "Del " + the current command line
-function frame:stacked_menu_text()
-  local tail = frame.menu_tail(self:menu().buf:gettext())
-  if not tail or tail:strip() == '|' then
-    tail = conf.emptymenu
-  end
-  return 'Del ' .. tail
 end
 
 -- command words of one window in a menu: "[Put ]Close Get [cmdline]"
@@ -622,16 +619,6 @@ function frame.win_tag(w)
     t = t .. w.buf.fname:esc() .. ' '
   end
   return t .. frame.win_words(w)
-end
-
--- command line of a window's own menu: the current one; a lost or
--- empty one falls back to the default
-function frame:win_tail(w)
-  local tail = frame.menu_tail(self:cmd_menu(w):gettext())
-  if not tail or tail:strip() == '|' then
-    return conf.emptymenu
-  end
-  return tail
 end
 
 -- words for the tabbed column menu: file names and window commands
