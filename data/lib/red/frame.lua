@@ -223,14 +223,11 @@ function frame:frac_norm()
   end
 end
 
--- drag the boundary between w and the window above it by dy pixels
-function frame:resize_win(w, dy)
+-- shift the boundary between w and the previous one by d pixels;
+-- `total` is the full size in pixels, `min_px` the minimum side size
+function frame:resize_frac(w, d, total, min_px)
   local idx = self:find_win(w)
-  if not idx or idx <= 1 then
-    return
-  end
-  local flexible = self.flexible
-  if not flexible or flexible <= 0 then
+  if not idx or idx <= 1 or not total or total <= 0 then
     return
   end
   local prev = self:win(idx - 1)
@@ -239,14 +236,30 @@ function frame:resize_win(w, dy)
   end
   local pf = prev.frac or (1 / self:win_nr())
   local cf = w.frac or (1 / self:win_nr())
-  local total = pf + cf
-  local nf = math.max(0, math.min(total, pf + dy / flexible))
+  local sum = pf + cf
+  local minf = math.min((min_px or 0) / total, sum / 2)
+  local nf = math.max(minf, math.min(sum - minf, pf + d / total))
   prev.frac = nf
-  w.frac = math.max(0, total - nf)
+  w.frac = sum - nf
   self:refresh()
 end
 
+-- drag the boundary between w and the window above it by dy pixels
+function frame:resize_win(w, dy)
+  self:resize_frac(w, dy, self.flexible, 0)
+end
+
 function frame:update()
+end
+
+local function hit(obj, r, v, a, b)
+  if obj and obj:event(r, v, a, b) then
+    if obj.buf and obj:changed(false) then
+      obj:dirty(obj.buf:dirty())
+      obj.frame:update()
+    end
+    return true
+  end
 end
 
 function frame:event(r, v, a, b)
@@ -254,11 +267,7 @@ function frame:event(r, v, a, b)
     return self:event_stacked(r, v, a, b)
   end
   for _, c in ipairs(self.childs) do
-    if c:event(r, v, a, b) then
-      if c.buf and c:changed(false) then
-        c:dirty(c.buf:dirty())
-        c.frame:update()
-      end
+    if hit(c, r, v, a, b) then
       break
     end
   end
@@ -270,22 +279,13 @@ function frame:event_stacked(r, v, a, b)
   if self.press and self:press_event(r, v, a, b) then
     return true
   end
-  local function hit(obj)
-    if obj and obj:event(r, v, a, b) then
-      if obj:changed(false) then
-        obj:dirty(obj.buf:dirty())
-        obj.frame:update()
-      end
-      return true
-    end
-  end
-  if hit(self:menu()) then
+  if hit(self:menu(), r, v, a, b) then
     return
   end
   for i = 2, #self.childs do
     local c = self.childs[i]
     if not c then break end
-    if hit(c.menu_w) or hit(c) then
+    if hit(c.menu_w, r, v, a, b) or hit(c, r, v, a, b) then
       return
     end
   end

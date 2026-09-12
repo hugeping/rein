@@ -409,6 +409,14 @@ function menu:show()
   screen:nooffset()
 end
 
+function menu:draw_scroller(color)
+  if not self.x or not self.h or self.h == 0 then return end
+  screen:clear(self.x, self.y, scr.spw, self.h, color)
+  screen:rect(self.x, self.y,
+    self.x + scr.spw - 1,
+    self.y + self.h - 1, conf.fg)
+end
+
 function menu:scroller()
   local color
   if self.frame.stacked then
@@ -419,10 +427,7 @@ function menu:scroller()
       self.frame:win():dirty() and
       conf.active or conf.button
   end
-  screen:clear(self.x, self.y, scr.spw, self.h, color)
-  screen:rect(self.x, self.y,
-    self.x + scr.spw - 1,
-    self.y + self.h - 1, conf.fg)
+  self:draw_scroller(color)
 end
 
 function frame:win_by_name(f)
@@ -712,12 +717,8 @@ local win_menu = menu:new()
 win_menu.cmd = framemenu.cmd
 
 function win_menu:scroller()
-  if not self.x or not self.h or self.h == 0 then return end
-  screen:clear(self.x, self.y, scr.spw, self.h,
-    self.win and self.win:dirty() and conf.active or conf.button)
-  screen:rect(self.x, self.y,
-    self.x + scr.spw - 1,
-    self.y + self.h - 1, conf.fg)
+  self:draw_scroller(self.win and self.win:dirty() and
+    conf.active or conf.button)
 end
 
 -- press on the menu bar: the square starts a size press, the rest of the
@@ -943,11 +944,7 @@ function mainmenu:scroller(click)
       end
     end
   end
-  screen:clear(self.x, self.y, scr.spw, self.h,
-    self.frame:dirty() and conf.active or conf.button)
-  screen:rect(self.x, self.y,
-    self.x + scr.spw - 1,
-    self.y + self.h - 1, conf.fg)
+  self:draw_scroller(self.frame:dirty() and conf.active or conf.button)
 end
 
 function mainmenu.cmd:Dump()
@@ -1211,21 +1208,8 @@ end
 
 -- drag the border between column c and the previous one by dx pixels
 function mainwin:resize_col(c, dx)
-  local idx = self:find_win(c)
-  if not idx or idx <= 1 then return end
-  local total = self.w
-  if not total or total <= 0 then return end
-  local prev = self:win(idx - 1)
-  if not prev then return end
   self:frac_norm()
-  local pf = prev.frac or (1 / self:win_nr())
-  local cf = c.frac or (1 / self:win_nr())
-  local sum = pf + cf
-  local minf = math.min(scr.spw / total, sum / 2)
-  local nf = math.max(minf, math.min(sum - minf, pf + dx / total))
-  prev.frac = nf
-  c.frac = sum - nf
-  self:refresh()
+  self:resize_frac(c, dx, self.w, scr.spw)
 end
 
 function mainwin:hgeom(x, y, w, h)
