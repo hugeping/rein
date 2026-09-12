@@ -207,7 +207,7 @@ end
 * `proc` — слова-команды: `i+`, `i-`, `dump`, `fmt`, `par`, `grep`, `cat`, `>`, `|`, `@`, `!`, `win` и т.д.
 * `>prog`, `|prog`, `<prog`, `@prog` — запуск внешних программ через `shell.pipe`; вывод идёт в окно `+Output` или в буфер.
 * `win` — псевдо-acme окно-оболочка (`shell.win`) с командной строкой `cmdline`; esc закрывает ввод.
-* Служебные окна: `+Errors`, `+Output`, `+dump`, `+Help.md`; в stacked новые служебные окна добавляются в конец столбца (`frame:open_err`). `+Errors` по умолчанию следует за выводом (`scroll_mode`); в остальных окнах следование включается словом `Scroll` и выключается `Noscroll` (`win:scroll_output()` вызывают `pipe_pump`, `shell:prompt`, `proc.grep` и `proc.dump`), а в меню нового окна `+grep` уже есть кнопка `Scroll` (`w.cmdline`); команды `Scroll`/`Noscroll` синхронизируют слово с состоянием (у shell — `Noscroll` по умолчанию).
+* Служебные окна: `+Errors`, `+Output`, `+dump`, `+Help.md`; в stacked новые служебные окна добавляются в конец столбца (`frame:open_err`). `+Errors` по умолчанию следует за выводом (`scroll_mode`); в остальных окнах следование включается словом `Scroll` и выключается `Noscroll` (`win:scroll_output()` вызывают `pipe_pump`, `shell:prompt`, `proc.grep` и `proc.dump`), а в меню нового окна `+grep` и у `+Output` (куда пишут `>`/`@`/`<` из меню) сразу есть кнопка `Scroll` (`w.cmdline`); команды `Scroll`/`Noscroll` синхронизируют слово с состоянием (у shell — `Noscroll` по умолчанию).
 
 # Рабочий каталог (cwd)
 
