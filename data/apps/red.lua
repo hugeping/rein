@@ -447,6 +447,12 @@ function frame:push_win(b)
   self.prev_win = 2
   if k then
     self.prev_win = k
+    if self.stacked then
+      -- keep the height of the first slot: the two swapped windows
+      -- exchange their fractions
+      local top = self:win()
+      top.frac, b.frac = b.frac, top.frac
+    end
     self:del_win(k)
     if k > 2 then
       self:add(self:del_win(1), k)
