@@ -18,10 +18,17 @@ local function colorize(col, pos, len, c)
   end
 end
 
+local alpha_default = {}
+for c in ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"):gmatch('.') do
+  alpha_default[c] = true
+end
+
 local function isalpha(a, alpha)
-  if a and a:find(alpha or "[a-zA-Z0-9_]") then
-    return true
+  if not a then return end
+  if alpha then
+    return a:find(alpha)
   end
+  return alpha_default[a]
 end
 
 local function isspace(a, spaces)
@@ -56,43 +63,6 @@ local function checkword(v, txt, pos, pfx)
     not isalpha(txt[pos - 1], v.alpha)
 end
 
-function syntax:match_fn(ctx, txt, i, fn, ...)
-  local v = ctx[fn]
-  if not v then return end
-  if type(v) == 'string' then
-    v = chars(v)
-  end
-  if type(v) == 'function' then
-    return v(ctx, txt, i, ...)
-  end
-  if startswith(txt, i, v) then
-    return #v
-  end
-end
-
-function syntax:match_start(ctx, txt, i, epos)
-  local r = self:match_fn(ctx, txt, i, 'linestart', epos)
-  if r then
-    local ok = true
-    for pos = i-1, 1, -1 do
-      if txt[pos] == '\n' then
-        break
-      end
-      if not isspace(txt[pos], ctx.spaces) then
-        ok = false
-        break
-      end
-    end
-    if ok then return r end
-  end
-  return self:match_fn(ctx, txt, i, 'start', epos)
-end
-
-function syntax:match_end(ctx, txt, i)
-  return self:match_fn(ctx, txt, i, 'stop',
-    self.stack[1] and self.stack[1][2])
-end
-
 function syntax:state(s)
   local src = s or self
   local stack = {}
@@ -110,28 +80,118 @@ function syntax:state(s)
   }
 end
 
-function syntax:context(pos, epos)
-  local ctx = self.ctx
-  local txt = self.txt
-  local cols = self.cols
-  local found_len, found_col
-  for _, v in ipairs(ctx.keywords or {}) do
+-- keyword candidates for the current symbol: only the words starting
+-- with it (functions are always tried), in the scheme order
+local first_cache = {}
+local function candidates(ctx, c)
+  local cache = first_cache[ctx]
+  if not cache then
+    cache = {}
+    first_cache[ctx] = cache
+  end
+  local list = cache[c]
+  if list then
+    return list
+  end
+  list = {}
+  for _, v in ipairs(ctx.keywords) do
     for _, word in ipairs(v) do
       if type(word) == 'function' then
-        local r = word(ctx, txt, pos)
-        if r and (not found_len or found_len < r) then
-          found_len = r
-          found_col = v.col or ctx.col
-        end
+        table.insert(list, { v, false, word })
       else
         if type(word) == 'string' then
           word = chars(word)
         end
+        if word[1] == c then
+          table.insert(list, { v, word })
+        end
+      end
+    end
+  end
+  cache[c] = list
+  return list
+end
+
+-- precomputed start/stop rules of the scheme contexts
+local starts_cache = {}
+local function starts(ctxs)
+  local list = starts_cache[ctxs]
+  if list then
+    return list
+  end
+  list = {}
+  for _, c in ipairs(ctxs) do
+    local e = { c = c }
+    local ls = c.linestart
+    if type(ls) == 'string' then
+      e.ls = chars(ls)
+    elseif ls then
+      e.ls_fn = ls
+    end
+    local st = c.start
+    if type(st) == 'string' then
+      e.pfx = chars(st)
+    elseif st then
+      e.fn = st
+    end
+    list[#list + 1] = e
+  end
+  starts_cache[ctxs] = list
+  return list
+end
+
+local stop_cache = {}
+local function stop_of(ctx)
+  local s = stop_cache[ctx]
+  if s ~= nil then
+    return s or nil
+  end
+  local st = ctx.stop
+  if type(st) == 'string' then
+    s = { pfx = chars(st) }
+  elseif st then
+    s = { fn = st }
+  else
+    s = false
+  end
+  stop_cache[ctx] = s
+  return s or nil
+end
+
+-- only spaces may precede i on its line
+local function linestart_ok(txt, i, spaces)
+  for pos = i - 1, 1, -1 do
+    if txt[pos] == '\n' then
+      break
+    end
+    if not isspace(txt[pos], spaces) then
+      return false
+    end
+  end
+  return true
+end
+
+function syntax:context(pos)
+  local ctx = self.ctx
+  local txt = self.txt
+  local cols = self.cols
+  local found_len, found_col
+  if ctx.keywords then
+    for _, e in ipairs(candidates(ctx, txt[pos])) do
+      local v = e[1]
+      if e[2] then
+        local word = e[2]
         if checkword(v, txt, pos, word) then
           if not found_len or found_len < #word then
             found_len = #word
             found_col = v.col or ctx.col
           end
+        end
+      else
+        local r = e[3](ctx, txt, pos)
+        if r and (not found_len or found_len < r) then
+          found_len = r
+          found_col = v.col or ctx.col
         end
       end
     end
@@ -141,11 +201,21 @@ function syntax:context(pos, epos)
     return found_len
   end
 
-  local d = self:match_end(ctx, txt, pos, epos)
-  if d then
-    colorize(cols, pos, d, ctx.ecol or ctx.col)
-    self.ctx = table.remove(self.stack, 1)[1]
-    return d
+  local s = stop_of(ctx)
+  if s then
+    local d
+    if s.pfx then
+      if startswith(txt, pos, s.pfx) then
+        d = #s.pfx
+      end
+    else
+      d = s.fn(ctx, txt, pos, self.stack[1] and self.stack[1][2])
+    end
+    if d then
+      colorize(cols, pos, d, ctx.ecol or ctx.col)
+      self.ctx = table.remove(self.stack, 1)[1]
+      return d
+    end
   end
   cols[pos] = ctx.col
   return 1
@@ -178,8 +248,29 @@ function syntax:process(pos, epos)
   end
   local d, aux
   cols[i] = self.ctx.col or 0
-  for _, c in ipairs(self.ctx) do
-    d, aux = self:match_start(c, txt, i, epos)
+  for _, e in ipairs(starts(self.ctx)) do
+    local c = e.c
+    d, aux = nil, nil
+    if e.ls then
+      if startswith(txt, i, e.ls) and
+        linestart_ok(txt, i, c.spaces) then
+        d = #e.ls
+      end
+    elseif e.ls_fn then
+      local r = e.ls_fn(c, txt, i, epos)
+      if r and linestart_ok(txt, i, c.spaces) then
+        d = r
+      end
+    end
+    if not d then
+      if e.pfx then
+        if startswith(txt, i, e.pfx) then
+          d = #e.pfx
+        end
+      elseif e.fn then
+        d, aux = e.fn(c, txt, i, epos)
+      end
+    end
     if d then
       colorize(cols, i, d, c.scol or c.col)
       i = i + d
@@ -188,7 +279,7 @@ function syntax:process(pos, epos)
       break
     end
   end
-  i = i + self:context(i, epos)
+  i = i + self:context(i)
   self.pos = i
 end
 
