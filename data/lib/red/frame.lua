@@ -263,6 +263,11 @@ local function hit(obj, r, v, a, b)
 end
 
 function frame:event(r, v, a, b)
+  -- a press on a menu square (resize with LMB, move with RMB) is
+  -- handled before the childs
+  if self.press and self:press_event(r, v, a, b) then
+    return true
+  end
   if self.stacked then
     return self:event_stacked(r, v, a, b)
   end
@@ -274,11 +279,6 @@ function frame:event(r, v, a, b)
 end
 
 function frame:event_stacked(r, v, a, b)
-  -- a press on a window menu (resize with LMB, move with RMB) is handled
-  -- before the menus and windows
-  if self.press and self:press_event(r, v, a, b) then
-    return true
-  end
   if hit(self:menu(), r, v, a, b) then
     return
   end
