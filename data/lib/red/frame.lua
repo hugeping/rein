@@ -397,7 +397,6 @@ function frame:stacked_toggle()
     self.stacked_cmdline = frame.menu_tail(self:menu():gettext()) or '|'
     for c in self:for_win() do
       if c.menu_w then
-        self:sync_win_menu(c)
         c.menu = c.menu_w:gettext()
       end
     end
@@ -410,6 +409,9 @@ function frame:stacked_toggle()
       local tail = frame.menu_tail(cur)
       if tail then
         w.menu = frame.menu_set_tail(w.menu, tail)
+        if w.menu_w then
+          w.menu_w:set(frame.menu_set_tail(w.menu_w:gettext(), tail))
+        end
         self:menu():set(frame.menu_set_tail(cur, '| New '))
       end
     end

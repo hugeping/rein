@@ -543,23 +543,30 @@ function frame:sort()
 end
 
 function frame:update(force, pop)
-  local text, sel
   if self.stacked then
-    text = self:stacked_menu_text()
-  else
-    text, sel = self:tab_menu_text(force, pop)
-  end
-  self:menu():set_keep(text, sel)
-  if self:win() and not self.stacked then
-    self:win().menu = self:menu():gettext()
-    if force then
-      self:win().cwd = self:win().cwd or self:win():getcwd()
-    end
-  end
-
-  if self.stacked then
+    self:menu():set_keep(self:stacked_menu_text(), self:menu():getsel())
     for c in self:for_win() do
-      self:sync_win_menu(c)
+      local m = self:cmd_menu(c)
+      self:rename_from_menu(c, m:gettext())
+      self:sync_menu(c, frame.win_tag(c) .. self:win_tail(c), m:getsel())
+    end
+    return
+  end
+  if pop then
+    self:menu():set(self:win() and self:win().menu or conf.emptymenu)
+  end
+  local sel = self:menu():getsel()
+  local w = self:win()
+  if w and not force then
+    self:rename_from_menu(w, self:menu().buf:gettext())
+  end
+  -- when the separator is gone, the command line starts empty
+  local tail = frame.menu_tail(self:menu().buf:gettext()) or '| '
+  self:sync_menu(w, self:tab_menu_words(w) .. tail, sel)
+  if w then
+    w.menu = self:menu():gettext()
+    if force then
+      w.cwd = w.cwd or w:getcwd()
     end
   end
 end
@@ -582,13 +589,41 @@ function frame.win_words(w)
   return t
 end
 
--- words for the tabbed column menu: file names and window commands
-function frame:tab_menu_words(force)
+-- tag of one window's own menu: "<fname> [Put ]Close Get [cmdline]"
+function frame.win_tag(w)
   local t = ''
-  local w = self:win()
-  if w and not force then
-    self:rename_from_menu(w, self:menu().buf:gettext())
+  if w.buf.fname then
+    t = t .. w.buf.fname:esc() .. ' '
   end
+  return t .. frame.win_words(w)
+end
+
+-- command line of a window's own menu: the current one, else the one
+-- remembered in w.menu, else the default
+function frame:win_tail(w)
+  local tail = frame.menu_tail(self:cmd_menu(w):gettext())
+  if tail and tail:strip() ~= '|' then
+    return tail
+  end
+  tail = frame.menu_tail(w.menu)
+  if tail and tail:strip() ~= '|' then
+    return tail
+  end
+  return '| New '
+end
+
+-- apply rebuilt menu text to the menu of window w (or to the frame
+-- menu when w has no window), keeping the cursor/selection
+function frame:sync_menu(w, text, sel)
+  local m = w and self:cmd_menu(w) or self:menu()
+  if m:gettext() ~= text then
+    m:set_keep(text, sel)
+  end
+end
+
+-- words for the tabbed column menu: file names and window commands
+function frame:tab_menu_words(w)
+  local t = ''
   for c in self:for_win() do
     t = t .. c.buf.fname:esc() .. ' '
   end
@@ -599,20 +634,6 @@ function frame:tab_menu_words(force)
     t = t .. 'Del ' -- Delcol
   end
   return t
-end
-
--- tabbed column menu text and the selection to preserve
-function frame:tab_menu_text(force, pop)
-  local sel
-  if pop then
-    self:menu():set(self:win() and self:win().menu or conf.emptymenu)
-  elseif self:menu().buf:issel() then
-    local s = self:menu().buf:getsel()
-    sel = { s = s.s, e = s.e }
-  end
-  -- when the separator is gone, the command line starts empty
-  local tail = frame.menu_tail(self:menu().buf:gettext()) or '| '
-  return self:tab_menu_words(force) .. tail, sel
 end
 
 local framemenu = menu:new()
@@ -779,29 +800,6 @@ function frame:new_win_menu(w)
   m.frame = self
   m.win = w
   return m
-end
-
-function frame:sync_win_menu(w)
-  local m = self:cmd_menu(w)
-  if not m then return end
-  local cur = m:gettext()
-  self:rename_from_menu(w, cur)
-  local t = ''
-  if w.buf.fname then
-    t = w.buf.fname:esc() .. ' '
-  end
-  t = t .. frame.win_words(w)
-  local tail = frame.menu_tail(cur)
-  if not tail then
-    tail = frame.menu_tail(w.menu) or '| New '
-    if tail:strip() == '|' then
-      tail = '| New '
-    end
-  end
-  local want = t .. tail
-  if cur ~= want then
-    m:set_keep(want)
-  end
 end
 
 function framemenu.cmd:Del() -- Delcol
