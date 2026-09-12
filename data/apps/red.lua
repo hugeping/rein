@@ -334,6 +334,23 @@ end
 function win:exec(t)
   t = t:unesc()
 
+  -- command words work from the window body like from its menu:
+  -- the window commands first, then the column menu commands
+  local f = self.frame
+  local i = f and f:find_win(self)
+  if i and i > 0 then
+    local a = t:strip():split(1)
+    if self.cmd and self.cmd[a[1]] then
+      self.cmd[a[1]](self, a[2])
+      return true
+    end
+    local m = f:menu()
+    if m and m.cmd and m.cmd[a[1]] then
+      m.cmd[a[1]](self, a[2])
+      return true
+    end
+  end
+
   if self:proc(t) then
     return true
   end
@@ -900,13 +917,11 @@ end
 function framemenu.cmd:New(w)
   local f = self.frame
   local nf = w or f.frame:getnewfile()
-  if self.win and f.stacked then
-    local k = f:find_win(self.win)
-    if k then
-      f:file(nf, k + 1)
-    else
-      f:file(nf)
-    end
+  -- for a window menu insert below its window, for a body below the
+  -- window where the command was typed
+  local k = f.stacked and f:find_win(self.win or self)
+  if k and k > 0 then
+    f:file(nf, k + 1)
   else
     f:file(nf)
   end
