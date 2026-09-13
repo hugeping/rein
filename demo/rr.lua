@@ -8,6 +8,10 @@
 local snd = require "sfx"
 
 local dprint = print
+local border = gfx.border
+border(0)
+local border_nr = false
+
 local __spr__ = [[
 0123456789abcdef
 --------1111111dd-------d-------1111111d1111111d--------111111111111111d--------d---------------d---------1---------------------
@@ -1542,6 +1546,8 @@ local last_gate=15
 local lvl_h=3000
 
 function ship_crash()
+  border_nr = 1
+
   ship.crash=ship.h
   if ship.h>0 then
     ship.crash=ship.crash+0.1
@@ -3363,12 +3369,23 @@ function _draw()
   fading()
 end
 
+function update_border()
+  if not border_nr then return end
+  border(flr(rnd(16)))
+  border_nr = border_nr + 1
+  if border_nr > 4 then
+    border_nr = false
+    border(0)
+  end
+end
+
 -- ===== main loop =====
 
 _init()
 local update = _update60 or _update or function() end
 local fps = _update60 and 1 / 60 or 1 / 30
 while sys.running() do
+  update_border()
   input_frame()
   update()
   _draw()
