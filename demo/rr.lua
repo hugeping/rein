@@ -1689,6 +1689,11 @@ function _init()
     save_seed=dget(2)
     if save_seed==0 then save_seed=false  end
   end
+  for x = 0, 127 do
+    for y = 0, 127 do
+      pset(x, y, rnd(16))
+    end
+  end
   fadeout(function()
     restart(save_seed)
   end)
