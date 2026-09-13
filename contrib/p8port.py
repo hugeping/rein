@@ -37,11 +37,19 @@ def note_name(p):
 
 
 def vol_amp(v):
-    return int(255 * (v / 7) ** 2 + 0.5)
+    return int(255 * v / 7 + 0.5)
 
 
 def hex2(v):
     return '%02x' % v
+
+
+def note_amp(a):
+    amp = vol_amp(a['v'])
+    if a['wf'] % 8 == 6 and a['p'] < 12:
+        # low-pitch noise is a rumble; keep the engine quieter
+        amp = amp // 2
+    return amp
 
 
 # ---------------------------------------------------------------- p8 parsing
@@ -100,7 +108,7 @@ def make_voices():
         3: 'type square\nwidth 0.5\n',
         4: 'type square\nwidth 0.9\n',
         5: 'type dsf2\noffset 2\nwidth 0.5\n',
-        6: 'type noise\nwidth 0.5\n',
+        6: 'type noise\nwidth 0.9\nfmul freq 15\n',
         7: 'type dsf2\noffset 1\nwidth 0.7\n',
     }
     env = 'attack 0\ndecay 0\nsustain 1\nrelease 0.01\nset_sustain 1\namp 1\nvolume 0.5\n'
@@ -214,7 +222,7 @@ def build_sfx(n, s):
             if voice != v:
                 out.append('@voice 1 %s' % v)
                 voice = v
-            out.append('| %s %s' % (note_name(a['p']), hex2(vol_amp(a['v']))))
+            out.append('| %s %s' % (note_name(a['p']), hex2(note_amp(a))))
         else:
             out.append('| === ..')
     return '\n'.join(out)
@@ -283,7 +291,7 @@ def build_music(sfx, pats):
                 if voices[c] != v:
                     out.append('@voice %d %s' % (c + 1, v))
                     voices[c] = v
-                amp = vol_amp(a['v'])
+                amp = note_amp(a)
                 if r < 200:
                     amp = int(amp * r / 200)
                 fields.append('%s %s' % (note_name(a['p']), hex2(amp)))
