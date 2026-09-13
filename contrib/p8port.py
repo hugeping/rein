@@ -502,6 +502,13 @@ function cos(x) return math.cos(x * TAU) end
 function atan2(dx, dy) return (math.atan2(dy, dx) / TAU) % 1 end
 function min(a, b) if a < b then return a end return b end
 function max(a, b) if a > b then return a end return b end
+function mid(a, b, c)
+  if a > b then a, b = b, a end
+  if b > c then b = c end
+  if a > b then b = a end
+  return b
+end
+function sqrt(x) return math.sqrt(x) end
 function rnd(a)
   if type(a) == 'table' then return a[math.random(#a)] end
   if a == nil then return math.random() end
@@ -514,6 +521,7 @@ function del(t, v)
     if t[i] == v then return table.remove(t, i) end
   end
 end
+function deli(t, i) return table.remove(t, i) end
 function all(t)
   local items, n = {}, 0
   t = t or {}
@@ -553,51 +561,75 @@ function input_frame()
 end
 
 local sprdata = gfx.new(__spr__)
-local c14 = { gfx.pal(14) }
-local c15 = { gfx.pal(15) }
-local function make_variant(r14, r15)
-  if not r14 and not r15 then return sprdata end
+local basepal = {}
+local revpal = {}
+for i = 0, 15 do
+  basepal[i] = { gfx.pal(i) }
+  if i > 0 then
+    local r, g, b = basepal[i][1], basepal[i][2], basepal[i][3]
+    revpal[r * 65536 + g * 256 + b] = i
+  end
+end
+local remap = {}
+local atlases = { [''] = sprdata }
+local atlas_data, atlas_dirty = sprdata, false
+local function remap_sig()
+  local k = {}
+  for c, t in pairs(remap) do k[#k + 1] = c * 16 + t end
+  table.sort(k)
+  return table.concat(k, '.')
+end
+local function make_atlas()
   local p = gfx.new(128, SPRH)
   sprdata:copy(p)
   for y = 0, SPRH - 1 do
     for x = 0, 127 do
-      local r, g, b, a = p:val(x, y)
+      local r, g, b, a = sprdata:val(x, y)
       if a ~= 0 then
-        if (r14 and r == c14[1] and g == c14[2] and b == c14[3]) or
-          (r15 and r == c15[1] and g == c15[2] and b == c15[3]) then
-          p:val(x, y, 0)
+        local i = revpal[r * 65536 + g * 256 + b]
+        local t = i and remap[i]
+        if t then
+          if t == 0 then
+            p:val(x, y, -1)
+          else
+            local c = basepal[t]
+            p:val(x, y, { c[1], c[2], c[3], 255 })
+          end
         end
       end
     end
   end
   return p
 end
-local a14 = make_variant(true, false)
-local a15 = make_variant(false, true)
-local a1415 = make_variant(true, true)
-local pr14, pr15 = false, false
-function pal(c, t)
+local function cur_sprdata()
+  if atlas_dirty then
+    atlas_dirty = false
+    local key = remap_sig()
+    atlas_data = atlases[key]
+    if not atlas_data then
+      atlas_data = make_atlas()
+      atlases[key] = atlas_data
+    end
+  end
+  return atlas_data
+end
+function pal(c, t, p)
   if c == nil then
-    pr14, pr15 = false, false
+    remap = {}
+    atlas_dirty = true
+    for i = 0, 15 do gfx.pal(i, basepal[i]) end
     return
   end
-  if t == 0 then
-    if c == 14 then pr14 = true end
-    if c == 15 then pr15 = true end
+  if t == nil then
+    remap[c] = nil
+    atlas_dirty = true
+    if basepal[c] then gfx.pal(c, basepal[c]) end
+    return
   end
+  remap[c] = t
+  atlas_dirty = true
+  gfx.pal(c, t)
 end
-local function cur_sprdata()
-  if pr14 and pr15 then return a1415 end
-  if pr14 then return a14 end
-  if pr15 then return a15 end
-  return sprdata
-end
-
-local atlas_key = {}
-atlas_key[sprdata] = 's'
-atlas_key[a14] = '14'
-atlas_key[a15] = '15'
-atlas_key[a1415] = '1415'
 function spr(n, x, y, w, h, fx, fy)
   gfx.spr(cur_sprdata(), n, x, y, w or 1, h or 1, fx, fy)
 end
@@ -624,11 +656,6 @@ function fget(n, f)
   return bit.band(__gff__[n] or 0, bit.lshift(1, f)) ~= 0
 end
 
-local revpal = {}
-for i = 1, 15 do
-  local r, g, b = gfx.pal(i)
-  revpal[r * 65536 + g * 256 + b] = i
-end
 function sget(x, y)
   if x < 0 or y < 0 or x > 127 or y > SPRH - 1 then return 0 end
   local r, g, b, a = sprdata:val(x, y)
@@ -678,6 +705,20 @@ function rectfill(x1, y1, x2, y2, c)
     screen:fill_rect(x1, y1, x2, y2, getpat(fillbits, c))
   else
     screen:fill_rect(x1, y1, x2, y2, c)
+  end
+end
+function circ(x, y, r, c)
+  if fillbits then
+    screen:circle(x, y, r, getpat(fillbits, c))
+  else
+    screen:circle(x, y, r, c)
+  end
+end
+function rect(x1, y1, x2, y2, c)
+  if fillbits then
+    screen:rect(x1, y1, x2, y2, getpat(fillbits, c))
+  else
+    screen:rect(x1, y1, x2, y2, c)
   end
 end
 
@@ -757,7 +798,7 @@ function cartdata(name)
   if type(t) == 'table' then cart = t end
   return true
 end
-function dget(i) return cart[i] end
+function dget(i) return cart[i] or 0 end
 function dset(i, v)
   cart[i] = v
   local now = sys.time()
