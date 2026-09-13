@@ -3157,7 +3157,7 @@ function shipm()
 		sfx(1)
 	end
 	if ship.f<0 then ship.f=0 end
-	if not ship.crash and ship.y<0 then
+	if ship.y<0 then
 		if x<8 then ship.tx=1 ship.h=ship.h+0.2 end
 		if x>=120 then ship.tx=-1 ship.h=ship.h-0.2 end
 		if y<-128 then ship.t=false ship.v=0 end
