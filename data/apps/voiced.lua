@@ -1314,7 +1314,7 @@ function song_check()
   end
 
   local t = w_edit.edit:get():stripnl()
-  if (songs[w_song.current].text or '') ~= t then
+  if (songs[w_song.current].text or ''):stripnl() ~= t then
     songs[w_song.current].text = t
     w_file:dirty(true)
   end
