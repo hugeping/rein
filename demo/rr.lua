@@ -3360,7 +3360,7 @@ function _draw()
     else
       print("⬇️ random world",x+36,y,13)
     end
-    print("v1.2",112,122,15)
+    print("v1.5",112,122,15)
 --    print("hugeping presents",32,0)
     if hiscore>0 then
       local h="hi score "..hiscore
