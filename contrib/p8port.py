@@ -207,67 +207,31 @@ def sfx_actions(s, limit=None):
     return acts, R
 
 
-def render_song(chan_events, loop, tail, fade=False):
-    seen = {}
-    order = []
-    for c, rows in enumerate(chan_events):
-        for r in sorted(rows):
-            a = rows[r]
-            if a['kind'] == 'on':
-                v = action_voice(a)
-                if (c, v) not in seen:
-                    seen[(c, v)] = len(order)
-                    order.append((c, v))
-    if not order:
-        return None
-    k = len(order)
-    out = []
-    for i, (_c, v) in enumerate(order, 1):
-        out.append('@voice %d %s' % (i, v))
-    if loop:
-        out.append('@push -1')
-    active = [None] * len(chan_events)
-    allrows = set()
-    for rows in chan_events:
-        allrows.update(rows)
-    rs = sorted(allrows)
-    tempo = -1
-    for n, r in enumerate(rs):
-        nxt = rs[n + 1] if n + 1 < len(rs) else r + tail
-        gap = nxt - r
-        if gap != tempo:
-            out.append('@tempo %d' % gap)
-            tempo = gap
-        fields = ['... ..'] * k
-        for c, rows in enumerate(chan_events):
-            a = rows.get(r)
-            if a and a['kind'] == 'on':
-                t = seen[(c, action_voice(a))]
-                if active[c] is not None and active[c] != t:
-                    fields[active[c]] = '=== ..'
-                amp = note_amp(a)
-                if fade and r < 200:
-                    amp = int(amp * r / 200)
-                fields[t] = '%s %s' % (note_name(a['p']), hex2(amp))
-                active[c] = t
-            elif a and a['kind'] == 'off':
-                if active[c] is not None:
-                    fields[active[c]] = '=== ..'
-                    active[c] = None
-        used = [i for i, f in enumerate(fields) if f != '... ..']
-        out.append('| ' + ' | '.join(fields[:used[-1] + 1]))
-    if loop:
-        out.append('@pop')
-    return '\n'.join(out)
-
-
 def build_sfx(n, s):
     acts, R = sfx_actions(s)
     byrow = {}
     for a in acts:
         byrow[a['t']] = a
-    body = render_song([byrow], False, R)
-    return 'song sfx%d\n%s' % (n, body) if body else 'song sfx%d' % n
+    rs = sorted(byrow)
+    out = ['song sfx%d' % n]
+    voice = ''
+    tempo = -1
+    for k, r in enumerate(rs):
+        nxt = rs[k + 1] if k + 1 < len(rs) else r + (tempo if tempo > 0 else R)
+        gap = nxt - r
+        if gap != tempo:
+            out.append('@tempo %d' % gap)
+            tempo = gap
+        a = byrow[r]
+        if a['kind'] == 'on':
+            v = action_voice(a)
+            if voice != v:
+                out.append('@voice 1 %s' % v)
+                voice = v
+            out.append('| %s %s' % (note_name(a['p']), hex2(note_amp(a))))
+        else:
+            out.append('| === ..')
+    return '\n'.join(out)
 
 
 def pattern_len(pat, sfx):
@@ -298,7 +262,8 @@ def music_sequence(pats, start=0):
 
 def build_music(sfx, pats):
     seq, loop = music_sequence(pats)
-    chan_events = [{} for _ in range(4)]
+    tracks = [{} for _ in range(4)]
+    allrows = set()
     off = 0
     for pat in seq:
         plen = pattern_len(pat, sfx)
@@ -308,11 +273,42 @@ def build_music(sfx, pats):
                 sid = pat['ch'][c]
                 if sid < 64 and sid < len(sfx):
                     for a in sfx_actions(sfx[sid], plenr)[0]:
-                        a = dict(a)
-                        a['t'] = a['t'] + off
-                        chan_events[c][a['t']] = a
+                        r = a['t'] + off
+                        tracks[c][r] = a
+                        allrows.add(r)
         off += plenr
-    return 'song music\n' + render_song(chan_events, loop, 1, fade=True)
+    out = ['song music']
+    if loop:
+        out.append('@push -1')
+    voices = ['' for _ in range(4)]
+    tempo = -1
+    rs = sorted(allrows)
+    for k, r in enumerate(rs):
+        nxt = rs[k + 1] if k + 1 < len(rs) else r + 1
+        gap = nxt - r
+        if gap != tempo:
+            out.append('@tempo %d' % gap)
+            tempo = gap
+        fields = []
+        for c in range(4):
+            a = tracks[c].get(r)
+            if a and a['kind'] == 'on':
+                v = action_voice(a)
+                if voices[c] != v:
+                    out.append('@voice %d %s' % (c + 1, v))
+                    voices[c] = v
+                amp = note_amp(a)
+                if r < 200:
+                    amp = int(amp * r / 200)
+                fields.append('%s %s' % (note_name(a['p']), hex2(amp)))
+            elif a and a['kind'] == 'off':
+                fields.append('=== ..')
+            else:
+                fields.append('... ..')
+        out.append('| %s | %s | %s | %s' % tuple(fields))
+    if loop:
+        out.append('@pop')
+    return '\n'.join(out)
 
 
 # ------------------------------------------------------------ lua translation
