@@ -5,7 +5,9 @@
 -- embedded as rein tracker text (__voices__ / __songs__).
 --
 -- run: rein demo/rr.lua
+local snd = require "sfx"
 
+local dprint = print
 local __spr__ = [[
 0123456789abcdef
 --------1111111dd-------d-------1111111d1111111d--------111111111111111d--------d---------------d---------1---------------------
@@ -115,15 +117,21 @@ volume 0.5
 
 voice p8w2
 box synth
-type saw
-width 0.9
+type pwm
+width 0.8
 attack 0.002
 decay 0
 sustain 1
 release 0.01
 set_sustain 1
-amp 1
+amp 0.1
+volume 0.3
+
+box filter
+# filter
 volume 0.5
+mode lowpass
+width 0.1
 
 voice p8w3
 box synth
@@ -174,6 +182,12 @@ release 0.01
 set_sustain 1
 amp 1
 volume 0.5
+
+box filter
+# filter
+volume 1
+mode lowpass
+width 0.3
 
 voice p8w7
 box synth
@@ -322,6 +336,25 @@ lfo_low 0 0
 lfo_high 0 -0.75
 lfo_set_loop 0 0
 lfo_set_reset 0 1
+
+voice eng
+box synth
+type noise
+width 0.9
+fmul freq 12
+attack 0
+decay 0
+sustain 1
+release 0.01
+set_sustain 1
+amp 1
+volume 0.3
+
+box filter
+# filter
+volume 0.7
+mode lowpass
+width 0.1
 ]]
 
 local __songs__ = [[
@@ -354,10 +387,9 @@ song sfx0
 | === ..
 
 song sfx1
-@tempo 3
-@voice 1 p8w6
-| c-1 36
-| === ..
+@tempo 1
+@voice 1 eng
+| c-1 66
 
 song sfx2
 @tempo 2
@@ -735,6 +767,7 @@ song sfx15
 | === ..
 
 song sfx16
+
 
 song sfx17
 @tempo 12
@@ -1730,15 +1763,26 @@ end
 
 -- ===== pico-8 sfx/music playback =====
 
+
 local audio = {}
 local audio_ok = mixer.voices(__voices__)
 audio_ok = audio_ok and mixer.songs(__songs__)
+
+snd.voices(__voices__)
+mixer.reserve(1) -- engine
+synth.on(1, true)
+synth.vol(1, 0.5)
+snd.apply(1, 'eng')
 
 local chans = {}
 local music_id
 
 function audio.sfx(n)
   if not n or n < 0 then return end
+  if n == 1 then -- engine hack
+    synth.change(1, 0, synth.NOTE_ON, 340)
+    return
+  end
   for c = 1, 4 do
     local ch = chans[c]
     if ch and ch.n == n and ch.id and mixer.status(ch.id) then
@@ -3155,6 +3199,8 @@ function shipm()
   end
   if ship.t or ship.tx~=0 then
     sfx(1)
+  else
+    synth.change(1, 0, synth.NOTE_OFF, 0)
   end
   if ship.f<0 then ship.f=0 end
   if ship.y<0 then
