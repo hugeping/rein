@@ -3332,7 +3332,7 @@ function _draw()
     spr(70,44,24,6,2)
     pal()
     local p=flr(tm/8)%24
-    if p<16 then
+    if p<17 then
       paint(44,24,p-1,12)
       paint(44,24,p,12)
     end
