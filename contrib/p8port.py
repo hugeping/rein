@@ -2,7 +2,7 @@
 """p8port.py -- convert a PICO-8 cartridge (.p8) into a rein program (.lua).
 
 Usage:
-    python3 contrib/p8port.py cart.p8 [-o cart.lua] [--title TITLE]
+    python3 contrib/p8port.py cart.p8 [-o cart.lua] [--title TITLE] [--octave N]
 
 Example:
     python3 contrib/p8port.py cart.p8 -o demo/cart.lua
@@ -32,7 +32,13 @@ import re
 NOTE_NAMES = ['c-', 'c#', 'd-', 'd#', 'e-', 'f-', 'f#', 'g-', 'g#', 'a-', 'a#', 'b-']
 
 
+# pico-8's ringing voice is dominated by its 2nd harmonic, so its music
+# sounds an octave higher than the note names suggest
+NOTE_OCTAVE = 1
+
+
 def note_name(p):
+    p += NOTE_OCTAVE * 12
     return NOTE_NAMES[p % 12] + str(p // 12)
 
 
@@ -111,8 +117,8 @@ def make_voices():
         6: 'type noise\nwidth 0.9\nfmul freq 15\n',
         7: 'type dsf2\noffset 1\nwidth 0.7\n',
     }
-    env = 'attack 0\ndecay 0\nsustain 1\nrelease 0.01\nset_sustain 1\namp 1\nvolume 0.5\n'
-    fade = 'attack 0\ndecay 0.125\nsustain 0\nrelease 0.01\nset_sustain 1\namp 1\nvolume 0.5\n'
+    env = 'attack 0.002\ndecay 0\nsustain 1\nrelease 0.01\nset_sustain 1\namp 1\nvolume 0.5\n'
+    fade = 'attack 0.002\ndecay 0.125\nsustain 0\nrelease 0.01\nset_sustain 1\namp 1\nvolume 0.5\n'
     vib = ('lfo_type 0 sin\nlfo_assign 0 fmul\nlfo_freq 0 8\n'
            'lfo_low 0 -0.025\nlfo_high 0 0.025\nlfo_set_loop 0 1\nlfo_set_reset 0 1\n')
     slide = ('lfo_type 0 saw\nlfo_assign 0 fmul\nlfo_freq 0 8\n'
@@ -201,31 +207,67 @@ def sfx_actions(s, limit=None):
     return acts, R
 
 
+def render_song(chan_events, loop, tail, fade=False):
+    seen = {}
+    order = []
+    for c, rows in enumerate(chan_events):
+        for r in sorted(rows):
+            a = rows[r]
+            if a['kind'] == 'on':
+                v = action_voice(a)
+                if (c, v) not in seen:
+                    seen[(c, v)] = len(order)
+                    order.append((c, v))
+    if not order:
+        return None
+    k = len(order)
+    out = []
+    for i, (_c, v) in enumerate(order, 1):
+        out.append('@voice %d %s' % (i, v))
+    if loop:
+        out.append('@push -1')
+    active = [None] * len(chan_events)
+    allrows = set()
+    for rows in chan_events:
+        allrows.update(rows)
+    rs = sorted(allrows)
+    tempo = -1
+    for n, r in enumerate(rs):
+        nxt = rs[n + 1] if n + 1 < len(rs) else r + tail
+        gap = nxt - r
+        if gap != tempo:
+            out.append('@tempo %d' % gap)
+            tempo = gap
+        fields = ['... ..'] * k
+        for c, rows in enumerate(chan_events):
+            a = rows.get(r)
+            if a and a['kind'] == 'on':
+                t = seen[(c, action_voice(a))]
+                if active[c] is not None and active[c] != t:
+                    fields[active[c]] = '=== ..'
+                amp = note_amp(a)
+                if fade and r < 200:
+                    amp = int(amp * r / 200)
+                fields[t] = '%s %s' % (note_name(a['p']), hex2(amp))
+                active[c] = t
+            elif a and a['kind'] == 'off':
+                if active[c] is not None:
+                    fields[active[c]] = '=== ..'
+                    active[c] = None
+        used = [i for i, f in enumerate(fields) if f != '... ..']
+        out.append('| ' + ' | '.join(fields[:used[-1] + 1]))
+    if loop:
+        out.append('@pop')
+    return '\n'.join(out)
+
+
 def build_sfx(n, s):
     acts, R = sfx_actions(s)
     byrow = {}
     for a in acts:
         byrow[a['t']] = a
-    rs = sorted(byrow)
-    out = ['song sfx%d' % n]
-    voice = ''
-    tempo = -1
-    for k, r in enumerate(rs):
-        nxt = rs[k + 1] if k + 1 < len(rs) else r + (tempo if tempo > 0 else R)
-        gap = nxt - r
-        if gap != tempo:
-            out.append('@tempo %d' % gap)
-            tempo = gap
-        a = byrow[r]
-        if a['kind'] == 'on':
-            v = action_voice(a)
-            if voice != v:
-                out.append('@voice 1 %s' % v)
-                voice = v
-            out.append('| %s %s' % (note_name(a['p']), hex2(note_amp(a))))
-        else:
-            out.append('| === ..')
-    return '\n'.join(out)
+    body = render_song([byrow], False, R)
+    return 'song sfx%d\n%s' % (n, body) if body else 'song sfx%d' % n
 
 
 def pattern_len(pat, sfx):
@@ -256,8 +298,7 @@ def music_sequence(pats, start=0):
 
 def build_music(sfx, pats):
     seq, loop = music_sequence(pats)
-    tracks = [{} for _ in range(4)]
-    allrows = set()
+    chan_events = [{} for _ in range(4)]
     off = 0
     for pat in seq:
         plen = pattern_len(pat, sfx)
@@ -267,42 +308,11 @@ def build_music(sfx, pats):
                 sid = pat['ch'][c]
                 if sid < 64 and sid < len(sfx):
                     for a in sfx_actions(sfx[sid], plenr)[0]:
-                        r = a['t'] + off
-                        tracks[c][r] = a
-                        allrows.add(r)
+                        a = dict(a)
+                        a['t'] = a['t'] + off
+                        chan_events[c][a['t']] = a
         off += plenr
-    out = ['song music']
-    if loop:
-        out.append('@push -1')
-    voices = ['' for _ in range(4)]
-    tempo = -1
-    rs = sorted(allrows)
-    for k, r in enumerate(rs):
-        nxt = rs[k + 1] if k + 1 < len(rs) else r + 1
-        gap = nxt - r
-        if gap != tempo:
-            out.append('@tempo %d' % gap)
-            tempo = gap
-        fields = []
-        for c in range(4):
-            a = tracks[c].get(r)
-            if a and a['kind'] == 'on':
-                v = action_voice(a)
-                if voices[c] != v:
-                    out.append('@voice %d %s' % (c + 1, v))
-                    voices[c] = v
-                amp = note_amp(a)
-                if r < 200:
-                    amp = int(amp * r / 200)
-                fields.append('%s %s' % (note_name(a['p']), hex2(amp)))
-            elif a and a['kind'] == 'off':
-                fields.append('=== ..')
-            else:
-                fields.append('... ..')
-        out.append('| %s | %s | %s | %s' % tuple(fields))
-    if loop:
-        out.append('@pop')
-    return '\n'.join(out)
+    return 'song music\n' + render_song(chan_events, loop, 1, fade=True)
 
 
 # ------------------------------------------------------------ lua translation
@@ -777,12 +787,16 @@ def credits_of(lua_lines, outname):
 
 
 def main():
+    global NOTE_OCTAVE
     ap = argparse.ArgumentParser(description='pico-8 .p8 -> rein .lua converter')
     ap.add_argument('input', help='input .p8 cartridge')
     ap.add_argument('-o', '--output', help='output .lua file')
     ap.add_argument('--title', help='window title (default: first comment of the cart)')
+    ap.add_argument('--octave', type=int, default=NOTE_OCTAVE,
+                    help='octave shift (default: %d)' % NOTE_OCTAVE)
     args = ap.parse_args()
 
+    NOTE_OCTAVE = args.octave
     src = args.input
     out = args.output or os.path.splitext(src)[0] + '.lua'
 
