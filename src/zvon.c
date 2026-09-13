@@ -69,7 +69,13 @@ void adsr_init(struct adsr_state *s) {
     adsr_set_release(s, 0.3);
 }
 
+/* keeps note on/off from stepping the volume (see declick) */
+#define ADSR_DECLICK (0.002)
+
 void adsr_set_attack(struct adsr_state *s, double attack) {
+    if (attack < ADSR_DECLICK) {
+        attack = ADSR_DECLICK;
+    }
     s->attack = attack;
     int dt = sec(attack);
     s->attack_step = 1. / (dt ? dt : 1);
@@ -87,6 +93,9 @@ void adsr_set_sustain(struct adsr_state *s, double sustain) {
 }
 
 void adsr_set_release(struct adsr_state *s, double release) {
+    if (release < ADSR_DECLICK) {
+        release = ADSR_DECLICK;
+    }
     s->release = release;
 }
 
