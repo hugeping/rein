@@ -4,7 +4,7 @@ local editor = require 'editor'
 local tune, tune_delta
 
 local mode = 'voiced'
-local w_conf, w_rem, w_bypass, w_voice
+local w_conf, w_rem, w_bypass, w_voice, w_file
 
 gfx.win(384, 384)
 mixer.volume(0.5)
@@ -436,12 +436,14 @@ function push_box(s)
   if #stack == 8 then return end
   conf_show(false)
   table.insert(stack, 1, { nam = s.text })
+  if w_file then w_file:dirty(true) end
   build_stack()
 end
 
 function remove_box(s)
   conf_show(false)
   table.remove(stack, s.id)
+  if w_file then w_file:dirty(true) end
   build_stack()
 end
 
@@ -459,7 +461,7 @@ w_bypass = button:new { hidden = true, text = 'Bypass',
   w = 8 * 7, h = 12, lev = -1, y = H - 12, x = H - 8*7 - 8*7 - 1, border = true,
   onclick = bypass_box }
 
-local w_file = button:new { text = FILE, w = 22*7, bg = 7,
+w_file = button:new { text = FILE, w = 22*7, bg = 7,
   h = 12, y = H - 12, x = 113 }
 
 function w_file:dirty(flag)
@@ -471,10 +473,16 @@ function w_file:dirty(flag)
 end
 
 function w_bypass:onclick()
-  stack[w_conf.id].bypass = not stack[w_conf.id].bypass
-  self.selected = stack[w_conf.id].bypass
-  build_stack()
-  conf_show(true)
+  if not config_check() then
+    return
+  end
+  local b = stack[w_conf.id]
+  if not b then
+    return
+  end
+  b.bypass = not b.bypass
+  self.selected = b.bypass
+  apply_boxes()
 end
 
 function w_file:onclick()
@@ -484,17 +492,14 @@ function w_file:onclick()
   if save(FILE) then w_file:dirty(false) end
 end
 
-function box_info(nam)
-  for _, v in ipairs(sfx.boxes) do
-    if v.nam == nam then return v end
-  end
-end
-
 local w_stack = win:new { title = 'Stack',
   w = 16*7,
   border = true }
 
 function edit_err(ed, line, e)
+  if line and (not e or not ed.lines[line]) then
+    line = nil
+  end
   if not line then -- clear
     local lines = {}
     for _, l in ipairs(ed.lines) do
@@ -757,6 +762,9 @@ function load(fname)
   v, e = sfx.parse_voices(v)
   if not v then
     return v, e
+  end
+  if #v == 0 then
+    return false, "No voices in file"
   end
   voices = {}
   for _, voice in ipairs(v) do
@@ -1027,7 +1035,7 @@ function get_songs()
   local txt = ''
   local idx = 1
   for k, v in ipairs(songs) do
-    if not v.text:empty() then idx = k end
+    if not (v.text or ''):empty() then idx = k end
   end
   for k, v in ipairs(songs) do
     if v.nam then
@@ -1035,7 +1043,7 @@ function get_songs()
     else
       txt = txt .. "song\n"
     end
-    if v.text:empty() then
+    if (v.text or ''):empty() then
       txt = txt .. '\n'
     else
       txt = txt .. v.text:stripnl()..'\n\n'
@@ -1214,7 +1222,7 @@ local function keynote_ins(v, l, pos, x)
     end
     if not tonumber(o) then o = w_play.octave end
     return v .. d .. tostring(o)
-  elseif x == 4 and v == '-' or v == '#' then
+  elseif x == 4 and (v == '-' or v == '#') then
     return (n or 'c') .. v .. tostring(o or w_play.octave)
   elseif x == 5 and tonumber(v) then
     return (n or 'c') .. (d or '-') .. v
@@ -1306,7 +1314,7 @@ function song_check()
   end
 
   local t = w_edit.edit:get():stripnl()
-  if songs[w_song.current].text:stripnl() ~= t then
+  if (songs[w_song.current].text or '') ~= t then
     songs[w_song.current].text = t
     w_file:dirty(true)
   end
@@ -1333,7 +1341,7 @@ local function song_stop(restore)
   tune = false
   w_edit.lev = 1
   w_play.disabled = false
-  if restore then
+  if restore and last_cur then
     w_edit.edit:move(table.unpack(last_cur))
   end
 end
@@ -1436,13 +1444,18 @@ function w_edit:event(r, v, ...)
           if not t:find("|") then
             print("Nothing to play")
           else
+            local played, e
             if input.keydown 'shift' then
-              tune = mixer.write(t, 'output.wav')
+              played, e = mixer.write(t, 'output.wav')
             else
-              tune = mixer.play(t)
+              played, e = mixer.play(t)
             end
-            -- w_play.disabled = tune
-            w_edit.lev = -100
+            if played then
+              tune = played
+              w_edit.lev = -100
+            else
+              print("Error: "..tostring(e))
+            end
           end
         end
       end
@@ -1504,12 +1517,20 @@ function switch(m)
     return
   end
   if m == 'tracked' then
+    local txt = get_voices()
+    local ok, err = sfx.voices(txt)
+    if not ok then
+      print("Error: "..tostring(err))
+      return
+    end
+    ok, err = mixer.voices(txt)
+    if not ok then
+      print("Error: "..tostring(err))
+      return
+    end
     win.childs = tracker_mode
     for c = 1, chans.max do
       synth.drop(c)
-    end
-    if sfx.voices(get_voices()) then
-      mixer.voices(get_voices())
     end
     mode = m
   elseif m == 'voiced' then
@@ -1526,7 +1547,7 @@ function load_songs(file)
   end
   songs = r
   if #r == 0 then
-    table.insert(r, { })
+    table.insert(r, { text = '' })
   end
   w_song.current = 1
   w_song.value = r[1].nam or '1'
