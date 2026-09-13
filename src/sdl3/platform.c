@@ -488,6 +488,9 @@ WindowCreate(void)
 #ifndef __ANDROID__
 	SDL_StartTextInput(window);
 #endif
+#if SDL_MAJOR_VERSION > 3 || (SDL_MAJOR_VERSION == 3 && SDL_MINOR_VERSION >= 2)
+	SDL_SetRenderVSync(renderer, SDL_RENDERER_VSYNC_ADAPTIVE);
+#endif
 	fprintf(stdout, "Video: %s\n", SDL_GetRendererName(renderer));
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 	SDL_ShowWindow(window);
