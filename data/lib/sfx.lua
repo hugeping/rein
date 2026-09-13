@@ -761,7 +761,7 @@ function sfx.parse_voices(text)
     if a[1] == 'voice' then
       box = nil
       nr = nr + 1
-      voice = { nam = a[2] or tonumber(nr) }
+      voice = { nam = a[2] or tostring(nr) }
       table.insert(res, voice)
     elseif not voice and a[1] and not a[1]:empty() then
       return false, "No voice declaration", line
