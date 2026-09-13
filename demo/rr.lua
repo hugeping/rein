@@ -118,20 +118,20 @@ volume 0.5
 voice p8w2
 box synth
 type pwm
-width 0.8
-attack 0.002
+width 0.6
+attack 0.01
 decay 0
 sustain 1
 release 0.01
 set_sustain 1
-amp 0.1
-volume 0.3
+amp 0.2
+volume 0.5
 
 box filter
 # filter
 volume 0.5
-mode lowpass
-width 0.1
+mode highpass
+width 0.9
 
 voice p8w3
 box synth
@@ -222,21 +222,25 @@ volume 0.5
 
 voice p8w0d
 box synth
-type sin
-attack 0.002
-decay 0
-sustain 1
+fmul freq 0.5
+type square
+width 0
+decay 0.2
+sustain 0
 release 0.01
-set_sustain 1
-amp 1
-volume 0.5
+volume 1
+lfo_assign 0 freq
 lfo_type 0 saw
-lfo_assign 0 fmul
-lfo_freq 0 16
-lfo_low 0 0
-lfo_high 0 -0.5
+lfo_freq 0 15
+lfo_low 0 100
+lfo_high 0 -100
 lfo_set_loop 0 0
-lfo_set_reset 0 1
+lfo_assign 1 width
+lfo_type 1 saw
+lfo_freq 1 15
+lfo_low 1 0.5
+lfo_high 1 -0.5
+lfo_set_loop 1 0
 
 voice p8w3d
 box synth
@@ -319,29 +323,26 @@ lfo_set_reset 0 1
 
 voice p8w6d
 box synth
-type noise
-width 0.9
-fmul freq 15
-attack 0.002
-decay 0
-sustain 1
-release 0.01
-set_sustain 1
-amp 1
+type lin_band_noise
 volume 0.5
-lfo_type 0 saw
-lfo_assign 0 fmul
-lfo_freq 0 16
-lfo_low 0 0
-lfo_high 0 -0.75
-lfo_set_loop 0 0
-lfo_set_reset 0 1
+offset 10000
+width 10000
+fmul freq 0.4
+decay 0.15
+sustain 0
+release 0
+lfo_assign 1 freq
+lfo_type 1 saw
+lfo_freq 1 5
+lfo_low 1 9500
+lfo_high 1 5000
+lfo_set_loop 1 0
 
 voice eng
 box synth
-type noise
+type lin_noise
 width 0.9
-fmul freq 12
+fmul freq 15
 attack 0
 decay 0
 sustain 1
