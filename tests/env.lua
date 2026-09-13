@@ -46,6 +46,10 @@ input = {
   keydown = function() return false end,
 }
 
+synth = setmetatable({}, {
+  __index = function(_, k) return k end,
+})
+
 PLATFORM = "Linux"
 DATADIR = root .. "/data"
 

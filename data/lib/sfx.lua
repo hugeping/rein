@@ -128,11 +128,12 @@ function sfx.parse_cmd(cmd, mus)
 end
 
 function sfx.parse_data(text)
-  local cols = text:split(" ")
-  local n, e
-  if #cols == 0 then
-    return false, "Syntax error"
+  text = text:strip()
+  if text:empty() then
+    return {}
   end
+  local cols = text:split()
+  local n, e
   if not cols[1]:startswith "." then
     n, e = sfx.get_note(cols[1])
     if not n then return n, e end
@@ -162,6 +163,9 @@ function sfx.parse_row(text, mus)
     return ret
   elseif text:startswith("|") then
     text = text:sub(2)
+  end
+  if text:empty() then -- empty line
+    return ret
   end
   for _, v in ipairs(text:split("|")) do
     v, e = sfx.parse_data(v:strip())
