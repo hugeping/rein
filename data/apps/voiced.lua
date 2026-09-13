@@ -1334,6 +1334,11 @@ function song_check()
   return true
 end
 
+function song_dirty()
+  local t = w_edit.edit:get():stripnl()
+  w_file:dirty((songs[w_song.current].text or ''):stripnl() ~= t)
+end
+
 local last_cur
 
 local function song_stop(restore)
@@ -1650,7 +1655,11 @@ while sys.running() do
       w_edit.edit:move(false, st + tune_delta)
     end
   end
-  win:event(sys.input())
+  local ev = { sys.input() }
+  win:event(table.unpack(ev))
+  if ev[1] and mode == 'tracked' then
+    song_dirty()
+  end
   win:show()
   gfx.flip(1/20, true)
 end
