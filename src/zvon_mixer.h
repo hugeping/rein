@@ -38,6 +38,9 @@ struct chan_state {
     double pan_right;
     struct sfx_box stack[SFX_MAX_BOXES];
     int stack_size;
+    struct sfx_box fade_stack[SFX_MAX_BOXES];
+    int fade_stack_size;
+    double fade;
 };
 
 void chan_set_on(struct chan_state *c, int is_on);
