@@ -225,7 +225,7 @@ local function norm_song(txt)
     end
     if #col > 0 then
       for _, r in ipairs(col) do
-        local vol = r[2] and string.format("%2x", r[2]) or '..'
+        local vol = r[2] and string.format("%02x", r[2]) or '..'
         t = t .. string.format('| %s %s ',
           sfx.midi_to_note(r[1]), vol)
       end
