@@ -1549,9 +1549,16 @@ function del(t, v)
   end
 end
 function all(t)
-  local i = 0
+  local items, n = {}, 0
   t = t or {}
-  return function() i = i + 1 return t[i] end
+  local v = t[1]
+  while v ~= nil do
+    n = n + 1
+    items[n] = v
+    v = t[n + 1]
+  end
+  local i = 0
+  return function() i = i + 1 return items[i] end
 end
 function printh(...) end
 
