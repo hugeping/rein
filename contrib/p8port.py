@@ -311,6 +311,27 @@ def build_music(sfx, pats):
     return '\n'.join(out)
 
 
+def build_gff(gffsec):
+    data = re.sub(r'\s', '', ''.join(gffsec))
+    lines = ['-- sprite flags: [sprite] = bit mask, fget(n, f) tests bit f',
+             'local __gff__ = {']
+    row = []
+    for n in range(256):
+        try:
+            b = int(data[n * 2:n * 2 + 2], 16)
+        except ValueError:
+            b = 0
+        if b:
+            row.append('[%d] = 0x%02x,' % (n, b))
+            if len(row) == 5:
+                lines.append('  ' + ' '.join(row))
+                row = []
+    if row:
+        lines.append('  ' + ' '.join(row))
+    lines.append('}')
+    return '\n'.join(lines)
+
+
 # ------------------------------------------------------------ lua translation
 
 def split_comment(line):
@@ -447,9 +468,7 @@ local __map__ = [[
 @@MAP@@
 ]]
 
-local __gff__ = [[
 @@GFF@@
-]]
 
 local __voices__ = [[
 @@VOICES@@
@@ -601,10 +620,8 @@ function map(mx, my, sx, sy, w, h)
   end
 end
 
-local gffdata = (__gff__:gsub('%s', ''))
 function fget(n, f)
-  local b = tonumber(gffdata:sub(n * 2 + 1, n * 2 + 2), 16) or 0
-  return bit.band(b, bit.lshift(1, f)) ~= 0
+  return bit.band(__gff__[n] or 0, bit.lshift(1, f)) ~= 0
 end
 
 local revpal = {}
@@ -838,7 +855,7 @@ def main():
     head = head.replace('@@SPRH@@', str(spr_h))
     head = head.replace('@@ATLAS@@', atlas_text)
     head = head.replace('@@MAP@@', '\n'.join(mapsec))
-    head = head.replace('@@GFF@@', '\n'.join(gffsec))
+    head = head.replace('@@GFF@@', build_gff(gffsec))
     head = head.replace('@@VOICES@@', voices_text)
     head = head.replace('@@SONGS@@', songs_text)
 
