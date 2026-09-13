@@ -2154,6 +2154,7 @@ function f_brk(v,k)
     if s==112 then
       if not explode then explode=10 end
       target=target+1
+      border_nr=1
     elseif v.gate then
       if not explode then explode=10 end
       mksnap(v.nr)
@@ -2747,6 +2748,7 @@ function f_end()
 end
 
 function endm()
+  synth.change(1, 0, synth.NOTE_OFF, 0)
   ship.x=64+cos(ship.h)*4
   ship.h=ship.h+rnd(0.01)
   ship.v=ship.v+rnd(0.005)
@@ -3332,7 +3334,7 @@ function _draw()
     spr(70,44,24,6,2)
     pal()
     local p=flr(tm/8)%24
-    if p<16 then
+    if p<17 then
       paint(44,24,p-1,12)
       paint(44,24,p,12)
     end
