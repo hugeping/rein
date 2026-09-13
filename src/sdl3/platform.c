@@ -263,9 +263,7 @@ audio_read(SDL_AudioStream *stream, int len)
 //	SDL_LockAudioStream(stream);
 	used = audiobuff.size - audiobuff.free;
 	toread = (used<=len)?used:len;
-//	if (toread < len)
-//		SDL_PutAudioStreamData(SDL_AudioStream *stream, const void *buf, int len);
-//		memset(stream + toread, 0, (len - toread));
+	toread -= toread % 4; /* sdl only takes whole sample frames */
 	audiobuff.free += toread;
 	while (toread) {
 		int chunk_sz = audiobuff.size - audiobuff.head;
@@ -279,9 +277,9 @@ audio_read(SDL_AudioStream *stream, int len)
 }
 
 static void
-audio_cb(void *userdata, SDL_AudioStream *stream, int additional_amount, int len)
+audio_cb(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount)
 {
-	audio_read(stream, len);
+	audio_read(stream, additional_amount);
 }
 
 void
@@ -351,13 +349,28 @@ sound_init(void)
 
 	audiostream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, audio_cb, NULL);
 	if (audiostream) {
-		printf("Audio: %dHz channels: %d\n",
-			spec.freq, spec.channels);
-		audiobuff.size = 4096;
+		SDL_AudioSpec devspec;
+		SDL_AudioDeviceID devid;
+		int dev_frames = 0;
+		int src_frames;
+		/* size the ring from the device buffer: a late mixer thread
+		   must not starve the stream (SDL3 zeroes short reads) */
+		devid = SDL_GetAudioStreamDevice(audiostream);
+		if (!SDL_GetAudioDeviceFormat(devid, &devspec, &dev_frames)
+				|| dev_frames <= 0 || devspec.freq <= 0) {
+			devspec.freq = spec.freq;
+			dev_frames = 1024;
+		}
+		src_frames = (int)(dev_frames * (double)spec.freq / devspec.freq + 0.5);
+		if (src_frames < 1024)
+			src_frames = 1024;
+		audiobuff.size = src_frames * spec.channels * 2 * 4;
 		audiobuff.free = audiobuff.size;
 		audiobuff.data = malloc(audiobuff.size);
 		audiobuff.head = 0;
 		audiobuff.tail = 0;
+		printf("Audio: %dHz channels: %d size: %d\n",
+			spec.freq, spec.channels, audiobuff.size);
 	} else {
 		fprintf(stderr, "No audio: %s\n", SDL_GetError());
 	}
