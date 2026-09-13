@@ -441,7 +441,9 @@ function sfx.play_song_once(chans, tracks)
   tracks.row = 1
   tracks.voices = tracks.voices or {}
   tracks.playing = true
-  while tracks.row <= (tracks.len or #tracks) do
+  local total = tracks.len or #tracks
+  local guard = 0
+  while tracks.row <= total do
     repeat
       row = tracks[tracks.row]
       r, e = sfx.proc_cmd(chans, tracks, row.cmd)
@@ -449,6 +451,11 @@ function sfx.play_song_once(chans, tracks)
         print(e)
         tracks.playing = false
         return r, e
+      end
+      guard = guard + 1
+      if guard > total + 1 then
+        tracks.playing = false
+        return false, "No notes to play"
       end
     until row == tracks[tracks.row]
     for i, r in ipairs(row) do
@@ -465,9 +472,12 @@ function sfx.play_song_once(chans, tracks)
       end
     end
     if #row > 0 then
+      local played = false
       for i = 1, tracks.tempo do
         coroutine.yield()
+        played = true
       end
+      if played then guard = 0 end
     end
     tracks.row = tracks.row + 1
   end
