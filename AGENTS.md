@@ -39,4 +39,3 @@ rein is a minimalist 2D game/demo engine. The `rein` binary is a thin C host (SD
 
 - C: tabs, K&R-ish brace style, 79-col-ish wrapping. Lua: 2-space indent, no `local` for rein runtime globals (`screen`, `gfx`, `sys`, `input`, ...).
 - `VERSION` is the build date (`date +%y%m%d`) and is shown in the UI/title.
-- `GPATH`/`GRTAGS`/`GTAGS` are gitignored gtags indexes.
