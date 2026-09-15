@@ -11,7 +11,7 @@ rein is a minimalist 2D game/demo engine. The `rein` binary is a thin C host (SD
 - SDL3 backend: `make -f Makefile-sdl3` (uses `src/sdl3/platform.c`, needs `sdl3-dev`). It writes the same `./rein`, so always `make clean` when switching backends.
 - Makefiles list no header dependencies: after editing any `src/*.h`, run `make clean` before rebuilding.
 - `sh make.sh` is a one-shot build. `contrib/build-release.sh` is the CI release path (downloads/builds static deps into `external/`; don't run it for a normal build).
-- SDL3 build-only CI (`dist/` artifacts, no release): `contrib/build-rein-sdl3.sh [linux|windows|all]` for Linux/Windows, `contrib/build-rein-em.sh` for wasm (downloads Lua, needs active emsdk). Workflows: `.github/workflows/{linux,windows,emscripten}-sdl3.yml`.
+- SDL3 CI: `contrib/build-rein-sdl3.sh [linux|windows|all]` for static Linux/Windows, `contrib/build-rein-em.sh` for wasm (downloads Lua, needs active emsdk). `.github/workflows/{linux,windows,emscripten}-sdl3.yml` are reusable (`workflow_call`) build workflows; `.github/workflows/release-sdl3.yml` calls them on push to master/opencode and adds one draft release zip (linux+windows binaries, shared data, `rein-em/`).
 - `make PREFIX=/usr/local install` hardcodes runtime data path via `-DDATADIR`.
 
 ## Run

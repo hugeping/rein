@@ -1,9 +1,8 @@
 name: build-linux-sdl3
 
 on:
+  workflow_call:
   workflow_dispatch:
-  push:
-    branches: [master, opencode]
 
 env:
   sdl_ver: 3.4.16

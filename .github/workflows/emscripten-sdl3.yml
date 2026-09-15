@@ -1,9 +1,8 @@
 name: build-emscripten-sdl3
 
 on:
+  workflow_call:
   workflow_dispatch:
-  push:
-    branches: [master, opencode]
 
 env:
   emsdk_ver: 6.0.9
