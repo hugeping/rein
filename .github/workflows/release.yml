@@ -23,6 +23,7 @@ jobs:
     uses: ./.github/workflows/emscripten-sdl3.yml
 
   release:
+    if: github.ref == 'refs/heads/master'
     needs: [linux, windows, emscripten]
     runs-on: ubuntu-latest
     steps:
@@ -46,26 +47,23 @@ jobs:
           zip -rq rein-sdl3.zip rein-sdl3
           unzip -l rein-sdl3.zip
 
-      - name: Create release
+      - name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
           set -e
           SHA="${{ github.sha }}"
-          SHORT=$(echo "$SHA" | cut -c1-7)
-          TAG="sdl3-$SHORT"
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" rein-sdl3.zip --clobber
+          if gh release view continuous >/dev/null 2>&1; then
+            gh release upload continuous rein-sdl3.zip --clobber
           else
-            gh release create "$TAG" rein-sdl3.zip \
+            gh release create continuous rein-sdl3.zip \
               --target "$SHA" \
-              --title "rein $SHORT" \
+              --title "rein" \
               --notes "Continuous release"
           fi
 
       - name: Move continuous tag
-        if: github.ref == 'refs/heads/master'
         run: |
           git tag -f continuous "${{ github.sha }}"
           git push -f origin continuous
