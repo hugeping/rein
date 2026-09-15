@@ -44,7 +44,7 @@ jobs:
           cp -r pkg/rein-sdl3-linux-x86_64/. rein/
           cp pkg/rein-sdl3-windows-x86_64/rein.exe rein/
           cp -r pkg/rein-sdl3-emscripten/. rein/rein-em/
-          chmod +x rein/rein-x86-64-linux
+          chmod +x rein/rein-x86-64-linux rein/rein.exe
           zip -rq rein.zip rein
           unzip -l rein.zip
 
