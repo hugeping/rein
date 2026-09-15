@@ -409,9 +409,15 @@ local function piped(w, out, prog)
 end
 
 proc['>'] = function(w, prog)
+  local oname = '+Output'
+  local cmd = prog:split(1, '>')
+  if #cmd == 2 then
+    prog = cmd[1]
+    oname = cmd[2]
+  end
   local data = w:data()
   if not data then return end
-  local out = w:output '+Output'
+  local out = w:output(oname)
   scroll_cmdline(out)
   piped(data, out, prog)
   return true
