@@ -360,7 +360,9 @@ end)
 function mixer.thread()
   print "mixer start"
   local r, v
-  mixer.reset()
+  if mixer.thr then
+    mixer.reset()
+  end
   while true do
     r, v = mixer.getreq()
     if r == 'quit' then -- stop thread
@@ -399,11 +401,14 @@ end
 
 function mixer.clireq(...)
   if not mixer.thr then
-    mixer.req = { ... }
-    coroutine.yield()
-    local ack = mixer.ack
-    mixer.ack = {}
-    return table.unpack(ack)
+    local r, v = ...
+    if r == 'quit' then
+      return
+    end
+    if r and mixer.srv[r] then
+      return mixer.srv[r](table.unpack(v))
+    end
+    return false, "Unknown method"
   else
     mixer.thr:write(...)
     return mixer.thr:read()
@@ -421,6 +426,9 @@ function mixer.done()
   if mixer.thr then
     mixer.clireq 'quit'
     mixer.thr:wait()
+  else
+    mixer.free_channels()
+    synth.stop()
   end
   core.stop(mixer.co)
 end
@@ -501,6 +509,7 @@ function mixer.init()
     end)
   end
   if not t then
+    mixer.reset()
     print("Audio: coroutine mode")
   end
   mixer.thr = t
