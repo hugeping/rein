@@ -11,7 +11,7 @@ rein is a minimalist 2D game/demo engine. The `rein` binary is a thin C host (SD
 - SDL3 backend: `make -f Makefile-sdl3` (uses `src/sdl3/platform.c`, needs `sdl3-dev`). It writes the same `./rein`, so always `make clean` when switching backends.
 - Makefiles list no header dependencies: after editing any `src/*.h`, run `make clean` before rebuilding.
 - `sh make.sh` is a one-shot build. `contrib/build-release.sh` (SDL2, static Linux/Windows) downloads/builds its deps into `external/` — don't run it for a normal build.
-- SDL3 CI: `contrib/build-rein-sdl3.sh [linux|windows|all]` for static Linux/Windows, `contrib/build-rein-em.sh` for wasm (downloads Lua, needs active emsdk); `contrib/make-emscripten.sh` is the old SDL2 wasm variant. `.github/workflows/{linux,windows,emscripten}-sdl3.yml` are reusable (`workflow_call`) build workflows; `.github/workflows/release.yml` calls them on push to master/opencode and adds one draft release zip (linux+windows binaries, shared data, `rein-em/`).
+- SDL3 CI: `contrib/build-rein-sdl3.sh [linux|windows|all]` for static Linux/Windows, `contrib/build-rein-em.sh` for wasm (downloads Lua, needs active emsdk). `.github/workflows/{linux,windows,emscripten}-sdl3.yml` are reusable (`workflow_call`) build workflows; `.github/workflows/release.yml` calls them on push to master/opencode and adds one draft release zip (linux+windows binaries, shared data, `rein-em/`).
 - `make PREFIX=/usr/local install` hardcodes runtime data path via `-DDATADIR`.
 
 ## Run
