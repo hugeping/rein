@@ -644,6 +644,12 @@ song sfx11
 | d#6 b6
 | === ..
 
+song sfx23
+@tempo 12
+@voice 1 p8w7
+| f-4 b6
+| === ..
+
 song music
 @push -1
 @tempo 12
