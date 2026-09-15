@@ -1,6 +1,6 @@
 <img src="data/icon.png">
 
-![Build status](https://github.com/hugeping/rein/actions/workflows/CI.yml/badge.svg)
+![Build status](https://github.com/hugeping/rein/actions/workflows/release.yml/badge.svg)
 
 __Warning! Project is under heavy development and is in the alpha stage!__
 
