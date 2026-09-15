@@ -1188,7 +1188,8 @@ fill_circle(img_t *src, int xc, int yc, int radius, color_t *color, img_t *pat)
 	ptr += (w * yc + xc) * 4;
 
 	if (radius == 1) {
-		pat?pixel_textured(pat, ptr, xc, yc):pixel(col, ptr);
+		if (xc >= x1 && xc < x2 && yc >= y1 && yc < y2)
+			pat?pixel_textured(pat, ptr, xc, yc):pixel(col, ptr);
 		return;
 	}
 	yy1 = -radius; yy2 = radius;
