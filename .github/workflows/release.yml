@@ -37,15 +37,16 @@ jobs:
       - name: Assemble archive
         run: |
           set -e
-          test -f pkg/rein-sdl3-linux-x86_64/rein
+          test -f pkg/rein-sdl3-linux-x86_64/rein-x86-64-linux
           test -f pkg/rein-sdl3-windows-x86_64/rein.exe
           test -f pkg/rein-sdl3-emscripten/rein.html
-          mkdir -p rein-sdl3/rein-em
-          cp -r pkg/rein-sdl3-linux-x86_64/. rein-sdl3/
-          cp pkg/rein-sdl3-windows-x86_64/rein.exe rein-sdl3/
-          cp -r pkg/rein-sdl3-emscripten/. rein-sdl3/rein-em/
-          zip -rq rein-sdl3.zip rein-sdl3
-          unzip -l rein-sdl3.zip
+          mkdir -p rein/rein-em
+          cp -r pkg/rein-sdl3-linux-x86_64/. rein/
+          cp pkg/rein-sdl3-windows-x86_64/rein.exe rein/
+          cp -r pkg/rein-sdl3-emscripten/. rein/rein-em/
+          chmod +x rein/rein-x86-64-linux
+          zip -rq rein.zip rein
+          unzip -l rein.zip
 
       - name: Publish release
         env:
@@ -55,9 +56,9 @@ jobs:
           set -e
           SHA="${{ github.sha }}"
           if gh release view continuous >/dev/null 2>&1; then
-            gh release upload continuous rein-sdl3.zip --clobber
+            gh release upload continuous rein.zip --clobber
           else
-            gh release create continuous rein-sdl3.zip \
+            gh release create continuous rein.zip \
               --target "$SHA" \
               --title "rein" \
               --notes "Continuous release"

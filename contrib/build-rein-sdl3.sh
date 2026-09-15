@@ -53,8 +53,8 @@ build_linux()
 		-Lexternal/sdl3/lib -lSDL3 \
 		-Lexternal/luajit/src -lluajit \
 		-lm -ldl -lpthread \
-		-o dist/linux/rein
-	strip dist/linux/rein
+		-o dist/linux/rein-x86-64-linux
+	strip dist/linux/rein-x86-64-linux
 	cp -r data demo doc COPYING ChangeLog dist/linux/
 }
 
