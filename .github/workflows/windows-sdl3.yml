@@ -22,6 +22,12 @@ jobs:
             cmake pkg-config wget \
             gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64
 
+      - name: Cache SDL3 and LuaJIT
+        uses: actions/cache@v6
+        with:
+          path: external
+          key: ${{ runner.os }}-sdl3-win-${{ env.sdl_ver }}-${{ env.luajit_ver }}-${{ hashFiles('contrib/build-rein-sdl3.sh') }}
+
       - name: Build
         run: sh contrib/build-rein-sdl3.sh windows
 
