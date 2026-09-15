@@ -1,0 +1,36 @@
+name: build-linux-sdl3
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master, opencode]
+
+env:
+  sdl_ver: 3.4.16
+  luajit_ver: "2.1"
+
+jobs:
+  build:
+    name: linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install packages
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake wget \
+            libasound2-dev libx11-dev libxext-dev libxrandr-dev \
+            libxcursor-dev libxi-dev libxfixes-dev libxtst-dev libxss-dev \
+            libgl-dev libegl-dev \
+            libwayland-dev libxkbcommon-dev libdecor-0-dev
+
+      - name: Build
+        run: sh contrib/build-rein-sdl3.sh linux
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rein-sdl3-linux-x86_64
+          path: dist/linux
+          if-no-files-found: error

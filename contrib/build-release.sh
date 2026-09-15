@@ -55,6 +55,7 @@ gcc -DVERSION=\"`date +%y%m%d`\" -Wall -O3 -Wl,-Bstatic \
 -Iexternal/include \
 -Iexternal/include/SDL2 \
 src/*.c \
+src/sdl2/platform.c \
 -Lexternal/lib/ \
 -D_REENTRANT -Dunix -Wl,--no-undefined \
 -lSDL2 \
@@ -71,7 +72,7 @@ LDFLAGS="-Lexternal/windows/lib -lSDL2.dll -lSDL2main -lm -lluajit -lws2_32 -lws
 
 i686-w64-mingw32-windres -i contrib/resources.rc -o resources.o || exit 1
 
-i686-w64-mingw32-gcc -funwind-tables -DVERSION=\"`date +%y%m%d`\" -Wall -static -O3 $CFLAGS src/*.c resources.o $LDFLAGS -mwindows -o rein.exe || exit 1
+i686-w64-mingw32-gcc -funwind-tables -DVERSION=\"`date +%y%m%d`\" -Wall -static -O3 $CFLAGS src/*.c src/sdl2/platform.c resources.o $LDFLAGS -mwindows -o rein.exe || exit 1
 i686-w64-mingw32-strip rein.exe # strip unwind information
 rm -f *.o
 

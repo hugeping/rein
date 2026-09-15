@@ -22,7 +22,7 @@ uninstall:
 endif
 
 CFILES= \
-	src/platform.c \
+	src/sdl2/platform.c \
 	src/stb_image.c \
 	src/lua-compat.c \
 	src/stb_image_resize.c \
@@ -49,4 +49,4 @@ rein:  $(OFILES)
 	$(CC) $(CFLAGS) $(^) $(LDFLAGS) -o $(@)
 
 clean:
-	$(RM) -f src/lua/*.o src/*.o rein
+	$(RM) -f src/lua/*.o src/*.o src/sdl2/*.o src/sdl3/*.o rein
