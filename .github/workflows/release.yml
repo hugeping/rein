@@ -2,7 +2,7 @@ name: release
 
 on:
   push:
-    branches: [master, opencode]
+    branches: [master]
   workflow_dispatch:
 
 permissions:
@@ -26,6 +26,8 @@ jobs:
     needs: [linux, windows, emscripten]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v7
+
       - uses: actions/download-artifact@v8
         with:
           pattern: rein-sdl3-*
@@ -44,7 +46,7 @@ jobs:
           zip -rq rein-sdl3.zip rein-sdl3
           unzip -l rein-sdl3.zip
 
-      - name: Create draft release
+      - name: Create release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
@@ -57,8 +59,13 @@ jobs:
             gh release upload "$TAG" rein-sdl3.zip --clobber
           else
             gh release create "$TAG" rein-sdl3.zip \
-              --draft \
               --target "$SHA" \
               --title "rein $SHORT" \
               --notes "Continuous release"
           fi
+
+      - name: Move continuous tag
+        if: github.ref == 'refs/heads/master'
+        run: |
+          git tag -f continuous "${{ github.sha }}"
+          git push -f origin continuous
