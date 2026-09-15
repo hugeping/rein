@@ -1162,7 +1162,7 @@ To move file buffer between columns use mouse 2nd button drag&drop of menu butto
 - @cmd                - run cmd <text> and get output
 
 > Unix only:
-> - >cmd                - cat <text> | cmd > output
+> - >cmd[>window]       - cat <text> | cmd > output
 > - |cmd                - cat <text> | cmd > edit
 
 - fmt [width]         - fmt text by width
