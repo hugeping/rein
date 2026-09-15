@@ -13,11 +13,11 @@ jobs:
     name: emscripten
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Cache emsdk
         id: cache-emsdk
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: emsdk
           key: ${{ runner.os }}-emsdk-${{ env.emsdk_ver }}
@@ -40,7 +40,7 @@ jobs:
           test -s dist/emscripten/rein.wasm
           test -s dist/emscripten/rein.data
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: rein-sdl3-emscripten
           path: dist/emscripten
