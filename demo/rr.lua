@@ -6,7 +6,6 @@
 --
 -- run: rein demo/rr.lua
 local snd = require "sfx"
-
 local dprint = print
 local border = gfx.border
 border(0)
@@ -1255,6 +1254,7 @@ function sgn(x)
   if x > 0 then return 1 elseif x < 0 then return -1 end
   return 0
 end
+if not math.atan2 then math.atan2 = math.atan end
 function sin(x) return math.sin(x * TAU) end
 function cos(x) return math.cos(x * TAU) end
 function atan2(dx, dy) return (math.atan2(dy, dx) / TAU) % 1 end
@@ -1395,10 +1395,10 @@ function sget(x, y)
 end
 
 function cls(c) screen:clear(c or 0) end
-function pset(x, y, c) screen:pixel(x, y, c) end
+function pset(x, y, c) screen:pixel(x, y, math.floor(c)) end
 function line(x1, y1, x2, y2, c) screen:line(x1, y1, x2, y2, c) end
 function camera(x, y)
-  if x then screen:offset(x, y) else screen:nooffset() end
+  if x then screen:offset(math.floor(x), math.floor(y)) else screen:nooffset() end
 end
 
 local fillbits = false
