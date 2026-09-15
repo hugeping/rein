@@ -25,6 +25,12 @@ jobs:
             libgl-dev libegl-dev \
             libwayland-dev libxkbcommon-dev libdecor-0-dev
 
+      - name: Cache SDL3 and LuaJIT
+        uses: actions/cache@v6
+        with:
+          path: external
+          key: ${{ runner.os }}-sdl3-linux-${{ env.sdl_ver }}-${{ env.luajit_ver }}-${{ hashFiles('contrib/build-rein-sdl3.sh') }}
+
       - name: Build
         run: sh contrib/build-rein-sdl3.sh linux
 
