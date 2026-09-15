@@ -1,0 +1,63 @@
+name: release-sdl3
+
+on:
+  push:
+    branches: [master, opencode]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-sdl3-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    uses: ./.github/workflows/linux-sdl3.yml
+
+  windows:
+    uses: ./.github/workflows/windows-sdl3.yml
+
+  emscripten:
+    uses: ./.github/workflows/emscripten-sdl3.yml
+
+  release:
+    needs: [linux, windows, emscripten]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: rein-sdl3-*
+          path: pkg
+
+      - name: Assemble archive
+        run: |
+          set -e
+          test -f pkg/rein-sdl3-linux-x86_64/rein
+          test -f pkg/rein-sdl3-windows-x86_64/rein.exe
+          test -f pkg/rein-sdl3-emscripten/rein.html
+          mkdir -p rein-sdl3/rein-em
+          cp -r pkg/rein-sdl3-linux-x86_64/. rein-sdl3/
+          cp pkg/rein-sdl3-windows-x86_64/rein.exe rein-sdl3/
+          cp -r pkg/rein-sdl3-emscripten/. rein-sdl3/rein-em/
+          zip -rq rein-sdl3.zip rein-sdl3
+          unzip -l rein-sdl3.zip
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          SHA="${{ github.sha }}"
+          SHORT=$(echo "$SHA" | cut -c1-7)
+          TAG="sdl3-$SHORT"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" rein-sdl3.zip --clobber
+          else
+            gh release create "$TAG" rein-sdl3.zip \
+              --draft \
+              --target "$SHA" \
+              --title "rein sdl3 $SHORT" \
+              --notes "Draft SDL3 build of $SHA (linux + windows static binaries, shared data, rein-em wasm)."
+          fi
