@@ -1,6 +1,6 @@
 #include <SDL.h>
-#include "external.h"
-#include "platform.h"
+#include "../external.h"
+#include "../platform.h"
 
 #ifdef __ANDROID__
 #include <jni.h>

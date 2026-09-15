@@ -70,20 +70,20 @@ WindowTitle(const char *title)
 int
 SDL_WaitEventTo(int timeout)
 {
-	Uint32 expiration = 0;
+	Uint64 expiration = 0;
 
 	if (timeout > 0)
 		expiration = SDL_GetTicks() + timeout;
 
 	for (;;) {
 		SDL_PumpEvents();
-		switch (SDL_PeepEvents(NULL, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) {
+		switch (SDL_PeepEvents(NULL, 1, SDL_GETEVENT, SDL_EVENT_FIRST, SDL_EVENT_LAST)) {
 		case -1:
 			return 0;
 		case 0:
 			if (timeout == 0)
 				return 0;
-			if (timeout > 0 && SDL_TICKS_PASSED(SDL_GetTicks(), expiration))
+			if (timeout > 0 && SDL_GetTicks() >= expiration)
 				return 0;
 			if (timeout >= 100) /* 1/10 */
 				SDL_Delay(10);

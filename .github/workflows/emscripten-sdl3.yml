@@ -1,0 +1,48 @@
+name: build-emscripten-sdl3
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master, opencode]
+
+env:
+  emsdk_ver: 6.0.9
+  lua_ver: 5.4.6
+
+jobs:
+  build:
+    name: emscripten
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache emsdk
+        id: cache-emsdk
+        uses: actions/cache@v4
+        with:
+          path: emsdk
+          key: ${{ runner.os }}-emsdk-${{ env.emsdk_ver }}
+
+      - name: Install emsdk
+        run: |
+          test -d emsdk || git clone --depth 1 https://github.com/emscripten-core/emsdk.git
+          ./emsdk/emsdk install ${{ env.emsdk_ver }}
+          ./emsdk/emsdk activate ${{ env.emsdk_ver }}
+
+      - name: Build
+        run: |
+          . ./emsdk/emsdk_env.sh
+          sh contrib/build-rein-em.sh
+
+      - name: Check artifacts
+        run: |
+          test -s dist/emscripten/rein.html
+          test -s dist/emscripten/rein.js
+          test -s dist/emscripten/rein.wasm
+          test -s dist/emscripten/rein.data
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rein-sdl3-emscripten
+          path: dist/emscripten
+          if-no-files-found: error

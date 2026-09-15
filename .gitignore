@@ -4,4 +4,9 @@ GTAGS
 core.*
 rein
 src/*.o
+src/sdl2/*.o
 src/sdl3/*.o
+dist/
+external/
+src/lua/
+emsdk/

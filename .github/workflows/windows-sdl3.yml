@@ -1,0 +1,33 @@
+name: build-windows-sdl3
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master, opencode]
+
+env:
+  sdl_ver: 3.4.16
+  luajit_ver: "2.1"
+
+jobs:
+  build:
+    name: windows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install packages
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            cmake pkg-config wget \
+            gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64
+
+      - name: Build
+        run: sh contrib/build-rein-sdl3.sh windows
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rein-sdl3-windows-x86_64
+          path: dist/windows
+          if-no-files-found: error
