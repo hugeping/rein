@@ -332,6 +332,36 @@ pixels_buff(lua_State *L)
 	return 0;
 }
 
+static int
+pixels_points(lua_State *L)
+{
+	struct lua_pixels *hdr = (struct lua_pixels*)luaL_checkudata(L, 1, "pixels metatable");
+	img_t *img = hdr->img;
+	unsigned char col[4];
+	unsigned char *ptr;
+	int i, nr, idx;
+	unsigned int c;
+
+	luaL_checktype(L, 2, LUA_TTABLE);
+	nr = (int)lua_rawlen(L, 2) & ~1;
+	for (i = 1; i <= nr; i += 2) {
+		lua_rawgeti(L, 2, i);
+		idx = (int)luaL_checkinteger(L, -1);
+		lua_rawgeti(L, 2, i + 1);
+		c = (unsigned int)luaL_checkinteger(L, -1);
+		lua_pop(L, 2);
+		if (idx < 1 || idx > img->w * img->h)
+			continue;
+		ptr = img->ptr + (idx - 1) * 4;
+		col[0] = (c & 0xff000000) >> 24;
+		col[1] = (c & 0xff0000) >> 16;
+		col[2] = (c & 0xff00) >> 8;
+		col[3] = c & 0xff;
+		pixel(col, ptr);
+	}
+	return 0;
+}
+
 static struct lua_pixels *
 pixels_new(lua_State *L, int w, int h)
 {
@@ -1827,6 +1857,7 @@ static const luaL_Reg pixels_mt[] = {
 	{ "nooffset", pixels_nooffset },
 	{ "pixel", pixels_pixel },
 	{ "buff", pixels_buff },
+	{ "pixels", pixels_points },
 	{ "size", pixels_size },
 	{ "fill", pixels_fill },
 	{ "clear", pixels_clear },
