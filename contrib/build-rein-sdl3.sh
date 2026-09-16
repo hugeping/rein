@@ -49,7 +49,7 @@ build_linux()
 	mkdir -p dist/linux
 	gcc -DVERSION=\"$VERSION\" -Wall -O3 \
 		-Iexternal/sdl3/include -Iexternal/luajit/src \
-		src/*.c src/sdl3/platform.c \
+		src/*.c src/tls/*.c src/sdl3/platform.c \
 		-Lexternal/sdl3/lib -lSDL3 \
 		-Lexternal/luajit/src -lluajit \
 		-lm -ldl -lpthread \
@@ -85,7 +85,7 @@ build_windows()
 	x86_64-w64-mingw32-gcc -funwind-tables -DVERSION=\"$VERSION\" -Wall -O3 \
 		-static -mwindows \
 		-Iexternal/sdl3-win/include -Iexternal/luajit-win/src \
-		src/*.c src/sdl3/platform.c \
+		src/*.c src/tls/*.c src/sdl3/platform.c \
 		$SDL3_LIBS \
 		-Lexternal/luajit-win/src -lluajit -lws2_32 -lwsock32 \
 		-o dist/windows/rein.exe
