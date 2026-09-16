@@ -546,6 +546,10 @@ test_sessions(void)
 	session_check("rsa",
 		ts_session_rsa_server, sizeof ts_session_rsa_server,
 		ts_session_rsa_client, sizeof ts_session_rsa_client);
+	printf("# session ecdhe_ecdsa\n");
+	session_check("ecdhe_ecdsa",
+		ts_session_ec_server, sizeof ts_session_ec_server,
+		ts_session_ec_client, sizeof ts_session_ec_client);
 }
 
 int
