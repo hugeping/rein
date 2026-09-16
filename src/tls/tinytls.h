@@ -1,5 +1,5 @@
-#ifndef TINYSSL_H
-#define TINYSSL_H
+#ifndef TINYTLS_H
+#define TINYTLS_H
 
 #include <stddef.h>
 
@@ -32,7 +32,6 @@ enum {
 	TS_WANT_READ = -1,     /* nothing to do until the socket is readable */
 	TS_WANT_WRITE = -2,    /* pending output, wait for writability */
 	TS_ERR_IO = -10,
-	TS_ERR_MEMORY = -11,
 	TS_ERR_PROTOCOL = -12,
 	TS_ERR_UNSUPPORTED = -13,
 	TS_ERR_CERTIFICATE = -14,
