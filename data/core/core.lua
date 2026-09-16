@@ -167,10 +167,8 @@ local last_render = 0
 
 local vpad = { fingers = {}, btn = {} }
 local vpad_col = { 192, 192, 192, 255 }
-local vpad_border = { 255, 255, 255, 255 }
 -- translucent colors for the vpad-over-screen mode
-local vpad_col_ov = { 224, 224, 224, 200 }
-local vpad_border_ov = { 255, 255, 255, 235 }
+local vpad_col_ov = { 224, 224, 224, 100 }
 
 function core.vpad(x, y, w, h, overlay)
   if vpad.x == x and vpad.y == y and
@@ -182,7 +180,6 @@ function core.vpad(x, y, w, h, overlay)
   local win = gfx.new(w, h)
   if not win then return end -- 0?
   local col = overlay and vpad_col_ov or vpad_col
-  local border = overlay and vpad_border_ov or vpad_border
   win:clear(0, 0, w, h, { 0, 0, 0, overlay and 0 or 255 })
   vpad.x, vpad.y, vpad.w, vpad.h = x, y, w, h
   vpad.overlay = overlay
@@ -200,7 +197,7 @@ function core.vpad(x, y, w, h, overlay)
   local xc = rs
   local yc = h - rs
   vpad.stick = { x = xc + x, y = yc + y, r = rs }
-  win:circle(xc, yc, rs, border)
+  win:circle(xc, yc, rs, col)
   local d = rs/4
   win:circle(xc, yc, rs / 2, col)
   local r = rs * 0.9
