@@ -23,7 +23,7 @@ rein is a minimalist 2D game/demo engine. The `rein` binary is a thin C host (SD
 
 ## Tests and lint
 
-- Tests are pure LuaJIT — no SDL or `rein` binary needed. Run from the repo root: `sh tests/run.sh`.
+- Tests need no SDL or `rein` binary. Run from the repo root: `sh tests/run.sh` — it compiles and runs the C tests for `src/tls` (`tests/tls_test.c`, fixtures in `tests/tls_session.h`) and then the LuaJIT tests.
 - Single file: `luajit tests/run.lua tests/buf_test.lua`. `tests/env.lua` stubs rein globals; `tests/harness.lua` provides `describe`/`it`/`eq`/`ok`/`match`/`fail`.
 - Lint the editor modules (config comment in `.luacheckrc`): `luacheck data/apps/red.lua data/lib/red/*.lua`. Pre-existing warnings are expected; don't fix unrelated ones.
 

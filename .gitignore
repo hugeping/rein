@@ -11,3 +11,4 @@ external/
 src/lua/
 emsdk/
 src/tls/*.o
+tests/tls_test
