@@ -228,7 +228,8 @@ end
 
 local ops, optarg = sys.getopt(ARGS, {
   n = string.format("rein%d", math.random(1000)), --nick
-  p = 6667,
+  p = false, --port
+  c = true,  --no tls
   j = false,
   k = false,
   h = 'irc.oftc.net',
@@ -242,13 +243,14 @@ local buf = win.new()
 local JOIN = ops.j
 local NICK = ops.n
 local HOST = ARGS[optarg] or ops.h
-local PORT = ops.p
+local TLS = not ops.c
+local PORT = ops.p or (TLS and 6697 or 6667)
 local PASS = ops.k
 
 local thr = thread.start(function()
   local sock = require "sock"
-  local nick, host, port, pass = thread:read()
-  local s,e = sock.dial(host, port)
+  local nick, host, port, pass, tls = thread:read()
+  local s,e = sock.dial(host, port, tls)
   print("thread: connect", s, e)
   if not s then
     thread:write(false, e)
@@ -295,10 +297,10 @@ local thr = thread.start(function()
   print("thread finished")
 end)
 
-buf:write("Connecting to %s:%d...",
-  HOST, PORT)
+buf:write("Connecting to %s:%s%s...",
+  HOST, PORT, TLS and " (tls)" or "")
 buf:show() gfx.render()
-thr:write(NICK, HOST, PORT, PASS)
+thr:write(NICK, HOST, PORT, PASS, TLS and HOST or nil)
 
 local r = thr:read()
 
@@ -466,9 +468,10 @@ Options:
   -n <nick>
   -j <channel>
   -k <password>
+  -c              - plain TCP, no TLS
 
 W/o args:
-Connect to irc.oftc.net:6667 rein<random> #rein
+Connect to irc.oftc.net:6697 rein<random> #rein (TLS)
 
 Commands:
 :j channel      - join channel

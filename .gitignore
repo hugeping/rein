@@ -10,3 +10,4 @@ dist/
 external/
 src/lua/
 emsdk/
+src/tls/*.o

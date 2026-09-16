@@ -35,6 +35,13 @@ CFILES= \
 	src/system.c \
 	src/gfx_font.c \
 	src/net.c \
+	src/tls/i31.c \
+	src/tls/ec.c \
+	src/tls/ecdsa.c \
+	src/tls/rsa.c \
+	src/tls/ts_crypto.c \
+	src/tls/ts_x509.c \
+	src/tls/tinytls.c \
 	src/zvon.c \
 	src/zvon_mixer.c \
 	src/zvon_sfx.c \
@@ -49,4 +56,4 @@ rein:  $(OFILES)
 	$(CC) $(CFLAGS) $(^) $(LDFLAGS) -o $(@)
 
 clean:
-	$(RM) -f src/lua/*.o src/*.o src/sdl2/*.o src/sdl3/*.o rein
+	$(RM) -f src/lua/*.o src/*.o src/sdl2/*.o src/sdl3/*.o src/tls/*.o rein
