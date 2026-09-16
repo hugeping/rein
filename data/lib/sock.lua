@@ -156,7 +156,8 @@ function tcp:readln(wait)
         r, self.data = self.data, ''
         return r
       end
-      return r, e
+      -- nil ends a generic for loop, false would not
+      return nil, e
     end
   end
   if not self.data:find("\n") then return nil end
