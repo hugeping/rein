@@ -66,15 +66,6 @@ put64(unsigned char *p, uint64_t v)
 /* ---- GCM (AES-128 only) ---- */
 
 static void
-gcm_ghash(unsigned char y[16], const unsigned char h[16],
-	const void *data, size_t len)
-{
-	if (len > 0) {
-		ts_ghash(y, h, data, len);
-	}
-}
-
-static void
 gcm_h(const ts_aes_ctx *aes, unsigned char h[16])
 {
 	unsigned char z[12];
@@ -107,11 +98,11 @@ gcm_tag(const ts_aes_ctx *aes, const unsigned char h[16],
 	size_t u;
 
 	memset(y, 0, sizeof y);
-	gcm_ghash(y, h, aad, aad_len);
-	gcm_ghash(y, h, ct, ct_len);
+	ts_ghash(y, h, aad, aad_len);
+	ts_ghash(y, h, ct, ct_len);
 	put64(lenblk, (uint64_t)aad_len * 8);
 	put64(lenblk + 8, (uint64_t)ct_len * 8);
-	gcm_ghash(y, h, lenblk, sizeof lenblk);
+	ts_ghash(y, h, lenblk, sizeof lenblk);
 	gcm_mask(aes, nonce, mask);
 	for (u = 0; u < 16; u ++) {
 		tag[u] = y[u] ^ mask[u];
