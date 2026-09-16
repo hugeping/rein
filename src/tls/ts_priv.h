@@ -14,6 +14,7 @@
  * curve arithmetic, and the RSA/ECDSA signature checks.
  */
 
+#define TS_MAXRSA     512   /* 4096-bit modulus */
 #define TS_MAXPLAIN   16384
 #define TS_MAXCIPHER  (TS_MAXPLAIN + 2048)
 #define TS_MAXHAND    (TS_MAXPLAIN * 2)
@@ -87,7 +88,7 @@ struct ts_conn {
 	unsigned char cert[8192];
 	unsigned char pms[512];
 	size_t pms_len;
-	unsigned char exch[256];
+	unsigned char exch[TS_MAXRSA + 2];
 	size_t exch_len;
 
 	int hs_state;

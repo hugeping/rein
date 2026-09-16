@@ -23,8 +23,6 @@
 #include "tinytls.h"
 #include "ts_priv.h"
 
-#define TS_MAXRSA   512   /* 4096-bit modulus */
-
 /* ---- byte accessors ---- */
 
 static void
@@ -600,8 +598,7 @@ make_rsa_pms(ts_conn *t)
 	if (!br_rsa_i31_public(block, nlen, &t->pkey.key.rsa)) {
 		return TS_ERR_CERTIFICATE;
 	}
-	put16(t->exch, nlen);
-	memcpy(t->exch + 2, block, nlen);
+	memcpy(t->exch, block, nlen);
 	t->exch_len = nlen;
 	return TS_OK;
 }
