@@ -30,6 +30,6 @@ while sys.running() do
     end
   end
   scr:pixels(pts)
-  t = t + 0.002
+  t = t + 0.001
   gfx.flip(1/30)
 end
