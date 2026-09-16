@@ -186,35 +186,45 @@ function core.vpad(x, y, w, h, overlay)
   win:clear(0, 0, w, h, { 0, 0, 0, overlay and 0 or 255 })
   vpad.x, vpad.y, vpad.w, vpad.h = x, y, w, h
   vpad.overlay = overlay
-  local xc = w/4
-  local yc = h/2
-  local r = h/4 < w/4 and h/4 or w/4
-  vpad.stick = { x = xc + x, y = yc + y, r = r }
-  win:circle(xc, yc, r, border)
-  local d = r/4
-  win:circle(xc, yc, r / 2, col)
-  r = r * 0.9
+  -- stick: bottom left corner, its top edge is level with the top button
+  local rs = math.min(h * 0.45, w * 0.25)
+  local ytop = h - 2 * rs
+  -- z and x on the right, a "/" diagonal (45 degrees);
+  -- button diameter <= stick radius
+  local mxf = 0.25  -- side margin, in button radii
+  local df = 1.6    -- diagonal offset, in button radii
+  local kf = 2 + mxf + df
+  local rb = math.min(rs * 0.5, (w - 2 * rs) / kf, w / (2 * kf))
+  local gap = rb * mxf
+  local mx = rb * mxf
+  local xc = rs
+  local yc = h - rs
+  vpad.stick = { x = xc + x, y = yc + y, r = rs }
+  win:circle(xc, yc, rs, border)
+  local d = rs/4
+  win:circle(xc, yc, rs / 2, col)
+  local r = rs * 0.9
   win:fill_poly( {xc, yc - r, xc + d, yc - r + d, xc - d, yc - r + d }, col)
   win:fill_poly( {xc, yc + r, xc + d, yc + r - d, xc - d, yc + r - d }, col)
   win:fill_poly( {xc - r, yc, xc - r + d, yc - d, xc - r + d, yc + d }, col)
   win:fill_poly( {xc + r, yc, xc + r - d, yc - d, xc + r - d, yc + d }, col)
-  r = h/8 < w/8 and h/8 or w/8
-  xc = 7*w/8
-  yc = h/2 - r
-  vpad.btn.z = { x = xc + x, y = yc + y, r = r }
-  win:circle(xc, yc, r, col)
-  win:circle(xc, yc, r/2, col)
-  xc = 6*w/8
-  yc = h/2 + r
-  vpad.btn.x = { x = xc + x, y = yc + y, r = r }
-  win:circle(xc, yc, r, col)
-  win:rect(xc - r/2, yc - r/2, xc + r/2, yc + r/2, col)
-  r = r / 2
-  xc = w - 1.5*r
-  yc = h - 1.5*r
-  vpad.btn.escape = { x = xc + x, y = yc + y, r = r }
-  win:circle(xc, yc, r, col)
-  win:rect(xc - r/1.5, yc - r/4, xc + r/1.5, yc + r/4, col)
+  xc = w - rb - mx
+  yc = ytop + rb
+  vpad.btn.z = { x = xc + x, y = yc + y, r = rb }
+  win:circle(xc, yc, rb, col)
+  win:circle(xc, yc, rb/2, col)
+  -- x: left of z and lower, keeping the 45 degree diagonal
+  xc = xc - rb * df
+  yc = yc + rb * df
+  vpad.btn.x = { x = xc + x, y = yc + y, r = rb }
+  win:circle(xc, yc, rb, col)
+  win:rect(xc - rb/2, yc - rb/2, xc + rb/2, yc + rb/2, col)
+  local re = rb * 0.5
+  xc = w - 1.5*re
+  yc = h - 1.5*re
+  vpad.btn.escape = { x = xc + x, y = yc + y, r = re }
+  win:circle(xc, yc, re, col)
+  win:rect(xc - re/1.5, yc - re/4, xc + re/1.5, yc + re/4, col)
   vpad.pxl = win
   return win
 end
@@ -311,11 +321,11 @@ function core.render(force)
     if hh - dh < hh / 3 then
       -- not enough room below the screen: draw the vpad over it
       env.screen:expose(core.view_x, core.view_y, core.view_w, core.view_h)
-      local vh = math.floor(hh * 0.4)
+      local vh = math.floor(dh * 0.4)
       if vh > 0 then
-        local vy = hh - vh
-        local vp = core.vpad(0, vy, ww, vh, true)
-        if vp then vp:expose(0, vy, ww, vh) end
+        local vy = core.view_y + dh - vh
+        local vp = core.vpad(core.view_x, vy, dw, vh, true)
+        if vp then vp:expose(core.view_x, vy, dw, vh) end
       end
     else
       core.view_y = 0
