@@ -1,34 +1,35 @@
--- Port of a Processing sketch: sin/cos feedback point cloud.
+-- Same Processing sketch, drawn with a single pixels{} call:
+-- the whole frame is a flat { index, color, ... } table.
 --   W=540; N=200; x,y,t=0,0,0
--- https://x.com/yuruyurau/status/1226846058728177665
 local W, N = 540, 200
-local sin, cos = math.sin, math.cos
+local sin, cos, floor = math.sin, math.cos, math.floor
 local r = math.pi * 2 / N
 
 local x, y, t = 0, 0, 0
-local col = { 0, 0, 99, 255 }
 
 gfx.win(W, W)
 
 local scr = screen
-local pixel = scr.pixel
-
-local function F(i, c)
-  local u = sin(i + y) + sin(r * i + x)
-  local v = cos(i + y) + cos(r * i + x)
-  x = u + t
-  y = v
-  col[1], col[2] = i, c
-  pixel(scr, u * N / 2 + W / 2, y * N / 2 + W / 2, col)
-end
+local pts = {}
 
 while sys.running() do
   scr:clear(0)
+  local k = 1
   for i = 0, N - 1 do
+    local cr = i * 0x1000000
     for c = 0, N - 1 do
-      F(i, c)
+      local u = sin(i + y) + sin(r * i + x)
+      local v = cos(i + y) + cos(r * i + x)
+      x = u + t
+      y = v
+      local idx = floor(y * N / 2 + W / 2) * W +
+        floor(u * N / 2 + W / 2) + 1
+      pts[k] = idx
+      pts[k + 1] = cr + c * 0x10000 + 99 * 0x100 + 255
+      k = k + 2
     end
   end
-  t = t + 0.002
+  scr:pixels(pts)
+  t = t + 0.1
   gfx.flip(1/30)
 end
