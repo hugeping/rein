@@ -1,3 +1,4 @@
+-- https://x.com/yuruyurau/status/1226846058728177665
 -- Same Processing sketch, drawn with a single pixels{} call:
 -- the whole frame is a flat { index, color, ... } table.
 --   W=540; N=200; x,y,t=0,0,0
