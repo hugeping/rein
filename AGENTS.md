@@ -32,6 +32,7 @@ rein is a minimalist 2D game/demo engine. The `rein` binary is a thin C host (SD
 - `src/main.c` — entrypoint: sets `DATADIR`/`VERSION`/`ARGS`/`PLATFORM`/`SCALE` globals, `require`s `data/core/core.lua`.
 - `src/sdl2/platform.c` (SDL2) / `src/sdl3/platform.c` (SDL3) are the only SDL-aware files; everything else uses `src/platform.h`.
 - Other C Lua modules: `gfx.c` (`gfx`), `synth.c`, `zvon*.c` (audio), `thread.c`, `net.c`, `system.c` (`sys`), `utf.c`, `bit.c`.
+- `src/tls/` — TinyTLS: minimal TLS 1.2 client used by `net.c` (`net.tls`); sources are compiled straight into rein.
 - `data/core/` — engine Lua (main loop, `api`, `font`, `mixer`, `spr`); `data/lib/` — stdlib patches (`std.lua`), editor, sfx, red editor; `data/apps/` — built-in apps.
 - Apps run as coroutines driven by `core.run()`; `sys.exec`/suspend/resume powers app switching — see `data/boot.lua`.
 
