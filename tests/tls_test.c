@@ -85,7 +85,7 @@ unhex(const char *hex, unsigned char *out, size_t max)
 struct mock {
 	const unsigned char *in;
 	size_t in_len, in_pos;
-	unsigned char out[8192];
+	unsigned char out[20000];
 	size_t out_len;
 	int block;
 	int eof;
@@ -477,6 +477,72 @@ test_api(void)
 	}
 }
 
+/* ---- limits and malformed input ---- */
+
+static void
+test_limits(void)
+{
+	struct ts_conn w, r, t;
+	struct mock mw, mr;
+	unsigned char buf[20000];
+	size_t i, clen;
+
+	printf("# limits\n");
+
+	/* a static RSA suite requires an RSA certificate: an EC one
+	 * must be refused instead of reading the union overlay */
+	memset(&t, 0, sizeof t);
+	if (ts_x509_get_pkey(ts_cert_ec, sizeof ts_cert_ec, &t.pkey)) {
+		chk(make_rsa_pms(&t) == TS_ERR_CERTIFICATE,
+			"static rsa needs an rsa certificate");
+	} else {
+		chk(0, "ec cert parsed");
+	}
+
+	/* a record whose plaintext is larger than TS_MAXPLAIN */
+	memset(&mw, 0, sizeof mw);
+	memset(&mr, 0, sizeof mr);
+	set_writer(&w, &mw);
+	w.enc_out = 0;
+	clen = 17000;
+	{
+		unsigned char *p = mw.out;
+
+		p[0] = 23;
+		p[1] = 3;
+		p[2] = 3;
+		put16(p + 3, (unsigned)clen);
+		memset(p + 5, 0x41, clen);
+		mw.out_len = 5 + clen;
+	}
+	set_reader(&r, &mr);
+	r.enc_in = 0;
+	mr.in = mw.out;
+	mr.in_len = mw.out_len;
+	mr.eof = 1;
+	chk(ts_read(&r, buf, sizeof buf) == TS_ERR_PROTOCOL,
+		"oversized record");
+
+	/* a flood of handshake records must not spin inside ts_read */
+	memset(&mw, 0, sizeof mw);
+	memset(&mr, 0, sizeof mr);
+	set_writer(&w, &mw);
+	w.enc_out = 0;
+	for (i = 0; i < 8; i ++) {
+		static const unsigned char helloreq[4] = { 0, 0, 0, 0 };
+
+		rec_queue(&w, 22, helloreq, 4);
+		ts_flush(&w);
+	}
+	set_reader(&r, &mr);
+	r.enc_in = 0;
+	mr.in = mw.out;
+	mr.in_len = mw.out_len;
+	mr.eof = 1;
+	chk(ts_read(&r, buf, sizeof buf) == TS_ERR_PROTOCOL,
+		"hello request flood");
+}
+
 /* ---- golden session replay ---- */
 
 static void
@@ -561,6 +627,7 @@ main(void)
 	test_records();
 	test_x509();
 	test_api();
+	test_limits();
 	test_sessions();
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures != 0;
