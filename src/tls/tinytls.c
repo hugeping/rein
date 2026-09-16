@@ -120,8 +120,6 @@ gcm_tag(const ts_aes_ctx *aes, const unsigned char h[16],
 
 /* ---- records ---- */
 
-/* ---- records ---- */
-
 static void
 rec_aad(unsigned char aad[13], uint64_t seq, unsigned type, size_t len)
 {
@@ -251,6 +249,10 @@ rec_next(ts_conn *t)
 		rlen = clen;
 	} else {
 		memmove(t->rbuf, t->rbuf + 5, rlen);
+	}
+	if (rlen > TS_MAXPLAIN) {
+		t->err = TS_ERR_PROTOCOL;
+		return TS_ERR_PROTOCOL;
 	}
 	t->seq_in ++;
 	t->rtype = type;
@@ -571,9 +573,13 @@ make_rsa_pms(ts_conn *t)
 {
 	unsigned char block[TS_MAXRSA];
 	const unsigned char *n = t->pkey.key.rsa.n;
-	size_t nlen = t->pkey.key.rsa.nlen;
+	size_t nlen;
 	size_t u;
 
+	if (t->pkey.key_type != TS_KEY_RSA) {
+		return TS_ERR_CERTIFICATE;
+	}
+	nlen = t->pkey.key.rsa.nlen;
 	while (nlen > 0 && *n == 0) {
 		n ++;
 		nlen --;
@@ -607,26 +613,19 @@ static int
 send_clientkeyexchange(ts_conn *t)
 {
 	unsigned char b[3 + 512];
+	size_t n = t->exch_len;
+	size_t pfx = t->suite == 0x009C ? 2 : 1;
 
-	if (t->suite == 0x009C) {
-		size_t n = t->exch_len;
-
-		if (n > sizeof b - 2) {
-			return TS_ERR_PROTOCOL;
-		}
-		put16(b, n);
-		memcpy(b + 2, t->exch, n);
-		return hs_send(t, 16, b, 2 + n);
-	} else {
-		size_t n = t->exch_len;
-
-		if (n > sizeof b - 1) {
-			return TS_ERR_PROTOCOL;
-		}
-		b[0] = (unsigned char)n;
-		memcpy(b + 1, t->exch, n);
-		return hs_send(t, 16, b, 1 + n);
+	if (n > sizeof b - pfx) {
+		return TS_ERR_PROTOCOL;
 	}
+	if (pfx == 2) {
+		put16(b, (unsigned)n);
+	} else {
+		b[0] = (unsigned char)n;
+	}
+	memcpy(b + pfx, t->exch, n);
+	return hs_send(t, 16, b, pfx + n);
 }
 
 static void
@@ -949,6 +948,9 @@ ts_read(ts_conn *t, void *buf, size_t len)
 	if (r != TS_OK) {
 		return r;
 	}
+	{
+	int skip = 0;
+
 	while (t->app_pos == t->app_len) {
 		r = rec_next(t);
 		if (r != TS_OK) {
@@ -971,10 +973,20 @@ ts_read(ts_conn *t, void *buf, size_t len)
 			return t->err;
 		}
 		if (t->rtype == 22) {
-			continue;         /* HelloRequest, ignored */
+			/*
+			 * HelloRequest: ignore it, but do not let a server
+			 * feed us handshake records forever without
+			 * returning to the caller.
+			 */
+			if (++ skip > 4) {
+				t->err = TS_ERR_PROTOCOL;
+				return t->err;
+			}
+			continue;
 		}
 		t->err = TS_ERR_PROTOCOL;
 		return t->err;
+	}
 	}
 	{
 		size_t n = t->app_len - t->app_pos;
@@ -1011,7 +1023,6 @@ ts_strerror(int err)
 	case TS_WANT_READ: return "want read";
 	case TS_WANT_WRITE: return "want write";
 	case TS_ERR_IO: return "i/o error";
-	case TS_ERR_MEMORY: return "out of memory";
 	case TS_ERR_PROTOCOL: return "protocol error";
 	case TS_ERR_UNSUPPORTED: return "unsupported algorithm";
 	case TS_ERR_CERTIFICATE: return "bad certificate";
