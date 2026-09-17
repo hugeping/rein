@@ -299,11 +299,12 @@ end
 
 function gemini:event(r, v, a, b)
   -- win:mouseup execs the text under the cursor with the middle button,
-  -- so a link click must be caught (and consumed) there
+  -- so a link click must be caught (and consumed) there; http(s) links
+  -- are not gemini's business and are left to it (uri.lua opens them)
   if r == 'mouseup' and v == 'middle' then
     local url = gemini.link_at(self, a - self.x, b - self.y)
 
-    if url then
+    if url and not url:find("^https?://") then
       gemini.follow(self, url)
       return true
     end
