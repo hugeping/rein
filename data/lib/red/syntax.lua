@@ -228,7 +228,7 @@ function syntax.new(txt, pos, scheme)
   end
   local s = { stack = {}, txt = txt,
     pos = pos, start = pos, cols = {},
-    checkpoints = {},
+    checkpoints = {}, scheme = scheme,
     ctx = ctx }
   setmetatable(s, syntax)
   s.checkpoints[1] = s:state()

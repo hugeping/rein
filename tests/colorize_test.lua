@@ -117,6 +117,18 @@ describe("win:colorize", function()
     ok(n < 200, "bounded re-lex, calls=" .. n)
   end)
 
+  it("rebuilds the colorizer when the scheme changes", function()
+    local w = make("local x = 1")
+    local c = w:colorize()
+    eq(c.scheme, "lua")
+    -- frame:rename_win just replaces the conf
+    w.buf.fname = "t.md"
+    w.conf.syntax = "markdown"
+    local c2 = w:colorize()
+    ne(c2, c, "a new colorizer")
+    eq(c2.scheme, "markdown")
+  end)
+
   it("state restore does not alias the checkpoint stack", function()
     local text = ("--[[ block\n"):rep(50)
     local w = make(text)
