@@ -650,6 +650,8 @@ function buf:dirty(fl)
   return self.written ~= last
 end
 
+-- unused: os.rename replaces the file, so its mode, inode, hard links
+-- and symlinks are lost; buf:save writes the file in place instead
 function buf:save_atomic(fname)
   fname = fname or self.fname
   local r, e = self:save(fname .. '.red')
