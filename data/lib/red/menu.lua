@@ -6,6 +6,13 @@ function menu:geom(x, y, w, h)
   win.geom(self, x, y, w, self:realheight())
 end
 
+-- a menu whose text is set from scratch (a new one, the column menu after
+-- a tab switch) keeps the cursor at the end: typed words are appended
+function menu:set(text)
+  win.set(self, text)
+  self:cur(#self.buf.text + 1)
+end
+
 function menu:event(r, v, a, b)
   if win.event(self, r, v, a, b) then
     if self:changed() then
