@@ -4,7 +4,7 @@ describe("proc extensions", function()
   it("each file of red/proc exports a table of procedures", function()
     for _, n in ipairs { "gemini", "grep", "dump", "dos2unix",
       "fmt", "par", "win", "cat", "indent", "shell", "buf",
-      "edit" } do
+      "edit", "zerox" } do
       local t = require("red/proc/" .. n)
       eq(type(t), "table", n)
       ok(next(t), n .. " exports a procedure")
@@ -70,6 +70,28 @@ describe("proc extensions", function()
     ok(w2:gettext():find(" :1", 1, true))
     ok(ext.Clear(w2))
     eq(w2:gettext(), "")
+  end)
+
+  it("Zerox opens a second window on the same buffer", function()
+    local w = win:new("t.txt")
+    local added, pos
+
+    w.frame = {
+      find_win = function() return 1 end,
+      add_win = function(_, c, p) added, pos = c, p end,
+      update = function() end,
+      refresh = function() end,
+    }
+    w:set("one two\n")
+    ok(require("red/proc/zerox").Zerox({ data = function() return w end }))
+    ok(added, "a window is created")
+    eq(added.buf, w.buf, "the shared buffer")
+    eq(pos, 2, "right below the original")
+
+    added.buf.cur = 1
+    added.buf:input("X")
+    eq(w:gettext(), "Xone two\n", "the text is shared")
+    eq(added:gettext(), "Xone two\n")
   end)
 
   it("dos2unix strips the carriage returns", function()

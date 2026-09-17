@@ -660,7 +660,7 @@ function frame.win_words(w)
   if w:dirty() and w.buf:isfile() then
     t = t .. 'Put '
   end
-  t = t .. 'Close Get '
+  t = t .. 'Close Get Zerox '
   if w.cmdline then
     t = t .. w.cmdline .. ' '
   end
@@ -1165,6 +1165,7 @@ To move file buffer between columns use mouse 2nd button drag&drop of menu butto
 - Theme [name]        - color theme (default, dark)
 - dump                - hex-dump
 - Edit <script>       - sam editing script on the window text
+- Zerox               - a second window on the same buffer
 - gemini <host>       - fetch gemini:// page (TLS)
 - win                 - pseudo acme win-shell
 
@@ -1192,6 +1193,11 @@ To move file buffer between columns use mouse 2nd button drag&drop of menu butto
 >               Edit /b/+1d            the line after the "b" match
 >               Edit 2=                the address of line 2
 >               Edit ,p                print the range to +Errors
+
+> Zerox: a second window on the same buffer, as in acme.  The text, its
+> undo history, the cursor and the selection are shared; the scroll,
+> geometry, highlighting and menu are per window.  The pair survives
+> red.dump.  The command is in the window menu, like in the acme tag.
 
 > win-shell notes (for Unix only):
 >   esc          - close input
