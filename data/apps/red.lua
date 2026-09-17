@@ -489,7 +489,7 @@ function frame:file(f, pos, force)
   end
 
   b = win:new(fn)
-  b.menu = self:menu().buf:gettext() -- clone menu
+--  b.menu = self:menu().buf:gettext() -- clone menu
   b.conf = presets.get(fn) or {}
   if dir then
     b.cwd = sys.realpath(fn)
