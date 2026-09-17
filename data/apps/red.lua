@@ -1021,7 +1021,7 @@ end
 local mainmenu = menu:new()
 mainmenu.cmd = {}
 
-mainmenu.buf:set 'Help GetAll PutAll Dump Exit Theme Sort New'
+mainmenu:set 'Help GetAll PutAll Dump Exit Theme Sort New '
 
 mainmenu.cmd.Theme = framemenu.cmd.Theme
 
