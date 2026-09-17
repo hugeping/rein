@@ -272,6 +272,7 @@ function frame:resize_frac(w, d, total, min_px)
   local nf = math.max(minf, math.min(sum - minf, pf + d / total))
   prev.frac = nf
   w.frac = sum - nf
+  self.norm_fracs = nil -- the layout changed: normalize() starts over
   self:refresh()
 end
 
@@ -331,6 +332,7 @@ function frame:del_win(c)
   if type(c) == 'number' then
     c = c + 1
   end
+  self.norm_fracs = nil -- the layout changed: normalize() starts over
   return self:del(c)
 end
 
@@ -341,6 +343,7 @@ function frame:add_win(w, c)
   if w.menu_w then
     w.menu_w.frame = self
   end
+  self.norm_fracs = nil -- the layout changed: normalize() starts over
   return self:add(w, c)
 end
 
