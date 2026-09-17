@@ -1285,4 +1285,51 @@ function win:event(r, v, a, b)
   return true
 end
 
+-- window state for red.dump: "type" names the window kind, win.kinds
+-- holds the restorers.  A kind of its own overrides dump() and adds
+-- its entry to win.kinds
+function win:dump()
+  return {
+    type = 'win',
+    fname = string.format("%s", self.buf.fname),
+    line = self.buf:line_nr(),
+    text = self.buf:gettext(),
+    menu = self.menu,
+    cwd = self.cwd,
+    cmdline = self.cmdline,
+    frac = self.frac,
+    scroll = self.scroll_mode,
+  }
+end
+
+-- apply the common part of a dump entry to an existing window
+function win:restore(d)
+  if d.text then
+    self:set(d.text)
+    self:dirty(self.buf:dirty())
+  end
+  if d.line then
+    self:toline(d.line, false)
+  end
+  self.menu = d.menu
+  self.cwd = d.cwd
+  self.cmdline = d.cmdline
+  self.frac = d.frac
+  if d.scroll ~= nil then
+    self.scroll_mode = d.scroll
+  end
+  return self
+end
+
+-- dump type -> function(frame, entry, idx) making the window
+win.kinds = {}
+
+function win.kinds.win(fr, d, idx)
+  local w = fr:file(d.fname, idx, true)
+  if w then
+    w:restore(d)
+  end
+  return w
+end
+
 return win

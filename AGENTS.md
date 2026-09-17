@@ -23,19 +23,21 @@ rein is a minimalist 2D game/demo engine. The `rein` binary is a thin C host (SD
 
 ## Tests and lint
 
-- Tests are pure LuaJIT — no SDL or `rein` binary needed. Run from the repo root: `sh tests/run.sh`.
+- Tests need no SDL or `rein` binary. Run from the repo root: `sh tests/run.sh` — it compiles and runs the C tests for `src/tls` (`tests/tls_test.c`, fixtures in `tests/tls_session.h`) and then the LuaJIT tests.
 - Single file: `luajit tests/run.lua tests/buf_test.lua`. `tests/env.lua` stubs rein globals; `tests/harness.lua` provides `describe`/`it`/`eq`/`ok`/`match`/`fail`.
-- Lint the editor modules (config comment in `.luacheckrc`): `luacheck data/apps/red.lua data/lib/red/*.lua`. Pre-existing warnings are expected; don't fix unrelated ones.
+- Lint the editor modules (config comment in `.luacheckrc`): `luacheck data/apps/red.lua data/lib/red/*.lua data/lib/red/proc/*.lua`. Pre-existing warnings are expected; don't fix unrelated ones.
 
 ## Layout
 
 - `src/main.c` — entrypoint: sets `DATADIR`/`VERSION`/`ARGS`/`PLATFORM`/`SCALE` globals, `require`s `data/core/core.lua`.
 - `src/sdl2/platform.c` (SDL2) / `src/sdl3/platform.c` (SDL3) are the only SDL-aware files; everything else uses `src/platform.h`.
 - Other C Lua modules: `gfx.c` (`gfx`), `synth.c`, `zvon*.c` (audio), `thread.c`, `net.c`, `system.c` (`sys`), `utf.c`, `bit.c`.
-- `data/core/` — engine Lua (main loop, `api`, `font`, `mixer`, `spr`); `data/lib/` — stdlib patches (`std.lua`), editor, sfx, red editor; `data/apps/` — built-in apps.
+- `src/tls/` — TinyTLS: minimal TLS 1.2 client used by `net.c` (`net.tls`); sources are compiled straight into rein.
+- `data/core/` — engine Lua (main loop, `api`, `font`, `mixer`, `spr`); `data/lib/` — stdlib patches (`std.lua`), editor, sfx, red editor; `data/lib/red/proc/*.lua` — proc extensions (a file returns a table merged into `proc`); `data/apps/` — built-in apps.
 - Apps run as coroutines driven by `core.run()`; `sys.exec`/suspend/resume powers app switching — see `data/boot.lua`.
 
 ## Conventions
 
+- Do not commit (or push) without an explicit go-ahead; leave the changes in the working tree for the maintainer to commit.
 - C: tabs, K&R-ish brace style, 79-col-ish wrapping. Lua: 2-space indent, no `local` for rein runtime globals (`screen`, `gfx`, `sys`, `input`, ...).
 - `VERSION` is the build date (`date +%y%m%d`) and is shown in the UI/title.
