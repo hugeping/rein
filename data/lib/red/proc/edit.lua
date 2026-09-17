@@ -355,7 +355,8 @@ local function vm_run(re, text, from, upto, anchored)
         elseif op.op == 'any' then
           ok = c ~= nil and c ~= '\n'
         elseif op.op == 'class' then
-          ok = c ~= nil and c ~= '\n' and class_hit(op, c) ~= op.neg
+          -- a class matches a newline as well, unlike .
+          ok = c ~= nil and class_hit(op, c) ~= op.neg
         elseif op.op == 'adv' then
           ok = c ~= nil
         end
@@ -547,7 +548,7 @@ local function regexp(p)
 end
 
 local function text_of(ctx, s, e)
-  return table.concat(ctx.text, '', s, math.max(s, e - 1))
+  return table.concat(ctx.text, '', s, e - 1)
 end
 
 -- the span of line nr starting at rune from
