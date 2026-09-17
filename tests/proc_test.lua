@@ -3,7 +3,8 @@ local win = require "red/win"
 describe("proc extensions", function()
   it("each file of red/proc exports a table of procedures", function()
     for _, n in ipairs { "gemini", "grep", "dump", "dos2unix",
-      "fmt", "par", "win", "cat", "indent", "shell", "buf" } do
+      "fmt", "par", "win", "cat", "indent", "shell", "buf",
+      "edit" } do
       local t = require("red/proc/" .. n)
       eq(type(t), "table", n)
       ok(next(t), n .. " exports a procedure")
