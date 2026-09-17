@@ -1,4 +1,7 @@
 local frame = require "red/frame"
+local menu = require "red/menu"
+local win = require "red/win"
+local shell = require "red/shell"
 
 -- In the real app childs[1] is the column menu; keep a placeholder so
 -- for_win() enumerates the fake windows correctly.
@@ -149,5 +152,67 @@ describe("frame", function()
     f:resize_win(w1, 50)
     eq(w1.frac, 0.5)
     eq(w2.frac, 0.5)
+  end)
+end)
+
+-- frame with a real menu and a frame:file stand-in for the app one
+local function dump_frame()
+  local f = frame:new(menu:new())
+  f.file = function(self, fname, pos)
+    local w = win:new(fname)
+    self:add_win(w, pos)
+    return w
+  end
+  return f
+end
+
+describe("frame dump", function()
+  it("restore makes the windows and dump round-trips them", function()
+    local f = dump_frame()
+    local d = {
+      menu = "| New",
+      stacked = true,
+      frac = 0.5,
+      stacked_cmdline = "| cmd",
+      { type = "win", fname = "a.txt", text = "hi\n",
+        menu = "a | x", frac = 0.6 },
+      { type = "shell", fname = "+win", text = "$ ls\n", hist = { "ls" } },
+    }
+    f:restore(d)
+    local wins = {}
+    for w in f:for_win() do table.insert(wins, w) end
+    eq(#wins, 2)
+    eq(wins[1].buf.fname, "a.txt")
+    eq(wins[1]:gettext(), "hi\n")
+    eq(wins[1].menu, "a | x")
+    eq(wins[1].frac, 0.6)
+    ok(wins[2].shell, "shell window")
+    eq(wins[2].shell.hist[1], "ls")
+    eq(wins[2]:gettext(), "$ ls\n")
+    eq(f:menu():gettext(), "| New")
+    eq(f.stacked, true)
+    eq(f.frac, 0.5)
+    eq(f.stacked_cmdline, "| cmd")
+
+    local d2 = f:dump()
+    eq(d2.menu, "| New")
+    eq(d2.stacked, true)
+    eq(d2.frac, 0.5)
+    eq(d2.stacked_cmdline, "| cmd")
+    eq(d2[1].type, "win")
+    eq(d2[1].fname, "a.txt")
+    eq(d2[1].text, "hi\n")
+    eq(d2[2].type, "shell")
+    eq(d2[2].hist[1], "ls")
+  end)
+
+  it("an unknown kind restores as a plain window", function()
+    local f = dump_frame()
+    f:restore { { type = "future", fname = "a.txt", text = "hi\n" } }
+    local wins = {}
+    for w in f:for_win() do table.insert(wins, w) end
+    eq(#wins, 1)
+    eq(wins[1]:gettext(), "hi\n")
+    eq(wins[1].shell, nil)
   end)
 end)

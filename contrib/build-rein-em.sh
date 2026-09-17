@@ -22,7 +22,8 @@ VERSION=`date +%y%m%d`
 mkdir -p dist/emscripten
 
 emcc -O2 -o dist/emscripten/rein.html \
-	src/*.c src/sdl3/platform.c src/lua/*.c -Isrc/lua \
+	src/*.c src/tls/*.c src/sdl3/platform.c src/lua/*.c \
+	-Isrc/lua \
 	-sUSE_SDL=3 -DDATADIR=\"/data\" -DVERSION=\"$VERSION\" \
 	-lidbfs.js -sWASM=1 -sALLOW_MEMORY_GROWTH=1 \
 	--preload-file data/ \

@@ -1,7 +1,6 @@
 local win = require "red/win"
 local frame = require "red/frame"
 local proc = require "red/proc"
-local shell = require "red/shell"
 local uri = require "red/uri"
 local conf = require "red/conf"
 local theme = require "red/theme"
@@ -953,11 +952,15 @@ function framemenu.cmd:Put()
 end
 
 -- base window commands to control output following; the menu word shows
--- the action which is available now
+-- the action which is available now (it may be one of several words)
 local function set_scroll(s, on)
   s.scroll_mode = on
-  if s.cmdline == 'Scroll' or s.cmdline == 'Noscroll' then
-    s.cmdline = on and 'Noscroll' or 'Scroll'
+  local words = s.cmdline and s.cmdline:split()
+  local i = words and (table.find(words, 'Scroll') or
+    table.find(words, 'Noscroll'))
+  if i then
+    words[i] = on and 'Noscroll' or 'Scroll'
+    s.cmdline = table.concat(words, ' ')
     s.frame:update()
   end
   return true
@@ -1035,31 +1038,9 @@ function mainmenu:scroller(click)
 end
 
 function mainmenu.cmd:Dump()
-  local d = {}
-  d.menu = self.buf:gettext()
+  local d = { menu = self.buf:gettext() }
   for f in self.frame:for_win() do
-    local c = {
-      menu = f:menu().buf:gettext(),
-      stacked = f.stacked,
-      frac = f.frac,
-      stacked_cmdline = f.stacked_cmdline,
-    }
-    for w in f:for_win() do
-      table.insert(c, {
-        fname = string.format("%s", w.buf.fname),
-        line = w.buf:line_nr(),
-        text = w.buf:gettext(),
-        menu = w.menu,
-        cwd = w.cwd,
-        cmdline = w.cmdline,
-        frac = w.frac,
-        shell = w.shell and true,
-        output_pos = w.shell and w.output_pos,
-        hist = w.shell and w.shell.hist,
-        scroll = w.scroll_mode,
-      })
-    end
-    table.insert(d, c)
+    table.insert(d, f:dump())
   end
   dumper.save("red.dump", d)
 end
@@ -1183,7 +1164,13 @@ To move file buffer between columns use mouse 2nd button drag&drop of menu butto
 - Syntax              - toggle syntax hl
 - Theme [name]        - color theme (default, dark)
 - dump                - hex-dump
+- gemini <host>       - fetch gemini:// page (TLS)
 - win                 - pseudo acme win-shell
+
+> Gemtext: middle click on a "=>" line follows the link; Get re-reads
+> the page.
+> For a 10/11 (input) response type the answer after the "? " prompt
+> and press return.
 
 > win-shell notes (for Unix only):
 >   esc          - close input
@@ -1600,46 +1587,7 @@ local function load_dump(f)
   for i, v in ipairs(d) do
     mainmenu.cmd.New(mainmenu) -- Newcol
     local fr = main:win(i)
-    local wins = {}
-    for idx, b in ipairs(v) do
-      -- force: a dump may hold two windows with the same relative name
-      local w = fr:file(b.fname, idx, true)
-      wins[idx] = w
-      if w then
-        if b.text then
-          w:set(b.text)
-          w:dirty(w.buf:dirty())
-        end
-        if b.line then
-          w:toline(b.line, false)
-        end
-      end
-    end
-    for idx, b in ipairs(v) do
-      local w = wins[idx]
-      if w then
-        w.menu = b.menu
-        w.cwd = b.cwd
-        w.cmdline = b.cmdline
-        w.frac = b.frac
-        if b.shell then
-          shell.win(w)
-          w.cmdline = b.cmdline or w.cmdline
-          w.shell.hist = b.hist or {}
-          w.output_pos = b.output_pos
-          w:cur(#w.buf.text + 1)
-        end
-        if b.scroll ~= nil then
-          w.scroll_mode = b.scroll
-        end
-      end
-    end
-    if v.menu then
-      fr:menu().buf:set(v.menu)
-    end
-    fr.stacked = v.stacked
-    fr.frac = v.frac
-    fr.stacked_cmdline = v.stacked_cmdline
+    fr:restore(v)
     fr:update(true, true)
   end
   if d.menu then
