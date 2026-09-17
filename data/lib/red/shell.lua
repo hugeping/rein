@@ -2,6 +2,24 @@ local win = require "red/win"
 
 local shell = {}
 
+-- start a command with its stdout on a pipe; the sighup dance around
+-- popen keeps a dying child from taking the editor with it
+local function shell_popen(prog, cwd)
+  local posix = require "red/posix"
+  local f, e
+
+  if cwd and PLATFORM ~= 'Windows' then
+    prog = string.format("cd %q && %s", cwd, prog)
+  end
+  posix.sighup(true)
+  f, e = io.popen(prog, "r")
+  posix.sighup(false)
+  if f then
+    f:setvbuf 'no'
+  end
+  return f, e
+end
+
 local function pipe_shell()
   local posix = require("red/posix")
   local function read_sym(f)
@@ -27,15 +45,10 @@ local function pipe_shell()
     return #t > 0 and table.concat(t, '')
   end
   local prog, cwd = thread:read()
-  if cwd then
-    prog = string.format("cd %q && %s", cwd, prog)
-  end
-  posix.sighup(true)
-  local f, e = io.popen(prog, "r")
-  posix.sighup(false)
+  local f, e = shell_popen(prog, cwd)
+
   thread:write(not not f, e)
   if not f then return end
-  f:setvbuf 'no'
   local t = true
   while t do
     t = read_sym(f)
@@ -52,15 +65,10 @@ local function pipe_proc()
   local posix = require("red/posix")
 
   local prog, cwd = thread:read()
-  if cwd and PLATFORM ~= 'Windows' then
-    prog = string.format("cd %q && %s", cwd, prog)
-  end
-  posix.sighup(true)
-  local f, e = io.popen(prog, "r")
-  posix.sighup(false)
+  local f, e = shell_popen(prog, cwd)
+
   thread:write(not not f, e)
   if not f then return end
-  f:setvbuf 'no'
   local pre
   while true do
     local _, ok = posix.poll(f)
@@ -212,6 +220,58 @@ function shell.pipe(w, prog, inp, sh)
     ret:kill()
   end
   return ret
+end
+
+-- run a shell command and return its output; `input` (a string) is fed
+-- to it on stdin.  The calling coroutine waits for the command without
+-- freezing the editor, as shell.pipe does for a window
+function shell.out(cmd, cwd, input)
+  local posix = require "red/posix"
+  local tmp, f
+
+  if input then
+    tmp = os.tmpname()
+    if not io.file(tmp, input) then
+      return nil, "cannot write " .. tmp
+    end
+  end
+  if PLATFORM ~= 'Windows' then
+    -- the errors of the command belong to its output, as in pipe_setup
+    cmd = string.format("( %s ) <%s 2>&1", cmd, tmp or '/dev/null')
+  end
+  f = shell_popen(cmd, cwd)
+  if not f then
+    if tmp then
+      os.remove(tmp)
+    end
+    return nil, "cannot run " .. cmd
+  end
+  local out = {}
+  while true do
+    local ready, ok = posix.poll(f, 20)
+
+    if not ok then
+      break
+    end
+    if ready then
+      local chunk = posix.read(f, 512)
+
+      if not chunk then
+        break
+      end
+      table.insert(out, chunk)
+    end
+    local co, main = coroutine.running()
+
+    if co and not main then
+      coroutine.yield(true)
+    end
+  end
+  f:close()
+  if tmp then
+    os.remove(tmp)
+  end
+  return table.concat(out)
 end
 
 function shell:delete()
