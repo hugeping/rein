@@ -17,7 +17,10 @@
 --
 --   addresses  . #n n $ 0 /regexp/ ?regexp? and the compounds a1,a2
 --              a1;a2 a1+n a1-n and a1 a2 (the + may be elided)
---   commands   a i c d s m t p = =# and the loops x y g v
+--   commands   a i c d s m t p = =# < | and the loops x y g v
+--   shell      <cmd runs the command and puts its output in place of
+--              the addressed text, |cmd pipes the text through it (the
+--              window coroutine waits, so the editor stays alive)
 --   regexps    as in regexp(6): . [] * + ? | () ^ $ \escapes and sam's
 --              \n; an empty regexp means the last one used.  Compiled to
 --              an NFA and simulated (a Pike VM), so a match is the
@@ -27,6 +30,8 @@
 -- Not implemented: the file/menu commands (e r w f b B n D X Y), the
 -- mark and k, undo (u), q, !, braces, and sam's deferred multi-change
 -- model: a command's changes are applied before the next one runs.
+
+local shell = require "red/shell"
 
 -- The app environment (data/core/api.lua) replaces the global error
 -- with a reporter that draws the message on the screen and yields, so
@@ -453,6 +458,18 @@ local function eol(p)
   end
 end
 
+-- the rest of the line with the leading blanks skipped: the text of
+-- the shell commands
+local function line_rest(p)
+  skip_space(p)
+  local s = p.i
+
+  while not line_end(p) do
+    p.i = p.i + #peek(p)
+  end
+  return p.src:sub(s, p.i - 1)
+end
+
 -- the text on the lines after the command, ended by a line with a dot
 local function lines_text(p)
   local out = {}
@@ -660,20 +677,11 @@ local function apply(ctx)
   table.sort(ctx.changes, function(a, b)
     return a.s < b.s or a.s == b.s and a.e < b.e
   end)
-  local dot = ctx.dot
-  local ds, de = 0, 0
   local text = ctx.text
   local out, n, pos = {}, 0, 1
-  -- one pass over the text, not a rebuild per change
+  -- one pass over the text, not a rebuild per change: the dot is left
+  -- as the command set it (in the coordinates of the changed text)
   for _, ch in ipairs(ctx.changes) do
-    local d = #ch.t - (ch.e - ch.s)
-
-    if ch.e <= dot.s then
-      ds = ds + d
-    end
-    if ch.e <= dot.e then
-      de = de + d
-    end
     for i = pos, ch.s - 1 do
       n = n + 1
       out[n] = text[i]
@@ -690,7 +698,6 @@ local function apply(ctx)
     out[n] = text[i]
   end
   ctx.text = out
-  cmd_dot(ctx, dot.s + ds, dot.e + de)
   ctx.changes = {}
 end
 
@@ -1120,14 +1127,28 @@ command = function(p, ctx, dot)
       table.insert(gaps, { s = prev, e = range.e })
       spans = gaps
     end
+    local total, last = 0, 0
     for _, m in ipairs(spans) do
+      local n0 = #ctx.changes
+
+      last = total
       p.i = save
       if sub then
         command(p, ctx, m)
       else
         say(ctx, "%s", text_of(ctx, m.s, m.e))
+        cmd_dot(ctx, m.s, m.e)
       end
-      cmd_dot(ctx, m.s, m.e)
+      for j = n0 + 1, #ctx.changes do
+        local ch = ctx.changes[j]
+
+        total = total + #ch.t - (ch.e - ch.s)
+      end
+    end
+    -- the last command saw the text before this loop's changes: put its
+    -- dot after them
+    if last ~= 0 then
+      cmd_dot(ctx, ctx.dot.s + last, ctx.dot.e + last)
     end
     if #spans == 0 then
       if sub then -- parse the sub-command for its text only
@@ -1137,6 +1158,31 @@ command = function(p, ctx, dot)
         ctx.quiet = nil
       end
       cmd_dot(ctx, range.s, range.s)
+    end
+  elseif c == '<' or c == '|' then
+    -- the output of the command replaces the addressed text, which is
+    -- piped to it by |, as in acme
+    local cmd = line_rest(p)
+
+    if cmd == '' then
+      script_error(string.format("no command after %q", c))
+    end
+    if not ctx.quiet then
+      local w = ctx.w
+      local cwd = w.cwd or (w.getcwd and w:getcwd())
+      local out, e
+
+      if c == '|' then
+        out, e = shell.out(cmd, cwd, text_of(ctx, range.s, range.e))
+      else
+        out, e = shell.out(cmd, cwd)
+      end
+      if out then
+        cmd_dot(ctx, range.s,
+          range.s + add_change(ctx, range.s, range.e, out))
+      else
+        say(ctx, "%s", tostring(e))
+      end
     end
   else
     script_error(string.format("unknown command: %q", c))

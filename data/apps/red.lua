@@ -1194,10 +1194,13 @@ To move file buffer between columns use mouse 2nd button drag&drop of menu butto
 > result, so repeating the same command continues from it.
 > addresses - . #n n $ 0 /re/ ?re? and the compounds a1,a2 a1;a2
 >             a1+n a1-n a1 a2 (a + may be elided); /re/ wraps around
-> commands  - a i c d s m t p = =# =+ x y g v
+> commands  - a i c d s m t p = =# =+ x y g v < |
+> shell     - <cmd runs the command and puts its output in place of
+>             the text, |cmd pipes the text through it; the error output
+>             comes with it, the command runs in the window directory
 > regexps   - as in regexp(6): . [] * + ? | () ^ $ \escapes and \n;
 >             an empty regexp means the last one used
-> not there - the file/menu commands (b B D e r w f n X Y), k u q !,
+> not there - the file/menu commands (b B D e r w f n X Y), k u q ! >,
 >             braces, the mark and undo
 > examples  - Edit /word/ s//NEW/   replace the next match
 >             Edit //               repeat the search
