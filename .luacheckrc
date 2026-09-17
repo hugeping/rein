@@ -1,5 +1,5 @@
 -- Static analysis config for the red Lua code.
--- `luacheck data/apps/red.lua data/lib/red/*.lua`
+-- `luacheck data/apps/red.lua data/lib/red/*.lua data/lib/red/proc/*.lua`
 std = "luajit"
 max_line_length = false
 
