@@ -685,6 +685,13 @@ function win:completion(txt)
     local path = (d ..'/'.. f):gsub("/+", "/"):esc()
     table.insert(res, path)
   end
+  -- the shorter names first, as ctrl-f offers them one by one
+  table.sort(res, function(a, b)
+    if #a ~= #b then
+      return #a < #b
+    end
+    return a < b
+  end)
   return res
 end
 
