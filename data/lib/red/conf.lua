@@ -16,6 +16,7 @@ return {
   trim_spaces = false,
   brd = { 0xde, 0xde, 0xde },
   menu = 17,
+  menu_pad = 1, -- padding above and below the menu bar text
   hl = { 0xee, 0xee, 0x9e },
   break_hl = { 0xff, 0xee, 0xcc };
   idle_hz = 1,

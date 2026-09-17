@@ -182,7 +182,9 @@ function win:geom(x, y, w, h)
   self.y = y or self.y
   self.w = w or self.w
   self.h = h or self.h
-  self.marg = math.floor(scr.spw/2)
+  -- the padding around the text; the menu class presets it to stay thin
+  -- (conf.menu_pad), windows compute it once from the font
+  self.marg = self.marg or math.floor(scr.spw/2)
   h = h - self.marg*2
   w = w - self.marg*2 - scr.spw
   self.rows = math.floor(h / scr.sph)
