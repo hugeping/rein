@@ -476,6 +476,9 @@ function win:colorize()
   local scheme = self:getconf 'syntax'
   if type(scheme) ~= 'string' then return end
   self:make_epos()
+  if colorizer and colorizer.scheme ~= scheme then
+    colorizer = nil -- the scheme changed: forget the old checkpoints
+  end
   -- nothing changed and the visible range is already colored
   if colorizer and not colorizer.dirty and colorizer.pos >= self.epos
     and colorizer.changed == self.buf.changed_nr then
