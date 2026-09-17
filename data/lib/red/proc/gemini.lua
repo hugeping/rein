@@ -273,6 +273,8 @@ end
 -- set a window up as a page window: link clicks, history and dump
 function gemini.win(w)
   w.gem = w.gem or { links = {}, hist = {}, pos = 0 }
+  w.conf.syntax = "gemini" -- the page is gemtext: highlight it...
+  w.conf.wrap = true       -- ...and wrap the words, as markdown does
   w.cmd = setmetatable(
     { Back = gemini.back, Forward = gemini.forward },
     { __index = win.cmd })
