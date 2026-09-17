@@ -952,11 +952,15 @@ function framemenu.cmd:Put()
 end
 
 -- base window commands to control output following; the menu word shows
--- the action which is available now
+-- the action which is available now (it may be one of several words)
 local function set_scroll(s, on)
   s.scroll_mode = on
-  if s.cmdline == 'Scroll' or s.cmdline == 'Noscroll' then
-    s.cmdline = on and 'Noscroll' or 'Scroll'
+  local words = s.cmdline and s.cmdline:split()
+  local i = words and (table.find(words, 'Scroll') or
+    table.find(words, 'Noscroll'))
+  if i then
+    words[i] = on and 'Noscroll' or 'Scroll'
+    s.cmdline = table.concat(words, ' ')
     s.frame:update()
   end
   return true
@@ -1160,7 +1164,12 @@ To move file buffer between columns use mouse 2nd button drag&drop of menu butto
 - Syntax              - toggle syntax hl
 - Theme [name]        - color theme (default, dark)
 - dump                - hex-dump
+- gemini <host>       - fetch gemini:// page (TLS)
 - win                 - pseudo acme win-shell
+
+> Gemtext: middle click on a "=>" line follows the link.
+> For a 10/11 (input) response type the answer after the "? " prompt
+> and press return.
 
 > win-shell notes (for Unix only):
 >   esc          - close input
