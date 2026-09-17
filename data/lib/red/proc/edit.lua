@@ -1153,18 +1153,14 @@ local function Edit(w, script)
   }
 
   -- dot is the selection, or the null string at the cursor when there
-  -- is none, as in acme
-  ctx.dot = { s = 1, e = #ctx.text + 1 }
+  -- is none, as in acme; the selection may be made right to left
   if w.buf:issel() then
-    local sel = w.buf:getsel()
+    local s, e = w.buf:selrange()
 
     ctx.dot = {
-      s = math.max(1, math.min(sel.s, #ctx.text + 1)),
-      e = math.max(1, math.min(sel.e, #ctx.text + 1)),
+      s = math.max(1, math.min(s, #ctx.text + 1)),
+      e = math.max(1, math.min(e, #ctx.text + 1)),
     }
-    if ctx.dot.e < ctx.dot.s then
-      ctx.dot.e = ctx.dot.s
-    end
   else
     local cur = math.max(1, math.min(w.buf.cur or 1, #ctx.text + 1))
 

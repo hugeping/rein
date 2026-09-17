@@ -2,7 +2,7 @@ local win = require "red/win"
 local ext = require "red/proc/edit"
 
 -- run the script on a fresh window; return the text and the messages
-local function edit(text, script)
+local function edit(text, script, select)
   local w = win:new("t.txt")
   local errs = {}
 
@@ -13,11 +13,18 @@ local function edit(text, script)
     end,
   }
   w:set(text)
+  if select then
+    w:setsel(#w.buf.text+1, 1)
+  end
   ok(ext.Edit(w, script))
   return w:gettext(), errs, w
 end
 
 describe("edit", function()
+  it("s replaces selected", function()
+    eq(edit(">xxx\n", "s/>//", true), "xxx\n")
+  end)
+
   it("s replaces the first match of the range", function()
     eq(edit("one two three\n", ",s/two/TWO/"), "one TWO three\n")
   end)
