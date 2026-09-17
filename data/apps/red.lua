@@ -1164,6 +1164,7 @@ To move file buffer between columns use mouse 2nd button drag&drop of menu butto
 - Syntax              - toggle syntax hl
 - Theme [name]        - color theme (default, dark)
 - dump                - hex-dump
+- Edit <script>       - sam editing script on the window text
 - gemini <host>       - fetch gemini:// page (TLS)
 - win                 - pseudo acme win-shell
 
@@ -1171,6 +1172,26 @@ To move file buffer between columns use mouse 2nd button drag&drop of menu butto
 > the page.
 > For a 10/11 (input) response type the answer after the "? " prompt
 > and press return.
+
+> Edit notes (the sam language, as in acme):
+>   A script is a sequence of lines "address command".  dot is the
+>   selection, or the null string at the cursor when there is none, and
+>   a command without an address acts on dot alone.  Edit selects its
+>   result, so repeating the same command continues from it.
+>   addresses - . #n n $ 0 /re/ ?re? and the compounds a1,a2 a1;a2
+>               a1+n a1-n a1 a2 (a + may be elided); /re/ wraps around
+>   commands  - a i c d s m t p = =# =+ x y g v
+>   regexps   - as in regexp(6): . [] * + ? | () ^ $ \escapes and \n;
+>               an empty regexp means the last one used
+>   not there - the file/menu commands (b B D e r w f n X Y), k u q !,
+>               braces, the mark and undo
+>   examples  - Edit /word/ s//NEW/   replace the next match
+>               Edit //               repeat the search
+>               Edit ,s/word/NEW/      the first match in the file
+>               Edit s/word/NEW/       in the selected text
+>               Edit /b/+1d            the line after the "b" match
+>               Edit 2=                the address of line 2
+>               Edit ,p                print the range to +Errors
 
 > win-shell notes (for Unix only):
 >   esc          - close input
