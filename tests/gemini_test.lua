@@ -236,6 +236,19 @@ describe("gemini", function()
     ok(w.gem.input, "the prompt is still pending")
   end)
 
+  it("Get re-fetches the current page", function()
+    reset()
+    responses = { { "20 text/gemini", "one" }, { "20 text/gemini", "two" } }
+    local w = run("h/a")
+    ok(w:gettext():find("one", 1, true))
+    ok(w:Get())
+    pump(w)
+    ok(w:gettext():find("two", 1, true))
+    eq(requests[1], requests[2], "the same page is requested again")
+    eq(#w.gem.hist, 1, "a reload does not add a history entry")
+    eq(w.gem.pos, 1)
+  end)
+
   it("a gemini window dumps and restores url, history and input", function()
     local w = page("=> gemini://h/a one\n", "gemini://h/x", {
       hist = { "gemini://h/a", "gemini://h/x" },

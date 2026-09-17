@@ -281,7 +281,20 @@ function gemini.win(w)
   w.event = gemini.event
   w.keydown_event = gemini.keydown_event
   w.newline = gemini.newline
+  w.Get = gemini.Get
   return w
+end
+
+-- the menu "Get" re-reads the page instead of the file
+function gemini:Get()
+  local g = self.gem
+
+  if g.pos > 0 then
+    go(self, g.pos)
+  elseif g.url then
+    gemini.follow(self, g.url)
+  end
+  return true
 end
 
 function gemini:event(r, v, a, b)
