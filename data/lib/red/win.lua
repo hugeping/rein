@@ -729,7 +729,9 @@ function win:mouseup(mb, x, y)
 
   local nl
   local exec = mb == 'middle' or (mb == 'right' and input.keydown 'shift')
-  if mb == 'right' or exec then
+  -- the first column is the scroller (the square of a menu): the mouse
+  -- there is not the text, so nothing is executed and the cursor stays
+  if (mb == 'right' or exec) and x >= scr.spw then
     self.buf.cur, nl = self:off2cur(x, y)
     local txt = self:get_active_text(exec, nl)
     if exec then
@@ -756,7 +758,9 @@ function win:mousedown(mb, x, y)
     return
   end
   if mb ~= 'left' then
-    self.buf.cur = self:off2cur(x, y)
+    if x >= scr.spw then -- the first column is the scroller (square)
+      self.buf.cur = self:off2cur(x, y)
+    end
     return
   end
   if x < scr.spw then
