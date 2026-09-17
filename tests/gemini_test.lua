@@ -121,16 +121,16 @@ describe("gemini", function()
     w.run = function(_, f) table.insert(asked, f) end
     w.exec = function(_, t) table.insert(executed, t) end
     w.off2cur = function() return 3 end
-    ok(w:event('mouseup', 'middle', 5, 5))
+    ok(w:event('mouseup', 'middle', 20, 5))
     eq(#asked, 1)
     eq(w.gem.hist[#w.gem.hist], "gemini://h/a")
     eq(#executed, 0, "the link click is not executed as a command")
     w.off2cur = function() return 21 end -- the second link line
-    ok(w:event('mouseup', 'middle', 5, 5))
+    ok(w:event('mouseup', 'middle', 20, 5))
     eq(w.gem.hist[#w.gem.hist], "gemini://h/b")
     eq(#executed, 0)
     w.off2cur = function() return 40 end -- end of the page, no link there
-    w:event('mouseup', 'middle', 5, 5)
+    w:event('mouseup', 'middle', 20, 5)
     eq(#asked, 2, "a click outside the links does not navigate")
     eq(#executed, 1, "win:mouseup executes it as a command")
   end)
