@@ -360,8 +360,15 @@ local function vm_run(re, text, from, upto, anchored)
           ok = c ~= nil
         end
         if ok then
-          add_thread(re, nlist, nseen, th.pc + 1, slots_copy(th.slots),
-            i + 1, text)
+          local s0 = th.slots[0]
+
+          -- leftmost-longest: once a match is known, a thread that has
+          -- not entered the pattern yet (or starts later) can only give
+          -- a righter or shorter match, so let it go
+          if not best or (s0 and s0 <= best.s) then
+            add_thread(re, nlist, nseen, th.pc + 1, slots_copy(th.slots),
+              i + 1, text)
+          end
         end
       end
     end
@@ -650,10 +657,13 @@ local function apply(ctx)
     return
   end
   table.sort(ctx.changes, function(a, b)
-    return a.s > b.s or a.s == b.s and a.e > b.e
+    return a.s < b.s or a.s == b.s and a.e < b.e
   end)
   local dot = ctx.dot
   local ds, de = 0, 0
+  local text = ctx.text
+  local out, n, pos = {}, 0, 1
+  -- one pass over the text, not a rebuild per change
   for _, ch in ipairs(ctx.changes) do
     local d = #ch.t - (ch.e - ch.s)
 
@@ -663,20 +673,22 @@ local function apply(ctx)
     if ch.e <= dot.e then
       de = de + d
     end
-    local out = {}
-
-    for i = 1, ch.s - 1 do
-      table.insert(out, ctx.text[i])
+    for i = pos, ch.s - 1 do
+      n = n + 1
+      out[n] = text[i]
     end
     for _, c in ipairs(ch.t) do
-      table.insert(out, c)
+      n = n + 1
+      out[n] = c
     end
-    for i = ch.e, #ctx.text do
-      table.insert(out, ctx.text[i])
-    end
-    ctx.text = out
+    pos = ch.e
     ctx.changed = true
   end
+  for i = pos, #text do
+    n = n + 1
+    out[n] = text[i]
+  end
+  ctx.text = out
   cmd_dot(ctx, dot.s + ds, dot.e + de)
   ctx.changes = {}
 end
