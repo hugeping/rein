@@ -265,7 +265,7 @@ function win:save()
     end
     self:dirty(true)
   end
-  local r, e = self.buf:save_atomic()
+  local r, e = self.buf:save()
   if r then
     self:nodirty()
   else
