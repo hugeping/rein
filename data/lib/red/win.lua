@@ -118,12 +118,15 @@ function win:handlekey(key)
   end
 end
 
+-- fname is a file name or, for a second window on the same text
+-- (the Zerox command), an existing buffer
 function win:new(fname)
-  local w = { buf = buf:new(fname), glyphs = {},
+  local b = type(fname) == 'table' and fname or buf:new(fname)
+  local w = { buf = b, glyphs = {},
     fg = self.fg or conf.fg,
     bg = self.bg or conf.bg,
     pos = 1, co = {}, conf = {} }
-  w.buf.win = w
+  b.win = b.win or w
   self.__index = self
   setmetatable(w, self)
   return w
@@ -474,11 +477,13 @@ function win:colorize()
   if type(scheme) ~= 'string' then return end
   self:make_epos()
   -- nothing changed and the visible range is already colored
-  if colorizer and not colorizer.dirty and colorizer.pos >= self.epos then
+  if colorizer and not colorizer.dirty and colorizer.pos >= self.epos
+    and colorizer.changed == self.buf.changed_nr then
     return colorizer
   end
   local step = self:getconf 'colorize_checkpoint' or 1024
-  if colorizer and colorizer.dirty then
+  if colorizer and (colorizer.dirty or
+    colorizer.changed ~= self.buf.changed_nr) then
     -- resume from the last checkpoint before the earliest change;
     -- checkpoints after it are invalid
     colorizer.txt = self.buf.text
@@ -499,6 +504,7 @@ function win:colorize()
     self.buf.changed_from = nil
   end
   colorizer.dirty = false
+  colorizer.changed = self.buf.changed_nr
   local next_cp = colorizer.pos + step
   while colorizer.pos < self.epos do
     local before = colorizer.pos
@@ -1325,6 +1331,20 @@ end
 win.kinds = {}
 
 function win.kinds.win(fr, d, idx)
+  if d.share then -- a window on the buffer of an earlier one
+    local src = fr:win(d.share)
+
+    if not src then
+      return
+    end
+    local w = win:new(src.buf)
+
+    w.conf = src.conf
+    w.isdirty = src.isdirty
+    fr:add_win(w, idx)
+    w:restore(d)
+    return w
+  end
   local w = fr:file(d.fname, idx, true)
   if w then
     w:restore(d)

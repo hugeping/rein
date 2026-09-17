@@ -34,6 +34,9 @@ function buf:mark(pos)
   if pos and (not self.changed_from or pos < self.changed_from) then
     self.changed_from = pos
   end
+  -- a counter of the text changes: several windows may share a buffer,
+  -- each colorizer compares it with the one it was built at
+  self.changed_nr = (self.changed_nr or 0) + 1
   self.hash_cache = nil
 end
 

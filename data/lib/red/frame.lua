@@ -461,8 +461,20 @@ function frame:dump()
     frac = self.frac,
     stacked_cmdline = self.stacked_cmdline,
   }
+  local seen = {}
+
   for w in self:for_win() do
-    table.insert(d, w:dump())
+    local e = w:dump()
+    local share = seen[w.buf]
+
+    if share then
+      -- a second window on the same buffer: the first one carries it
+      e.share = share
+      e.text = nil
+    else
+      seen[w.buf] = #d + 1
+    end
+    table.insert(d, e)
   end
   return d
 end

@@ -206,6 +206,53 @@ describe("frame dump", function()
     eq(d2[2].hist[1], "ls")
   end)
 
+  it("windows sharing a buffer stay shared through the dump", function()
+    local f = dump_frame()
+
+    f:restore {
+      { type = "win", fname = "a.txt", text = "hi\n" },
+      { type = "win", fname = "a.txt", text = "hi\n" },
+    }
+    local wins = {}
+
+    for w in f:for_win() do
+      table.insert(wins, w)
+    end
+    eq(#wins, 2)
+    ne(wins[1].buf, wins[2].buf, "two buffers by default")
+
+    wins[2].buf = wins[1].buf -- as Zerox makes them
+    local d = f:dump()
+
+    eq(d[1].text, "hi\n")
+    eq(d[2].share, 1, "the second window points at the first")
+    eq(d[2].text, nil)
+
+    local f2 = dump_frame()
+
+    f2:restore(d)
+    local r = {}
+
+    for w in f2:for_win() do
+      table.insert(r, w)
+    end
+    eq(r[1].buf, r[2].buf, "the sharing survives the restore")
+    eq(r[1]:gettext(), "hi\n")
+    eq(r[2]:gettext(), "hi\n")
+
+    -- an edit of the shared text is noticed by both colorizers
+    r[1].rows, r[1].cols = 5, 40
+    r[2].rows, r[2].cols = 5, 40
+    r[1].conf.syntax, r[2].conf.syntax = "lua", "lua"
+    ok(r[1]:colorize())
+    ok(r[2]:colorize())
+    eq(r[2].colorizer.changed, r[1].buf.changed_nr)
+
+    r[1].buf:input("local x = 1\n")
+    ok(r[2]:colorize())
+    eq(r[2].colorizer.changed, r[1].buf.changed_nr, "the second window rebuilt")
+  end)
+
   it("an unknown kind restores as a plain window", function()
     local f = dump_frame()
     f:restore { { type = "future", fname = "a.txt", text = "hi\n" } }
