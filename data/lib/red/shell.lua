@@ -1,3 +1,5 @@
+local win = require "red/win"
+
 local shell = {}
 
 local function pipe_shell()
@@ -327,8 +329,17 @@ function shell:down()
   h.pos = math.min(#h + 1, h.pos)
 end
 
+function shell:dump()
+  local d = win.dump(self)
+  d.type = 'shell'
+  d.output_pos = self.output_pos
+  d.hist = self.shell.hist
+  return d
+end
+
 function shell.win(w)
   w.shell = { hist = {} }
+  w.dump = shell.dump
   w.super = { up = w.up, down = w.down,
     newline = w.newline, escape = w.escape }
   w.newline = shell.newline
@@ -340,6 +351,17 @@ function shell.win(w)
   w.scroll_mode = true
   w.cmdline = 'Noscroll'
   w.frame:update();
+end
+
+win.kinds.shell = function(fr, d, idx)
+  local w = win.kinds.win(fr, d, idx)
+  if not w then return end
+  shell.win(w)
+  w.shell.hist = d.hist or {}
+  w.output_pos = d.output_pos
+  w.cmdline = d.cmdline or w.cmdline
+  w:cur(#w.buf.text + 1)
+  return w
 end
 
 return shell

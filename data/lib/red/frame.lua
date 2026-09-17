@@ -1,4 +1,5 @@
 local conf = require "red/conf"
+local win = require "red/win"
 
 local frame = {
 }
@@ -450,6 +451,34 @@ function frame:stacked_toggle()
   self.stacked = not self.stacked
   self:update(true, true)
   self:refresh()
+end
+
+-- the whole column for red.dump: the frame state and its windows
+function frame:dump()
+  local d = {
+    menu = self:menu().buf:gettext(),
+    stacked = self.stacked,
+    frac = self.frac,
+    stacked_cmdline = self.stacked_cmdline,
+  }
+  for w in self:for_win() do
+    table.insert(d, w:dump())
+  end
+  return d
+end
+
+function frame:restore(d)
+  for idx, b in ipairs(d) do
+    local kind = win.kinds[b.type or 'win'] or win.kinds.win
+    kind(self, b, idx)
+  end
+  if d.menu then
+    self:menu().buf:set(d.menu)
+  end
+  self.stacked = d.stacked
+  self.frac = d.frac
+  self.stacked_cmdline = d.stacked_cmdline
+  return self
 end
 
 return frame
