@@ -402,6 +402,7 @@ end
 local menu = require "red/menu"
 
 menu.bg = conf.menu
+menu.marg = conf.menu_pad
 
 function menu:show()
   win.show(self)
