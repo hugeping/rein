@@ -893,7 +893,7 @@ end
 function framemenu.cmd:Wrap()
   local w = self:data()
   if not w then return end
-  w.conf.wrap = not w.conf.wrap
+  w.conf.wrap = not w:getconf 'wrap'
   self.frame:update()
 end
 

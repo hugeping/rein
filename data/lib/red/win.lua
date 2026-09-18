@@ -997,9 +997,17 @@ function win:input(t)
   self.autox = false
 end
 
+-- the settings of the window: its own conf (the file presets and what
+-- the user sets), then the defaults of its kind, then the global conf;
+-- a rename may re-read the presets, the kind keeps its own settings
 function win:getconf(name)
   if self.conf[name] ~= nil then
     return self.conf[name]
+  end
+  local k = self.kind_conf
+
+  if k and k[name] ~= nil then
+    return k[name]
   end
   return conf[name]
 end
