@@ -8,7 +8,7 @@ return {
   cursor_over = 8,
   button = { 0x88, 0x88, 0xcc},
   active = { 0xff, 0x88, 0xcc},
-  font = DATADIR..'/fonts/iosevka-light.ttf',
+  font = DATADIR..'/fonts/iosevka-minimal.ttf',
   font_sz = 14,
   drag_delta = 4,
   ts = 4,
