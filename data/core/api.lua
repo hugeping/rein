@@ -107,6 +107,9 @@ local env = {
     hidemouse = sys.hidemouse,
     clipboard = sys.clipboard,
     newrand = sys.newrand,
+    -- the app runs as a coroutine: socket helpers cooperate by
+    -- yielding instead of sleeping
+    incoroutine = true,
   },
   thread = thread,
   net = net,

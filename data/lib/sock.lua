@@ -40,8 +40,10 @@ function tcp:starttls(host)
     if r == nil then
       return false, e
     end
-    if not THREAD then
-      coroutine.yield()
+    if sys.incoroutine then
+      -- an empty yield would drop the frame rate to idle_hz: poll
+      -- fast until the engine is done with the socket
+      coroutine.yield(true)
     else
       sys.sleep(DELAY)
     end
@@ -62,8 +64,10 @@ function tcp:write(data)
     end
     len = len - rc
     i = i + rc
-    if not THREAD then
-      coroutine.yield()
+    if sys.incoroutine then
+      -- an empty yield would drop the frame rate to idle_hz: poll
+      -- fast until the engine is done with the socket
+      coroutine.yield(true)
     else
       sys.sleep(DELAY)
     end
@@ -97,7 +101,9 @@ function tcp:wait(fn)
       return r, e
     end
     if sys.incoroutine then
-      coroutine.yield()
+      -- an empty yield would drop the frame rate to idle_hz: poll
+      -- fast until the engine is done with the socket
+      coroutine.yield(true)
     else
       sys.sleep(DELAY)
     end
