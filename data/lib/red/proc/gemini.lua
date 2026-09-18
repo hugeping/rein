@@ -12,9 +12,15 @@ local win = require "red/win"
 
 local gemini = {}
 
-local function say(out, text)
+local function say(out, text, gen)
+  -- the page may be stale already: the window went elsewhere while
+  -- this one was being read
+  if gen and out.gem.gen ~= gen then
+    return false
+  end
   out:printf("%s", text)
   out:scroll_output()
+  return true
 end
 
 -- gemini://host[:port][/path] (the port defaults to 1965)
@@ -120,11 +126,12 @@ function gemini.answer(w, text)
   return gemini.follow(w, gemini.query(i.url, text))
 end
 
-local function fetch(out, url, depth)
+local function fetch(out, url, depth, gen)
+  local g = out.gem
   local u = parse(url)
 
   if not u then
-    say(out, "bad url: " .. url .. "\n")
+    say(out, "bad url: " .. url .. "\n", gen)
     return false
   end
   if depth == 0 then
@@ -132,37 +139,55 @@ local function fetch(out, url, depth)
     out.gem.links = {}
   end
   out.gem.url = url
-  say(out, string.format("%s%s\n", url,
-    depth > 0 and " (redirect)" or ""))
+  if not say(out, string.format("%s%s\n", url,
+    depth > 0 and " (redirect)" or ""), gen) then
+    return false
+  end
 
   local s, e = sock.dial(u.host, u.port, u.host)
   if not s then
-    say(out, "error: " .. tostring(e) .. "\n")
+    say(out, "error: " .. tostring(e) .. "\n", gen)
+    return false
+  end
+  g.sock = s
+  if g.gen ~= gen then
+    g.sock = nil
+    s:close()
     return false
   end
   if not s:write(url .. "\r\n") then
-    say(out, "error: send failed\n")
+    say(out, "error: send failed\n", gen)
     s:close()
+    g.sock = nil
     return false
   end
 
   local line, le = s:readln(true)
-  if not line then
-    say(out, "error: " .. tostring(le or "closed") .. "\n")
+  if g.gen ~= gen then
     s:close()
+    g.sock = nil
+    return false
+  end
+  if not line then
+    say(out, "error: " .. tostring(le or "closed") .. "\n", gen)
+    s:close()
+    g.sock = nil
     return false
   end
   local status = tonumber(line:sub(1, 2))
   local meta = line:sub(4)
   if not status then
-    say(out, "error: bad response\n")
+    say(out, "error: bad response\n", gen)
     s:close()
+    g.sock = nil
     return false
   end
-  say(out, string.format("[%d %s]\n", status, meta))
+  say(out, string.format("[%d %s]\n", status, meta), gen)
 
   if status >= 10 and status < 20 then
     gemini.prompt(out, url, meta)
+    s:close()
+    g.sock = nil
     return true
   end
 
@@ -174,7 +199,7 @@ local function fetch(out, url, depth)
     while true do
       local l = s:readln(true)
 
-      if not l then
+      if not l or g.gen ~= gen then
         break
       end
       out:printf("%s\n", l)
@@ -184,34 +209,47 @@ local function fetch(out, url, depth)
         coroutine.yield(true)
       end
     end
-    out:scroll_output()
     s:close()
+    g.sock = nil
+    if g.gen ~= gen then
+      return false
+    end
+    out:scroll_output()
     gemini.scan(out)
     return true
   end
 
   s:close()
+  g.sock = nil
   if status >= 30 and status < 40 and depth < 5
     and meta:find("^gemini://")
   then
-    return fetch(out, meta, depth + 1)
+    return fetch(out, meta, depth + 1, gen)
   end
-  return true
+  return g.gen == gen
 end
 
 -- show hist[pos] in the window; a redirect updates the entry to the
--- page actually loaded
+-- page actually loaded.  A new navigation cancels the previous one:
+-- its socket is closed and the generation stops it from writing
 local function go(w, pos)
   local g = w.gem
 
   g.input = nil -- a pending 10/11 prompt is stale after a navigation
+  g.gen = (g.gen or 0) + 1
+  if g.sock then
+    g.sock:close()
+    g.sock = nil
+  end
   g.pos = pos
   w.cmdline = gemini.words(w)
   w.frame:update()
+  local gen = g.gen
+
   w:run(function()
     local url = g.hist[pos]
 
-    if fetch(w, url, 0) and g.pos == pos then
+    if fetch(w, url, 0, gen) and g.pos == pos and g.gen == gen then
       g.hist[pos] = w.gem.url
     end
   end)
@@ -266,8 +304,15 @@ function gemini.fetch(out, target)
   gemini.win(out)
   local url = target:find("^gemini://") and target
     or ("gemini://" .. target)
+  local g = out.gem
 
-  return fetch(out, url, 0)
+  -- as in go(): this navigation cancels the one in flight
+  g.gen = (g.gen or 0) + 1
+  if g.sock then
+    g.sock:close()
+    g.sock = nil
+  end
+  return fetch(out, url, 0, g.gen)
 end
 
 -- set a window up as a page window: link clicks, history and dump
