@@ -2,7 +2,7 @@ if PLATFORM == 'Windows' then
   return { -- no ideas
   }
 end
-
+-- Hold alt to skip uri methods
 return {
   { "^https?://.+", "xdg-open %q" },
   { "%.jpg$", "xdg-open %q" },
