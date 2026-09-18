@@ -370,14 +370,16 @@ send_clienthello(ts_conn *t)
 	}
 	ext[e ++] = 0x00;                  /* signature_algorithms */
 	ext[e ++] = 0x0D;
-	put16(ext + e, 6);
+	put16(ext + e, 8);
 	e += 2;
-	put16(ext + e, 4);
+	put16(ext + e, 6);
 	e += 2;
 	ext[e ++] = 0x04;                  /* ecdsa_secp256r1_sha256 */
 	ext[e ++] = 0x03;
 	ext[e ++] = 0x04;                  /* rsa_pkcs1_sha256 */
 	ext[e ++] = 0x01;
+	ext[e ++] = 0x08;                  /* ed25519 (accepted, not checked) */
+	ext[e ++] = 0x07;
 	ext[e ++] = 0x00;                  /* supported_groups */
 	ext[e ++] = 0x0A;
 	put16(ext + e, 4);
@@ -456,7 +458,12 @@ parse_certificate(ts_conn *t, const unsigned char *b, size_t len)
 	}
 	memcpy(t->cert, b + 6, clen);
 	if (!ts_x509_get_pkey(t->cert, clen, &t->pkey)) {
-		return TS_ERR_CERTIFICATE;
+		/*
+		 * A key we do not parse (ed25519, say).  The chain is
+		 * never validated anyway, so the handshake goes on and
+		 * only the ServerKeyExchange signature is not checked
+		 */
+		t->pkey.key_type = TS_KEY_NONE;
 	}
 	return TS_OK;
 }
@@ -486,7 +493,8 @@ parse_ske(ts_conn *t, const unsigned char *b, size_t len)
 		return TS_ERR_UNSUPPORTED;     /* uncompressed points only */
 	}
 	hlen = 4 + ptlen;                  /* signed ServerECDHParams */
-	if (b[hlen] != 4) {                /* SHA-256 only */
+	if (b[hlen] != 4 &&                 /* SHA-256, or any when the */
+		t->pkey.key_type != TS_KEY_NONE) { /* signature is skipped */
 		return TS_ERR_UNSUPPORTED;
 	}
 	siglen = get16(b + hlen + 2);
@@ -505,7 +513,9 @@ parse_ske(ts_conn *t, const unsigned char *b, size_t len)
 		ts_sha256_update(&sc, b, hlen);
 		ts_sha256_out(&sc, hash);
 	}
-	if (b[hlen + 1] == 0x01) {         /* RSA */
+	if (t->pkey.key_type == TS_KEY_NONE) {
+		/* nothing to verify: the certificate key is unknown */
+	} else if (b[hlen + 1] == 0x01) {  /* RSA */
 		unsigned char out[32];
 
 		if (t->pkey.key_type != TS_KEY_RSA) {

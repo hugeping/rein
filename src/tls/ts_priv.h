@@ -39,6 +39,7 @@ void ts_aes_ctr_xor(const ts_aes_ctx *ctx, const unsigned char iv[12],
 
 void ts_ghash(void *y, const void *h, const void *data, size_t len);
 
+#define TS_KEY_NONE  0
 #define TS_KEY_RSA   1
 #define TS_KEY_EC    2
 

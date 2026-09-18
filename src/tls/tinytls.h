@@ -6,7 +6,9 @@
 /*
  * Tiny TLS 1.2 client: ECDHE (P-256) or static RSA key exchange,
  * AES-128-GCM records, RSA-PKCS#1 or ECDSA (P-256) certificates.
- * Certificates are parsed but never validated.
+ * Certificates are parsed but never validated; a certificate with a
+ * key we do not parse (ed25519, say) is accepted, its signature on
+ * the key exchange is not checked.
  *
  * The engine never blocks. The transport callbacks must follow the
  * conventions of a non-blocking socket: they return the number of
