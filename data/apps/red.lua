@@ -1778,7 +1778,9 @@ while not conf.stop do
 
   main:show()
   if conf.stop then break end
-  gfx.flip(hz, true)
+  if not sys.input(false) then
+    gfx.flip(hz, true)
+  end
 end
 
 mainmenu.cmd.Exit(mainmenu)
