@@ -3,13 +3,15 @@
 
 local utf = {}
 
+local UTF_MAX = 4
+
 local function utf_ff(s, i)
   local b = s:byte(i)
   if not b then return 0 end
   if b < 0x80 then return 1 end
   local l = 1
   local j = i + 1
-  while j <= #s do
+  while j <= #s and l < UTF_MAX do
     local c = s:byte(j)
     if not c or c < 0x80 or c >= 0xC0 then break end
     l = l + 1
@@ -24,7 +26,7 @@ local function utf_bb(s, i)
   if c < 0x80 then return 1 end
   local l = 1
   local j = i
-  while j > 1 do
+  while j > 1 and l < UTF_MAX do
     local p = s:byte(j)
     if not p or p < 0x80 or p >= 0xC0 then break end
     l = l + 1

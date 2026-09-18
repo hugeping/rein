@@ -2,6 +2,9 @@
 #include "platform.h"
 
 #define utf_cont(p) ((*(p) & 0xc0) == 0x80)
+/* a utf-8 character is at most 4 bytes: longer runs of continuation
+ * bytes come from binary data and must not swallow the whole buffer */
+#define UTF_MAX 4
 
 static int
 utf_ff(const char *s, const char *e)
@@ -14,7 +17,7 @@ utf_ff(const char *s, const char *e)
 	if ((*s & 0x80) == 0) /* ascii */
 		return 1;
 	l = 1;
-	while (s < e && utf_cont(s + 1)) {
+	while (s < e && utf_cont(s + 1) && l < UTF_MAX) {
 		s ++;
 		l ++;
 	}
@@ -32,7 +35,7 @@ utf_bb(const char *s, const char *e)
 	if ((*e & 0x80) == 0) /* ascii */
 		return 1;
 	l = 1;
-	while (s < e && utf_cont(e)) {
+	while (s < e && utf_cont(e) && l < UTF_MAX) {
 		e --;
 		l ++;
 	}
