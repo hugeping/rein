@@ -345,6 +345,23 @@ function gemini:Get()
   return true
 end
 
+-- alt click: the page gets a window of its own ("+gemini2", "+gemini3",
+-- ...), so a link can be read next to the one it came from
+local function new_page(w, url)
+  local root = w.frame:main()
+  local n = 2
+
+  while root:win_by_name("+gemini" .. n) do
+    n = n + 1
+  end
+  local out = w.frame:open_err("+gemini" .. n)
+
+  out.cwd = nil
+  gemini.win(out)
+  gemini.follow(out, url)
+  return out
+end
+
 function gemini:event(r, v, a, b)
   -- win:mouseup execs the text under the cursor with the middle button,
   -- so a link click must be caught (and consumed) there; http(s) links
@@ -353,7 +370,11 @@ function gemini:event(r, v, a, b)
     local url = gemini.link_at(self, a - self.x, b - self.y)
 
     if url and not url:find("^https?://") then
-      gemini.follow(self, url)
+      if input.keydown 'alt' then
+        new_page(self, url)
+      else
+        gemini.follow(self, url)
+      end
       return true
     end
   end
