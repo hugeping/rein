@@ -4,7 +4,7 @@ local shell = {}
 
 -- start a command with its stdout on a pipe; the sighup dance around
 -- popen keeps a dying child from taking the editor with it
-local function shell_popen(prog, cwd)
+function shell.popen(prog, cwd)
   local posix = require "red/posix"
   local f, e
 
@@ -21,6 +21,7 @@ local function shell_popen(prog, cwd)
 end
 
 local function pipe_shell()
+  local popen = require("red/shell").popen
   local posix = require("red/posix")
   local function read_sym(f)
     local t = {}
@@ -45,7 +46,7 @@ local function pipe_shell()
     return #t > 0 and table.concat(t, '')
   end
   local prog, cwd = thread:read()
-  local f, e = shell_popen(prog, cwd)
+  local f, e = popen(prog, cwd)
 
   thread:write(not not f, e)
   if not f then return end
@@ -62,10 +63,11 @@ end
 
 local function pipe_proc()
   require "std"
+  local popen = require("red/shell").popen
   local posix = require("red/posix")
 
   local prog, cwd = thread:read()
-  local f, e = shell_popen(prog, cwd)
+  local f, e = popen(prog, cwd)
 
   thread:write(not not f, e)
   if not f then return end
@@ -239,7 +241,7 @@ function shell.out(cmd, cwd, input)
     -- the errors of the command belong to its output, as in pipe_setup
     cmd = string.format("( %s ) <%s 2>&1", cmd, tmp or '/dev/null')
   end
-  f = shell_popen(cmd, cwd)
+  f = shell.popen(cmd, cwd)
   if not f then
     if tmp then
       os.remove(tmp)
