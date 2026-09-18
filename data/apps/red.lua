@@ -362,11 +362,13 @@ function win:exec(t)
     return self.frame:file(t)
   end
 
-  for _, u in ipairs(uri) do
-    if t:find(u[1]) then
-      print(string.format(u[2], t))
-      proc['!'](self, string.format(u[2], t))
-      return
+  if not input.keydown 'alt' then
+    for _, u in ipairs(uri) do
+      if t:find(u[1]) then
+        print(string.format(u[2], t))
+        proc['!'](self, string.format(u[2], t))
+        return
+      end
     end
   end
 
