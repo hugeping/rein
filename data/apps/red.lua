@@ -1226,6 +1226,7 @@ To move file buffer between columns use mouse 2nd button drag&drop of menu butto
 
 > Gemtext:
 > middle click on a "=>" line follows the link;
+> alt+middle click opens it in a new window;
 > Get re-reads the page.
 > For a 10/11 (input) response type the answer after
 > the "? " promptand press return.
