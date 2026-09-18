@@ -196,6 +196,7 @@ function win:geom(x, y, w, h)
   self.rows = math.floor(h / scr.sph)
   self.cols = math.floor(w / scr.spw)
   self:flush()
+  self:clamp_scroll()
   self:scroller()
 end
 
@@ -328,6 +329,7 @@ function win:toline(nr, sel)
       self:posln()
     end
     self:prevpage(math.floor(self.rows / 2))
+    self:clamp_scroll()
   end
 
   local start = self.buf.cur
@@ -357,17 +359,16 @@ end
 -- scrolling stops at the end of the text: pull the view back so that
 -- its last line is the last visible one
 function win:clamp_scroll()
-  local text = #self.buf.text
-
-  if text == 0 or not self.rows or self.rows <= 0 then
+  if not self.rows or self.rows <= 0 or self.pos == 1 then
     return
   end
+  local pos = self.pos
+
+  self.pos = #self.buf.text + 1
+  self:posln()
+  self:prevpage(self.rows - 1)
+  self.pos = math.min(self.pos, pos)
   self:make_epos()
-  if self.epos >= text + 1 then
-    self.pos = text + 1
-    self:posln()
-    self:prevpage(self.rows - 1)
-  end
 end
 
 function win:prevpage(jump)
@@ -997,6 +998,7 @@ function win:visible(off)
     self.pos = self.buf.cur
     self:posln()
     self:prevpage(math.floor(off or (self.rows/2)))
+    self:clamp_scroll()
     return true
   end
 end
