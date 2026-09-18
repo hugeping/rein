@@ -6,9 +6,15 @@ local function cat(w, f)
   if not w then return end
   local d = io.file(w:path(f))
   if not d then return end
+  -- buf:input replaces the selection (when there is one) and puts the
+  -- text at the cursor: select exactly what was inserted
   local s = w:cur()
+
+  if w.buf:issel() then
+    s = w.buf:selrange()
+  end
   w.buf:input(d)
-  w:setsel(s, w:cur() + 1)
+  w:setsel(s, w.buf.cur)
   return true
 end
 
