@@ -3,10 +3,10 @@
 --
 -- A minimal IRC client for red:
 --
---   irc [tls://][nick@]host[:port][/#channel]
+--   irc [ircs://][nick@]host[:port][/#channel]
 --
 -- opens (or reuses) the "+irc" window.  The default is TLS on 6697;
--- any other port is plain TCP unless it is written as "tls://host:port".
+-- any other port is plain TCP unless it is written as "ircs://host:port".
 -- The socket lives in a thread of its own and the window coroutine
 -- collects its lines, so the editor keeps running while the connection
 -- is made and read.
@@ -706,8 +706,8 @@ win.kinds.irc = function(fr, d, idx)
   return w
 end
 
--- "[tls://][nick@]host[:port][/#channel]": 6697 is the default and is
--- TLS, any other port is plain TCP unless "tls://" is given; "irc://"
+-- "[ircs://][nick@]host[:port][/#channel]": 6697 is the default and is
+-- TLS, any other port is plain TCP unless "ircs://" is given; "irc://"
 -- at the beginning is ignored, so a pasted irc url works
 function irc.parse(spec)
   local t = spec:match('^%s*(%S+)%s*$')
@@ -719,9 +719,9 @@ function irc.parse(spec)
     t = t:sub(7)
   end
   local tls
-  if t:find('^tls://') then
+  if t:find('^ircs://') then
     tls = true
-    t = t:sub(7)
+    t = t:sub(8)
   end
   local nick, rest = t:match('^([^@/]+)@(.+)$')
 
@@ -744,7 +744,7 @@ function irc.parse(spec)
   return host, port, tls, (chan ~= '' and chan or nil), nick
 end
 
--- "irc [tls://][nick@]host[:port][/#channel]"
+-- "irc [ircs://][nick@]host[:port][/#channel]"
 local function irc_proc(w, target)
   local out = w:output "+irc"
 
@@ -752,7 +752,7 @@ local function irc_proc(w, target)
   local host, port, tls, chan, nick = irc.parse(target or '')
 
   if not host then
-    say(out, '* usage: irc [tls://][nick@]host[:port][/#channel]\n')
+    say(out, '* usage: irc [ircs://][nick@]host[:port][/#channel]\n')
     out:scroll_output()
     return true
   end
