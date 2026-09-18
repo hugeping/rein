@@ -1187,6 +1187,18 @@ To move file buffer between columns use mouse 2nd button drag&drop of menu butto
 > For a 10/11 (input) response type the answer after
 > the "? " promptand press return.
 
+- irc [tls://][nick@]host[:port][/#chan] - connect to IRC
+
+> IRC:
+> the default port is 6697 (TLS), any other port is
+> plain TCP unless written as tls://host:port;
+> the nick comes from nick@ or $USER, typed text goes
+> to the current channel, /join /part /nick /msg
+> /query /me /topic /quit and any other /command
+> (sent as it is) are understood;
+> tab and ctrl-f complete the nicks seen, ctrl-up/down
+> is the input history, Get (re)connects.
+
 - Edit <script>       - sam editing script on the window text
 
 > Edit notes (the sam language, as in acme):
