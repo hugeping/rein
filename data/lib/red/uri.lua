@@ -14,5 +14,6 @@ return {
   { "%.avi$", "xdg-open %q" },
   { "%.mkv$", "xdg-open %q" },
   { "%.docx$", "xdg-open %q" },
-  { "^ircs?:", proc.irc },
+  { "^ircs?://.+", proc.irc },
+  { "^gemini://.+", proc.gemini },
 }
