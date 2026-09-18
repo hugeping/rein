@@ -9,6 +9,7 @@ local r = math.pi * 2 / N
 local x, y, t = 0, 0, 0
 
 gfx.win(W, W)
+gfx.border(0)
 
 local scr = screen
 local pts = {}
