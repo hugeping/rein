@@ -24,6 +24,14 @@ describe("utf", function()
     eq(utf.next("abc", 9), 0)
   end)
 
+  it("keeps the bytes of a long invalid run", function()
+    local s = "\194" .. string.rep("\128", 40) .. "abc"
+    local chars = utf.chars(s)
+    eq(table.concat(chars), s, "nothing is lost")
+    eq(chars[#chars], "c", "the tail is there")
+    eq(utf.next(s, 1), 4, "a run is cut at the utf-8 limit")
+  end)
+
   it("codepoint decodes", function()
     eq(utf.codepoint("A", 1), 65)
     local cp, len = utf.codepoint("\208\177", 1)
