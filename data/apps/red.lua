@@ -942,6 +942,52 @@ function framemenu.cmd:Theme(name)
   end
 end
 
+-- Font [size] -- change the font size on the fly; the screen is made
+-- anew with the new font, the cursors are made anew and every window
+-- is re-geomed (its rows and columns change with the glyph size)
+local function font_size(m, size)
+  size = math.round(size)
+  size = math.max(6, math.min(72, size))
+  if size == conf.font_sz then
+    return
+  end
+  conf.font_sz = size
+  scr.font = nil -- scr:init reuses an already made font otherwise
+  scr.glyphs = {}
+  win:init(conf)
+  conf.move_cursor = make_move_cursor()
+  conf.text_cursor = make_text_cursor(conf.cursor)
+  conf.text_cursor_over = make_text_cursor(conf.cursor_over)
+  local root = m.frame:main()
+
+  for f in root:for_win() do
+    for w in f:for_win() do
+      w.marg = nil -- the window padding follows the font too
+    end
+  end
+  root:geom(0, 0, scr.w, scr.h)
+end
+
+proc.Font = function(w, size)
+  if size and size ~= '' then
+    size = tonumber(size)
+    if not size then
+      return
+    end
+  else
+    size = conf.font_sz + 1
+  end
+  font_size(w, size)
+end
+
+proc['Font+'] = function(w)
+  font_size(w, conf.font_sz + 1)
+end
+
+proc['Font-'] = function(w)
+  font_size(w, conf.font_sz - 1)
+end
+
 function framemenu.cmd:Put()
   local b = self:data()
   if not b then
@@ -1169,6 +1215,8 @@ To move file buffer between columns use mouse 2nd button drag&drop of menu butto
 - Spaces              - spaces tab mode
 - Syntax              - toggle syntax hl
 - Theme [name]        - color theme (default, dark)
+- Font [size]         - font size on the fly (default: +1)
+- Font+/Font-         - font size up/down by 1
 - dump                - hex-dump
 - Zerox               - a second window on the same buffer
 - win                 - pseudo acme win-shell
