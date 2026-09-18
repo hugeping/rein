@@ -347,9 +347,26 @@ function win:nextpage(jump)
   for i = self.pos, #self.buf.text do
     if y >= jump then
       self.pos = i
+      self:clamp_scroll()
       return true
     end
     x, y = self:next(i, x, y)
+  end
+end
+
+-- scrolling stops at the end of the text: pull the view back so that
+-- its last line is the last visible one
+function win:clamp_scroll()
+  local text = #self.buf.text
+
+  if text == 0 or not self.rows or self.rows <= 0 then
+    return
+  end
+  self:make_epos()
+  if self.epos >= text + 1 then
+    self.pos = text + 1
+    self:posln()
+    self:prevpage(self.rows - 1)
   end
 end
 
@@ -377,13 +394,15 @@ function win:prevpage(jump)
 end
 
 function win:nextline()
+  local old = self.pos
   local x, y
   x, y = 0, 0
   for i = self.pos, #self.buf.text do
     x, y = self:next(i, x, y)
     if y > 0 then
       self.pos = i + 1
-      return true
+      self:clamp_scroll()
+      return self.pos ~= old
      end
   end
   return false
@@ -895,6 +914,7 @@ function win:scroll(off)
     self.pos = math.floor((off / self.h) * #self.buf.text) + 1
   end
   self:posln()
+  self:clamp_scroll()
 end
 
 function win:set(text)
