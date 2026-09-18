@@ -43,8 +43,8 @@ local function prog_out(prog)
   local cmd = prog:split(1, '>')
   local oname
   if #cmd == 2 then
-    prog = cmd[1]
-    oname = cmd[2]
+    prog = cmd[1]:strip()
+    oname = cmd[2]:strip()
   end
   return prog, oname
 end
