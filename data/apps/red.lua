@@ -365,8 +365,12 @@ function win:exec(t)
   if not input.keydown 'alt' then
     for _, u in ipairs(uri) do
       if t:find(u[1]) then
-        print(string.format(u[2], t))
-        proc['!'](self, string.format(u[2], t))
+        if type(u[2]) == 'function' then
+          u[2](self, t)
+        else
+          print(string.format(u[2], t))
+          proc['!'](self, string.format(u[2], t))
+        end
         return
       end
     end
@@ -1222,7 +1226,7 @@ To move file buffer between columns use mouse 2nd button drag&drop of menu butto
 >   ctrl-up/down - history
 >   ls/cd/pwd    - built-in commands
 
-- gemini <host>       - fetch gemini:// page (TLS)
+- gemini <host>       - fetch gemini:// page
 
 > Gemtext:
 > middle click on a "=>" line follows the link;
@@ -1231,7 +1235,7 @@ To move file buffer between columns use mouse 2nd button drag&drop of menu butto
 > For a 10/11 (input) response type the answer after
 > the "? " promptand press return.
 
-- irc [tls://][nick@]host[:port][/#chan] - connect to IRC
+- irc [ircs://][nick@]host[:port][/#chan] - connect to IRC
 
 > IRC:
 > the default port is 6697 (TLS), any other port is
