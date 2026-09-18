@@ -61,7 +61,13 @@ local function thread_run()
     while thread:poll(0) do -- let the window finish its pending write
       thread:read()
     end
-    while not pcall(thread.write, thread, false, err) do
+    -- the channel is half duplex, so the window may be writing right
+    -- now: wait for it, but not forever, it may be gone already (the
+    -- window was closed and nobody will read the message)
+    while pcall(thread.poll, thread, 0) do
+      if pcall(thread.write, thread, false, err) then
+        break
+      end
       sys.sleep(DELAY)
     end
     pcall(function()
