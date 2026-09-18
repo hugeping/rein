@@ -7,6 +7,11 @@ local utf = require "utf"
 local THREADED = not not thread
 local core
 local REQUIRE = './?.lua;'..DATADIR..'/lib/?.lua;'..DATADIR..'/core/?.lua'
+-- built-in modules an app may require: they have no file, so the real
+-- require has to find them (red/posix takes ffi this way)
+local BUILTIN = {
+  ffi = true,
+}
 local input = {
   fifo = {};
   mouse = {
@@ -65,6 +70,7 @@ local env = {
   math = math,
   bit = bit,
   string = string,
+  jit = jit, -- modules like red/posix tell LuaJIT by it
   pcall = pcall,
   pairs = pairs,
   ipairs = ipairs,
@@ -153,7 +159,15 @@ local function make_require(n, env)
       end
     end
     if not mods[n] then
-      core.err("Can't load module: "..tostring(n))
+      local ok, m
+      if BUILTIN[n] then
+        ok, m = pcall(require, n)
+      end
+      if ok and m ~= nil then
+        mods[n] = m
+      else
+        core.err("Can't load module: "..tostring(n))
+      end
     end
     return mods[n]
   end

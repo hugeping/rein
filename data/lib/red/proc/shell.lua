@@ -64,13 +64,23 @@ local function piped(w, out, prog)
   if not ret or not ret.fifo then
     return
   end
+  local posix = require "red/posix"
   local txt = w.buf:gettext(w.buf:range())
+
+  -- the input may be large: write what fits and come back, or the
+  -- editor freezes on a full pipe (and the program, on its full
+  -- output, never reads again)
+  posix.nonblock(ret.fifo)
   out:run(function()
     local s = 1
     local len = txt:len()
     while s <= len and ret.fifo do
-      ret.fifo:write(txt:sub(s, s + 2047))
-      s = s + 2048
+      local n = posix.write(ret.fifo, txt:sub(s, s + 2047))
+      if n then
+        s = s + n
+      elseif n == false then
+        break -- the program is gone, nobody will read it
+      end
       coroutine.yield(true)
     end
     ret:close()
