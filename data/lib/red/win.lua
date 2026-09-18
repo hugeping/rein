@@ -359,16 +359,17 @@ end
 -- scrolling stops at the end of the text: pull the view back so that
 -- its last line is the last visible one
 function win:clamp_scroll()
-  if not self.rows or self.rows <= 0 or self.pos == 1 then
+  local text = #self.buf.text
+
+  if text == 0 or not self.rows or self.rows <= 0 then
     return
   end
-  local pos = self.pos
-
-  self.pos = #self.buf.text + 1
-  self:posln()
-  self:prevpage(self.rows - 1)
-  self.pos = math.min(self.pos, pos)
   self:make_epos()
+  if self.epos >= text + 1 then
+    self.pos = text + 1
+    self:posln()
+    self:prevpage(self.rows - 1)
+  end
 end
 
 function win:prevpage(jump)
