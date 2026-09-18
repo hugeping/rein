@@ -475,7 +475,9 @@ function frame:file(f, pos, force)
   if b then -- already opened
     if pos and self.stacked then -- move to the requested slot there
       local k = self:find_win(b)
-      if k then
+
+      -- skip when it is there already: no need to relay out the column
+      if k and k ~= math.min(pos, self:win_nr()) then
         self:del_win(k)
         self:add_win(b, pos)
         self:update(true, true)
@@ -1709,9 +1711,14 @@ while not conf.stop do
       scr.grab = false
     end
   end
+  -- the window coroutines wake up here, and a command may open a window
+  -- or relay out the column: draw after that, or the flushed areas are
+  -- shown as they are (the screen flickers once)
+  local hz = main:process() or 10
+
   main:show()
   if conf.stop then break end
-  gfx.flip(main:process() or 10, true)
+  gfx.flip(hz, true)
 end
 
 mainmenu.cmd.Exit(mainmenu)
