@@ -66,22 +66,37 @@ local function piped(w, out, prog)
   end
   local posix = require "red/posix"
   local txt = w.buf:gettext(w.buf:range())
+  local len = txt:len()
 
   -- the input may be large: write what fits and come back, or the
   -- editor freezes on a full pipe (and the program, on its full
-  -- output, never reads again)
+  -- output, never reads again).  A write per frame would feed only a
+  -- few KB per tick, so fill the pipe until it refuses, with a budget
+  -- per frame to keep the editor alive
   posix.nonblock(ret.fifo)
   out:run(function()
-    local s = 1
-    local len = txt:len()
-    while s <= len and ret.fifo do
-      local n = posix.write(ret.fifo, txt:sub(s, s + 2047))
-      if n then
-        s = s + n
-      elseif n == false then
-        break -- the program is gone, nobody will read it
+    local s, gone = 1, false
+
+    while s <= len and not gone and ret.fifo do
+      local budget, full = 1024 * 1024, false
+
+      while s <= len and budget > 0 do
+        local n = posix.write(ret.fifo, txt:sub(s, s + 65535))
+
+        if n then
+          s = s + n
+          budget = budget - n
+        elseif n == false then
+          gone = true -- the program is gone, nobody will read it
+          break
+        else
+          full = true -- the pipe is full
+          break
+        end
       end
-      coroutine.yield(true)
+      if not gone and (full or s <= len) then
+        coroutine.yield(true)
+      end
     end
     ret:close()
   end)
