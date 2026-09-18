@@ -1143,7 +1143,7 @@ To move file buffer between columns use mouse 2nd button drag&drop of menu butto
 > You can use ":" delimiter instead of "/" in find, gfind, sub, gsub.
 
 - !cmd                - run cmd
-- <cmd                - run cmd and get output
+- <cmd[>window]       - run cmd and get output
 - @cmd                - run cmd <text> and get output
 
 > Unix only:
