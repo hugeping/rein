@@ -39,12 +39,23 @@ local function pipe_text(w, prog)
   return true
 end
 
+local function prog_out(prog)
+  local cmd = prog:split(1, '>')
+  local oname
+  if #cmd == 2 then
+    prog = cmd[1]
+    oname = cmd[2]
+  end
+  return prog, oname
+end
+
 local function pipe_out(w, prog)
-  local out = w:output()
+  local cmd, oname = prog_out(prog)
+  local out = w:output(oname)
   if out ~= w then -- a menu writes into +Output, a window into itself
     scroll_cmdline(out)
   end
-  shell.pipe(out, prog)
+  shell.pipe(out, cmd)
   return true
 end
 
@@ -67,17 +78,12 @@ local function piped(w, out, prog)
 end
 
 local function pipe_window(w, prog)
-  local oname = '+Output'
-  local cmd = prog:split(1, '>')
-  if #cmd == 2 then
-    prog = cmd[1]
-    oname = cmd[2]
-  end
+  local cmd, oname = prog_out(prog)
   local data = w:data()
   if not data then return end
-  local out = w:output(oname)
+  local out = w:output()
   scroll_cmdline(out)
-  piped(data, out, prog)
+  piped(data, out, cmd)
   return true
 end
 
