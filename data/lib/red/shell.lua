@@ -409,7 +409,7 @@ function shell.win(w)
   w.delete = shell.delete
   w.up = shell.up
   w.down = shell.down
-  w.conf.ts = 8
+  w.kind_conf = { ts = 8 } -- survives a rename (the presets re-read)
   w.scroll_mode = true
   w.cmdline = 'Noscroll'
   w.frame:update();
