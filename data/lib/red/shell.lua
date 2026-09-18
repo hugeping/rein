@@ -64,37 +64,48 @@ end
 local function pipe_proc()
   require "std"
   local popen = require("red/shell").popen
-  local posix = require("red/posix")
+  local posix = require "red/posix"
+  local BATCH = 4096
 
   local prog, cwd = thread:read()
   local f, e = popen(prog, cwd)
 
   thread:write(not not f, e)
   if not f then return end
-  local pre
+  -- send the output in batches: a message per line is a rendezvous
+  -- with the window each time.  The pieces are kept as they come (so
+  -- a long line without an end is never copied over and over) and go
+  -- out together when the batch is full
+  local out, size = {}, 0
+
+  local function flush()
+    if size > 0 then
+      thread:write(table.concat(out))
+      out, size = {}, 0
+    end
+  end
   while true do
     local _, ok = posix.poll(f)
     if not ok then break end
     local chunk = posix.read(f, 512)
-    if not chunk then
-      if pre then
-        thread:write(pre)
-      end
-      break
-    end
-    chunk = (pre or '') .. chunk
-    pre = nil
-    for l in chunk:lines(true) do
-      if not l:endswith '\n' then
-        pre = l
+    if not chunk then break end
+    local s = 1
+    while true do
+      local nl = chunk:find('\n', s, true)
+      if not nl then
+        table.insert(out, chunk:sub(s))
+        size = size + #chunk - s + 1
         break
       end
-      thread:write(l)
+      table.insert(out, chunk:sub(s, nl))
+      size = size + nl - s + 1
+      s = nl + 1
+    end
+    if size >= BATCH then -- a read adds at most 512 bytes
+      flush()
     end
   end
-  if pre then
-    thread:write(pre)
-  end
+  flush()
   f:close()
   thread:write '\1eof'
 end
@@ -166,7 +177,13 @@ local function pipe_pump(w, p, ret, sh, tmp)
         w:scroll_output()
       end
       if l == '\1eof' then break end
-      coroutine.yield()
+      -- keep draining while there is something: an idle yield here
+      -- would slow a large output down to a burst per second
+      if data then
+        coroutine.yield(true)
+      else
+        coroutine.yield()
+      end
     end
     if sh then
       shell.prompt(w)
