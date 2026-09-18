@@ -33,7 +33,9 @@ local function nick(_, txt, pos, epos)
     if c == ':' then
       return n > 0 and (i - pos + 1) or nil
     end
-    if not c or not c:find('[%w_%[%]\\^{}`|%-]') then
+    -- the usual nick characters plus "/": nicks of bridged networks
+    -- look like "nick/matrix" or "nick/"
+    if not c or not c:find('[%w_%[%]\\^{}`|/%-]') then
       return
     end
     n = n + 1
