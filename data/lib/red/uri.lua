@@ -2,6 +2,8 @@ if PLATFORM == 'Windows' then
   return { -- no ideas
   }
 end
+local proc = require "red/proc"
+
 -- Hold alt to skip uri methods
 return {
   { "^https?://.+", "xdg-open %q" },
@@ -12,4 +14,5 @@ return {
   { "%.avi$", "xdg-open %q" },
   { "%.mkv$", "xdg-open %q" },
   { "%.docx$", "xdg-open %q" },
+  { "^ircs?:", proc.irc },
 }
