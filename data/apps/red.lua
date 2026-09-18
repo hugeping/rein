@@ -958,14 +958,7 @@ local function font_size(m, size)
   conf.move_cursor = make_move_cursor()
   conf.text_cursor = make_text_cursor(conf.cursor)
   conf.text_cursor_over = make_text_cursor(conf.cursor_over)
-  local root = m.frame:main()
-
-  for f in root:for_win() do
-    for w in f:for_win() do
-      w.marg = nil -- the window padding follows the font too
-    end
-  end
-  root:geom(0, 0, scr.w, scr.h)
+  m.frame:main():geom(0, 0, scr.w, scr.h)
 end
 
 proc.Font = function(w, size)

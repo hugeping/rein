@@ -177,16 +177,22 @@ function win:process()
   return hz
 end
 
+-- the padding around the text: the menu class presets it to stay thin
+-- (conf.menu_pad), the other windows take it from the font, which may
+-- change at any time
+function win:pad()
+  return self.marg or math.floor(scr.spw/2)
+end
+
 function win:geom(x, y, w, h)
   self.x = x or self.x
   self.y = y or self.y
   self.w = w or self.w
   self.h = h or self.h
-  -- the padding around the text; the menu class presets it to stay thin
-  -- (conf.menu_pad), windows compute it once from the font
-  self.marg = self.marg or math.floor(scr.spw/2)
-  h = h - self.marg*2
-  w = w - self.marg*2 - scr.spw
+  local pad = self:pad()
+
+  h = h - pad*2
+  w = w - pad*2 - scr.spw
   self.rows = math.floor(h / scr.sph)
   self.cols = math.floor(w / scr.spw)
   self:flush()
@@ -209,14 +215,18 @@ function win:flush()
 end
 
 function win:pos2off(x, y)
-  x, y = (x + 1)* scr.spw + self.marg,
-    y * scr.sph + self.marg
+  local pad = self:pad()
+
+  x, y = (x + 1)* scr.spw + pad,
+    y * scr.sph + pad
   return x, y
 end
 
 function win:off2pos(x, y)
-  x = math.floor((x - scr.spw + scr.spw/2 - self.marg) / scr.spw)
-  y = math.floor((y - self.marg) / scr.sph)
+  local pad = self:pad()
+
+  x = math.floor((x - scr.spw + scr.spw/2 - pad) / scr.spw)
+  y = math.floor((y - pad) / scr.sph)
   x = math.min(x, self.cols)
   y = math.min(y, self.rows)
   x = math.max(x, 0)
@@ -239,7 +249,9 @@ function win:glyph(x, y, sym, fg, bg)
   x, y = self:pos2off(x, y)
   screen:offset(self.x, self.y)
   if first then
-    screen:clear(x - self.marg, y, self.marg, scr.sph, self.bg)
+    local pad = self:pad()
+
+    screen:clear(x - pad, y, pad, scr.sph, self.bg)
   end
   screen:clear(x, y, scr.spw, scr.sph, bg)
   if g then
@@ -395,7 +407,7 @@ function win:realheight()
   for i = 1, #self.buf.text do
     x, y = self:next(i, x, y)
   end
-  return (y + 1)*scr.sph + self.marg*2
+  return (y + 1)*scr.sph + self:pad()*2
 end
 
 function win:bottom()
@@ -609,20 +621,22 @@ function win:autoscroll()
   if not self.autoscroll_on then return end
   local _, y, mb = input.mouse()
   if not mb.left or not self.buf:issel() then return end
+  local pad = self:pad()
+
   y = y - self.y
-  if y < self.h - self.marg and y > self.marg then
+  if y < self.h - pad and y > pad then
     return
   end
   if self.scrolltime and sys.time() - self.scrolltime < conf.proc_hz then
     return true
   end
   self.scrolltime = sys.time()
-  if y >= self.h - self.marg then
+  if y >= self.h - pad then
     if not self:nextline() then
       return true
     end
     self.buf:getsel().e = self.epos
-  elseif y < self.marg then
+  elseif y < pad then
     if not self:prevline() then
       return true
     end
