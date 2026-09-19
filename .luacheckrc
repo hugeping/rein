@@ -7,7 +7,7 @@ max_line_length = false
 globals = {
   "screen", "scr", "sys", "input", "utf", "conf", "PLATFORM",
   "DATADIR", "gfx", "mixer", "thread", "font", "ARGS", "keybind",
-  "net", "SCALE",
+  "net", "tls", "SCALE",
 }
 
 -- helpers defined by tests/harness.lua

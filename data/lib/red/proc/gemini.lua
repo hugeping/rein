@@ -156,7 +156,7 @@ local function cert_make(host)
   if not crt then
     return false, "no certificate directory"
   end
-  local c, k = net.certgen(host)
+  local c, k = tls.certgen(host)
 
   if not c then
     return false, k

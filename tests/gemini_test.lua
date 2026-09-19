@@ -79,13 +79,13 @@ local function reset()
   requests, dials = {}, {}
 end
 
--- the certificate directory is faked and net.certgen is stubbed; the
+-- the certificate directory is faked and tls.certgen is stubbed; the
 -- hosts it was called for are collected in `made`
 local made
 local function with_certs(files, fn)
   local old_file, old_access = io.file, io.access
   local old_appdir, old_mkdir = sys.appdir, sys.mkdir
-  local old_net = net
+  local old_tls = tls
 
   made = {}
   io.file = function(f, d)
@@ -98,7 +98,7 @@ local function with_certs(files, fn)
   io.access = function(f) return files[f] ~= nil end
   sys.appdir = function(app) return "/tmp/rein-" .. app end
   sys.mkdir = function() return true end
-  net = {
+  tls = {
     certgen = function(host)
       table.insert(made, host)
       return "CRT " .. host, "KEY " .. host
@@ -107,7 +107,7 @@ local function with_certs(files, fn)
   local ok, e = pcall(fn)
   io.file, io.access = old_file, old_access
   sys.appdir, sys.mkdir = old_appdir, old_mkdir
-  net = old_net
+  tls = old_tls
   if not ok then error(e) end
 end
 

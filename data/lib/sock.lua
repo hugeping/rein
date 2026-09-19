@@ -24,16 +24,18 @@ function sock.dial(addr, port, tls_host, cert, key)
   return s
 end
 
--- Upgrade the connection to TLS (net.tls + handshake, driven from
+-- Upgrade the connection to TLS (tls.new + handshake, driven from
 -- here so that the engine keeps running while the server answers).
 function tcp:starttls(host, cert, key)
-  local tls, e = net.tls(self.sock, host, cert, key)
-  if not tls then
+  local t, e = tls.new(self.sock, host, cert, key)
+
+  if not t then
     return false, e
   end
-  self.sock = tls
+  self.sock = t
   while true do
-    local r, e = tls:handshake()
+    local r, e = t:handshake()
+
     if r == true then
       return true
     end
