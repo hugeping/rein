@@ -1,8 +1,11 @@
+local proc = require "red/proc"
+
 if PLATFORM == 'Windows' then
   return { -- no ideas
+    { "^ircs?://.+", proc.irc },
+    { "^gemini://.+", proc.gemini },
   }
 end
-local proc = require "red/proc"
 
 -- Hold alt to skip uri methods
 return {
