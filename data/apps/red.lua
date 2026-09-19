@@ -919,16 +919,34 @@ function framemenu.cmd:Spaces()
   w.conf.spaces_tab = true
 end
 
-function framemenu.cmd:Syntax()
+-- a syntax scheme is a file of red/syntax; nil when there is none
+local function syntax_scheme(name)
+  if name and io.access(DATADIR..'/lib/red/syntax/'..name..'.lua') then
+    return name
+  end
+end
+
+-- Syntax [name] -- toggle the syntax highlighting of the window or
+-- switch it to the scheme `name` (c, lua, go, ...)
+function framemenu.cmd:Syntax(name)
   local w = self:data()
   if not w then return end
+  name = name and name:strip()
+  if name and name ~= '' then
+    if syntax_scheme(name) then
+      w.conf.syntax = name
+      w.syntax = nil
+    end
+    return true
+  end
   if w.syntax then
     w.conf.syntax = w.syntax
     w.syntax = nil
   else
-    w.syntax = w.conf.syntax
+    w.syntax = w:getconf 'syntax'
     w.conf.syntax = false
   end
+  return true
 end
 
 function framemenu.cmd:Sort()
@@ -1212,7 +1230,7 @@ To move file buffer between columns use mouse 2nd button drag&drop of menu butto
 - Tab [nr]            - tab on for current bufferr
 - Wrap                - wrap text on/off
 - Spaces              - spaces tab mode
-- Syntax              - toggle syntax hl
+- Syntax [name]       - toggle syntax hl or set a scheme (lua, c, ...)
 - Theme [name]        - color theme (default, dark)
 - Font [size]         - font size on the fly (default: +1)
 - Font+/Font-         - font size up/down by 1
