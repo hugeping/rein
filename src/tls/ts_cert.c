@@ -366,8 +366,6 @@ ec_key_der(unsigned char *out, const unsigned char *d)
 /* ---- the self-signed certificate ---- */
 
 static const unsigned char oid_cn[] = { 0x55, 0x04, 0x03 };
-static const unsigned char oid_bc[] = { 0x55, 0x1D, 0x13 };
-static const unsigned char oid_ku[] = { 0x55, 0x1D, 0x0F };
 static const unsigned char oid_sig[] = {
 	0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x03, 0x02
 };
@@ -441,30 +439,6 @@ build_spki(unsigned char *out, const unsigned char *q)
 	return der_tlv(out, 0x30, body, bn);
 }
 
-static size_t
-build_exts(unsigned char *out)
-{
-	unsigned char ext[64], e[48], body[80];
-	static const unsigned char bc_val[] = { 0x30, 0x00 };
-	static const unsigned char ku_val[] = { 0x03, 0x02, 0x07, 0x80 };
-	static const unsigned char yes[] = { 0xFF };
-	size_t en, m = 0, bn;
-
-	en = 0;
-	en += der_tlv(e + en, 0x06, oid_bc, sizeof oid_bc);
-	en += der_tlv(e + en, 0x04, bc_val, sizeof bc_val);
-	m = der_tlv(ext, 0x30, e, en);
-
-	en = 0;
-	en += der_tlv(e + en, 0x06, oid_ku, sizeof oid_ku);
-	en += der_tlv(e + en, 0x01, yes, sizeof yes);
-	en += der_tlv(e + en, 0x04, ku_val, sizeof ku_val);
-	m += der_tlv(ext + m, 0x30, e, en);
-
-	bn = der_tlv(body, 0x30, ext, m);
-	return der_tlv(out, 0xA3, body, bn);
-}
-
 /*
  * Make a self-signed P-256 certificate with the given common name and
  * return it (DER) together with the PKCS#8 key (DER).  cert must have
@@ -476,7 +450,7 @@ ts_ec_selfsign(const char *cn, unsigned char *cert, size_t *certlen,
 {
 	unsigned char d[FIELD_LEN], q[POINT_LEN], hash[32], sig[80];
 	unsigned char serial[8], oid[16], sigalg[24], name[160], valid[64];
-	unsigned char spki[160], exts[96], body[768], tbs[768], full[896];
+	unsigned char spki[160], body[768], tbs[768], full[896];
 	unsigned char bits[80];
 	size_t bl = 0, n, sigalg_len, tbs_len, sigl;
 	ts_sha256_ctx sc;
@@ -530,10 +504,6 @@ ts_ec_selfsign(const char *cn, unsigned char *cert, size_t *certlen,
 
 		n = build_spki(spki, q);
 		memcpy(body + bl, spki, n);
-		bl += n;
-
-		n = build_exts(exts);
-		memcpy(body + bl, exts, n);
 		bl += n;
 	}
 	tbs_len = der_tlv(tbs, 0x30, body, bl);
