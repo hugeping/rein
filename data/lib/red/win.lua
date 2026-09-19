@@ -1192,6 +1192,10 @@ function win:nodirty()
   self.buf:dirty(false)
 end
 
+function win:cmd_menu()
+  return self.frame:cmd_menu(self)
+end
+
 local function cur_skip(text, pos)
   local l = 1
   local k = 0

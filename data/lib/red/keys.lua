@@ -102,6 +102,14 @@ return {
       self:selpar()
     end
   },
+--[[
+  {
+    'f5',
+    function(self)
+      self:cmd_menu().cmd.Run(self)
+    end
+  },
+]]--
   { 'ctrl+b',
     function(self)
       local m = self.frame:cmd_menu(self)
