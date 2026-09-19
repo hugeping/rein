@@ -50,6 +50,36 @@ ts_conn *ts_new(const char *server_name, void *ioctx,
 	int (*iowrite)(void *ctx, const void *buf, size_t len));
 
 /*
+ * Give the connection a client certificate (DER) and its private
+ * key (DER, SEC1 or PKCS#8, P-256).  The certificate is sent only
+ * if the server asks for one.  Return 0 on error.  Call it before
+ * the handshake.
+ */
+int ts_set_clientcert(ts_conn *tc, const unsigned char *cert, size_t certlen,
+	const unsigned char *key, size_t keylen);
+
+/*
+ * Make a self-signed P-256 certificate with the common name `cn`
+ * and its PKCS#8 key, both in DER; cert needs 1024 bytes, key 128.
+ * Return 1 on success.  The key may be fed to ts_set_clientcert,
+ * the PEM functions below turn either into text.
+ */
+int ts_ec_selfsign(const char *cn, unsigned char *cert, size_t *certlen,
+	unsigned char *key, size_t *keylen);
+
+/*
+ * PEM writer and reader for one base64 block with the given label
+ * ("CERTIFICATE", "PRIVATE KEY", ...).  The output buffer of the
+ * encoder must hold 4*((derlen + 2)/3) characters, the line breaks
+ * and the two label lines; the decoder returns the DER length, or 0
+ * when the label is not found or the data does not fit.
+ */
+size_t ts_pem_encode(const char *label, const unsigned char *der,
+	size_t derlen, char *out);
+size_t ts_pem_decode(const char *pem, size_t pemlen, const char *label,
+	unsigned char *der, size_t max);
+
+/*
  * Run the handshake. Return TS_OK when it is complete, TS_WANT_READ
  * or TS_WANT_WRITE when the caller must wait and call again, or an
  * error code (which is also remembered by ts_error()).

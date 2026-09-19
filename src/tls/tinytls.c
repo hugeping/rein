@@ -668,6 +668,61 @@ send_finished(ts_conn *t, const char *label)
 	return hs_send(t, 20, vd, sizeof vd);
 }
 
+/* the Certificate message is ready in ccert, hash and queue it */
+static int
+hs_send_cert(ts_conn *t)
+{
+	if (t->wlen != 0) {
+		return TS_WANT_WRITE;
+	}
+	ts_sha256_update(&t->hs, t->ccert, t->ccert_len);
+	return rec_queue(t, 22, t->ccert, t->ccert_len);
+}
+
+/* sign the handshake so far with the client key */
+static int
+send_certverify(ts_conn *t)
+{
+	unsigned char th[32], sig[80], b[84];
+	size_t slen;
+
+	hash_snapshot(t, th);
+	if (!ts_ec_sign(t->ckey, th, sig, &slen)) {
+		t->err = TS_ERR_SIGNATURE;
+		return t->err;
+	}
+	b[0] = 0x04;                      /* ecdsa_secp256r1_sha256 */
+	b[1] = 0x03;
+	put16(b + 2, (unsigned)slen);
+	memcpy(b + 4, sig, slen);
+	return hs_send(t, 15, b, 4 + slen);
+}
+
+int
+ts_set_clientcert(ts_conn *tc, const unsigned char *cert, size_t certlen,
+	const unsigned char *key, size_t keylen)
+{
+	unsigned char d[32];
+
+	if (tc == NULL || cert == NULL || key == NULL) {
+		return 0;
+	}
+	if (certlen == 0 || certlen > sizeof tc->ccert - 10
+		|| !ts_ec_key_parse(key, keylen, d))
+	{
+		return 0;
+	}
+	memcpy(tc->ckey, d, sizeof d);
+	tc->ccert[0] = 11;
+	put24(tc->ccert + 1, (unsigned)(6 + certlen));
+	put24(tc->ccert + 4, (unsigned)(3 + certlen));
+	put24(tc->ccert + 7, (unsigned)certlen);
+	memcpy(tc->ccert + 10, cert, certlen);
+	tc->ccert_len = 10 + certlen;
+	tc->has_cert = 1;
+	return 1;
+}
+
 /* ---- connection setup ---- */
 
 ts_conn *
@@ -701,7 +756,7 @@ ts_new(const char *server_name, void *ioctx,
 }
 
 enum {
-	HS_CH = 0, HS_SH, HS_CERT, HS_SKE, HS_TAIL, HS_CERT0,
+	HS_CH = 0, HS_SH, HS_CERT, HS_SKE, HS_TAIL, HS_CERT0, HS_CERTV,
 	HS_CKE, HS_CCS, HS_FIN, HS_SRV_CCS, HS_SRV_FIN, HS_DONE
 };
 
@@ -795,9 +850,26 @@ ts_handshake(ts_conn *t)
 			if (r != TS_OK) {
 				return r;
 			}
+			if (type == 13) {
+				/* parse before hs_skip moves the body away */
+				t->seen_cr = 1;
+				if (blen > 0) {
+					size_t n = body[0], k;
+
+					for (k = 0; k < n && k + 1 < blen; k ++) {
+						unsigned ct = body[1 + k];
+
+						if (ct == 64) {
+							t->cr_types |= 0x40;
+						} else if (ct < 8) {
+							t->cr_types |= (unsigned char)
+								(1 << ct);
+						}
+					}
+				}
+			}
 			hs_skip(t, 4 + blen);
 			if (type == 13) {
-				t->seen_cr = 1;
 				break;
 			}
 			if (type != 14) {
@@ -815,6 +887,18 @@ ts_handshake(ts_conn *t)
 			break;
 
 		case HS_CERT0:
+			/* ecdsa_sign is 64; with no types offered, try anyway */
+			if (t->has_cert && (t->cr_types == 0
+				|| (t->cr_types & (unsigned char)(1 << 6))))
+			{
+				r = hs_send_cert(t);
+				if (r != TS_OK) {
+					return r;
+				}
+				t->cert_sent = 1;
+				t->hs_state = HS_CKE;
+				break;
+			}
 			r = hs_send(t, 11, "\x00\x00\x00", 3);
 			if (r != TS_OK) {
 				return r;
@@ -822,12 +906,21 @@ ts_handshake(ts_conn *t)
 			t->hs_state = HS_CKE;
 			break;
 
+		case HS_CERTV:
+			r = send_certverify(t);
+			if (r != TS_OK) {
+				return r;
+			}
+			t->hs_state = HS_CCS;
+			break;
+
 		case HS_CKE:
 			r = send_clientkeyexchange(t);
 			if (r != TS_OK) {
 				return r;
 			}
-			t->hs_state = HS_CCS;
+			/* Certificate, ClientKeyExchange, CertificateVerify */
+			t->hs_state = t->cert_sent ? HS_CERTV : HS_CCS;
 			break;
 
 		case HS_CCS:
