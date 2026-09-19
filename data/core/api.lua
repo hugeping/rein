@@ -113,6 +113,7 @@ local env = {
   },
   thread = thread,
   net = net,
+  tls = tls,
   mixer = mixer,
   synth = synth,
   input = {},

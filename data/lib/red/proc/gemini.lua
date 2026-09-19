@@ -7,6 +7,11 @@
 -- and win.kinds.gemini can restore it from red.dump.  Requests run in
 -- a window coroutine (win:run), so the editor stays alive while the
 -- request is in flight.
+--
+-- A client certificate the server asks for is made on the user's
+-- consent and kept per host, in X.509/PKCS#8 DER under
+-- $HOME/.rein/gemini/certs; doc/api-ru.md tells how to convert it
+-- to and from the PEM of other clients with openssl.
 local sock = require "sock"
 local win = require "red/win"
 
@@ -198,6 +203,59 @@ function gemini.prompt(w, url, meta)
   w:cur(#w.buf.text + 1)
 end
 
+-- a 60 response: offer to make a certificate for the host
+function gemini.cert_prompt(w, url, host)
+  w:printf('? %s requires a client certificate, create one? [Enter] ',
+    host)
+  w.gem.cert = { url = url, host = host, pos = #w.buf.text + 1 }
+  w:cur(#w.buf.text + 1)
+end
+
+-- a client certificate lives in $HOME/.rein/gemini/certs (or under
+-- DATADIR/save), one pair per host: a certificate is an identity, so
+-- it is made only with the user's consent
+local function cert_file(host, ext)
+  local ok, dir = pcall(sys.appdir, 'gemini')
+
+  if not ok or not dir then
+    return
+  end
+  dir = dir .. '/certs'
+  sys.mkdir(dir)
+  return dir .. '/' .. (host:lower():gsub('[^%w%._%-]', '_')) .. ext
+end
+
+local function cert_load(host)
+  local crt, key = cert_file(host, '.crt'), cert_file(host, '.key')
+
+  if crt and key and io.access(crt) and io.access(key) then
+    return io.file(crt), io.file(key)
+  end
+end
+
+local function cert_make(host)
+  local crt, key = cert_file(host, '.crt'), cert_file(host, '.key')
+
+  if not crt then
+    return false, "no certificate directory"
+  end
+  local c, k = tls.certgen(host)
+
+  if not c then
+    return false, k
+  end
+  local ok, e = io.file(crt, c)
+
+  if not ok then
+    return false, e
+  end
+  ok, e = io.file(key, k)
+  if not ok then
+    return false, e
+  end
+  return c, k
+end
+
 -- send the typed answer to the pending input request
 function gemini.answer(w, text)
   local i = w.gem.input
@@ -227,7 +285,8 @@ local function fetch(out, url, depth, gen)
     return false
   end
 
-  local s, e = sock.dial(u.host, u.port, u.host)
+  local cert, key = cert_load(u.host)
+  local s, e = sock.dial(u.host, u.port, u.host, cert, key)
   if not s then
     say(out, "error: " .. tostring(e) .. "\n", gen)
     return false
@@ -266,6 +325,25 @@ local function fetch(out, url, depth, gen)
     return false
   end
   say(out, string.format("[%d %s]\n", status, meta), gen)
+
+  if status == 60 then
+    -- the server wants a client certificate: make one, but only
+    -- after the user agrees; a certificate already sent is not
+    -- replaced by a new one, the server just did not take it
+    s:close()
+    g.sock = nil
+    if cert then
+      say(out, "the certificate is already in use\n", gen)
+    else
+      gemini.cert_prompt(out, url, u.host)
+    end
+    return g.gen == gen
+  end
+  if status == 61 then
+    say(out, "the server does not authorise this certificate\n", gen)
+  elseif status == 62 then
+    say(out, "the certificate is not valid\n", gen)
+  end
 
   if status >= 10 and status < 20 then
     gemini.prompt(out, url, meta)
@@ -321,6 +399,7 @@ local function go(w, pos)
   local g = w.gem
 
   g.input = nil -- a pending 10/11 prompt is stale after a navigation
+  g.cert = nil -- so is a pending 60 offer
   g.gen = (g.gen or 0) + 1
   if g.sock then
     g.sock:close()
@@ -338,6 +417,24 @@ local function go(w, pos)
       g.hist[pos] = w.gem.url
     end
   end)
+end
+
+-- the user agreed to a certificate: make it and retry the page
+local function cert_retry(w)
+  local c = w.gem.cert
+
+  if not c then
+    return
+  end
+  w.gem.cert = nil
+  local crt, err = cert_make(c.host)
+
+  if not crt then
+    w:printf("error: %s\n", err or "no certificate")
+    w:scroll_output()
+    return
+  end
+  go(w, w.gem.pos)
 end
 
 -- navigate to a link or to "host", "host/path", "gemini://...",
@@ -466,7 +563,8 @@ function gemini:event(r, v, a, b)
   return win.event(self, r, v, a, b)
 end
 
--- return in the body sends the typed answer of a pending input
+-- return in the body sends the typed answer of a pending input or
+-- accepts the offer of a client certificate
 function gemini:newline()
   local i = self.gem.input
 
@@ -479,6 +577,12 @@ function gemini:newline()
       t = t .. self.buf.text[k]
     end
     gemini.answer(self, t)
+    return
+  end
+  local c = self.gem.cert
+
+  if c and self.buf.cur >= c.pos then
+    cert_retry(self)
     return
   end
   return win.newline(self)

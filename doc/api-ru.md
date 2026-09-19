@@ -548,9 +548,19 @@ net.dial(хост, порт) -- создать tcp соединение и
 
 :close()
 
-net.tls(сокет, хост) -- обернуть соединение в TLS 1.2
-(SNI = хост, сертификат сервера не проверяется), вернёт
-tls сокет
+Есть библиотека sock, которая может быть включена в
+приложение и использована в блокирующем режиме;
+sock.dial(хост, порт, [tls_host, [сертификат, ключ]])
+
+Пример использования см. data/apps/irc.lua
+
+## tls
+
+tls.new(сокет, хост, [сертификат, ключ]) -- обернуть
+соединение в TLS 1.2 (SNI = хост, сертификат сервера не
+проверяется), вернёт tls сокет; сертификат и ключ клиента
+(P-256) задаются в DER (X.509 и PKCS#8 или SEC1),
+сертификат отправляется только если сервер его запросил
 
 :handshake() -- продвинуть рукопожатие: true когда готово,
 "read"/"write" -- нужно дождаться сокета, nil, ошибка
@@ -558,10 +568,30 @@ tls сокет
 :send/:recv/:close -- как у обычного сокета (send вернёт 0,
 если сейчас нельзя, recv вернёт "" если данных пока нет)
 
-Есть библиотека sock, которая может быть включена в
-приложение и использована в блокирующем режиме;
-sock.dial(хост, порт, tls_host) сразу поднимает TLS.
-Пример использования см. data/apps/irc.lua
+tls.certgen(имя) -- сделать самоподписанный сертификат P-256
+с общим именем `имя`: вернёт сертификат и его ключ (PKCS#8)
+в DER; годится для tls.new.
+
+Пример использования: клиент gemini хранит их по
+хостам в $HOME/.rein/gemini/certs (<хост>.crt и .key).
+Создать своё удостоверение или обменяться им с другими
+клиентами можно через openssl (подходит только P-256):
+
+    # сгенерировать удостоверение P-256 с нуля
+    # (файлы .crt и .key положить в каталог клиента выше)
+    openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
+        -nodes -days 3650 -subj /CN=host \
+        -keyout host.key.pem -out host.crt.pem
+    openssl x509 -in host.crt.pem -outform DER -out host.crt
+    openssl pkey -in host.key.pem -outform DER -out host.key
+
+    # наш DER -> PEM для другого клиента
+    openssl x509 -inform DER -in host.crt -out host.pem
+    openssl pkey -inform DER -in host.key -out host.pem
+
+    # чужой PEM -> DER (ключ принимается в PKCS#8 и SEC1)
+    openssl x509 -in host.pem -outform DER -out host.crt
+    openssl pkey -in host.pem -outform DER -out host.key
 
 ## utf
 

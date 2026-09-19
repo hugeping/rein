@@ -20,6 +20,8 @@
 #include "ts_crypto.c"    /* the library's ts_random becomes ts_random_lib */
 #undef ts_random
 
+#include "ts_cert.c"
+
 #include "tls_session.h"
 
 static uint64_t rng_state;
@@ -543,6 +545,124 @@ test_limits(void)
 		"hello request flood");
 }
 
+/* ---- client keys and certificates ---- */
+
+static const char *pk8_hex =
+	"308187020100301306072a8648ce3d020106082a8648ce3d03010704"
+	"6d306b0201010420327316eddd51c7deda65de8e69858da8d939ef8e"
+	"15f443c5dd4b9f80ad348e22a14403420004b2c801f537b7fe4877ef"
+	"b52377959d3b2dec471038e7a9ecb06b9936d67a3f1d79967a320070"
+	"5abdbac43b6b4bf3f8e959df8aa245294b7727caa109409a5a7c";
+
+static const char *sec1_hex =
+	"30770201010420327316eddd51c7deda65de8e69858da8d939ef8e15"
+	"f443c5dd4b9f80ad348e22a00a06082a8648ce3d030107a144034200"
+	"04b2c801f537b7fe4877efb52377959d3b2dec471038e7a9ecb06b99"
+	"36d67a3f1d79967a3200705abdbac43b6b4bf3f8e959df8aa245294b"
+	"7727caa109409a5a7c";
+
+static const char *pub_hex =
+	"04b2c801f537b7fe4877efb52377959d3b2dec471038e7a9ecb06b99"
+	"36d67a3f1d79967a3200705abdbac43b6b4bf3f8e959df8aa245294b"
+	"7727caa109409a5a7c";
+
+static const char *scalar_hex =
+	"327316eddd51c7deda65de8e69858da8d939ef8e15f443c5dd4b9f80"
+	"ad348e22";
+
+static void
+test_ec_sign(void)
+{
+	unsigned char d[32], q[65], hash[32], sig[80], sig2[80];
+	br_ec_public_key pk;
+	size_t siglen, siglen2;
+
+	memset(hash, 0xA5, sizeof hash);
+	rng_reset();
+	chk(ts_ec_keygen(d, q), "keygen");
+	pk.curve = BR_EC_secp256r1;
+	pk.q = q;
+	pk.qlen = sizeof q;
+	chk(ts_ec_sign(d, hash, sig, &siglen), "sign");
+	chk(br_ecdsa_i31_vrfy_asn1(&br_ec_prime_i31, hash, 32, &pk,
+		sig, siglen), "the signature verifies");
+	chk(siglen > 8 && siglen <= 72, "a short DER signature");
+	chk(ts_ec_sign(d, hash, sig2, &siglen2), "sign again");
+	chk(siglen != siglen2 || memcmp(sig, sig2, siglen) != 0,
+		"the random nonce makes the signatures differ");
+	hash[0] ^= 1;
+	chk(!br_ecdsa_i31_vrfy_asn1(&br_ec_prime_i31, hash, 32, &pk,
+		sig, siglen), "a changed hash does not verify");
+}
+
+static void
+test_ec_key(void)
+{
+	unsigned char der[160], d[32], q[65], want[32];
+	int n;
+
+	rng_reset();
+	n = unhex(pk8_hex, der, sizeof der);
+	chk(n > 0 && ts_ec_key_parse(der, (size_t)n, d), "PKCS#8 key");
+	n = unhex(scalar_hex, want, sizeof want);
+	chk(n == 32 && memcmp(d, want, 32) == 0, "the PKCS#8 scalar");
+	n = unhex(sec1_hex, der, sizeof der);
+	chk(n > 0 && ts_ec_key_parse(der, (size_t)n, d), "SEC1 key");
+	chk(memcmp(d, want, 32) == 0, "the SEC1 scalar");
+	n = unhex(pub_hex, q, sizeof q);
+	chk(br_ec_prime_i31.mulgen(q, d, 32, BR_EC_secp256r1) == 65,
+		"the public point");
+	{
+		unsigned char pub[65];
+
+		n = unhex(pub_hex, pub, sizeof pub);
+		chk(n == 65 && memcmp(q, pub, 65) == 0,
+			"the scalar matches the openssl key");
+	}
+	chk(!ts_ec_key_parse((const unsigned char *)"x", 1, d), "junk key");
+	n = unhex(sec1_hex, der, sizeof der);
+	chk(!ts_ec_key_parse(der, (size_t)n - 3, d), "a truncated key");
+}
+
+static void
+test_ec_cert(void)
+{
+	unsigned char cert[1024], key[128], d[32], q[65], hash[32];
+	size_t clen, klen, len;
+	ts_der c;
+	const unsigned char *val, *tbs, *bits;
+	ts_pkey pk;
+	ts_sha256_ctx sc;
+
+	chk(ts_ec_selfsign("example.com", cert, &clen, key, &klen),
+		"selfsign");
+	chk(clen > 0 && clen < sizeof cert, "a small certificate");
+	chk(ts_x509_get_pkey(cert, clen, &pk) && pk.key_type == TS_KEY_EC
+		&& pk.key.ec.curve == BR_EC_secp256r1
+		&& pk.key.ec.qlen == 65, "the public key parses");
+	chk(ts_ec_key_parse(key, klen, d), "the generated key parses");
+	chk(br_ec_prime_i31.mulgen(q, d, 32, BR_EC_secp256r1) == 65,
+		"the generated public point");
+	chk(memcmp(q, pk.key.ec.q, 65) == 0,
+		"the key matches the certificate");
+
+	/* the certificate is signed by its own key */
+	c.p = cert;
+	c.end = cert + clen;
+	chk(ts_der_enter(&c, 0x30), "certificate SEQUENCE");
+	tbs = c.p;
+	chk(ts_der_tlv(&c, 0x30, &val, &len), "tbsCertificate");
+	ts_sha256_init(&sc);
+	ts_sha256_update(&sc, tbs, (size_t)(c.p - tbs));
+	ts_sha256_out(&sc, hash);
+	chk(ts_der_tlv(&c, 0x30, &val, &len), "signature algorithm");
+	chk(ts_der_tlv(&c, 0x03, &bits, &len) && len > 1 && bits[0] == 0,
+		"signatureValue");
+	chk(br_ecdsa_i31_vrfy_asn1(&br_ec_prime_i31, hash, 32, &pk.key.ec,
+		bits + 1, len - 1), "the certificate signature verifies");
+	chk(klen == 79, "the PKCS#8 key size");
+}
+
 /* ---- golden session replay ---- */
 
 static void
@@ -628,6 +748,9 @@ main(void)
 	test_x509();
 	test_api();
 	test_limits();
+	test_ec_sign();
+	test_ec_key();
+	test_ec_cert();
 	test_sessions();
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures != 0;

@@ -11,6 +11,7 @@ extern int luaopen_thread(lua_State *L);
 extern int luaopen_gfx(lua_State *L);
 extern int luaopen_utf(lua_State *L);
 extern int luaopen_net(lua_State *L);
+extern int luaopen_tls(lua_State *L);
 extern int luaopen_synth(lua_State *L);
 
 extern int synth_init(void);
@@ -23,6 +24,7 @@ static const luaL_Reg lua_libs[] = {
 	{ "bit", luaopen_bit },
 	{ "thread", luaopen_thread },
 	{ "net", luaopen_net },
+	{ "tls", luaopen_tls },
 	{ "synth", luaopen_synth },
 	{ NULL, NULL }
 };
