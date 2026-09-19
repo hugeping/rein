@@ -146,6 +146,70 @@ describe("gemini", function()
     ok(w:gettext():find("(redirect)", 1, true))
   end)
 
+  it("resolves relative links per RFC 3986", function()
+    reset()
+    responses = { { "20 text/gemini",
+      "=> ?39 query only",
+      "=> x same directory",
+      "=> ./x same directory",
+      "=> ../x one up",
+      "=> /x from the root",
+      "=> //h2/x another authority",
+      "=> gemini://h2/y?q#f absolute, fragment dropped",
+      "=> #f same page, fragment dropped",
+      "=> a//b an empty segment stays",
+      "=> .. one up, trailing slash",
+    } }
+    local w = run("h/settings/avatar/V5XoC8e7xT")
+    local u = {}
+
+    for i, l in ipairs(w.gem.links) do
+      u[i] = l.url
+    end
+    eq(u[1], "gemini://h/settings/avatar/V5XoC8e7xT?39")
+    eq(u[2], "gemini://h/settings/avatar/x")
+    eq(u[3], "gemini://h/settings/avatar/x")
+    eq(u[4], "gemini://h/settings/x")
+    eq(u[5], "gemini://h/x")
+    eq(u[6], "gemini://h2/x")
+    eq(u[7], "gemini://h2/y?q")
+    eq(u[8], "gemini://h/settings/avatar/V5XoC8e7xT")
+    eq(u[9], "gemini://h/settings/avatar/a//b")
+    eq(u[10], "gemini://h/settings/")
+  end)
+
+  it("resolves links against a base with a port and a query", function()
+    reset()
+    responses = { { "20 text/gemini",
+      "=> ?y a new query",
+      "=> x the query is dropped",
+      "=> #f the query stays",
+    } }
+    local w = run("h:1966/p?q")
+
+    eq(w.gem.links[1].url, "gemini://h:1966/p?y")
+    eq(w.gem.links[2].url, "gemini://h:1966/x")
+    eq(w.gem.links[3].url, "gemini://h:1966/p?q")
+  end)
+
+  it("resolves relative redirects against the request", function()
+    reset()
+    responses = { { "30 /new" }, { "20 text/gemini", "ok" } }
+    run("h/dir/old?q")
+    eq(requests[2], "gemini://h/new\r\n",
+      "an absolute-path redirect drops the query")
+
+    reset()
+    responses = { { "30 next" }, { "20 text/gemini", "ok" } }
+    run("h/dir/page")
+    eq(requests[2], "gemini://h/dir/next\r\n", "a relative redirect")
+
+    reset()
+    responses = { { "30 ?y" }, { "20 text/gemini", "ok" } }
+    run("h/search?x")
+    eq(requests[2], "gemini://h/search?y\r\n", "a query-only redirect")
+  end)
+
   it("back and forward walk the history", function()
     local w = run("h/a")
     ext.gemini({ output = function() return w end }, "h/b")
