@@ -59,13 +59,13 @@ return {
     syntax = "dir"
     }
   },
-  {"^[Mm]akefile.*", { ts = 8,
+  {"/?[Mm]akefile.*$", { ts = 8,
     spaces_tab = false,
     trim_spaces = false,
     syntax = "makefile"
     }
   },
-  {"^.+%.mk", { ts = 8,
+  {"%.mk$", { ts = 8,
     spaces_tab = false,
     trim_spaces = false,
     syntax = "makefile"
