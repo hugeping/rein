@@ -628,13 +628,11 @@ static void
 test_ec_cert(void)
 {
 	unsigned char cert[1024], key[128], d[32], q[65], hash[32];
-	unsigned char back[1024];
-	size_t clen, klen, len, n;
+	size_t clen, klen, len;
 	ts_der c;
 	const unsigned char *val, *tbs, *bits;
 	ts_pkey pk;
 	ts_sha256_ctx sc;
-	char pem[2048];
 
 	chk(ts_ec_selfsign("example.com", cert, &clen, key, &klen),
 		"selfsign");
@@ -662,22 +660,7 @@ test_ec_cert(void)
 		"signatureValue");
 	chk(br_ecdsa_i31_vrfy_asn1(&br_ec_prime_i31, hash, 32, &pk.key.ec,
 		bits + 1, len - 1), "the certificate signature verifies");
-
-	/* PEM roundtrip, the label is checked */
-	n = ts_pem_encode("CERTIFICATE", cert, clen, pem);
-	chk(n > 0, "PEM encode");
-	chk(strlen(pem) == n, "the PEM is terminated");
-	chk(n > 6 && memcmp(pem + n - 6, "-----\n", 6) == 0,
-		"the PEM ends with the label line");
-	n = ts_pem_decode(pem, n, "CERTIFICATE", back, sizeof back);
-	chk(n == clen && memcmp(cert, back, clen) == 0, "PEM roundtrip");
-	chk(ts_pem_decode(pem, strlen(pem), "PRIVATE KEY", back,
-		sizeof back) == 0, "the PEM label is checked");
-
-	n = ts_pem_encode("PRIVATE KEY", key, klen, pem);
-	chk(n > 0, "key PEM encode");
-	n = ts_pem_decode(pem, n, "PRIVATE KEY", back, sizeof back);
-	chk(n == klen && memcmp(key, back, klen) == 0, "key PEM roundtrip");
+	chk(klen == 79, "the PKCS#8 key size");
 }
 
 /* ---- golden session replay ---- */

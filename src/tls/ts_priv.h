@@ -125,7 +125,7 @@ void ts_prf(const void *secret, size_t slen, const char *label,
 /* ts_x509.c */
 int ts_x509_get_pkey(const unsigned char *cert, size_t clen, ts_pkey *pk);
 
-/* ts_cert.c: client keys, self-signed certificates, PEM */
+/* ts_cert.c: client keys and self-signed certificates */
 int ts_ec_keygen(unsigned char *d, unsigned char *pub);
 int ts_ec_sign(const unsigned char *d, const unsigned char *hash,
 	unsigned char *sig, size_t *siglen);

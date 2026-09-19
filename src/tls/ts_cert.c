@@ -1,9 +1,9 @@
 /*
  * Client keys and certificates for TinyTLS: P-256 ECDSA key
- * generation, ECDSA signing over SHA-256, a self-signed X.509
- * certificate builder, and the PEM reader and writer.  A client
- * certificate is an identity the user chooses, so nothing here
- * validates anything: the server is free to accept or reject it.
+ * generation, ECDSA signing over SHA-256 and a self-signed X.509
+ * certificate builder, all in DER.  A client certificate is an
+ * identity the user chooses, so nothing here validates anything:
+ * the server is free to accept or reject it.
  *
  * Only P-256 is supported, as everywhere else in the client.
  */
@@ -67,146 +67,6 @@ ts_der_enter(ts_der *c, unsigned tag)
 	c->p = val;
 	c->end = val + len;
 	return 1;
-}
-
-/* ---- PEM and base64 ---- */
-
-static const char b64_char[] =
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-static int
-b64_value(int c)
-{
-	if (c >= 'A' && c <= 'Z') return c - 'A';
-	if (c >= 'a' && c <= 'z') return c - 'a' + 26;
-	if (c >= '0' && c <= '9') return c - '0' + 52;
-	if (c == '+') return 62;
-	if (c == '/') return 63;
-	return -1;
-}
-
-static char *
-put_str(char *p, const char *s)
-{
-	while (*s) {
-		*p ++ = *s ++;
-	}
-	return p;
-}
-
-static char *
-b64_line(char *p, const unsigned char *data, size_t len)
-{
-	size_t i = 0;
-
-	while (i + 3 <= len) {
-		unsigned v = ((unsigned)data[i] << 16)
-			| ((unsigned)data[i + 1] << 8) | data[i + 2];
-
-		p[0] = b64_char[(v >> 18) & 63];
-		p[1] = b64_char[(v >> 12) & 63];
-		p[2] = b64_char[(v >> 6) & 63];
-		p[3] = b64_char[v & 63];
-		p += 4;
-		i += 3;
-	}
-	if (i < len) {
-		unsigned v = (unsigned)data[i] << 16;
-
-		if (len - i == 2) {
-			v |= (unsigned)data[i + 1] << 8;
-		}
-		p[0] = b64_char[(v >> 18) & 63];
-		p[1] = b64_char[(v >> 12) & 63];
-		p[2] = len - i == 2 ? b64_char[(v >> 6) & 63] : '=';
-		p[3] = '=';
-		p += 4;
-	}
-	return p;
-}
-
-/*
- * Write the DER data as a PEM block into out and terminate it with
- * a zero byte.  The buffer must have room for 4*((derlen + 2)/3)
- * base64 characters, the line breaks, the two label lines and the
- * terminator.
- */
-size_t
-ts_pem_encode(const char *label, const unsigned char *der, size_t derlen,
-	char *out)
-{
-	char *p = out;
-	size_t i;
-
-	p = put_str(p, "-----BEGIN ");
-	p = put_str(p, label);
-	p = put_str(p, "-----\n");
-	for (i = 0; i < derlen; i += 48) {
-		size_t n = derlen - i;
-
-		if (n > 48) {
-			n = 48;
-		}
-		p = b64_line(p, der + i, n);
-		*p ++ = '\n';
-	}
-	p = put_str(p, "-----END ");
-	p = put_str(p, label);
-	p = put_str(p, "-----\n");
-	*p = '\0';
-	return (size_t)(p - out);
-}
-
-/*
- * Decode the first base64 block with the given label from a PEM
- * text; the data may be split over any number of lines.
- */
-size_t
-ts_pem_decode(const char *pem, size_t pemlen, const char *label,
-	unsigned char *der, size_t max)
-{
-	char head[64];
-	char *hp = head;
-	size_t i, hlen, dlen;
-	unsigned acc;
-	int bits;
-
-	hp = put_str(hp, "-----BEGIN ");
-	hp = put_str(hp, label);
-	hp = put_str(hp, "-----");
-	hlen = (size_t)(hp - head);
-	for (i = 0; i + hlen <= pemlen; i ++) {
-		if (memcmp(pem + i, head, hlen) == 0) {
-			break;
-		}
-	}
-	if (i + hlen > pemlen) {
-		return 0;
-	}
-	i += hlen;
-	dlen = 0;
-	acc = 0;
-	bits = 0;
-	for (; i < pemlen; i ++) {
-		int v = b64_value((unsigned char)pem[i]);
-
-		if (v < 0) {
-			if (pem[i] == '-') {
-				break;
-			}
-			continue;
-		}
-		acc = (acc << 6) | (unsigned)v;
-		bits += 6;
-		if (bits >= 8) {
-			bits -= 8;
-			if (dlen >= max) {
-				return 0;
-			}
-			der[dlen ++] = (unsigned char)((acc >> bits) & 0xFF);
-		}
-	}
-	return dlen;
 }
 
 /* ---- the key ---- */
