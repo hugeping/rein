@@ -1,4 +1,6 @@
 local proc = require "red/proc"
+local shell = require "red/shell"
+
 return {
   { 'shift+home',
     function(self)
@@ -128,7 +130,7 @@ return {
   { 'alt+v',
     function(self)
       if PLATFORM ~= 'Windows' then
-        self:run(proc['<'], 'xclip -o -selection clipboard')
+        self:run(shell.pipe, 'xclip -o -selection clipboard')
       end
     end
   },
