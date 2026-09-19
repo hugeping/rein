@@ -132,9 +132,8 @@ rec_flush(ts_conn *t)
 			t->err = TS_ERR_IO;
 			return TS_ERR_IO;
 		}
-		if (r == 0) {
+		if (r == 0)
 			return TS_WANT_WRITE;
-		}
 		t->wpos += (size_t)r;
 	}
 	t->wpos = 0;
@@ -188,9 +187,8 @@ rec_pull(ts_conn *t)
 			t->err = TS_ERR_IO;
 			return TS_ERR_IO;
 		}
-		if (r == 0) {
+		if (r == 0)
 			return TS_WANT_READ;
-		}
 		t->in_have += (size_t)r;
 		if (t->in_need == 0 && t->in_have == 5) {
 			size_t len = get16(t->rbuf + 3);
@@ -212,9 +210,8 @@ rec_next(ts_conn *t)
 	size_t rlen;
 	unsigned type;
 
-	if (r != TS_OK) {
+	if (r != TS_OK)
 		return r;
-	}
 	type = t->rbuf[0];
 	rlen = t->in_need - 5;
 	if (t->enc_in) {
@@ -260,18 +257,16 @@ hs_send(ts_conn *t, unsigned type, const void *body, size_t len)
 {
 	unsigned char b[2048];
 
-	if (t->wlen != 0) {
+	if (t->wlen != 0)
 		return TS_WANT_WRITE;
-	}
 	if (len + 4 > sizeof b) {
 		t->err = TS_ERR_PROTOCOL;
 		return TS_ERR_PROTOCOL;
 	}
 	b[0] = (unsigned char)type;
 	put24(b + 1, len);
-	if (len > 0) {
+	if (len > 0)
 		memcpy(b + 4, body, len);
-	}
 	ts_sha256_update(&t->hs, b, len + 4);
 	return rec_queue(t, 22, b, len + 4);
 }
@@ -302,9 +297,8 @@ hs_next(ts_conn *t, unsigned *type, const unsigned char **body, size_t *len)
 		{
 			int r = rec_next(t);
 
-			if (r != TS_OK) {
+			if (r != TS_OK)
 				return r;
-			}
 			if (t->rtype == 22) {
 				if (t->rlen > sizeof t->hbuf - t->hlen) {
 					t->err = TS_ERR_PROTOCOL;
@@ -409,27 +403,22 @@ parse_serverhello(ts_conn *t, const unsigned char *b, size_t len, unsigned *suit
 {
 	size_t pos, sid;
 
-	if (len < 2 + 32 + 1) {
+	if (len < 2 + 32 + 1)
 		return TS_ERR_PROTOCOL;
-	}
-	if (get16(b) != 0x0303) {
+	if (get16(b) != 0x0303)
 		return TS_ERR_UNSUPPORTED;
-	}
 	memcpy(t->server_random, b + 2, 32);
 	pos = 34;
 	sid = b[pos ++];
-	if (sid > 32 || pos + sid + 3 > len) {
+	if (sid > 32 || pos + sid + 3 > len)
 		return TS_ERR_PROTOCOL;
-	}
 	pos += sid;
 	*suite = get16(b + pos);
 	pos += 2;
-	if (*suite != 0xC02B && *suite != 0xC02F && *suite != 0x009C) {
+	if (*suite != 0xC02B && *suite != 0xC02F && *suite != 0x009C)
 		return TS_ERR_UNSUPPORTED;
-	}
-	if (b[pos ++] != 0) {
+	if (b[pos ++] != 0)
 		return TS_ERR_UNSUPPORTED;
-	}
 	return TS_OK;
 }
 
@@ -438,24 +427,20 @@ parse_certificate(ts_conn *t, const unsigned char *b, size_t len)
 {
 	size_t clen;
 
-	if (len < 6) {
+	if (len < 6)
 		return TS_ERR_PROTOCOL;
-	}
-	if (get24(b) + 3 != len) {
+	if (get24(b) + 3 != len)
 		return TS_ERR_PROTOCOL;
-	}
 	clen = get24(b + 3);
-	if (clen == 0 || 6 + clen > len) {
+	if (clen == 0 || 6 + clen > len)
 		return TS_ERR_PROTOCOL;
-	}
 	/*
 	 * The public key is kept in the certificate copy, not in the
 	 * handshake reassembly buffer (which gets shifted around as
 	 * more messages are read).
 	 */
-	if (clen > sizeof t->cert) {
+	if (clen > sizeof t->cert)
 		return TS_ERR_CERTIFICATE;
-	}
 	memcpy(t->cert, b + 6, clen);
 	if (!ts_x509_get_pkey(t->cert, clen, &t->pkey)) {
 		/*
@@ -478,29 +463,24 @@ parse_ske(ts_conn *t, const unsigned char *b, size_t len)
 	unsigned char key[66];
 	unsigned char mask;
 
-	if (len < 4 + 1 + 4) {
+	if (len < 4 + 1 + 4)
 		return TS_ERR_PROTOCOL;
-	}
-	if (b[0] != 3 || get16(b + 1) != 0x0017) {
+	if (b[0] != 3 || get16(b + 1) != 0x0017)
 		return TS_ERR_UNSUPPORTED;     /* only named curve P-256 */
-	}
 	ptlen = b[3];
-	if (ptlen < 65 || 4 + ptlen + 4 > len) {
+	if (ptlen < 65 || 4 + ptlen + 4 > len)
 		return TS_ERR_PROTOCOL;
-	}
 	pt = b + 4;
-	if (pt[0] != 0x04) {
+	if (pt[0] != 0x04)
 		return TS_ERR_UNSUPPORTED;     /* uncompressed points only */
-	}
 	hlen = 4 + ptlen;                  /* signed ServerECDHParams */
 	if (b[hlen] != 4 &&                 /* SHA-256, or any when the */
 		t->pkey.key_type != TS_KEY_NONE) { /* signature is skipped */
 		return TS_ERR_UNSUPPORTED;
 	}
 	siglen = get16(b + hlen + 2);
-	if (hlen + 4 + siglen != len) {
+	if (hlen + 4 + siglen != len)
 		return TS_ERR_PROTOCOL;
-	}
 	sig = b + hlen + 4;
 
 	/* hash = SHA256(client_random || server_random || params) */
@@ -518,22 +498,18 @@ parse_ske(ts_conn *t, const unsigned char *b, size_t len)
 	} else if (b[hlen + 1] == 0x01) {  /* RSA */
 		unsigned char out[32];
 
-		if (t->pkey.key_type != TS_KEY_RSA) {
+		if (t->pkey.key_type != TS_KEY_RSA)
 			return TS_ERR_CERTIFICATE;
-		}
 		if (!br_rsa_i31_pkcs1_vrfy(sig, siglen, BR_HASH_OID_SHA256,
 			32, &t->pkey.key.rsa, out)
-			|| memcmp(out, hash, 32) != 0) {
+			|| memcmp(out, hash, 32) != 0)
 			return TS_ERR_SIGNATURE;
-		}
 	} else if (b[hlen + 1] == 0x03) {  /* ECDSA */
-		if (t->pkey.key_type != TS_KEY_EC) {
+		if (t->pkey.key_type != TS_KEY_EC)
 			return TS_ERR_CERTIFICATE;
-		}
 		if (!br_ecdsa_i31_vrfy_asn1(&br_ec_prime_i31, hash, 32,
-			&t->pkey.key.ec, sig, siglen)) {
+			&t->pkey.key.ec, sig, siglen))
 			return TS_ERR_SIGNATURE;
-		}
 	} else {
 		return TS_ERR_UNSUPPORTED;
 	}
@@ -548,13 +524,11 @@ parse_ske(ts_conn *t, const unsigned char *b, size_t len)
 	key[0] &= mask;
 	key[olen - 1] |= 0x01;
 	br_ec_prime_i31.generator(BR_EC_secp256r1, &glen);
-	if (glen != ptlen) {
+	if (glen != ptlen)
 		return TS_ERR_PROTOCOL;
-	}
 	memcpy(t->exch, pt, glen);
-	if (!br_ec_prime_i31.mul(t->exch, glen, key, olen, BR_EC_secp256r1)) {
+	if (!br_ec_prime_i31.mul(t->exch, glen, key, olen, BR_EC_secp256r1))
 		return TS_ERR_PROTOCOL;
-	}
 	xoff = br_ec_prime_i31.xoff(BR_EC_secp256r1, &xlen);
 	memcpy(t->pms, t->exch + xoff, xlen);
 	t->pms_len = xlen;
@@ -575,17 +549,15 @@ make_rsa_pms(ts_conn *t)
 	size_t nlen;
 	size_t u;
 
-	if (t->pkey.key_type != TS_KEY_RSA) {
+	if (t->pkey.key_type != TS_KEY_RSA)
 		return TS_ERR_CERTIFICATE;
-	}
 	nlen = t->pkey.key.rsa.nlen;
 	while (nlen > 0 && *n == 0) {
 		n ++;
 		nlen --;
 	}
-	if (nlen < 64 || nlen > sizeof block) {
+	if (nlen < 64 || nlen > sizeof block)
 		return TS_ERR_CERTIFICATE;
-	}
 	t->pms[0] = 0x03;
 	t->pms[1] = 0x03;
 	ts_random(t->pms + 2, 46);
@@ -594,15 +566,13 @@ make_rsa_pms(ts_conn *t)
 	block[1] = 0x02;
 	ts_random(block + 2, nlen - 51);
 	for (u = 2; u < nlen - 49; u ++) {
-		if (block[u] == 0) {
+		if (block[u] == 0)
 			block[u] = 1;
-		}
 	}
 	block[nlen - 49] = 0x00;
 	memcpy(block + nlen - 48, t->pms, 48);
-	if (!br_rsa_i31_public(block, nlen, &t->pkey.key.rsa)) {
+	if (!br_rsa_i31_public(block, nlen, &t->pkey.key.rsa))
 		return TS_ERR_CERTIFICATE;
-	}
 	memcpy(t->exch, block, nlen);
 	t->exch_len = nlen;
 	return TS_OK;
@@ -615,14 +585,12 @@ send_clientkeyexchange(ts_conn *t)
 	size_t n = t->exch_len;
 	size_t pfx = t->suite == 0x009C ? 2 : 1;
 
-	if (n > sizeof b - pfx) {
+	if (n > sizeof b - pfx)
 		return TS_ERR_PROTOCOL;
-	}
-	if (pfx == 2) {
+	if (pfx == 2)
 		put16(b, (unsigned)n);
-	} else {
+	else
 		b[0] = (unsigned char)n;
-	}
 	memcpy(b + pfx, t->exch, n);
 	return hs_send(t, 16, b, pfx + n);
 }
@@ -670,9 +638,8 @@ send_finished(ts_conn *t, const char *label)
 static int
 hs_send_cert(ts_conn *t)
 {
-	if (t->wlen != 0) {
+	if (t->wlen != 0)
 		return TS_WANT_WRITE;
-	}
 	ts_sha256_update(&t->hs, t->ccert, t->ccert_len);
 	return rec_queue(t, 22, t->ccert, t->ccert_len);
 }
@@ -702,13 +669,11 @@ ts_set_clientcert(ts_conn *tc, const unsigned char *cert, size_t certlen,
 {
 	unsigned char d[32];
 
-	if (tc == NULL || cert == NULL || key == NULL) {
+	if (tc == NULL || cert == NULL || key == NULL)
 		return 0;
-	}
 	if (certlen == 0 || certlen > sizeof tc->ccert - 10
-		|| !ts_ec_key_parse(key, keylen, d)) {
+		|| !ts_ec_key_parse(key, keylen, d))
 		return 0;
-	}
 	memcpy(tc->ckey, d, sizeof d);
 	tc->ccert[0] = 11;
 	put24(tc->ccert + 1, (unsigned)(6 + certlen));
@@ -733,20 +698,17 @@ ts_new(const char *server_name, void *ioctx,
 	n = 0;
 	if (server_name != NULL) {
 		n = strlen(server_name);
-		if (n > 255) {
+		if (n > 255)
 			return NULL;
-		}
 	}
 	t = calloc(1, sizeof *t);
-	if (t == NULL) {
+	if (t == NULL)
 		return NULL;
-	}
 	t->ioctx = ioctx;
 	t->ioread = ioread;
 	t->iowrite = iowrite;
-	if (n > 0) {
+	if (n > 0)
 		memcpy(t->sni, server_name, n + 1);
-	}
 	ts_sha256_init(&t->hs);
 	ts_random(t->client_random, 32);
 	return t;
@@ -767,32 +729,28 @@ ts_handshake(ts_conn *t)
 {
 	int r;
 
-	if (t->err != 0) {
+	if (t->err != 0)
 		return t->err;
-	}
 	for (;;) {
 		unsigned type;
 		const unsigned char *body;
 		size_t blen;
 
 		r = rec_flush(t);
-		if (r != TS_OK) {
+		if (r != TS_OK)
 			return r;
-		}
 		switch (t->hs_state) {
 		case HS_CH:
 			r = send_clienthello(t);
-			if (r != TS_OK) {
+			if (r != TS_OK)
 				return r;
-			}
 			t->hs_state = HS_SH;
 			break;
 
 		case HS_SH:
 			r = hs_next(t, &type, &body, &blen);
-			if (r != TS_OK) {
+			if (r != TS_OK)
 				return r;
-			}
 			if (type != 2) {
 				t->err = TS_ERR_PROTOCOL;
 				return t->err;
@@ -808,9 +766,8 @@ ts_handshake(ts_conn *t)
 
 		case HS_CERT:
 			r = hs_next(t, &type, &body, &blen);
-			if (r != TS_OK) {
+			if (r != TS_OK)
 				return r;
-			}
 			if (type != 11) {
 				t->err = TS_ERR_PROTOCOL;
 				return t->err;
@@ -826,9 +783,8 @@ ts_handshake(ts_conn *t)
 
 		case HS_SKE:
 			r = hs_next(t, &type, &body, &blen);
-			if (r != TS_OK) {
+			if (r != TS_OK)
 				return r;
-			}
 			if (type != 12) {
 				t->err = TS_ERR_PROTOCOL;
 				return t->err;
@@ -844,9 +800,8 @@ ts_handshake(ts_conn *t)
 
 		case HS_TAIL:
 			r = hs_next(t, &type, &body, &blen);
-			if (r != TS_OK) {
+			if (r != TS_OK)
 				return r;
-			}
 			if (type == 13) {
 				/* parse before hs_skip moves the body away */
 				t->seen_cr = 1;
@@ -856,19 +811,17 @@ ts_handshake(ts_conn *t)
 					for (k = 0; k < n && k + 1 < blen; k ++) {
 						unsigned ct = body[1 + k];
 
-						if (ct == 64) {
+						if (ct == 64)
 							t->cr_types |= 0x40;
-						} else if (ct < 8) {
+						else if (ct < 8)
 							t->cr_types |= (unsigned char)
 								(1 << ct);
-						}
 					}
 				}
 			}
 			hs_skip(t, 4 + blen);
-			if (type == 13) {
+			if (type == 13)
 				break;
-			}
 			if (type != 14) {
 				t->err = TS_ERR_PROTOCOL;
 				return t->err;
@@ -888,33 +841,29 @@ ts_handshake(ts_conn *t)
 			if (t->has_cert && (t->cr_types == 0
 				|| (t->cr_types & (unsigned char)(1 << 6)))) {
 				r = hs_send_cert(t);
-				if (r != TS_OK) {
+				if (r != TS_OK)
 					return r;
-				}
 				t->cert_sent = 1;
 				t->hs_state = HS_CKE;
 				break;
 			}
 			r = hs_send(t, 11, "\x00\x00\x00", 3);
-			if (r != TS_OK) {
+			if (r != TS_OK)
 				return r;
-			}
 			t->hs_state = HS_CKE;
 			break;
 
 		case HS_CERTV:
 			r = send_certverify(t);
-			if (r != TS_OK) {
+			if (r != TS_OK)
 				return r;
-			}
 			t->hs_state = HS_CCS;
 			break;
 
 		case HS_CKE:
 			r = send_clientkeyexchange(t);
-			if (r != TS_OK) {
+			if (r != TS_OK)
 				return r;
-			}
 			/* Certificate, ClientKeyExchange, CertificateVerify */
 			t->hs_state = t->cert_sent ? HS_CERTV : HS_CCS;
 			break;
@@ -922,9 +871,8 @@ ts_handshake(ts_conn *t)
 		case HS_CCS:
 			compute_keys(t);
 			r = rec_queue(t, 20, "\x01", 1);
-			if (r != TS_OK) {
+			if (r != TS_OK)
 				return r;
-			}
 			t->enc_out = 1;
 			t->seq_out = 0;
 			t->hs_state = HS_FIN;
@@ -932,17 +880,15 @@ ts_handshake(ts_conn *t)
 
 		case HS_FIN:
 			r = send_finished(t, "client finished");
-			if (r != TS_OK) {
+			if (r != TS_OK)
 				return r;
-			}
 			t->hs_state = HS_SRV_CCS;
 			break;
 
 		case HS_SRV_CCS:
 			r = rec_next(t);
-			if (r != TS_OK) {
+			if (r != TS_OK)
 				return r;
-			}
 			if (t->rtype == 21) {
 				t->err = TS_ERR_ALERT;
 				return t->err;
@@ -959,9 +905,8 @@ ts_handshake(ts_conn *t)
 
 		case HS_SRV_FIN:
 			r = rec_next(t);
-			if (r != TS_OK) {
+			if (r != TS_OK)
 				return r;
-			}
 			if (t->rtype != 22 || t->rlen != 16
 				|| t->rbuf[0] != 20 || get24(t->rbuf + 1) != 12) {
 				t->err = TS_ERR_PROTOCOL;
@@ -995,24 +940,20 @@ ts_write(ts_conn *t, const void *buf, size_t len)
 {
 	int r;
 
-	if (t->err != 0) {
+	if (t->err != 0)
 		return t->err;
-	}
 	if (t->hs_state != HS_DONE) {
 		t->err = TS_ERR_PROTOCOL;
 		return t->err;
 	}
 	r = rec_flush(t);
-	if (r != TS_OK) {
+	if (r != TS_OK)
 		return r;
-	}
-	if (len > TS_MAXPLAIN) {
+	if (len > TS_MAXPLAIN)
 		len = TS_MAXPLAIN;
-	}
 	r = rec_queue(t, 23, buf, len);
-	if (r != TS_OK) {
+	if (r != TS_OK)
 		return r;
-	}
 	(void)rec_flush(t);
 	return (int)len;
 }
@@ -1022,28 +963,24 @@ ts_read(ts_conn *t, void *buf, size_t len)
 {
 	int r;
 
-	if (t->err != 0) {
+	if (t->err != 0)
 		return t->err;
-	}
 	if (t->hs_state != HS_DONE) {
 		t->err = TS_ERR_PROTOCOL;
 		return t->err;
 	}
-	if (t->eof) {
+	if (t->eof)
 		return 0;
-	}
 	r = rec_flush(t);
-	if (r != TS_OK) {
+	if (r != TS_OK)
 		return r;
-	}
 	{
 	int skip = 0;
 
 	while (t->app_pos == t->app_len) {
 		r = rec_next(t);
-		if (r != TS_OK) {
+		if (r != TS_OK)
 			return r;
-		}
 		if (t->rtype == 23) {
 			memcpy(t->app, t->rbuf, t->rlen);
 			t->app_len = t->rlen;
@@ -1078,9 +1015,8 @@ ts_read(ts_conn *t, void *buf, size_t len)
 	{
 		size_t n = t->app_len - t->app_pos;
 
-		if (n > len) {
+		if (n > len)
 			n = len;
-		}
 		memcpy(buf, t->app + t->app_pos, n);
 		t->app_pos += n;
 		return (int)n;
@@ -1090,9 +1026,8 @@ ts_read(ts_conn *t, void *buf, size_t len)
 int
 ts_flush(ts_conn *t)
 {
-	if (t->err != 0) {
+	if (t->err != 0)
 		return t->err;
-	}
 	return rec_flush(t);
 }
 
