@@ -1,10 +1,27 @@
 /*
  * Crypto primitives for tinytls: SHA-256, AES-128/CTR, GHASH, the
- * TLS 1.2 PRF (with HMAC-SHA256) and the weak RNG.
+ * TLS 1.2 PRF (with HMAC-SHA256) and the RNG.
  */
 
 #include <string.h>
 #include <time.h>
+
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) \
+	|| defined(__DragonFly__)
+#include <errno.h>
+#include <sys/random.h>
+#define TS_GETRANDOM
+#elif defined(__APPLE__)
+#include <sys/random.h>
+#define TS_GETENTROPY
+#elif defined(__OpenBSD__)
+#include <unistd.h>
+#define TS_GETENTROPY
+#elif defined(_WIN32)
+#include <windows.h>
+#include <ntsecapi.h>
+#define TS_RTLGENRANDOM
+#endif
 
 #include "ts_priv.h"
 
@@ -436,12 +453,14 @@ ts_ghash(void *y, const void *h, const void *data, size_t len)
 
 
 /*
- * HMAC-SHA256, the TLS 1.2 PRF, and a weak random generator (the
- * latter is only meant to keep the handshake running; this client
- * is not secure anyway).
+ * HMAC-SHA256, the TLS 1.2 PRF, and a random generator: getrandom(2)
+ * on Linux and the BSDs, getentropy(2) on macOS and OpenBSD, the
+ * system RtlGenRandom on Windows; a local xorshift stream, seeded on
+ * its first use, fills in on the other systems and when the system
+ * call fails.
  */
 
-/* ---- weak RNG ---- */
+/* ---- the RNG ---- */
 
 static uint64_t rng_state;
 
@@ -463,6 +482,41 @@ ts_random(void *buf, size_t len)
 {
 	unsigned char *p = buf;
 
+#ifdef TS_GETRANDOM
+	while (len > 0) {
+		ssize_t n = getrandom(p, len, 0);
+
+		if (n < 0) {
+			if (errno == EINTR)
+				continue;
+			break;      /* no system source: the stream below */
+		}
+		p += n;
+		len -= (size_t)n;
+	}
+#endif
+#ifdef TS_GETENTROPY
+	while (len > 0) {
+		size_t n = len > 256 ? 256 : len;
+
+		if (getentropy(p, n) != 0)
+			break;
+		p += n;
+		len -= n;
+	}
+#endif
+#ifdef TS_RTLGENRANDOM
+	while (len > 0) {
+		ULONG n = len > 1024 ? 1024 : (ULONG)len;
+
+		if (!RtlGenRandom(p, n))
+			break;
+		p += n;
+		len -= n;
+	}
+#endif
+	if (len == 0)
+		return;
 	if (rng_state == 0) {
 		uint64_t x;
 
