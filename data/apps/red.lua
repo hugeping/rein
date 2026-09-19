@@ -69,6 +69,12 @@ function presets.get(fname)
   end
 end
 
+-- the conf of a window: its own copy of the preset, so Tab, Wrap,
+-- Syntax and the other commands are per window, not per file type
+local function preset_conf(fname)
+  return table.clone(presets.get(fname) or {})
+end
+
 win:init(conf)
 win:make_keybinds(win_keys)
 
@@ -498,7 +504,7 @@ function frame:file(f, pos, force)
 
   b = win:new(fn)
 --  b.menu = self:menu().buf:gettext() -- clone menu
-  b.conf = presets.get(fn) or {}
+  b.conf = preset_conf(fn)
   if dir then
     b.cwd = sys.realpath(fn)
     b:set ""
@@ -557,7 +563,7 @@ function frame:rename_win(w, fn)
     fn = '~' .. fn
   end
   w.buf.fname = fn
-  w.conf = presets.get(fn) or {}
+  w.conf = preset_conf(fn)
 end
 
 function frame:show()
