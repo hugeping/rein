@@ -27,7 +27,8 @@ precomposed = false
 
 [buildPlans.IosevkaMinimal.subset.include]
 ranges = [
-    [0x0020, 0x00FF],
+    [0x0020, 0x00FF], # Basic Latin (Английский, цифры, знаки препинания)
+    [0x0100, 0x017F], # Latin Extended-A
     [0x0400, 0x04FF], # Cyrillic (Русский, украинский, белорусский и др.)
     [0x2000, 0x206F], # General Punctuation (Тире, кавычки, пробелы разной ширины)
     [0x2190, 0x21FF], # Arrows (Стрелочки: ←, ↑, →, ↓)
@@ -37,6 +38,9 @@ ranges = [
     [0x2580, 0x259F], # Block Elements (Заливка блоков, пиксель-арт)
     [0x25A0, 0x25FF], # Geometric Shapes (Фигуры: квадраты, треугольники, круги)
     [0x2600, 0x26FF], # Miscellaneous Symbols (Ч/Б значки, включая базовые смайлики ☺ ☹, солнце, череп ☠)
+    [0x2700, 0x27BF], # Dingbats
     [0x1F600, 0x1F64F], # Emoticons (Современные эмодзи-смайлики: 😀, 😂, 😍)
-    [0xE0A0, 0xE0B3]  # Powerline Symbols & Dividers (Ветка Git, замок, стрелки-разделители)
+    [0xE0A0, 0xE0B3],  # Powerline Symbols & Dividers (Ветка Git, замок, стрелки-разделители)
+    [0x1F300,0x1F5FF],
+    [0x1F900, 0x1F9FF]
 ]
