@@ -564,8 +564,16 @@ net.certgen(имя) -- сделать самоподписанный серти�
 с общим именем `имя`: вернёт сертификат и его ключ (PKCS#8)
 в DER; годится для net.tls.  Клиент gemini хранит их по
 хостам в $HOME/.rein/gemini/certs (<хост>.crt и .key),
-обменяться удостоверением с другими клиентами можно через
-openssl:
+создать своё удостоверение или обменяться им с другими
+клиентами можно через openssl (подходит только P-256):
+
+    # сгенерировать удостоверение P-256 с нуля
+    # (файлы .crt и .key положить в каталог клиента выше)
+    openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
+        -nodes -days 3650 -subj /CN=host \
+        -keyout host.key.pem -out host.crt.pem
+    openssl x509 -in host.crt.pem -outform DER -out host.crt
+    openssl pkey -in host.key.pem -outform DER -out host.key
 
     # наш DER -> PEM для другого клиента
     openssl x509 -inform DER -in host.crt -out host.pem
