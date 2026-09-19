@@ -61,24 +61,10 @@ int ts_set_clientcert(ts_conn *tc, const unsigned char *cert, size_t certlen,
 /*
  * Make a self-signed P-256 certificate with the common name `cn`
  * and its PKCS#8 key, both in DER; cert needs 1024 bytes, key 128.
- * Return 1 on success.  The key may be fed to ts_set_clientcert,
- * the PEM functions below turn either into text.
+ * Return 1 on success.  Both go straight to ts_set_clientcert.
  */
 int ts_ec_selfsign(const char *cn, unsigned char *cert, size_t *certlen,
 	unsigned char *key, size_t *keylen);
-
-/*
- * PEM writer and reader for one base64 block with the given label
- * ("CERTIFICATE", "PRIVATE KEY", ...).  The output buffer of the
- * encoder must hold 4*((derlen + 2)/3) characters, the line breaks,
- * the two label lines and the terminating zero; the returned length
- * does not count the zero.  The decoder returns the DER length, or 0
- * when the label is not found or the data does not fit.
- */
-size_t ts_pem_encode(const char *label, const unsigned char *der,
-	size_t derlen, char *out);
-size_t ts_pem_decode(const char *pem, size_t pemlen, const char *label,
-	unsigned char *der, size_t max);
 
 /*
  * Run the handshake. Return TS_OK when it is complete, TS_WANT_READ

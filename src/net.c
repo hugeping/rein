@@ -77,22 +77,13 @@ net_tls(lua_State *L)
 		return 2;
 	}
 	if (lua_isstring(L, 3) && lua_isstring(L, 4)) {
-		unsigned char cert[4096], key[512];
-		size_t plen, clen, klen;
-		const char *pem, *keypem;
+		size_t clen, klen;
+		const char *cert = lua_tolstring(L, 3, &clen);
+		const char *key = lua_tolstring(L, 4, &klen);
 
-		pem = lua_tolstring(L, 3, &plen);
-		clen = ts_pem_decode(pem, plen, "CERTIFICATE",
-			cert, sizeof cert);
-		keypem = lua_tolstring(L, 4, &plen);
-		klen = ts_pem_decode(keypem, plen, "PRIVATE KEY",
-			key, sizeof key);
-		if (klen == 0) {
-			klen = ts_pem_decode(keypem, plen, "EC PRIVATE KEY",
-				key, sizeof key);
-		}
-		if (clen == 0 || klen == 0
-			|| !ts_set_clientcert(utls->tls, cert, clen, key, klen))
+		if (!ts_set_clientcert(utls->tls,
+			(const unsigned char *)cert, clen,
+			(const unsigned char *)key, klen))
 		{
 			ts_free(utls->tls);
 			utls->tls = NULL;
@@ -212,25 +203,22 @@ tls_close(lua_State *L)
 
 /*
  * net.certgen(name) -- make a self-signed P-256 certificate with the
- * common name `name`: the certificate and its PKCS#8 key, in PEM.
+ * common name `name`: the certificate and its PKCS#8 key, in DER.
  */
 static int
 net_certgen(lua_State *L)
 {
 	const char *cn = luaL_optstring(L, 1, "rein");
 	unsigned char cert[1024], key[128];
-	char cpem[2048], kpem[512];
-	size_t clen, klen, n;
+	size_t clen, klen;
 
 	if (!ts_ec_selfsign(cn, cert, &clen, key, &klen)) {
 		lua_pushnil(L);
 		lua_pushstring(L, "can not make a certificate");
 		return 2;
 	}
-	n = ts_pem_encode("CERTIFICATE", cert, clen, cpem);
-	lua_pushlstring(L, cpem, n);
-	n = ts_pem_encode("PRIVATE KEY", key, klen, kpem);
-	lua_pushlstring(L, kpem, n);
+	lua_pushlstring(L, (const char *)cert, clen);
+	lua_pushlstring(L, (const char *)key, klen);
 	return 2;
 }
 

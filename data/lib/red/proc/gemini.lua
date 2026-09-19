@@ -7,6 +7,11 @@
 -- and win.kinds.gemini can restore it from red.dump.  Requests run in
 -- a window coroutine (win:run), so the editor stays alive while the
 -- request is in flight.
+--
+-- A client certificate the server asks for is made on the user's
+-- consent and kept per host, in X.509/PKCS#8 DER under
+-- $HOME/.rein/gemini/certs; doc/api-ru.md tells how to convert it
+-- to and from the PEM of other clients with openssl.
 local sock = require "sock"
 local win = require "red/win"
 
