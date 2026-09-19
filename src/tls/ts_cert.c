@@ -26,28 +26,24 @@ ts_der_tlv(ts_der *c, unsigned tag, const unsigned char **val, size_t *len)
 	size_t l;
 	unsigned t, n, u;
 
-	if ((size_t)(c->end - c->p) < 2) {
+	if ((size_t)(c->end - c->p) < 2)
 		return 0;
-	}
 	t = *c->p ++;
-	if (t != tag) {
+	if (t != tag)
 		return 0;
-	}
 	l = *c->p ++;
 	if (l & 0x80) {
 		n = (unsigned)(l & 0x7F);
 		if (n == 0 || n > sizeof(size_t)
-			|| (size_t)(c->end - c->p) < n) {
+			|| (size_t)(c->end - c->p) < n)
 			return 0;
-		}
 		l = 0;
 		for (u = 0; u < n; u ++) {
 			l = (l << 8) | *c->p ++;
 		}
 	}
-	if ((size_t)(c->end - c->p) < l) {
+	if ((size_t)(c->end - c->p) < l)
 		return 0;
-	}
 	*val = c->p;
 	*len = l;
 	c->p += l;
@@ -60,9 +56,8 @@ ts_der_enter(ts_der *c, unsigned tag)
 	const unsigned char *val;
 	size_t len;
 
-	if (!ts_der_tlv(c, tag, &val, &len)) {
+	if (!ts_der_tlv(c, tag, &val, &len))
 		return 0;
-	}
 	c->p = val;
 	c->end = val + len;
 	return 1;
@@ -91,21 +86,18 @@ ec_scalar(const unsigned char *d, unsigned char *pub,
 	size_t olen;
 
 	order = br_ec_prime_i31.order(BR_EC_secp256r1, &olen);
-	if (order == NULL || olen != FIELD_LEN) {
+	if (order == NULL || olen != FIELD_LEN)
 		return 0;
-	}
 	br_i31_decode(n, order, olen);
 	*n0i = br_i31_ninv31(n[1]);
-	if (!br_i31_decode_mod(dd, d, FIELD_LEN, n) || br_i31_iszero(dd)) {
+	if (!br_i31_decode_mod(dd, d, FIELD_LEN, n) || br_i31_iszero(dd))
 		return 0;
-	}
 	if (pub != NULL) {
 		size_t plen = br_ec_prime_i31.mulgen(pub, d, FIELD_LEN,
 			BR_EC_secp256r1);
 
-		if (plen != POINT_LEN) {
+		if (plen != POINT_LEN)
 			return 0;
-		}
 	}
 	return 1;
 }
@@ -119,9 +111,8 @@ ts_ec_keygen(unsigned char *d, unsigned char *pub)
 
 	for (;;) {
 		ts_random(d, FIELD_LEN);
-		if (ec_scalar(d, pub, dd, n, &n0i)) {
+		if (ec_scalar(d, pub, dd, n, &n0i))
 			return 1;
-		}
 	}
 }
 
@@ -150,9 +141,8 @@ der_tlv(unsigned char *out, unsigned tag, const unsigned char *val,
 	size_t h = der_len(out + 1, len);
 
 	out[0] = (unsigned char)tag;
-	if (len > 0) {
+	if (len > 0)
 		memcpy(out + 1 + h, val, len);
-	}
 	return 1 + h + len;
 }
 
@@ -205,31 +195,27 @@ ts_ec_sign(const unsigned char *d, const unsigned char *hash,
 	uint32_t n0i, cc;
 	int try;
 
-	if (!ec_scalar(d, NULL, dd, n, &n0i)) {
+	if (!ec_scalar(d, NULL, dd, n, &n0i))
 		return 0;
-	}
 	order = br_ec_prime_i31.order(BR_EC_secp256r1, &olen);
 	memcpy(e, order, olen);
 	e[olen - 1] -= 2;       /* the exponent of the inverse: n - 2 */
 	for (try = 0; try < 64; try ++) {
 		ts_random(kb, FIELD_LEN);
 		if (!br_i31_decode_mod(k, kb, FIELD_LEN, n)
-			|| br_i31_iszero(k)) {
+			|| br_i31_iszero(k))
 			continue;
-		}
 		if (br_ec_prime_i31.mulgen(point, kb, FIELD_LEN,
-			BR_EC_secp256r1) != POINT_LEN) {
+			BR_EC_secp256r1) != POINT_LEN)
 			continue;
-		}
 
 		/* r = x(k*G) mod n */
 		br_i31_zero(r, n[0]);
 		br_i31_decode(r, point + 1, FIELD_LEN);
 		r[0] = n[0];
 		br_i31_sub(r, n, br_i31_sub(r, n, 0) ^ 1);
-		if (br_i31_iszero(r)) {
+		if (br_i31_iszero(r))
 			continue;
-		}
 
 		/* t1 = h mod n, in Montgomery form */
 		br_ecdsa_i31_bits2int(t1, hash, 32, n[0]);
@@ -252,9 +238,8 @@ ts_ec_sign(const unsigned char *d, const unsigned char *hash,
 		br_i31_to_monty(k, n);
 		br_i31_montymul(s, k, t1, n, n0i);
 		br_i31_from_monty(s, n, n0i);
-		if (br_i31_iszero(s)) {
+		if (br_i31_iszero(s))
 			continue;
-		}
 
 		br_i31_encode(rb, FIELD_LEN, r);
 		br_i31_encode(sb, FIELD_LEN, s);
@@ -281,38 +266,32 @@ ts_ec_key_parse(const unsigned char *der, size_t len, unsigned char *d)
 	c.p = der;
 	c.end = der + len;
 	if (!ts_der_enter(&c, 0x30)
-		|| !ts_der_tlv(&c, 0x02, &val, &vlen)) {
+		|| !ts_der_tlv(&c, 0x02, &val, &vlen))
 		return 0;
-	}
 	if (vlen == 1 && val[0] == 0) {
 		/* PKCS#8: the algorithm, then the SEC1 key inside */
 		ts_der alg;
 
-		if (!ts_der_tlv(&c, 0x30, &val, &vlen)) {
+		if (!ts_der_tlv(&c, 0x30, &val, &vlen))
 			return 0;
-		}
 		alg.p = val;
 		alg.end = val + vlen;
 		if (!ts_der_tlv(&alg, 0x06, &val, &vlen)
 			|| vlen != sizeof oid_ec_pubkey
-			|| memcmp(val, oid_ec_pubkey, vlen) != 0) {
+			|| memcmp(val, oid_ec_pubkey, vlen) != 0)
 			return 0;
-		}
 		if (!ts_der_tlv(&alg, 0x06, &val, &vlen)
 			|| vlen != sizeof oid_p256
-			|| memcmp(val, oid_p256, vlen) != 0) {
+			|| memcmp(val, oid_p256, vlen) != 0)
 			return 0;
-		}
-		if (!ts_der_tlv(&c, 0x04, &val, &vlen)) {
+		if (!ts_der_tlv(&c, 0x04, &val, &vlen))
 			return 0;
-		}
 		key.p = val;
 		key.end = val + vlen;
 		if (!ts_der_enter(&key, 0x30)
 			|| !ts_der_tlv(&key, 0x02, &val, &vlen)
-			|| vlen != 1 || val[0] != 1) {
+			|| vlen != 1 || val[0] != 1)
 			return 0;
-		}
 	} else if (vlen == 1 && val[0] == 1) {
 		/* SEC1 ECPrivateKey */
 		key = c;
@@ -320,14 +299,12 @@ ts_ec_key_parse(const unsigned char *der, size_t len, unsigned char *d)
 		return 0;
 	}
 	if (!ts_der_tlv(&key, 0x04, &val, &vlen)
-		|| vlen < 1 || vlen > FIELD_LEN) {
+		|| vlen < 1 || vlen > FIELD_LEN)
 		return 0;
-	}
 	memset(dd, 0, FIELD_LEN);
 	memcpy(dd + FIELD_LEN - vlen, val, vlen);
-	if (!ec_scalar(dd, pub, k, n, &n0i)) {
+	if (!ec_scalar(dd, pub, k, n, &n0i))
 		return 0;
-	}
 	memcpy(d, dd, FIELD_LEN);
 	return 1;
 }
@@ -405,9 +382,8 @@ build_name(unsigned char *out, const char *cn)
 	unsigned char val[128], seq[136], set[144];
 	size_t cl = strlen(cn), n = 0, l;
 
-	if (cl > 64) {
+	if (cl > 64)
 		cl = 64;
-	}
 	n += der_tlv(val + n, 0x06, oid_cn, sizeof oid_cn);
 	n += der_tlv(val + n, 0x0C, (const unsigned char *)cn, cl);
 	l = der_tlv(seq, 0x30, val, n);
@@ -449,23 +425,19 @@ ts_ec_selfsign(const char *cn, unsigned char *cert, size_t *certlen,
 	time_t now;
 	int i;
 
-	if (cn == NULL || cn[0] == '\0') {
+	if (cn == NULL || cn[0] == '\0')
 		cn = "rein";
-	}
-	if (!ts_ec_keygen(d, q)) {
+	if (!ts_ec_keygen(d, q))
 		return 0;
-	}
 
 	ts_random(serial, sizeof serial);
 	serial[0] &= 0x7F;
 	for (i = 0; i < (int)sizeof serial; i ++) {
-		if (serial[i] != 0) {
+		if (serial[i] != 0)
 			break;
-		}
 	}
-	if (i == (int)sizeof serial) {
+	if (i == (int)sizeof serial)
 		serial[0] = 1;
-	}
 
 	n = der_tlv(oid, 0x06, oid_sig, sizeof oid_sig);
 	sigalg_len = der_tlv(sigalg, 0x30, oid, n);
@@ -503,9 +475,8 @@ ts_ec_selfsign(const char *cn, unsigned char *cert, size_t *certlen,
 	ts_sha256_init(&sc);
 	ts_sha256_update(&sc, tbs, tbs_len);
 	ts_sha256_out(&sc, hash);
-	if (!ts_ec_sign(d, hash, sig, &sigl) || sigl > sizeof sig - 1) {
+	if (!ts_ec_sign(d, hash, sig, &sigl) || sigl > sizeof sig - 1)
 		return 0;
-	}
 
 	bl = 0;
 	memcpy(full + bl, tbs, tbs_len);
