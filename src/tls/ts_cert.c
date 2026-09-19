@@ -126,9 +126,10 @@ b64_line(char *p, const unsigned char *data, size_t len)
 }
 
 /*
- * Write the DER data as a PEM block into out.  The buffer must have
- * room for 4*((derlen + 2)/3) base64 characters, the line breaks and
- * the two label lines.
+ * Write the DER data as a PEM block into out and terminate it with
+ * a zero byte.  The buffer must have room for 4*((derlen + 2)/3)
+ * base64 characters, the line breaks, the two label lines and the
+ * terminator.
  */
 size_t
 ts_pem_encode(const char *label, const unsigned char *der, size_t derlen,
@@ -152,6 +153,7 @@ ts_pem_encode(const char *label, const unsigned char *der, size_t derlen,
 	p = put_str(p, "-----END ");
 	p = put_str(p, label);
 	p = put_str(p, "-----\n");
+	*p = '\0';
 	return (size_t)(p - out);
 }
 
