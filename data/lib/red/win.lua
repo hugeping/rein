@@ -313,6 +313,10 @@ function win:posln()
       last = i + 1
     end
   end
+  -- the last row may be partial and never wrap: it starts at last
+  if last <= opos then
+    self.pos = last
+  end
 end
 
 function win:toline(nr, sel)
@@ -367,7 +371,6 @@ function win:clamp_scroll()
   self:make_epos()
   if self.epos >= text + 1 then
     self.pos = text + 1
-    self:posln()
     self:prevpage(self.rows - 1)
   end
 end
