@@ -70,8 +70,9 @@ int ts_ec_selfsign(const char *cn, unsigned char *cert, size_t *certlen,
 /*
  * PEM writer and reader for one base64 block with the given label
  * ("CERTIFICATE", "PRIVATE KEY", ...).  The output buffer of the
- * encoder must hold 4*((derlen + 2)/3) characters, the line breaks
- * and the two label lines; the decoder returns the DER length, or 0
+ * encoder must hold 4*((derlen + 2)/3) characters, the line breaks,
+ * the two label lines and the terminating zero; the returned length
+ * does not count the zero.  The decoder returns the DER length, or 0
  * when the label is not found or the data does not fit.
  */
 size_t ts_pem_encode(const char *label, const unsigned char *der,

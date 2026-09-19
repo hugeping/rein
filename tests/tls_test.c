@@ -666,6 +666,9 @@ test_ec_cert(void)
 	/* PEM roundtrip, the label is checked */
 	n = ts_pem_encode("CERTIFICATE", cert, clen, pem);
 	chk(n > 0, "PEM encode");
+	chk(strlen(pem) == n, "the PEM is terminated");
+	chk(n > 6 && memcmp(pem + n - 6, "-----\n", 6) == 0,
+		"the PEM ends with the label line");
 	n = ts_pem_decode(pem, n, "CERTIFICATE", back, sizeof back);
 	chk(n == clen && memcmp(cert, back, clen) == 0, "PEM roundtrip");
 	chk(ts_pem_decode(pem, strlen(pem), "PRIVATE KEY", back,

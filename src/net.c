@@ -220,17 +220,17 @@ net_certgen(lua_State *L)
 	const char *cn = luaL_optstring(L, 1, "rein");
 	unsigned char cert[1024], key[128];
 	char cpem[2048], kpem[512];
-	size_t clen, klen;
+	size_t clen, klen, n;
 
 	if (!ts_ec_selfsign(cn, cert, &clen, key, &klen)) {
 		lua_pushnil(L);
 		lua_pushstring(L, "can not make a certificate");
 		return 2;
 	}
-	ts_pem_encode("CERTIFICATE", cert, clen, cpem);
-	ts_pem_encode("PRIVATE KEY", key, klen, kpem);
-	lua_pushstring(L, cpem);
-	lua_pushstring(L, kpem);
+	n = ts_pem_encode("CERTIFICATE", cert, clen, cpem);
+	lua_pushlstring(L, cpem, n);
+	n = ts_pem_encode("PRIVATE KEY", key, klen, kpem);
+	lua_pushlstring(L, kpem, n);
 	return 2;
 }
 
