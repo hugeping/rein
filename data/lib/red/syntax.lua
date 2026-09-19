@@ -221,6 +221,19 @@ function syntax:context(pos)
   return 1
 end
 
+-- a syntax scheme is a file of red/syntax; nil when there is no such
+-- scheme.  The name must be a plain word: a path like ../scheme would
+-- pass the file check, while require("red/syntax/"..name) takes its
+-- dots for the separators and would fail on the next colorize
+function syntax.scheme(name)
+  if not name or name:find("[^%w_%-]") then
+    return
+  end
+  if io.access(DATADIR..'/lib/red/syntax/'..name..'.lua') then
+    return name
+  end
+end
+
 function syntax.new(txt, pos, scheme)
   local ctx
   if type(scheme) == 'string' then
