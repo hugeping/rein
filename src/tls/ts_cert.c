@@ -679,7 +679,7 @@ ts_ec_selfsign(const char *cn, unsigned char *cert, size_t *certlen,
 	ts_sha256_init(&sc);
 	ts_sha256_update(&sc, tbs, tbs_len);
 	ts_sha256_out(&sc, hash);
-	if (!ts_ec_sign(d, hash, sig, &sigl)) {
+	if (!ts_ec_sign(d, hash, sig, &sigl) || sigl > sizeof sig - 1) {
 		return 0;
 	}
 
