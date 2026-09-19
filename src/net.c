@@ -76,6 +76,32 @@ net_tls(lua_State *L)
 		lua_pushstring(L, "can not create TLS state");
 		return 2;
 	}
+	if (lua_isstring(L, 3) && lua_isstring(L, 4)) {
+		unsigned char cert[4096], key[512];
+		size_t plen, clen, klen;
+		const char *pem, *keypem;
+
+		pem = lua_tolstring(L, 3, &plen);
+		clen = ts_pem_decode(pem, plen, "CERTIFICATE",
+			cert, sizeof cert);
+		keypem = lua_tolstring(L, 4, &plen);
+		klen = ts_pem_decode(keypem, plen, "PRIVATE KEY",
+			key, sizeof key);
+		if (klen == 0) {
+			klen = ts_pem_decode(keypem, plen, "EC PRIVATE KEY",
+				key, sizeof key);
+		}
+		if (clen == 0 || klen == 0
+			|| !ts_set_clientcert(utls->tls, cert, clen, key, klen))
+		{
+			ts_free(utls->tls);
+			utls->tls = NULL;
+			utls->fd = -1;  /* the socket stays with lua_sock */
+			lua_pushnil(L);
+			lua_pushstring(L, "bad client certificate");
+			return 2;
+		}
+	}
 	usock->fd = -1;   /* the TLS object owns the socket from now on */
 	luaL_getmetatable(L, "tls metatable");
 	lua_setmetatable(L, -2);
@@ -184,10 +210,35 @@ tls_close(lua_State *L)
 	return 0;
 }
 
+/*
+ * net.certgen(name) -- make a self-signed P-256 certificate with the
+ * common name `name`: the certificate and its PKCS#8 key, in PEM.
+ */
+static int
+net_certgen(lua_State *L)
+{
+	const char *cn = luaL_optstring(L, 1, "rein");
+	unsigned char cert[1024], key[128];
+	char cpem[2048], kpem[512];
+	size_t clen, klen;
+
+	if (!ts_ec_selfsign(cn, cert, &clen, key, &klen)) {
+		lua_pushnil(L);
+		lua_pushstring(L, "can not make a certificate");
+		return 2;
+	}
+	ts_pem_encode("CERTIFICATE", cert, clen, cpem);
+	ts_pem_encode("PRIVATE KEY", key, klen, kpem);
+	lua_pushstring(L, cpem);
+	lua_pushstring(L, kpem);
+	return 2;
+}
+
 static const luaL_Reg
 net_lib[] = {
 	{ "dial", net_dial },
 	{ "tls", net_tls },
+	{ "certgen", net_certgen },
 	{ NULL, NULL }
 };
 

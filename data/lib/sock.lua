@@ -6,7 +6,7 @@ sock.__index = sock
 local tcp = {}
 tcp.__index = tcp
 
-function sock.dial(addr, port, tls_host)
+function sock.dial(addr, port, tls_host, cert, key)
   local s = { data = '' }
   local e
   s.sock, e = net.dial(addr, port)
@@ -15,7 +15,7 @@ function sock.dial(addr, port, tls_host)
   end
   setmetatable(s, tcp)
   if tls_host then
-    local ok, err = s:starttls(tls_host)
+    local ok, err = s:starttls(tls_host, cert, key)
     if not ok then
       s:close()
       return false, err
@@ -26,8 +26,8 @@ end
 
 -- Upgrade the connection to TLS (net.tls + handshake, driven from
 -- here so that the engine keeps running while the server answers).
-function tcp:starttls(host)
-  local tls, e = net.tls(self.sock, host)
+function tcp:starttls(host, cert, key)
+  local tls, e = net.tls(self.sock, host, cert, key)
   if not tls then
     return false, e
   end
