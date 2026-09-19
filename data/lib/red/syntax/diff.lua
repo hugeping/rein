@@ -1,4 +1,4 @@
-local scheme = require "red/syntax/scheme"
+local scheme = require "red/scheme"
 
 local col = {
   col = scheme.default,

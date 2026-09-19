@@ -1,4 +1,4 @@
-local scheme = require "red/syntax/scheme"
+local scheme = require "red/scheme"
 
 local function linkstart(ctx, txt, s, e)
   if txt[s] ~= '[' then
@@ -134,12 +134,7 @@ local col = {
       { '\\)', '\\]', '\\\\', },
     },
   },
-  { -- comment
-    start = '<!--',
-    stop = '-->',
-    col = scheme.comment,
-  },
-
+  scheme.rule.block_comment('<!--', '-->'),
 }
 
 return col

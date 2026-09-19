@@ -2,7 +2,7 @@
 -- tables instead of replacing them: windows, menus and colorizers
 -- keep references to those tables and must see the new colors.
 local conf = require "red/conf"
-local scheme = require "red/syntax/scheme"
+local scheme = require "red/scheme"
 
 local themes = {
   default = require "red/themes/default",

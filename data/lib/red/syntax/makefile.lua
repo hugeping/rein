@@ -2,7 +2,7 @@
 -- makefile.syntax: make variables, the directives of the line start,
 -- the special targets, the autoconf @..@ substitutions and the
 -- recipes (the lines of a real tab).
-local scheme = require "red/syntax/scheme"
+local scheme = require "red/scheme"
 
 -- $(..) and ${..}, balanced for the same delimiter or to the end of
 -- the line; "$$" is the escaped dollar
@@ -58,7 +58,7 @@ local direct = {
 }
 
 local function directive(ctx, txt, i)
-  if i > 1 and txt[i - 1] ~= '\n' then
+  if not scheme.rule.bol(txt, i) then
     return
   end
   local n = {}

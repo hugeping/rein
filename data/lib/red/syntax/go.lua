@@ -1,15 +1,4 @@
-local scheme = require "red/syntax/scheme"
-
-local function number(ctx, txt, i)
-  local n = ''
-  local start = i
-  while txt[i] and txt[i]:find("[0-9]") do
-    n = n .. txt[i]
-    i = i + 1
-  end
-  if n ~= '' then return i - start end
-  return false
-end
+local scheme = require "red/scheme"
 
 local col = {
   col = scheme.default,
@@ -48,39 +37,13 @@ local col = {
       "vendor", "unicode", "functions", "init",
       col = scheme.lib, word = true,
     },
-    { number, col = scheme.number },
+    { scheme.rule.digits, col = scheme.number },
   },
-  { -- string
-    start = "`",
-    stop = "`",
-    col = scheme.string,
-  },
-  { -- string
-    start = '"',
-    stop = '"',
-    keywords = {
-      { '\\"', '\\\\' },
-    },
-    col = scheme.string,
-  },
-  { -- string
-    start = "'",
-    stop = "'",
-    keywords = {
-      { "\\'", "\\\\" },
-    },
-    col = scheme.string,
-  },
-  { -- comment
-    start = "/*";
-    stop = '*/';
-    col = scheme.comment,
-  },
-  { -- comment
-    start = "//";
-    stop = '\n';
-    col = scheme.comment,
-  },
+  scheme.rule.string '`',
+  scheme.rule.string '"',
+  scheme.rule.string "'",
+  scheme.rule.block_comment('/*', '*/'),
+  scheme.rule.line_comment '//',
 }
 
 return col

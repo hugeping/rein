@@ -1,6 +1,6 @@
 local theme = require "red/theme"
 local conf = require "red/conf"
-local scheme = require "red/syntax/scheme"
+local scheme = require "red/scheme"
 
 local function restore()
   theme.apply "default"

@@ -2,7 +2,7 @@
 -- start: "* ..." events and actions, "-nick- ..." notices and
 -- "nick: ..." messages (a message to another channel is prefixed with
 -- "[#chan] ").
-local scheme = require "red/syntax/scheme"
+local scheme = require "red/scheme"
 
 -- "nick:" or "[#chan] nick:" at a line start; returns its length
 local function nick(_, txt, pos, epos)
