@@ -41,6 +41,7 @@ CFILES= \
 	src/tls/rsa.c \
 	src/tls/ts_crypto.c \
 	src/tls/ts_x509.c \
+	src/tls/ts_cert.c \
 	src/tls/tinytls.c \
 	src/zvon.c \
 	src/zvon_mixer.c \

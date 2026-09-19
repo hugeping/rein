@@ -20,6 +20,15 @@
 #define TS_MAXHAND    (TS_MAXPLAIN * 2)
 
 typedef struct {
+	const unsigned char *p;
+	const unsigned char *end;
+} ts_der;
+
+int ts_der_tlv(ts_der *c, unsigned tag, const unsigned char **val,
+	size_t *len);
+int ts_der_enter(ts_der *c, unsigned tag);
+
+typedef struct {
 	uint32_t val[8];
 	unsigned char buf[64];
 	uint64_t count;
@@ -95,6 +104,14 @@ struct ts_conn {
 	int hs_state;
 	unsigned suite;
 	int seen_cr;
+	unsigned char cr_types;
+
+	/* the client certificate: the ready Certificate message and key */
+	int has_cert;
+	int cert_sent;
+	unsigned char ckey[32];
+	unsigned char ccert[4096];
+	size_t ccert_len;
 
 	unsigned char app[TS_MAXPLAIN];
 	size_t app_len, app_pos;
@@ -107,5 +124,11 @@ void ts_prf(const void *secret, size_t slen, const char *label,
 
 /* ts_x509.c */
 int ts_x509_get_pkey(const unsigned char *cert, size_t clen, ts_pkey *pk);
+
+/* ts_cert.c: client keys, self-signed certificates, PEM */
+int ts_ec_keygen(unsigned char *d, unsigned char *pub);
+int ts_ec_sign(const unsigned char *d, const unsigned char *hash,
+	unsigned char *sig, size_t *siglen);
+int ts_ec_key_parse(const unsigned char *der, size_t len, unsigned char *d);
 
 #endif
