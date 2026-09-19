@@ -6,7 +6,9 @@ Lua в `data/lib/red/syntax/<имя>.lua`; имя схемы совпадает 
 `Syntax <имя>`, пресеты файлов в `data/lib/red/presets.lua` или
 `w.kind_conf`, см. примеры ниже).
 
-Движок — `data/lib/red/syntax.lua`; палитра — `data/lib/red/syntax/scheme.lua`.
+Движок — `data/lib/red/syntax.lua`; палитра и помощники —
+`data/lib/red/scheme.lua` (рядом с `syntax.lua`, а не в `syntax/`,
+чтобы их нельзя было загрузить командой `Syntax <имя>`).
 
 ## Как движок раскрашивает
 
@@ -47,7 +49,7 @@ Lua в `data/lib/red/syntax/<имя>.lua`; имя схемы совпадает 
 список правил:
 
 ```lua
-local scheme = require "red/syntax/scheme"
+local scheme = require "red/scheme"
 
 local col = {
   col = scheme.default,   -- цвет текста контекста
@@ -183,6 +185,48 @@ keywords = {
   начать раскраску за `epos` нельзя, но совпадение у самой границы
   может захватить и символы за ней (правило красит всю свою длину).
 
+## Общие помощники
+
+Повторяющиеся куски схем живут в `data/lib/red/scheme.lua` — под
+`scheme.rule` (цвета палитры занимают имена `scheme.number` и
+`scheme.string`, поэтому помощники с такими именами убраны под
+`rule`):
+
+- `scheme.rule.bol(txt, i, spaces)` — позиция `i` начинает строку:
+  перед ней допустимы только символы паттерна `spaces` (например
+  `"[ \t]"` для отступа), без паттерна — ничего;
+- `scheme.rule.number` — число в стиле C/Lua (`0x1F`, `1.5e-3`,
+  `-7`), не после буквы или цифры; в схеме это ключевое слово:
+  `{ scheme.rule.number, col = scheme.number }`;
+- `scheme.rule.digits` — просто последовательность цифр (Go, Python);
+- `scheme.rule.string(q)` — правило строки в кавычках `q` (`"`, `'`,
+  `"""`) с экранированием кавычки и бэкслеша; для бэктика — сырая
+  строка без экранирования (Go);
+- `scheme.rule.line_comment(mark)` — правило комментария от `mark` до
+  конца строки (`//`, `#`, `--`);
+- `scheme.rule.block_comment(open, close)` — правило комментария от
+  `open` до `close` (`/* */`, `<!-- -->`).
+
+Например, c.lua с ними становится таким:
+
+```lua
+local scheme = require "red/scheme"
+
+local col = {
+  col = scheme.default,
+  keywords = {
+    { "if", "else", col = scheme.keyword, word = true },
+    { scheme.rule.number, col = scheme.number },
+  },
+  scheme.rule.block_comment('/*', '*/'),
+  scheme.rule.line_comment '//',
+  scheme.rule.string '"',
+  scheme.rule.string "'",
+}
+
+return col
+```
+
 ## Пример
 
 Схема makefile целиком — `data/lib/red/syntax/makefile.lua`:
@@ -192,7 +236,7 @@ keywords = {
 -- makefile.syntax: make variables, the directives of the line start,
 -- the special targets, the autoconf @..@ substitutions and the
 -- recipes (the lines of a real tab).
-local scheme = require "red/syntax/scheme"
+local scheme = require "red/scheme"
 
 -- $(..) and ${..}, balanced for the same delimiter or to the end of
 -- the line; "$$" is the escaped dollar
@@ -248,7 +292,7 @@ local direct = {
 }
 
 local function directive(ctx, txt, i)
-  if i > 1 and txt[i - 1] ~= '\n' then
+  if not scheme.rule.bol(txt, i) then
     return
   end
   local n = {}

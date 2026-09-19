@@ -1,5 +1,5 @@
 local win = require "red/win"
-local scheme = require "red/syntax/scheme"
+local scheme = require "red/scheme"
 
 -- minimal window good enough for colorize(): no geometry/font needed
 local function make(text, conf)

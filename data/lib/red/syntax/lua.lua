@@ -1,4 +1,4 @@
-local scheme = require "red/syntax/scheme"
+local scheme = require "red/scheme"
 
 local function strblock(txt, i, sym)
   local start = i
@@ -8,33 +8,6 @@ local function strblock(txt, i, sym)
   if txt[i] ~= sym then return false end
   i = i + 1
   return i - start
-end
-
-local function numdelim(c)
-  if not c then return false end
-  if c:find("[a-zA-Z0-9]") then return true end
-  local num_delim = {
-    [')'] = true,
-    [']'] = true,
-  }
-  return num_delim[c]
-end
-
-local function number(ctx, txt, i)
-  local n = ''
-  local start = i
-  if numdelim(txt[i-1]) then
-    return false
-  end
-  if txt[i] == '+' then return false end
-  if txt[i] == '-' then i = i + 1 end
-  while txt[i] and txt[i]:find("[x0-9%.a-fA-F]") do
-    n = n .. txt[i]
-    i = i + 1
-  end
-  if n:endswith '-' or n:endswith '+' then n = n:gsub('[%+%-]$', '') end
-  if tonumber(n) then return i - start end
-  return false
 end
 
 local col = {
@@ -56,24 +29,10 @@ local col = {
       "coroutine.resume", "coroutine.yield", "coroutine.status",
       col = scheme.lib, word = true
     },
-    { number, col = scheme.number },
+    { scheme.rule.number, col = scheme.number },
   },
-  { -- string
-    start = '"',
-    stop = '"',
-    keywords = {
-      { '\\"', '\\\\' },
-    },
-    col = scheme.string,
-  },
-  { -- string
-    start = "'",
-    stop = "'",
-    keywords = {
-      { "\\'", "\\\\" },
-    },
-    col = scheme.string,
-  },
+  scheme.rule.string '"',
+  scheme.rule.string "'",
   { -- comment
     start = function(ctx, txt, i)
       if txt[i] ~= '-' or txt[i+1] ~= '-' then return false end
@@ -89,11 +48,7 @@ local col = {
     end,
     col = scheme.comment,
   },
-  { -- comment
-    start = '--',
-    stop = '\n',
-    col = scheme.comment,
-  },
+  scheme.rule.line_comment '--',
   { -- string
     start = function(ctx, txt, i)
       local r = strblock(txt, i, '[')

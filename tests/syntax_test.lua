@@ -1,5 +1,5 @@
 local syntax = require "red/syntax"
-local scheme = require "red/syntax/scheme"
+local scheme = require "red/scheme"
 
 local function colorize_text(text, scheme_name)
   local chars = utf.chars(text)

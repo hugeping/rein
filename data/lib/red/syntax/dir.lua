@@ -1,13 +1,14 @@
-local scheme = require "red/syntax/scheme"
+local scheme = require "red/scheme"
 
 local function match(ext)
   if type(ext) ~= 'table' then
     ext = { ext }
   end
   return function(ctx, txt, i)
-    -- the patterns are anchored to the end of the line, so the earliest
-    -- match is at its start; no need to rebuild the tail at every symbol
-    if i > 1 and txt[i - 1] ~= '\n' then
+    -- the patterns are anchored to the end of the line, so the
+    -- earliest match is at its start; no need to rebuild the tail at
+    -- every symbol
+    if not scheme.rule.bol(txt, i) then
       return
     end
     local d = 0
