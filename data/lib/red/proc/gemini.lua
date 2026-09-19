@@ -37,25 +37,108 @@ local function parse(url)
   }
 end
 
+-- split a uri-reference the RFC 3986 way; the fragment is not a
+-- part of it, a Gemini client must not send fragments
+local function split_uri(u)
+  local scheme, rest = u:match("^([%a][%w+.-]*):(.*)$")
+
+  if not scheme then
+    rest = u
+  end
+  local authority
+
+  if rest:sub(1, 2) == '//' then
+    authority, rest = rest:match("^//([^/?#]*)(.*)$")
+  end
+  rest = rest:match("^[^#]*")
+  local path, query = rest:match("^([^?]*)(.*)$")
+
+  if query == '' then
+    query = nil
+  else
+    query = query:sub(2)
+  end
+  return scheme, authority, path, query
+end
+
+-- RFC 3986 5.2.4: drop the "." and ".." segments of a path
+local function remove_dot_segments(path)
+  local out = {}
+  local input = path
+
+  while input ~= '' do
+    if input:sub(1, 3) == '../' then
+      input = input:sub(4)
+    elseif input:sub(1, 2) == './' then
+      input = input:sub(3)
+    elseif input:sub(1, 3) == '/./' then
+      input = '/' .. input:sub(4)
+    elseif input == '/.' then
+      input = '/'
+    elseif input:sub(1, 4) == '/../' then
+      input = '/' .. input:sub(5)
+      table.remove(out)
+    elseif input == '/..' then
+      input = '/'
+      table.remove(out)
+    elseif input == '.' or input == '..' then
+      input = ''
+    else
+      local seg = input:match("^/?[^/]*")
+
+      table.insert(out, seg)
+      input = input:sub(#seg + 1)
+    end
+  end
+  return table.concat(out)
+end
+
+-- RFC 3986 5.2.3: the base path up to its last "/", or "/" when the
+-- base has an authority and an empty path
+local function merge_path(authority, path, ref)
+  if authority ~= nil and path == '' then
+    return '/' .. ref
+  end
+  return (path:match("^(.*/).*$") or '') .. ref
+end
+
 -- a link as written in the page, made absolute against the page url
+-- per RFC 3986: "?39" keeps the page path and only replaces its
+-- query, ".." walks up the path, "//host/x" changes the authority;
+-- the fragment is dropped
 function gemini.resolve(base, url)
-  if url:find("^%a+://") then
+  local rscheme, rauthority, rpath, rquery = split_uri(url)
+
+  if rscheme then
+    return url:match("^[^#]*")
+  end
+  if not base then
     return url
   end
-  local host, port, path
-  if base then
-    host, port, path = base:match("^gemini://([^:/]+):?(%d*)/?(.*)$")
-  end
-  if not host then
+  local bs, ba, bp, bq = split_uri(base)
+
+  if not bs then
     return url
   end
-  local prefix = "gemini://" .. host ..
-    (port ~= '' and ':' .. port or '')
-  if url:find("^/") then
-    return prefix .. url
+  if rauthority then
+    return bs .. '://' .. rauthority .. remove_dot_segments(rpath) ..
+      (rquery and '?' .. rquery or '')
   end
-  local dir = (path or ''):match("^(.*)/")
-  return prefix .. '/' .. (dir and dir .. '/' or '') .. url
+  local path, query
+
+  if rpath == '' then
+    path = bp
+    query = rquery or bq
+  else
+    if rpath:sub(1, 1) == '/' then
+      path = remove_dot_segments(rpath)
+    else
+      path = remove_dot_segments(merge_path(ba, bp, rpath))
+    end
+    query = rquery
+  end
+  return bs .. '://' .. (ba or '') .. path ..
+    (query and '?' .. query or '')
 end
 
 -- collect the "=>" links of the page; pos and e are buffer offsets
@@ -221,10 +304,12 @@ local function fetch(out, url, depth, gen)
 
   s:close()
   g.sock = nil
-  if status >= 30 and status < 40 and depth < 5
-    and meta:find("^gemini://")
-  then
-    return fetch(out, meta, depth + 1, gen)
+  if status >= 30 and status < 40 and depth < 5 and meta ~= '' then
+    local loc = gemini.resolve(url, meta)
+
+    if loc:find("^gemini://") then
+      return fetch(out, loc, depth + 1, gen)
+    end
   end
   return g.gen == gen
 end
