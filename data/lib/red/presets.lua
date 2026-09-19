@@ -53,6 +53,18 @@ return {
     syntax = "diff"
     }
   },
+  {"^Makefile", { ts = 8,
+    spaces_tab = false,
+    trim_spaces = false,
+    syntax = "makefile"
+    }
+  },
+  {"^makefile", { ts = 8,
+    spaces_tab = false,
+    trim_spaces = false,
+    syntax = "makefile"
+    }
+  },
   {"/$", { ts = 8,
     spaces_tab = false,
     trim_spaces = false,

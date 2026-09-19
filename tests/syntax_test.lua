@@ -1,8 +1,9 @@
 local syntax = require "red/syntax"
+local scheme = require "red/syntax/scheme"
 
-local function colorize_text(text, scheme)
+local function colorize_text(text, scheme_name)
   local chars = utf.chars(text)
-  local s = syntax.new(chars, 1, scheme)
+  local s = syntax.new(chars, 1, scheme_name)
   for i = 1, #chars do
     s:process(i, #chars)
   end
@@ -37,10 +38,35 @@ describe("syntax", function()
   end)
 
   it("does not mutate the scheme keyword tables", function()
-    local scheme = require "red/syntax/lua"
-    local keywords = scheme.keywords[2]
+    local lua_scheme = require "red/syntax/lua"
+    local keywords = lua_scheme.keywords[2]
     ok(type(keywords[2]) == "string", "keyword starts as a string")
     colorize_text("local x", "lua")
     eq(type(keywords[2]), "string", "keyword stays a string")
+  end)
+
+  it("colors a makefile: variables, directives, recipes", function()
+    local s = colorize_text(
+      "# make it\nCC = $(CC)\n\t$(CC) -o $$x\n", "makefile")
+    eq(s.cols[1], scheme.comment, "comment")
+    ne(s.cols[1], scheme.operator, "the comment is not the operator")
+    ok(s.cols[14] == scheme.operator, "= operator")
+    ok(s.cols[16] == scheme.number, "$(CC) variable")
+    -- line 3 (from 22): the recipe with its variables
+    ok(s.cols[22] == scheme.string, "the recipe line")
+    ok(s.cols[23] == scheme.number, "$(CC) of the recipe")
+  end)
+
+  it("starts a makefile recipe only at a real tab", function()
+    local s = colorize_text("ifeq ($(A),$(B))\n\ttrue\nendif\n", "makefile")
+    eq(s.cols[1], scheme.keyword, "ifeq")
+    ok(s.cols[18] == scheme.string, "the recipe of the tab")
+    eq(s.cols[24], scheme.keyword, "endif")
+  end)
+
+  it("does not take an indented tab as a makefile recipe", function()
+    local s = colorize_text(" \ttrue\n", "makefile")
+    eq(s.cols[1], scheme.default, "the space is the default")
+    eq(s.cols[2], scheme.default, "the tab too")
   end)
 end)
