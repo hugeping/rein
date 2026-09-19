@@ -5,8 +5,8 @@ local sock = require "sock"
 -- the requests are recorded; the extension requires the same sock table
 local real_dial = sock.dial
 local responses, requests, dials
-local function fake_dial(host, port, tls)
-  table.insert(dials, { host, port, tls })
+local function fake_dial(host, port, tls, cert, key)
+  table.insert(dials, { host, port, tls, cert, key })
   local lines = table.remove(responses, 1) or { "20 text/gemini" }
   local i = 0
   return {
@@ -24,6 +24,9 @@ end
 sock.dial = fake_dial
 
 local ext = require "red/proc/gemini"
+
+local certdir = "/tmp/rein-gemini/certs"
+local h_crt, h_key = certdir .. "/h.crt", certdir .. "/h.key"
 
 local function fake_frame()
   local fr = { update = function() end }
@@ -74,6 +77,38 @@ end
 
 local function reset()
   requests, dials = {}, {}
+end
+
+-- the certificate directory is faked and net.certgen is stubbed; the
+-- hosts it was called for are collected in `made`
+local made
+local function with_certs(files, fn)
+  local old_file, old_access = io.file, io.access
+  local old_appdir, old_mkdir = sys.appdir, sys.mkdir
+  local old_net = net
+
+  made = {}
+  io.file = function(f, d)
+    if d == nil then
+      return files[f]
+    end
+    files[f] = d
+    return true
+  end
+  io.access = function(f) return files[f] ~= nil end
+  sys.appdir = function(app) return "/tmp/rein-" .. app end
+  sys.mkdir = function() return true end
+  net = {
+    certgen = function(host)
+      table.insert(made, host)
+      return "CRT " .. host, "KEY " .. host
+    end,
+  }
+  local ok, e = pcall(fn)
+  io.file, io.access = old_file, old_access
+  sys.appdir, sys.mkdir = old_appdir, old_mkdir
+  net = old_net
+  if not ok then error(e) end
 end
 
 local function with_alt(fn)
@@ -247,6 +282,62 @@ describe("gemini", function()
     eq(requests[1], requests[2], "the same page is requested again")
     eq(#w.gem.hist, 1, "a reload does not add a history entry")
     eq(w.gem.pos, 1)
+  end)
+
+  it("a 60 response offers a certificate and retries", function()
+    reset()
+    responses = { { "60 Certificate required" },
+      { "20 text/gemini", "welcome" } }
+    local files = {}
+    with_certs(files, function()
+      local w = run("h/page")
+
+      eq(#made, 0, "nothing is made before the answer")
+      eq(w.gem.cert.host, "h")
+      ok(w:gettext():find("requires a client certificate", 1, true),
+        "the offer is shown")
+      w:newline()
+      pump(w)
+      eq(#made, 1)
+      eq(made[1], "h")
+      eq(dials[2][4], "CRT h", "the certificate is sent on the retry")
+      eq(dials[2][5], "KEY h")
+      eq(w.gem.cert, nil)
+      ok(w:gettext():find("welcome", 1, true))
+      ok(files[h_crt] ~= nil, "the certificate is saved")
+      ok(files[h_key] ~= nil, "the key is saved")
+    end)
+  end)
+
+  it("a stored certificate is sent to its host", function()
+    reset()
+    responses = { { "20 text/gemini", "ok" } }
+    with_certs({ [h_crt] = "CRT", [h_key] = "KEY" }, function()
+      run("h/x")
+      eq(dials[1][4], "CRT")
+      eq(dials[1][5], "KEY")
+      eq(#made, 0, "no new certificate is made")
+    end)
+  end)
+
+  it("a used certificate is not offered again on 60", function()
+    reset()
+    responses = { { "60 still needed" } }
+    with_certs({ [h_crt] = "CRT", [h_key] = "KEY" }, function()
+      local w = run("h/x")
+
+      eq(w.gem.cert, nil, "no offer when the certificate is already used")
+      ok(w:gettext():find("already in use", 1, true))
+    end)
+  end)
+
+  it("61 and 62 responses are explained", function()
+    reset()
+    responses = { { "61 not authorised" }, { "62 invalid" } }
+    local w = run("h/a")
+    ok(w:gettext():find("does not authorise", 1, true))
+    local w2 = run("h/b")
+    ok(w2:gettext():find("not valid", 1, true))
   end)
 
   it("a gemini window dumps and restores url, history and input", function()
