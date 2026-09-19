@@ -1,4 +1,5 @@
 local win = require "red/win"
+local syntax = require "red/syntax"
 local frame = require "red/frame"
 local proc = require "red/proc"
 local uri = require "red/uri"
@@ -919,13 +920,6 @@ function framemenu.cmd:Spaces()
   w.conf.spaces_tab = true
 end
 
--- a syntax scheme is a file of red/syntax; nil when there is none
-local function syntax_scheme(name)
-  if name and io.access(DATADIR..'/lib/red/syntax/'..name..'.lua') then
-    return name
-  end
-end
-
 -- Syntax [name] -- toggle the syntax highlighting of the window or
 -- switch it to the scheme `name` (c, lua, go, ...)
 function framemenu.cmd:Syntax(name)
@@ -933,7 +927,7 @@ function framemenu.cmd:Syntax(name)
   if not w then return end
   name = name and name:strip()
   if name and name ~= '' then
-    if syntax_scheme(name) then
+    if syntax.scheme(name) then
       w.conf.syntax = name
       w.syntax = nil
     end
