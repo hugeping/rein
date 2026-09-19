@@ -37,8 +37,7 @@ ts_der_tlv(ts_der *c, unsigned tag, const unsigned char **val, size_t *len)
 	if (l & 0x80) {
 		n = (unsigned)(l & 0x7F);
 		if (n == 0 || n > sizeof(size_t)
-			|| (size_t)(c->end - c->p) < n)
-		{
+			|| (size_t)(c->end - c->p) < n) {
 			return 0;
 		}
 		l = 0;
@@ -215,13 +214,11 @@ ts_ec_sign(const unsigned char *d, const unsigned char *hash,
 	for (try = 0; try < 64; try ++) {
 		ts_random(kb, FIELD_LEN);
 		if (!br_i31_decode_mod(k, kb, FIELD_LEN, n)
-			|| br_i31_iszero(k))
-		{
+			|| br_i31_iszero(k)) {
 			continue;
 		}
 		if (br_ec_prime_i31.mulgen(point, kb, FIELD_LEN,
-			BR_EC_secp256r1) != POINT_LEN)
-		{
+			BR_EC_secp256r1) != POINT_LEN) {
 			continue;
 		}
 
@@ -284,8 +281,7 @@ ts_ec_key_parse(const unsigned char *der, size_t len, unsigned char *d)
 	c.p = der;
 	c.end = der + len;
 	if (!ts_der_enter(&c, 0x30)
-		|| !ts_der_tlv(&c, 0x02, &val, &vlen))
-	{
+		|| !ts_der_tlv(&c, 0x02, &val, &vlen)) {
 		return 0;
 	}
 	if (vlen == 1 && val[0] == 0) {
@@ -299,14 +295,12 @@ ts_ec_key_parse(const unsigned char *der, size_t len, unsigned char *d)
 		alg.end = val + vlen;
 		if (!ts_der_tlv(&alg, 0x06, &val, &vlen)
 			|| vlen != sizeof oid_ec_pubkey
-			|| memcmp(val, oid_ec_pubkey, vlen) != 0)
-		{
+			|| memcmp(val, oid_ec_pubkey, vlen) != 0) {
 			return 0;
 		}
 		if (!ts_der_tlv(&alg, 0x06, &val, &vlen)
 			|| vlen != sizeof oid_p256
-			|| memcmp(val, oid_p256, vlen) != 0)
-		{
+			|| memcmp(val, oid_p256, vlen) != 0) {
 			return 0;
 		}
 		if (!ts_der_tlv(&c, 0x04, &val, &vlen)) {
@@ -316,8 +310,7 @@ ts_ec_key_parse(const unsigned char *der, size_t len, unsigned char *d)
 		key.end = val + vlen;
 		if (!ts_der_enter(&key, 0x30)
 			|| !ts_der_tlv(&key, 0x02, &val, &vlen)
-			|| vlen != 1 || val[0] != 1)
-		{
+			|| vlen != 1 || val[0] != 1) {
 			return 0;
 		}
 	} else if (vlen == 1 && val[0] == 1) {
@@ -327,8 +320,7 @@ ts_ec_key_parse(const unsigned char *der, size_t len, unsigned char *d)
 		return 0;
 	}
 	if (!ts_der_tlv(&key, 0x04, &val, &vlen)
-		|| vlen < 1 || vlen > FIELD_LEN)
-	{
+		|| vlen < 1 || vlen > FIELD_LEN) {
 		return 0;
 	}
 	memset(dd, 0, FIELD_LEN);

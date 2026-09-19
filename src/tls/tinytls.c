@@ -523,8 +523,7 @@ parse_ske(ts_conn *t, const unsigned char *b, size_t len)
 		}
 		if (!br_rsa_i31_pkcs1_vrfy(sig, siglen, BR_HASH_OID_SHA256,
 			32, &t->pkey.key.rsa, out)
-			|| memcmp(out, hash, 32) != 0)
-		{
+			|| memcmp(out, hash, 32) != 0) {
 			return TS_ERR_SIGNATURE;
 		}
 	} else if (b[hlen + 1] == 0x03) {  /* ECDSA */
@@ -532,8 +531,7 @@ parse_ske(ts_conn *t, const unsigned char *b, size_t len)
 			return TS_ERR_CERTIFICATE;
 		}
 		if (!br_ecdsa_i31_vrfy_asn1(&br_ec_prime_i31, hash, 32,
-			&t->pkey.key.ec, sig, siglen))
-		{
+			&t->pkey.key.ec, sig, siglen)) {
 			return TS_ERR_SIGNATURE;
 		}
 	} else {
@@ -708,8 +706,7 @@ ts_set_clientcert(ts_conn *tc, const unsigned char *cert, size_t certlen,
 		return 0;
 	}
 	if (certlen == 0 || certlen > sizeof tc->ccert - 10
-		|| !ts_ec_key_parse(key, keylen, d))
-	{
+		|| !ts_ec_key_parse(key, keylen, d)) {
 		return 0;
 	}
 	memcpy(tc->ckey, d, sizeof d);
@@ -889,8 +886,7 @@ ts_handshake(ts_conn *t)
 		case HS_CERT0:
 			/* ecdsa_sign is 64; with no types offered, try anyway */
 			if (t->has_cert && (t->cr_types == 0
-				|| (t->cr_types & (unsigned char)(1 << 6))))
-			{
+				|| (t->cr_types & (unsigned char)(1 << 6)))) {
 				r = hs_send_cert(t);
 				if (r != TS_OK) {
 					return r;
@@ -952,8 +948,7 @@ ts_handshake(ts_conn *t)
 				return t->err;
 			}
 			if (t->rtype != 20 || t->rlen != 1
-				|| t->rbuf[0] != 1)
-			{
+				|| t->rbuf[0] != 1) {
 				t->err = TS_ERR_PROTOCOL;
 				return t->err;
 			}
@@ -968,8 +963,7 @@ ts_handshake(ts_conn *t)
 				return r;
 			}
 			if (t->rtype != 22 || t->rlen != 16
-				|| t->rbuf[0] != 20 || get24(t->rbuf + 1) != 12)
-			{
+				|| t->rbuf[0] != 20 || get24(t->rbuf + 1) != 12) {
 				t->err = TS_ERR_PROTOCOL;
 				return t->err;
 			}
@@ -1058,8 +1052,7 @@ ts_read(ts_conn *t, void *buf, size_t len)
 		}
 		if (t->rtype == 21) {
 			if (t->rlen >= 2 && t->rbuf[0] == 1
-				&& t->rbuf[1] == 0)
-			{
+				&& t->rbuf[1] == 0) {
 				t->eof = 1;
 				return 0;
 			}

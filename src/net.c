@@ -83,8 +83,7 @@ net_tls(lua_State *L)
 
 		if (!ts_set_clientcert(utls->tls,
 			(const unsigned char *)cert, clen,
-			(const unsigned char *)key, klen))
-		{
+			(const unsigned char *)key, klen)) {
 			ts_free(utls->tls);
 			utls->tls = NULL;
 			utls->fd = -1;  /* the socket stays with lua_sock */
