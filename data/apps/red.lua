@@ -1101,7 +1101,7 @@ function mainmenu:scroller(click)
 end
 
 function mainmenu.cmd:Dump()
-  local d = { menu = self.buf:gettext() }
+  local d = { menu = self.buf:gettext(), font_sz = conf.font_sz }
   for f in self.frame:for_win() do
     table.insert(d, f:dump())
   end
@@ -1690,6 +1690,9 @@ main:geom(0, 0, scr.w, scr.h)
 local function load_dump(f)
   local d = dumper.load(f)
   if not d then return end
+  if d.font_sz and d.font_sz ~= conf.font_sz then
+    font_size(mainmenu, d.font_sz) -- the window geometry depends on it
+  end
   for i, v in ipairs(d) do
     mainmenu.cmd.New(mainmenu) -- Newcol
     local fr = main:win(i)
