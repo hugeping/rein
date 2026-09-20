@@ -761,7 +761,7 @@ function api.event(e, v, a, b, c)
   -- directory; a second press stops the recording (on keyup: a held
   -- key must not toggle it again and again).  The browser has no
   -- file to write into and keeps F12 for its own tools
-  if e == 'keyup' and v == 'f12' and PLATFORM ~= 'Emscripten' then
+  if e == 'keyup' and v == 'f12' and input.kbd.ctrl then
     if gfx.record_on() then
       local ok = gfx.record_stop()
       record_border_off()
