@@ -293,7 +293,10 @@ function irc.line(w, l)
   if trailing:startswith '\1' then
     local t, a = trailing:match('^\1(%S+)%s*(.-)\1$')
 
-    if t == 'ACTION' and nick and cmd == 'PRIVMSG' then
+    if t == 'VERSION' and nick and cmd == 'PRIVMSG' then
+      irc.send(w, string.format('NOTICE %s :\1VERSION rein %s\1',
+        nick, VERSION))
+    elseif t == 'ACTION' and nick and cmd == 'PRIVMSG' then
       say(w, string.format('* %s %s\n', nick, plain(a)))
     end
     return -- other ctcp is not shown
