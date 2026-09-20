@@ -3,6 +3,9 @@
 std = "luajit"
 max_line_length = false
 
+-- a method keeps its colon signature even when self is not used
+ignore = { "212/self" }
+
 -- Globals provided by the rein runtime (C) or boot/app code.
 globals = {
   "screen", "scr", "sys", "input", "utf", "conf", "PLATFORM",
