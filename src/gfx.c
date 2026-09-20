@@ -2,6 +2,7 @@
 #include "stb_image.h"
 #include "stb_image_resize.h"
 #include "platform.h"
+#include "record.h"
 #include "gfx.h"
 #include "utf.h"
 
@@ -1917,6 +1918,45 @@ gfx_flip(lua_State *L)
 }
 
 static int
+gfx_record_start(lua_State *L)
+{
+	const char *path = luaL_checkstring(L, 1);
+	int fps = luaL_optinteger(L, 2, 20);
+
+	if (RecordStart(path, fps)) {
+		lua_pushboolean(L, 1);
+		return 1;
+	}
+	lua_pushboolean(L, 0);
+	return 1;
+}
+
+static int
+gfx_record_frame(lua_State *L)
+{
+	struct lua_pixels *px = (struct lua_pixels *)
+		luaL_checkudata(L, 1, "pixels metatable");
+
+	lua_pushboolean(L, RecordFrame(px->img->ptr, px->img->w, px->img->h,
+		px->img->w * 4, Time()));
+	return 1;
+}
+
+static int
+gfx_record_stop(lua_State *L)
+{
+	lua_pushboolean(L, RecordStop());
+	return 1;
+}
+
+static int
+gfx_record_on(lua_State *L)
+{
+	lua_pushboolean(L, RecordOn());
+	return 1;
+}
+
+static int
 gfx_icon(lua_State *L)
 {
 	struct lua_pixels *src;
@@ -2057,6 +2097,10 @@ gfx_lib[] = {
 	{ "new", gfx_pixels_new },
 	{ "icon", gfx_icon },
 	{ "flip", gfx_flip },
+	{ "record_start", gfx_record_start },
+	{ "record_frame", gfx_record_frame },
+	{ "record_stop", gfx_record_stop },
+	{ "record_on", gfx_record_on },
 	{ "background", gfx_background },
 	{ "clear", gfx_clear },
 	{ "pal", gfx_pal },

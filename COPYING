@@ -24,5 +24,6 @@ Rein links with the following libraries/sources:
 
     Lua/LuaJIT (MIT)
     SDL2 (zlib)
+    msf_gif (MIT or Public Domain)
     stb libraries (Public Domain)
     zvon (MIT)

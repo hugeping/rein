@@ -35,6 +35,7 @@ CFILES= \
 	src/system.c \
 	src/gfx_font.c \
 	src/net.c \
+	src/record.c \
 	src/tls/i31.c \
 	src/tls/ec.c \
 	src/tls/ecdsa.c \

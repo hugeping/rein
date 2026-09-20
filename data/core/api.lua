@@ -92,6 +92,10 @@ local env = {
     pal = gfx.pal,
     icon = gfx.icon,
     clear = gfx.clear,
+    record_start = gfx.record_start,
+    record_frame = gfx.record_frame,
+    record_stop = gfx.record_stop,
+    record_on = gfx.record_on,
   };
   sys = {
     running = sys.running,
@@ -693,6 +697,29 @@ function env.sys.event_filter(t)
   return r
 end
 
+-- the screen recording border: while the frames are recorded the
+-- border of the window blinks, when the recording ends it goes back
+-- to the color the app set last (conf.brd)
+local record_ind = false
+local record_col = { 0xFF, 0x00, 0x4D }
+
+local function record_border_off()
+  if record_ind then
+    record_ind = false
+    gfx.background(conf.brd)
+  end
+end
+
+function api.record(w)
+  if gfx.record_frame(w) then
+    record_ind = true
+    gfx.background(math.floor(sys.time() * 2) % 2 == 0 and record_col or
+      conf.brd)
+  else
+    record_border_off()
+  end
+end
+
 function api.event(e, v, a, b, c)
   if not api.running then
     return false
@@ -728,6 +755,22 @@ function api.event(e, v, a, b, c)
       sys.window_mode 'normal'
     end
     e = nil
+  end
+
+  -- F12 records a fragment of the screen into a gif in the current
+  -- directory; a second press stops the recording (on keyup: a held
+  -- key must not toggle it again and again).  The browser has no
+  -- file to write into and keeps F12 for its own tools
+  if e == 'keyup' and v == 'f12' and PLATFORM ~= 'Emscripten' then
+    if gfx.record_on() then
+      local ok = gfx.record_stop()
+      record_border_off()
+      sys.log(ok and 'recording saved' or 'recording failed')
+    else
+      local fname = string.format('rein-%s.gif', os.date('%y%m%d-%H%M%S'))
+      local ok, err = gfx.record_start(fname)
+      sys.log(ok and ('recording to ' .. fname) or tostring(err))
+    end
   end
 
   if event_filter[e] and #input.fifo < 32 then

@@ -335,6 +335,7 @@ function core.render(force)
   else
     env.screen:expose(core.view_x, core.view_y, core.view_w, core.view_h)
   end
+  api.record(env.screen)
   last_render = start
   return true
 end
