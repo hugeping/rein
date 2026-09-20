@@ -563,6 +563,10 @@ WindowExpose(void *pixels, int w, int h, int pitch, int dx, int dy, int dw, int 
 			SDL_TEXTUREACCESS_STREAMING, w, h);
 		if (!expose_texture)
 			return;
+		/* be explicit: the screen is opaque pixels, copied as they
+		   are (the defaults may depend on the hints) */
+		SDL_SetTextureBlendMode(expose_texture, SDL_BLENDMODE_NONE);
+		SDL_SetTextureScaleMode(expose_texture, SDL_ScaleModeNearest);
 	}
 	rect.x = 0; rect.y = 0; rect.w = w; rect.h = h;
 	SDL_UpdateTexture(expose_texture, &rect, pixels, pitch);

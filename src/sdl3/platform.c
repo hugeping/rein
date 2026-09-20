@@ -562,6 +562,10 @@ WindowExpose(void *pixels, int w, int h, int pitch, int dx, int dy, int dw, int 
 			SDL_TEXTUREACCESS_STREAMING, w, h);
 		if (!expose_texture)
 			return;
+		/* SDL3 blends and filters textures by default, SDL2 did
+		   not: the screen is opaque pixels and must be copied
+		   as they are */
+		SDL_SetTextureBlendMode(expose_texture, SDL_BLENDMODE_NONE);
 		SDL_SetTextureScaleMode(expose_texture, SDL_SCALEMODE_NEAREST);
 		expose_w = w; expose_h = h;
 	}
