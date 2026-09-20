@@ -553,7 +553,7 @@ function frame:rename_from_menu(w, text)
   local fn = frame.menu_filename(text)
   if fn and not fn:empty() and fn ~= w.buf.fname then
     while self.frame:win_by_name(fn) do
-      fn = '~' .. fn
+      fn = fn .. '~'
     end
     w.buf.fname = fn
     w.conf = preset_conf(fn)
