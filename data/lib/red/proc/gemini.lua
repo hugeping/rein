@@ -564,19 +564,21 @@ function gemini:event(r, v, a, b)
 end
 
 -- return in the body sends the typed answer of a pending input or
--- accepts the offer of a client certificate
+-- accepts the offer of a client certificate; shift+return adds a line
+-- to the answer, its newlines go to the server as %0A
 function gemini:newline()
   local i = self.gem.input
 
   if i and self.buf.cur >= i.pos then
+    if input.keydown 'shift' then
+      self.buf:input '\n'
+      return
+    end
     local t = ''
     for k = i.pos, #self.buf.text do
-      if self.buf.text[k] == '\n' then
-        break
-      end
       t = t .. self.buf.text[k]
     end
-    gemini.answer(self, t)
+    gemini.answer(self, (t:gsub('\n+$', '')))
     return
   end
   local c = self.gem.cert

@@ -119,6 +119,14 @@ local function with_alt(fn)
   if not ok then error(e) end
 end
 
+local function with_shift(fn)
+  local old = input.keydown
+  input.keydown = function(m) return m == 'shift' end
+  local ok, e = pcall(fn)
+  input.keydown = old
+  if not ok then error(e) end
+end
+
 describe("gemini", function()
   it("fetches a page, sends the request and collects the links", function()
     reset()
@@ -333,6 +341,37 @@ describe("gemini", function()
     w:newline()
     eq(w:gettext():sub(1, 1), "\n")
     ok(w.gem.input, "the prompt is still pending")
+  end)
+
+  it("shift+return makes the answer multiline", function()
+    reset()
+    responses = { { "10 ask" }, { "20 text/gemini" } }
+    local w = run("h/search")
+
+    w.buf:input("one")
+    with_shift(function()
+      w:newline()
+    end)
+    eq(#requests, 1, "shift+return sends nothing")
+    eq(w:gettext():sub(-1), "\n", "the answer got a new line")
+    w.buf:input("two")
+    w:newline()
+    pump(w)
+    eq(requests[2], "gemini://h/search?one%0Atwo\r\n")
+  end)
+
+  it("a trailing newline is not sent", function()
+    reset()
+    responses = { { "10 ask" }, { "20 text/gemini" } }
+    local w = run("h/search")
+
+    w.buf:input("x")
+    with_shift(function()
+      w:newline()
+    end)
+    w:newline()
+    pump(w)
+    eq(requests[2], "gemini://h/search?x\r\n")
   end)
 
   it("Get re-fetches the current page", function()
