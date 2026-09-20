@@ -292,6 +292,10 @@ function syntax:process(pos, epos)
       break
     end
   end
+  if i > #txt then
+    self.pos = i
+    return
+  end
   i = i + self:context(i)
   self.pos = i
 end
