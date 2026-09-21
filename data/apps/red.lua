@@ -721,16 +721,17 @@ win_menu.cmd = framemenu.cmd
 -- creation time: cursor images, borders, glyph sprites, menus and
 -- window backgrounds
 local function apply_theme(name, root)
+  if not root then
+    return
+  end
   theme.apply(name)
   conf.move_cursor = make_move_cursor()
   conf.text_cursor = make_text_cursor(conf.cursor)
   conf.text_cursor_over = make_text_cursor(conf.cursor_over)
   menu.bg, framemenu.bg, win_menu.bg = conf.menu, conf.menu, conf.menu
   gfx.border(conf.brd)
+  screen:clear(conf.bg)
   scr.glyphs = {}
-  if not root then
-    return
-  end
   local function recolor(m)
     if m then
       m.fg, m.bg = conf.fg, conf.menu
