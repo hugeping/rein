@@ -1102,7 +1102,7 @@ function mainmenu:scroller(click)
 end
 
 function mainmenu.cmd:Dump()
-  local d = { menu = self.buf:gettext(), font_sz = conf.font_sz }
+  local d = { menu = self.buf:gettext(), font_sz = conf.font_sz, theme = theme.current }
   for f in self.frame:for_win() do
     table.insert(d, f:dump())
   end
@@ -1691,6 +1691,9 @@ main:geom(0, 0, scr.w, scr.h)
 local function load_dump(f)
   local d = dumper.load(f)
   if not d then return end
+  if d.theme and d.theme ~= conf.theme then
+    apply_theme(d.theme, mainmenu.frame:main())
+  end
   if d.font_sz and d.font_sz ~= conf.font_sz then
     font_size(mainmenu, d.font_sz) -- the window geometry depends on it
   end
