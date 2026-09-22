@@ -496,6 +496,25 @@ describe("gemini", function()
     ok(not w:gettext():find("fake", 1, true))
   end)
 
+  it("resolves the selectors of a gopher menu", function()
+    reset()
+    responses = { {
+      "0Dockerfile\t/hist/../coding/x.ssem\tygrex.ru\t70\t+",
+      "1Up\t../\tygrex.ru\t70",
+      "1Sibling\tother/\tygrex.ru\t70",
+      ".",
+    } }
+    local w = run("gopher://ygrex.ru/1/hist/")
+    eq(requests[1], "/hist/\r\n")
+    eq(#w.gem.links, 3)
+    eq(w.gem.links[1].url, "gopher://ygrex.ru/0/coding/x.ssem",
+      "the dot segments are removed")
+    eq(w.gem.links[2].url, "gopher://ygrex.ru/1/",
+      "a relative selector goes up")
+    eq(w.gem.links[3].url, "gopher://ygrex.ru/1/hist/other/",
+      "a relative selector joins the page selector")
+  end)
+
   it("shows a gopher text file as it is", function()
     reset()
     responses = { { "hello", "world" } }

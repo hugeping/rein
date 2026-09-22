@@ -301,6 +301,16 @@ local function parse_gopher(url)
   }
 end
 
+-- the selector of a menu item: a relative one is resolved against the
+-- selector of the page, the dot segments are removed -- the servers
+-- send "../" in the selectors but do not resolve it themselves
+local function gopher_sel(base, sel)
+  if sel:sub(1, 1) ~= '/' then
+    sel = merge_path('', base or '', sel)
+  end
+  return remove_dot_segments(sel)
+end
+
 -- a menu item as a gopher url: the selector is percent-encoded, "/"
 -- stays as it is, the default port is not written
 local function gopher_url(host, port, t, sel)
@@ -315,7 +325,7 @@ end
 -- to the window as it is.  An item may carry a fifth field (the
 -- gopher+ attribute) -- it is ignored; the "(NULL)"/0 host and port
 -- of a local item are replaced with the current ones
-local function read_gopher(out, s, gen, menu, cur_host, cur_port)
+local function read_gopher(out, s, gen, menu, cur_host, cur_port, cur_sel)
   local n = 0
 
   while true do
@@ -348,6 +358,7 @@ local function read_gopher(out, s, gen, menu, cur_host, cur_port)
         if p == 0 then
           p = cur_port
         end
+        sel = gopher_sel(cur_sel, sel)
         out:printf("=> %s %s\n", gopher_url(host, p, t, sel),
           display ~= '' and display or sel)
       end
@@ -405,7 +416,7 @@ local function fetch_gopher(out, url, depth, gen)
     return false
   end
   if not read_gopher(out, s, gen, u.type == '1' or u.type == '7',
-      u.host, u.port) then
+      u.host, u.port, u.sel) then
     s:close()
     g.sock = nil
     return false
