@@ -393,9 +393,6 @@ function env.gfx.render()
 end
 
 function env.gfx.sync(fps, interrupt)
-  if interrupt or not framedrop then -- drop every 2nd frame if needed
-    gfx.flip()
-  end
   local cur_time = sys.time()
   local delta = (fps or conf.fps) - (cur_time - last_flip)
   framedrop = delta < 0 and not framedrop
@@ -414,6 +411,7 @@ end
 function env.gfx.flip(fps, interrupt)
   if interrupt or not framedrop then -- drop every 2nd frame if needed
     core.render(true)
+    gfx.flip()
   end
   return env.gfx.sync(fps, interrupt)
 end
