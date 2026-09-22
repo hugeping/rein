@@ -350,17 +350,25 @@ local function read_gopher(out, s, gen, menu, cur_host, cur_port, cur_sel)
       elseif t == 'i' or t == '3' then
         out:printf("%s\n", display)
       else
-        local p = tonumber(port) or 0
+        -- the de facto "URL:" item: http(s) is not gopher's business,
+        -- uri.lua opens it
+        local url = sel:match("^/[Uu][Rr][Ll]:(https?://.+)$")
 
-        if host == '' or host:lower() == '(null)' then
-          host = cur_host
+        if url then
+          out:printf("=> %s %s\n", url, display ~= '' and display or url)
+        else
+          local p = tonumber(port) or 0
+
+          if host == '' or host:lower() == '(null)' then
+            host = cur_host
+          end
+          if p == 0 then
+            p = cur_port
+          end
+          sel = gopher_sel(cur_sel, sel)
+          out:printf("=> %s %s\n", gopher_url(host, p, t, sel),
+            display ~= '' and display or sel)
         end
-        if p == 0 then
-          p = cur_port
-        end
-        sel = gopher_sel(cur_sel, sel)
-        out:printf("=> %s %s\n", gopher_url(host, p, t, sel),
-          display ~= '' and display or sel)
       end
     else
       out:printf("%s\n", l)

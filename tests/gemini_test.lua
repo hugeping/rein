@@ -515,6 +515,22 @@ describe("gemini", function()
       "a relative selector joins the page selector")
   end)
 
+  it("a gopher URL item is left to uri", function()
+    reset()
+    responses = { { "hGitHub\t/URL:https://github.com/x\tygrex.ru\t70", "." } }
+    local w = run("gopher://ygrex.ru/1")
+    eq(#w.gem.links, 1)
+    eq(w.gem.links[1].url, "https://github.com/x")
+    local asked, executed = {}, {}
+    w.x, w.y, w.w, w.h = 0, 0, 100, 100
+    w.run = function(_, f) table.insert(asked, f) end
+    w.exec = function(_, t) table.insert(executed, t) end
+    w.off2cur = function() return 3 end
+    w:event('mouseup', 'middle', 20, 5)
+    eq(#asked, 0, "http(s) is not fetched over gopher")
+    eq(#executed, 1, "uri.lua opens it")
+  end)
+
   it("shows a gopher text file as it is", function()
     reset()
     responses = { { "hello", "world" } }
