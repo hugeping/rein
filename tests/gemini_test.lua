@@ -467,6 +467,65 @@ describe("gemini", function()
     eq(w2.cmdline, "Back Scroll")
     eq(w2:dump().hist[1], "gemini://h/a")
   end)
+
+  it("fetches a gopher menu and makes links of its items", function()
+    reset()
+    responses = { {
+      "1Floodgap Home\t/\tgopher.floodgap.com\t70",
+      "iHello there\tfake\t(fake)\t0",
+      "0Phlog\t/phlog\tgopher.floodgap.com\t70",
+      "1Search\t/v2/vs\tgopher.floodgap.com\t70",
+      ".",
+    } }
+    local w = run("gopher://gopher.floodgap.com")
+    eq(requests[1], "\r\n", "the root menu selector is empty")
+    eq(dials[1][1], "gopher.floodgap.com")
+    eq(dials[1][2], 70)
+    eq(w.gem.url, "gopher://gopher.floodgap.com")
+    eq(#w.gem.links, 3, "an info line is not a link")
+    eq(w.gem.links[1].url, "gopher://gopher.floodgap.com/1/")
+    eq(w.gem.links[2].url, "gopher://gopher.floodgap.com/0/phlog")
+    eq(w.gem.links[3].url, "gopher://gopher.floodgap.com/1/v2/vs")
+    ok(w:gettext():find("Hello there", 1, true))
+    ok(not w:gettext():find("fake", 1, true))
+  end)
+
+  it("shows a gopher text file as it is", function()
+    reset()
+    responses = { { "hello", "world" } }
+    local w = run("gopher://h/0/file")
+    eq(requests[1], "/file\r\n")
+    eq(#w.gem.links, 0)
+    ok(w:gettext():find("hello", 1, true))
+    ok(w:gettext():find("world", 1, true))
+  end)
+
+  it("a gopher search asks for the query and sends it after a tab", function()
+    reset()
+    responses = { { "1Results\t/search\th\t70", "." } }
+    local w = run("gopher://h/7/v2/vs")
+    eq(#requests, 0, "nothing is sent before the answer")
+    eq(w.gem.input.url, "gopher://h/7/v2/vs")
+    ok(w:gettext():find("search:", 1, true))
+    w.buf:input("hello world")
+    w:newline()
+    pump(w)
+    eq(requests[1], "/v2/vs\thello world\r\n")
+    eq(w.gem.input, nil)
+  end)
+
+  it("a gopher link keeps its scheme when followed", function()
+    reset()
+    responses = { { "hello" } }
+    local w = page("=> gopher://h/0/file a file\n", "gemini://h/page")
+    w.x, w.y, w.w, w.h = 0, 0, 100, 100
+    w.off2cur = function() return 3 end
+    w.exec = function() end
+    ok(w:event('mouseup', 'middle', 20, 5))
+    pump(w)
+    eq(requests[1], "/file\r\n")
+    eq(w.gem.url, "gopher://h/0/file")
+  end)
 end)
 
 -- the tests above run as the file loads: do not leak the fake dial

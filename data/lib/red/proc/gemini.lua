@@ -1,7 +1,9 @@
 -- A proc extension: red/proc.lua loads every file of this directory and
 -- merges the returned table into proc.
 --
--- Minimal Gemini client (gemini://, TLS on port 1965) for red.  A page
+-- Minimal Gemini (gemini://, TLS on port 1965) and Gopher (gopher://,
+-- plain TCP on port 70) client for red.  A gopher menu is rendered as
+-- "=>" links of the same page window.  A page
 -- lives in a "+gemini" output window: the window keeps the current url
 -- and the "=>" links of the page, so a middle click can follow a link
 -- and win.kinds.gemini can restore it from red.dump.  Requests run in
@@ -267,7 +269,148 @@ function gemini.answer(w, text)
   return gemini.follow(w, gemini.query(i.url, text))
 end
 
+-- percent-decode a selector or a query of a gopher url
+local function unescape(s)
+  return (s:gsub("%%(%x%x)", function(h)
+    return string.char(tonumber(h, 16))
+  end))
+end
+
+-- gopher://host[:port][/<type><selector>][?query]; the type is one
+-- character, "1" (a menu) when it is missing, the port defaults to 70
+local function parse_gopher(url)
+  local host, port, rest = url:match("^gopher://([^:/]+):?(%d*)/?(.*)$")
+
+  if not host then
+    return nil
+  end
+  local query
+
+  rest, query = rest:match("^([^?]*)(.*)$")
+  local t, sel = rest:match("^(.)(.*)$")
+
+  if not t or not t:match("[%w+]") then
+    t, sel = '1', rest
+  end
+  return {
+    host = host,
+    port = tonumber(port) or 70,
+    type = t,
+    sel = unescape(sel),
+    query = unescape(query:match("^%?(.*)$") or ''),
+  }
+end
+
+-- a menu item as a gopher url: the selector is percent-encoded, "/"
+-- stays as it is, the default port is not written
+local function gopher_url(host, port, t, sel)
+  return string.format("gopher://%s%s/%s%s", host,
+    port ~= 70 and (':' .. port) or '', t,
+    (sel:gsub("[^%w%-%._~/]", function(c)
+      return string.format("%%%02X", c:byte())
+    end)))
+end
+
+-- print a gopher response: a menu becomes "=>" links, the rest goes
+-- to the window as it is
+local function read_gopher(out, s, gen, menu)
+  local n = 0
+
+  while true do
+    local l = s:readln(true)
+
+    if not l then
+      return true
+    end
+    if out.gem.gen ~= gen then
+      return false
+    end
+    if menu and l == '.' then
+      return true
+    end
+    if menu then
+      local t = l:sub(1, 1)
+      local display, sel, host, port = l:sub(2):match(
+        "^([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)$")
+
+      if not display then
+        out:printf("%s\n", l)
+      elseif t == 'i' or t == '3' then
+        out:printf("%s\n", display)
+      else
+        out:printf("=> %s %s\n",
+          gopher_url(host, tonumber(port) or 70, t, sel),
+          display ~= '' and display or sel)
+      end
+    else
+      out:printf("%s\n", l)
+    end
+    n = n + 1
+    if n % 32 == 0 then
+      out:scroll_output()
+      coroutine.yield(true)
+    end
+  end
+end
+
+-- a gopher request: the selector, a tab and the query for a search,
+-- then CRLF; the response is read until the server closes it
+local function fetch_gopher(out, url, depth, gen)
+  local g = out.gem
+  local u = parse_gopher(url)
+
+  if not u then
+    say(out, "bad url: " .. url .. "\n", gen)
+    return false
+  end
+  if depth == 0 then
+    out:clear()
+    out.gem.links = {}
+  end
+  out.gem.url = url
+  if not say(out, url .. "\n", gen) then
+    return false
+  end
+  if u.type == '7' and u.query == '' then
+    gemini.prompt(out, url, "search:")
+    return g.gen == gen
+  end
+  local s, e = sock.dial(u.host, u.port)
+
+  if not s then
+    say(out, "error: " .. tostring(e) .. "\n", gen)
+    return false
+  end
+  g.sock = s
+  if g.gen ~= gen then
+    g.sock = nil
+    s:close()
+    return false
+  end
+  local req = u.sel .. (u.query ~= '' and '\t' .. u.query or '')
+
+  if not s:write(req .. "\r\n") then
+    say(out, "error: send failed\n", gen)
+    s:close()
+    g.sock = nil
+    return false
+  end
+  if not read_gopher(out, s, gen, u.type == '1' or u.type == '7') then
+    s:close()
+    g.sock = nil
+    return false
+  end
+  s:close()
+  g.sock = nil
+  out:scroll_output()
+  gemini.scan(out)
+  return true
+end
+
 local function fetch(out, url, depth, gen)
+  if url:find("^gopher://") then
+    return fetch_gopher(out, url, depth, gen)
+  end
   local g = out.gem
   local u = parse(url)
 
@@ -441,7 +584,7 @@ end
 -- remembering the page in the history
 function gemini.follow(w, url)
   gemini.win(w)
-  if not url:find("^gemini://") then
+  if not url:find("^gemini://") and not url:find("^gopher://") then
     url = "gemini://" .. url
   end
   local g = w.gem
@@ -481,11 +624,14 @@ function gemini.words(w)
   return t .. (w.scroll_mode and 'Noscroll' or 'Scroll')
 end
 
--- target is "host", "host/path" or a full "gemini://..." url
+-- target is "host", "host/path" or a full "gemini://"/"gopher://" url
 function gemini.fetch(out, target)
   gemini.win(out)
-  local url = target:find("^gemini://") and target
-    or ("gemini://" .. target)
+  local url = target
+
+  if not url:find("^gemini://") and not url:find("^gopher://") then
+    url = "gemini://" .. url
+  end
   local g = out.gem
 
   -- as in go(): this navigation cancels the one in flight
