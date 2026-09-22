@@ -475,6 +475,8 @@ describe("gemini", function()
       "iHello there\tfake\t(fake)\t0",
       "0Phlog\t/phlog\tgopher.floodgap.com\t70",
       "1Search\t/v2/vs\tgopher.floodgap.com\t70",
+      "1Gopher+ item\t/plus\th2\t7070\t+",
+      "1Local\t/local\t(NULL)\t0",
       ".",
     } }
     local w = run("gopher://gopher.floodgap.com")
@@ -482,10 +484,14 @@ describe("gemini", function()
     eq(dials[1][1], "gopher.floodgap.com")
     eq(dials[1][2], 70)
     eq(w.gem.url, "gopher://gopher.floodgap.com")
-    eq(#w.gem.links, 3, "an info line is not a link")
+    eq(#w.gem.links, 5, "an info line is not a link")
     eq(w.gem.links[1].url, "gopher://gopher.floodgap.com/1/")
     eq(w.gem.links[2].url, "gopher://gopher.floodgap.com/0/phlog")
     eq(w.gem.links[3].url, "gopher://gopher.floodgap.com/1/v2/vs")
+    eq(w.gem.links[4].url, "gopher://h2:7070/1/plus",
+      "a gopher+ attribute is ignored")
+    eq(w.gem.links[5].url, "gopher://gopher.floodgap.com/1/local",
+      "(NULL) host and 0 port mean the current ones")
     ok(w:gettext():find("Hello there", 1, true))
     ok(not w:gettext():find("fake", 1, true))
   end)

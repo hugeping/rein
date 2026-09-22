@@ -312,8 +312,10 @@ local function gopher_url(host, port, t, sel)
 end
 
 -- print a gopher response: a menu becomes "=>" links, the rest goes
--- to the window as it is
-local function read_gopher(out, s, gen, menu)
+-- to the window as it is.  An item may carry a fifth field (the
+-- gopher+ attribute) -- it is ignored; the "(NULL)"/0 host and port
+-- of a local item are replaced with the current ones
+local function read_gopher(out, s, gen, menu, cur_host, cur_port)
   local n = 0
 
   while true do
@@ -331,15 +333,22 @@ local function read_gopher(out, s, gen, menu)
     if menu then
       local t = l:sub(1, 1)
       local display, sel, host, port = l:sub(2):match(
-        "^([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)$")
+        "^([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)")
 
       if not display then
         out:printf("%s\n", l)
       elseif t == 'i' or t == '3' then
         out:printf("%s\n", display)
       else
-        out:printf("=> %s %s\n",
-          gopher_url(host, tonumber(port) or 70, t, sel),
+        local p = tonumber(port) or 0
+
+        if host == '' or host:lower() == '(null)' then
+          host = cur_host
+        end
+        if p == 0 then
+          p = cur_port
+        end
+        out:printf("=> %s %s\n", gopher_url(host, p, t, sel),
           display ~= '' and display or sel)
       end
     else
@@ -395,7 +404,8 @@ local function fetch_gopher(out, url, depth, gen)
     g.sock = nil
     return false
   end
-  if not read_gopher(out, s, gen, u.type == '1' or u.type == '7') then
+  if not read_gopher(out, s, gen, u.type == '1' or u.type == '7',
+      u.host, u.port) then
     s:close()
     g.sock = nil
     return false
