@@ -106,8 +106,10 @@ function core.err(fmt, ...)
   local t = string.format(fmt, ...)
   core.err_msg = (core.err_msg or '') .. t
   sys.log(t)
-  if env.error then
-    env.error(t)
+  io.stderr:write(t, '\n')
+  io.stderr:flush()
+  if core.show_error then
+    core.show_error(t)
   end
   return
 end
@@ -386,8 +388,7 @@ function core.run()
       if coroutine.status(fn) ~= 'dead' then
         local r, e = coroutine.resume(fn)
         if not r then
-          e = e .. '\n'..debug.traceback(fn)
-          core.err(e)
+          core.err(e .. '\n' .. debug.traceback(fn))
           break
         elseif e == 'suspend' then
           table.insert(core.suspended, fn)

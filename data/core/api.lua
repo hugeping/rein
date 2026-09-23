@@ -121,6 +121,9 @@ local env = {
   mixer = mixer,
   synth = synth,
   input = {},
+  -- apps run with env as their fenv, so make error() the real builtin
+  -- (a raised error is caught by core.run and shown/streamed there)
+  error = error,
 }
 env._G = env
 
@@ -143,7 +146,7 @@ local function make_dofile(n, env)
   end
   local r, e = loadfile(n, "t", env)
   if not r then
-    core.err(e..'\n'..debug.traceback())
+    core.err(e .. '\n' .. debug.traceback())
   end
   return r()
 end
@@ -485,7 +488,11 @@ function env.sys.sleep(to, interrupt)
   until interrupt
 end
 
-function env.error(text)
+-- Draw an error message on screen.  This is the rendering half of
+-- core.err(); the message is also written to stderr there.  Errors are
+-- real exceptions now (error() is the builtin), so no yield is needed.
+-- It lives on `core`, not on `env`, so apps cannot see or shadow it.
+local function show_error(text)
   if not env.screen then
     env.screen = gfx.new(conf.w, conf.h)
   end
@@ -495,10 +502,6 @@ function env.error(text)
   env.gfx.print(text or 'Error', 0, 0, conf.fg, true)
   env.gfx.render()
   core.err_msg = text
-  if not core.running() then
-    return
-  end
-  coroutine.yield()
 end
 
 function env.gfx.print(text, x, y, col, scroll)
@@ -663,6 +666,7 @@ function api.init(core_mod)
   math.randomseed(os.time())
   env.font = font.new(DATADIR..'/fonts/'..conf.font)
   core = core_mod
+  core.show_error = show_error
   if not env.font then
     return false, string.format("Can't load font %q", DATADIR..'/fonts/'..conf.font)
   end
