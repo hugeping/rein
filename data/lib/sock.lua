@@ -54,12 +54,17 @@ end
 
 function tcp:write(data)
   if not self.sock then
-    return false
+    return false, "socket is closed"
   end
   local i = 1
   local len = data:len()
   local rc, e
   while len > 0 do
+    -- the socket may be closed while this write waits (a page left
+    -- before the answer, a window closed): not an error, just a stop
+    if not self.sock then
+      return false, "socket is closed"
+    end
     rc, e = self.sock:send(data, i, len)
     if not rc then
       return false, e
@@ -151,7 +156,7 @@ end
 
 function tcp:send(...)
   if not self.sock then
-    return false
+    return false, "socket is closed"
   end
   return self.sock:send(...)
 end
