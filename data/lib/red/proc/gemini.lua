@@ -306,12 +306,13 @@ end
 
 -- the selector of a menu item: a relative one is resolved against the
 -- selector of the page, the dot segments are removed -- the servers
--- send "../" in the selectors but do not resolve it themselves
+-- send "../" in the selectors but do not resolve it themselves; an
+-- empty selector stays empty (the root menu of the item's host)
 local function gopher_sel(base, sel)
-  if sel:sub(1, 1) ~= '/' then
-    sel = merge_path('', base or '', sel)
+  if sel == '' or sel:sub(1, 1) == '/' then
+    return remove_dot_segments(sel)
   end
-  return remove_dot_segments(sel)
+  return remove_dot_segments(merge_path('', base or '', sel))
 end
 
 -- a menu item as a gopher url: the selector is percent-encoded, "/"
@@ -370,10 +371,9 @@ local function read_gopher(out, s, gen, menu, cur_host, cur_port, cur_sel,
             p = cur_port
           end
           sel = gopher_sel(cur_sel, sel)
-          -- the same server of a gophers page keeps TLS, port 443 is
-          -- the de facto gopher-over-TLS port
-          local tls = p == 443 or (cur_tls and host == cur_host and
-            p == cur_port)
+          -- the same server of a gophers page keeps TLS; a plain
+          -- page gives plain items only, whatever the port is
+          local tls = cur_tls and host == cur_host and p == cur_port
           out:printf("=> %s %s\n", gopher_url(host, p, t, sel, tls),
             display ~= '' and display or sel)
         end
@@ -411,10 +411,9 @@ local function fetch_gopher(out, url, depth, gen)
     gemini.prompt(out, url, "search:")
     return g.gen == gen
   end
-  -- gophers:// and port 443 (the de facto gopher-over-TLS port) are
-  -- wrapped into TLS; the certificate is not checked, as in gemini
-  local s, e = sock.dial(u.host, u.port,
-    (u.tls or u.port == 443) and u.host or nil)
+  -- only the explicit gophers scheme means TLS; the certificate is
+  -- not checked, as in gemini
+  local s, e = sock.dial(u.host, u.port, u.tls and u.host or nil)
 
   if not s then
     say(out, "error: " .. tostring(e) .. "\n", gen)

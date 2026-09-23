@@ -502,19 +502,30 @@ describe("gemini", function()
     ok(not w:gettext():find("fake", 1, true))
   end)
 
-  it("a gopher page on port 443 goes over tls", function()
+  it("only the explicit gophers scheme means tls", function()
     reset()
-    responses = { { "0A file\t/file\th\t70", "." } }
-    local w = run("gopher://h:443/1")
-    eq(dials[1][1], "h")
+    responses = { { "." } }
+    run("gopher://h:443/1")
     eq(dials[1][2], 443)
-    eq(dials[1][3], "h", "the tls host is the gopher host")
-    eq(w.gem.links[1].url, "gopher://h/0/file")
+    eq(dials[1][3], nil, "a plain page on 443 stays plain")
 
     reset()
     responses = { { "." } }
-    run("gopher://h:70/1")
-    eq(dials[1][3], nil, "a plain port stays plain")
+    run("gopher://h:433/1")
+    eq(dials[1][2], 433)
+    eq(dials[1][3], nil, "a plain page on 433 stays plain")
+
+    reset()
+    responses = { { "1Ssl\t/about\th\t433", "." } }
+    local w = run("gopher://h:70/1")
+    eq(w.gem.links[1].url, "gopher://h:433/1/about",
+      "a plain page gives plain items")
+
+    reset()
+    responses = { { "." } }
+    run("gophers://h:433/1")
+    eq(dials[1][2], 433)
+    eq(dials[1][3], "h", "the explicit gophers scheme means tls")
   end)
 
   it("gophers:// is gopher over tls", function()
@@ -546,17 +557,20 @@ describe("gemini", function()
       "0Dockerfile\t/hist/../coding/x.ssem\tygrex.ru\t70\t+",
       "1Up\t../\tygrex.ru\t70",
       "1Sibling\tother/\tygrex.ru\t70",
+      "1Root\t\tother.host\t70",
       ".",
     } }
     local w = run("gopher://ygrex.ru/1/hist/")
     eq(requests[1], "/hist/\r\n")
-    eq(#w.gem.links, 3)
+    eq(#w.gem.links, 4)
     eq(w.gem.links[1].url, "gopher://ygrex.ru/0/coding/x.ssem",
       "the dot segments are removed")
     eq(w.gem.links[2].url, "gopher://ygrex.ru/1/",
       "a relative selector goes up")
     eq(w.gem.links[3].url, "gopher://ygrex.ru/1/hist/other/",
       "a relative selector joins the page selector")
+    eq(w.gem.links[4].url, "gopher://other.host/1",
+      "an empty selector is not the current directory")
   end)
 
   it("a gopher URL item is left to uri", function()
