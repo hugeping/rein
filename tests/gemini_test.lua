@@ -170,12 +170,38 @@ describe("gemini", function()
     ok(w:gettext():find("plain", 1, true))
   end)
 
+  it("shortens the links of a gemini page", function()
+    reset()
+    responses = { { "20 text/gemini",
+      "=> gemini://h/a same server",
+      "=> gemini://h2/b other server",
+      "=> gemini://h:1965/c the port stays",
+      "=> //h3/d already a network path",
+      "=> /e already a path",
+      "=> https://x/ https stays",
+    } }
+    local w = run("h/x")
+    local t = w:gettext()
+    ok(t:find("=> /a same server", 1, true))
+    ok(t:find("=> //h2/b other server", 1, true))
+    ok(t:find("=> //h:1965/c the port stays", 1, true))
+    ok(t:find("=> //h3/d already a network path", 1, true))
+    ok(t:find("=> /e already a path", 1, true))
+    ok(t:find("=> https://x/ https stays", 1, true))
+    eq(w.gem.links[1].url, "gemini://h/a")
+    eq(w.gem.links[2].url, "gemini://h2/b")
+    eq(w.gem.links[3].url, "gemini://h:1965/c")
+    eq(w.gem.links[4].url, "gemini://h3/d")
+    eq(w.gem.links[5].url, "gemini://h/e")
+    eq(w.gem.links[6].url, "https://x/")
+  end)
+
   it("the link offsets count symbols, not bytes", function()
-    responses = { { "20 text/gemini", "привет", "=> gemini://h/a" } }
+    responses = { { "20 text/gemini", "привет", "=> /a" } }
     local w = run("h/x")
     -- url line + status line + "привет", all in symbols
     eq(w.gem.links[1].pos, 38)
-    eq(w.gem.links[1].e, 38 + ("=> gemini://h/a"):len() - 1)
+    eq(w.gem.links[1].e, 38 + ("=> /a"):len() - 1)
   end)
 
   it("no target: nothing happens", function()

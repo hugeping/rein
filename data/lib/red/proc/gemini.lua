@@ -154,6 +154,25 @@ function gemini.resolve(base, url)
     (query and '?' .. query or '')
 end
 
+-- a link of a page: the same server is just its path, another server
+-- of the same scheme is a network path -- the page lines stay short
+-- and the links resolve back to the same urls
+local function short_link(base, url)
+  local bs, ba = split_uri(base)
+  local s, a, path, query = split_uri(url)
+
+  if not s or s ~= bs then
+    return url
+  end
+  if query then
+    path = path .. '?' .. query
+  end
+  if a == ba then
+    return path
+  end
+  return '//' .. (a or '') .. path
+end
+
 -- collect the "=>" links of the page; pos and e are buffer offsets
 function gemini.scan(w)
   local links = {}
@@ -682,6 +701,11 @@ local function fetch(out, url, depth, gen)
 
       if not l or g.gen ~= gen then
         break
+      end
+      local pre, link, post = l:match("^(%s*=>%s*)(%S+)(.*)$")
+
+      if pre then
+        l = pre .. short_link(out.gem.url, link) .. post
       end
       out:printf("%s\n", l)
       n = n + 1
