@@ -417,8 +417,10 @@ local function fetch_gopher(out, url, depth, gen)
   end
   local req = u.sel .. (u.query ~= '' and '\t' .. u.query or '')
 
-  if not s:write(req .. "\r\n") then
-    say(out, "error: send failed\n", gen)
+  local ok, err = s:write(req .. "\r\n")
+
+  if not ok then
+    say(out, "error: " .. tostring(err or "send failed") .. "\n", gen)
     s:close()
     g.sock = nil
     return false
@@ -469,8 +471,10 @@ local function fetch(out, url, depth, gen)
     s:close()
     return false
   end
-  if not s:write(url .. "\r\n") then
-    say(out, "error: send failed\n", gen)
+  local ok, err = s:write(url .. "\r\n")
+
+  if not ok then
+    say(out, "error: " .. tostring(err or "send failed") .. "\n", gen)
     s:close()
     g.sock = nil
     return false
@@ -582,13 +586,22 @@ local function go(w, pos)
   w.frame:update()
   local gen = g.gen
 
-  w:run(function()
+  local r = w:run(function()
     local url = g.hist[pos]
 
     if fetch(w, url, 0, gen) and g.pos == pos and g.gen == gen then
       g.hist[pos] = w.gem.url
     end
   end)
+
+  -- the window is closed (or red quits) with the request in flight:
+  -- stop it instead of waiting for the server
+  r.kill = function()
+    if g.sock then
+      g.sock:close()
+      g.sock = nil
+    end
+  end
 end
 
 -- the user agreed to a certificate: make it and retry the page

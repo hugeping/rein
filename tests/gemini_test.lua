@@ -161,7 +161,10 @@ describe("gemini", function()
     local w = page("=> gemini://h/a one\n=> gemini://h/b two\n")
     w.x, w.y, w.w, w.h = 0, 0, 100, 100
     local asked, executed = {}, {}
-    w.run = function(_, f) table.insert(asked, f) end
+    w.run = function(_, f)
+      table.insert(asked, f)
+      return {}
+    end
     w.exec = function(_, t) table.insert(executed, t) end
     w.off2cur = function() return 3 end
     ok(w:event('mouseup', 'middle', 20, 5))
@@ -289,7 +292,10 @@ describe("gemini", function()
     ext.gemini({ output = function() return w end }, "h/b")
     pump(w)
     local asked = 0
-    w.run = function() asked = asked + 1 end
+    w.run = function()
+      asked = asked + 1
+      return {}
+    end
     with_alt(function()
       w:keydown_event("left")
       eq(w.gem.pos, 1)
@@ -523,7 +529,10 @@ describe("gemini", function()
     eq(w.gem.links[1].url, "https://github.com/x")
     local asked, executed = {}, {}
     w.x, w.y, w.w, w.h = 0, 0, 100, 100
-    w.run = function(_, f) table.insert(asked, f) end
+    w.run = function(_, f)
+      table.insert(asked, f)
+      return {}
+    end
     w.exec = function(_, t) table.insert(executed, t) end
     w.off2cur = function() return 3 end
     w:event('mouseup', 'middle', 20, 5)
@@ -553,6 +562,22 @@ describe("gemini", function()
     pump(w)
     eq(requests[1], "/v2/vs\thello world\r\n")
     eq(w.gem.input, nil)
+  end)
+
+  it("closing a window stops the request in flight", function()
+    local w = page("", "gemini://h/x")
+    local closed = 0
+    local rec
+    w.run = function(_, fn)
+      rec = { coroutine.create(fn), w }
+      table.insert(w.co, rec)
+      return rec
+    end
+    ext.gemini({ output = function() return w end }, "h/x")
+    w.gem.sock = { close = function() closed = closed + 1 end }
+    w:killproc()
+    eq(closed, 1)
+    eq(w.gem.sock, nil)
   end)
 
   it("a gopher link keeps its scheme when followed", function()
