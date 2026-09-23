@@ -4,7 +4,7 @@ if PLATFORM == 'Windows' then
   return { -- no ideas
     { "^ircs?://.+", proc.irc },
     { "^gemini://.+", proc.gemini },
-    { "^gopher://.+", proc.gemini },
+    { "^gophers?://.+", proc.gemini },
   }
 end
 
@@ -20,5 +20,5 @@ return {
   { "%.docx$", "xdg-open %q" },
   { "^ircs?://.+", proc.irc },
   { "^gemini://.+", proc.gemini },
-  { "^gopher://.+", proc.gemini },
+  { "^gophers?://.+", proc.gemini },
 }

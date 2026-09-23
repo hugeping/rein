@@ -502,6 +502,44 @@ describe("gemini", function()
     ok(not w:gettext():find("fake", 1, true))
   end)
 
+  it("a gopher page on port 443 goes over tls", function()
+    reset()
+    responses = { { "0A file\t/file\th\t70", "." } }
+    local w = run("gopher://h:443/1")
+    eq(dials[1][1], "h")
+    eq(dials[1][2], 443)
+    eq(dials[1][3], "h", "the tls host is the gopher host")
+    eq(w.gem.links[1].url, "gopher://h/0/file")
+
+    reset()
+    responses = { { "." } }
+    run("gopher://h:70/1")
+    eq(dials[1][3], nil, "a plain port stays plain")
+  end)
+
+  it("gophers:// is gopher over tls", function()
+    reset()
+    responses = { { "1Same\t/same\th\t307",
+      "1Elsewhere\t/other\th2\t70",
+      "0A file\t/file\th\t307", "." } }
+    local w = run("gophers://h")
+    eq(dials[1][1], "h")
+    eq(dials[1][2], 307, "the gophers default port")
+    eq(dials[1][3], "h", "the tls host is the gopher host")
+    eq(w.gem.url, "gophers://h")
+    eq(w.gem.links[1].url, "gophers://h/1/same",
+      "the same server of a gophers page keeps tls")
+    eq(w.gem.links[2].url, "gopher://h2/1/other",
+      "another server is plain unless its port says otherwise")
+    eq(w.gem.links[3].url, "gophers://h/0/file")
+
+    reset()
+    responses = { { "." } }
+    run("gophers://h:307/1")
+    eq(dials[1][2], 307)
+    eq(dials[1][3], "h")
+  end)
+
   it("resolves the selectors of a gopher menu", function()
     reset()
     responses = { {

@@ -276,10 +276,12 @@ local function unescape(s)
   end))
 end
 
--- gopher://host[:port][/<type><selector>][?query]; the type is one
--- character, "1" (a menu) when it is missing, the port defaults to 70
+-- gopher://host[:port][/<type><selector>][?query], or gophers:// for
+-- the same over TLS; the type is one character, "1" (a menu) when it
+-- is missing, the port defaults to 70 (307 for gophers)
 local function parse_gopher(url)
-  local host, port, rest = url:match("^gopher://([^:/]+):?(%d*)/?(.*)$")
+  local scheme, host, port, rest =
+    url:match("^(gophers?)://([^:/]+):?(%d*)/?(.*)$")
 
   if not host then
     return nil
@@ -294,7 +296,8 @@ local function parse_gopher(url)
   end
   return {
     host = host,
-    port = tonumber(port) or 70,
+    port = tonumber(port) or (scheme == 'gophers' and 307 or 70),
+    tls = scheme == 'gophers',
     type = t,
     sel = unescape(sel),
     query = unescape(query:match("^%?(.*)$") or ''),
@@ -312,10 +315,10 @@ local function gopher_sel(base, sel)
 end
 
 -- a menu item as a gopher url: the selector is percent-encoded, "/"
--- stays as it is, the default port is not written
-local function gopher_url(host, port, t, sel)
-  return string.format("gopher://%s%s/%s%s", host,
-    port ~= 70 and (':' .. port) or '', t,
+-- stays as it is, the default port (70, 307 for gophers) is not written
+local function gopher_url(host, port, t, sel, tls)
+  return string.format("%s://%s%s/%s%s", tls and 'gophers' or 'gopher',
+    host, port ~= (tls and 307 or 70) and (':' .. port) or '', t,
     (sel:gsub("[^%w%-%._~/]", function(c)
       return string.format("%%%02X", c:byte())
     end)))
@@ -325,7 +328,8 @@ end
 -- to the window as it is.  An item may carry a fifth field (the
 -- gopher+ attribute) -- it is ignored; the "(NULL)"/0 host and port
 -- of a local item are replaced with the current ones
-local function read_gopher(out, s, gen, menu, cur_host, cur_port, cur_sel)
+local function read_gopher(out, s, gen, menu, cur_host, cur_port, cur_sel,
+    cur_tls)
   local n = 0
 
   while true do
@@ -366,7 +370,11 @@ local function read_gopher(out, s, gen, menu, cur_host, cur_port, cur_sel)
             p = cur_port
           end
           sel = gopher_sel(cur_sel, sel)
-          out:printf("=> %s %s\n", gopher_url(host, p, t, sel),
+          -- the same server of a gophers page keeps TLS, port 443 is
+          -- the de facto gopher-over-TLS port
+          local tls = p == 443 or (cur_tls and host == cur_host and
+            p == cur_port)
+          out:printf("=> %s %s\n", gopher_url(host, p, t, sel, tls),
             display ~= '' and display or sel)
         end
       end
@@ -403,7 +411,10 @@ local function fetch_gopher(out, url, depth, gen)
     gemini.prompt(out, url, "search:")
     return g.gen == gen
   end
-  local s, e = sock.dial(u.host, u.port)
+  -- gophers:// and port 443 (the de facto gopher-over-TLS port) are
+  -- wrapped into TLS; the certificate is not checked, as in gemini
+  local s, e = sock.dial(u.host, u.port,
+    (u.tls or u.port == 443) and u.host or nil)
 
   if not s then
     say(out, "error: " .. tostring(e) .. "\n", gen)
@@ -426,7 +437,7 @@ local function fetch_gopher(out, url, depth, gen)
     return false
   end
   if not read_gopher(out, s, gen, u.type == '1' or u.type == '7',
-      u.host, u.port, u.sel) then
+      u.host, u.port, u.sel, u.tls) then
     s:close()
     g.sock = nil
     return false
@@ -439,7 +450,7 @@ local function fetch_gopher(out, url, depth, gen)
 end
 
 local function fetch(out, url, depth, gen)
-  if url:find("^gopher://") then
+  if url:find("^gophers?://") then
     return fetch_gopher(out, url, depth, gen)
   end
   local g = out.gem
@@ -626,7 +637,7 @@ end
 -- remembering the page in the history
 function gemini.follow(w, url)
   gemini.win(w)
-  if not url:find("^gemini://") and not url:find("^gopher://") then
+  if not url:find("^gemini://") and not url:find("^gophers?://") then
     url = "gemini://" .. url
   end
   local g = w.gem
@@ -671,7 +682,7 @@ function gemini.fetch(out, target)
   gemini.win(out)
   local url = target
 
-  if not url:find("^gemini://") and not url:find("^gopher://") then
+  if not url:find("^gemini://") and not url:find("^gophers?://") then
     url = "gemini://" .. url
   end
   local g = out.gem
