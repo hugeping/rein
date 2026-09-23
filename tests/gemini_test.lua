@@ -18,6 +18,15 @@ local function fake_dial(host, port, tls, cert, key)
       i = i + 1
       return lines[i]
     end,
+    -- the rest of the lines as raw bytes, for Save
+    recv = function()
+      if i >= #lines then
+        return nil
+      end
+      local rest = table.concat(lines, "\r\n", i + 1) .. "\r\n"
+      i = #lines
+      return rest
+    end,
     close = function() end,
   }
 end
@@ -124,6 +133,22 @@ local function with_shift(fn)
   input.keydown = function(m) return m == 'shift' end
   local ok, e = pcall(fn)
   input.keydown = old
+  if not ok then error(e) end
+end
+
+-- the files written by Save are collected in a table
+local function with_save(fn)
+  local files = {}
+  local old = io.file
+  io.file = function(f, d)
+    if d == nil then
+      return files[f]
+    end
+    files[f] = d
+    return true
+  end
+  local ok, e = pcall(fn, files)
+  io.file = old
   if not ok then error(e) end
 end
 
@@ -264,12 +289,12 @@ describe("gemini", function()
     pump(w)
     eq(#w.gem.hist, 3)
     eq(w.gem.pos, 3)
-    eq(w.cmdline, "Back Scroll")
+    eq(w.cmdline, "Back Save Scroll")
 
     ok(w.cmd.Back(w))
     pump(w)
     eq(w.gem.url, "gemini://h/b")
-    eq(w.cmdline, "Back Forward Scroll")
+    eq(w.cmdline, "Back Forward Save Scroll")
     ok(w.cmd.Forward(w))
     pump(w)
     eq(w.gem.url, "gemini://h/c")
@@ -457,7 +482,7 @@ describe("gemini", function()
     })
     eq(#w.gem.links, 1)
     eq(w.gem.links[1].url, "gemini://h/a")
-    eq(w.cmdline, "Back Scroll")
+    eq(w.cmdline, "Back Save Scroll")
 
     local d = w:dump()
     eq(d.type, "gemini")
@@ -470,7 +495,7 @@ describe("gemini", function()
     eq(w2.gem.url, "gemini://h/x")
     eq(w2.gem.pos, 2)
     eq(w2.gem.input.url, "gemini://h/x")
-    eq(w2.cmdline, "Back Scroll")
+    eq(w2.cmdline, "Back Save Scroll")
     eq(w2:dump().hist[1], "gemini://h/a")
   end)
 
@@ -643,6 +668,52 @@ describe("gemini", function()
     pump(w)
     eq(requests[1], "/file\r\n")
     eq(w.gem.url, "gopher://h/0/file")
+  end)
+
+  it("Save downloads the link at the cursor", function()
+    reset()
+    responses = { { "20 text/plain", "BODY" } }
+    local w = page("=> gemini://h/0/file a file\n", "gemini://h/x")
+    with_save(function(files)
+      w.cmd.Save(w)
+      pump(w)
+      eq(requests[1], "gemini://h/0/file\r\n")
+      eq(dials[1][1], "h")
+      eq(files["file"], "BODY\r\n", "the response header is not saved")
+    end)
+    ok(w:gettext():find("saved file", 1, true))
+  end)
+
+  it("Save takes a gopher link and an explicit name", function()
+    reset()
+    responses = { { "hello", "world" } }
+    local w = page("=> gopher://h/0/file a file\n", "gopher://h/1")
+    with_save(function(files)
+      w.cmd.Save(w, "out.bin")
+      pump(w)
+      eq(requests[1], "/file\r\n")
+      eq(dials[1][2], 70)
+      eq(files["out.bin"], "hello\r\nworld\r\n")
+    end)
+  end)
+
+  it("Save reports a bad gemini status", function()
+    reset()
+    responses = { { "51 not found" } }
+    local w = page("=> gemini://h/missing x\n", "gemini://h/x")
+    with_save(function()
+      w.cmd.Save(w)
+      pump(w)
+      ok(w:gettext():find("[51 not found]", 1, true))
+    end)
+  end)
+
+  it("Save without a link at the cursor says so", function()
+    reset()
+    local w = page("plain text\n", "gemini://h/x")
+    w.cmd.Save(w)
+    eq(#requests, 0)
+    ok(w:gettext():find("no link at the cursor", 1, true))
   end)
 end)
 

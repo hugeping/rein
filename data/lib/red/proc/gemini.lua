@@ -8,7 +8,8 @@
 -- and the "=>" links of the page, so a middle click can follow a link
 -- and win.kinds.gemini can restore it from red.dump.  Requests run in
 -- a window coroutine (win:run), so the editor stays alive while the
--- request is in flight.
+-- request is in flight.  The menu command Save downloads the link at
+-- the cursor into a file of the current directory as it is.
 --
 -- A client certificate the server asks for is made on the user's
 -- consent and kept per host, in X.509/PKCS#8 DER under
@@ -42,6 +43,11 @@ local function parse(url)
     port = tonumber(port) or 1965,
     path = path or '',
   }
+end
+
+-- is the url a full page url, not a bare "host" or "host/path"?
+local function page_url(url)
+  return url:find("^gemini://") or url:find("^gophers?://")
 end
 
 -- split a uri-reference the RFC 3986 way; the fragment is not a
@@ -304,6 +310,38 @@ local function parse_gopher(url)
   }
 end
 
+-- open the connection of a page url and make its request line: the
+-- gopher selector (the query goes after a tab) or the gemini url
+-- itself; the certificate is for a gemini connection only
+local function page_dial(url, cert, key)
+  local u, request, tls
+
+  if url:find("^gophers?://") then
+    u = parse_gopher(url)
+
+    if u then
+      tls = u.tls
+      request = u.sel .. (u.query ~= '' and '\t' .. u.query or '')
+    end
+  elseif url:find("^gemini://") then
+    u = parse(url)
+
+    if u then
+      tls = true
+      request = url
+    end
+  end
+  if not u then
+    return nil, nil, "bad url"
+  end
+  local s, e = sock.dial(u.host, u.port, tls and u.host or nil, cert, key)
+
+  if not s then
+    return nil, nil, e
+  end
+  return s, request
+end
+
 -- the selector of a menu item: a relative one is resolved against the
 -- selector of the page, the dot segments are removed -- the servers
 -- send "../" in the selectors but do not resolve it themselves; an
@@ -389,6 +427,25 @@ local function read_gopher(out, s, gen, menu, cur_host, cur_port, cur_sel,
   end
 end
 
+-- cancel the request in flight, if any
+local function cancel(g)
+  if g.sock then
+    g.sock:close()
+    g.sock = nil
+  end
+end
+
+-- the request is over: close its socket and forget it, but not the
+-- socket of a request that replaced it.  For the "return stop(...)"
+-- style it returns false and the error
+local function stop(g, s, err)
+  s:close()
+  if g.sock == s then
+    g.sock = nil
+  end
+  return false, err
+end
+
 -- a gopher request: the selector, a tab and the query for a search,
 -- then CRLF; the response is read until the server closes it
 local function fetch_gopher(out, url, depth, gen)
@@ -411,9 +468,7 @@ local function fetch_gopher(out, url, depth, gen)
     gemini.prompt(out, url, "search:")
     return g.gen == gen
   end
-  -- only the explicit gophers scheme means TLS; the certificate is
-  -- not checked, as in gemini
-  local s, e = sock.dial(u.host, u.port, u.tls and u.host or nil)
+  local s, request, e = page_dial(url)
 
   if not s then
     say(out, "error: " .. tostring(e) .. "\n", gen)
@@ -421,31 +476,103 @@ local function fetch_gopher(out, url, depth, gen)
   end
   g.sock = s
   if g.gen ~= gen then
-    g.sock = nil
-    s:close()
-    return false
+    return stop(g, s)
   end
-  local req = u.sel .. (u.query ~= '' and '\t' .. u.query or '')
-
-  local ok, err = s:write(req .. "\r\n")
+  local ok, err = s:write(request .. "\r\n")
 
   if not ok then
     say(out, "error: " .. tostring(err or "send failed") .. "\n", gen)
-    s:close()
-    g.sock = nil
-    return false
+    return stop(g, s)
   end
   if not read_gopher(out, s, gen, u.type == '1' or u.type == '7',
       u.host, u.port, u.sel, u.tls) then
-    s:close()
-    g.sock = nil
-    return false
+    return stop(g, s)
   end
-  s:close()
-  g.sock = nil
+  stop(g, s)
   out:scroll_output()
   gemini.scan(out)
   return true
+end
+
+-- the name of the file a url is saved to: its last path segment (for
+-- gopher it is the selector, the type character is not a part of it),
+-- the host when there is no path
+local function save_name(url)
+  local path
+
+  if url:find("^gophers?://") then
+    local u = parse_gopher(url)
+
+    path = u and u.sel or ''
+  else
+    path = url:gsub("^[^/]*://[^/]*", ""):gsub("[?#].*$", "")
+  end
+  local name = path:gsub("/+$", ""):match("([^/]+)$")
+
+  if not name then
+    name = url:match("^%a+://([^:/]+)") or 'download'
+  end
+  return unescape(name)
+end
+
+-- the bytes of the url go to a file as they are, the page is not
+-- touched; the header of a gemini response is not a part of the file
+local function save_fetch(out, url, name, gen)
+  local g = out.gem
+  local s, request, e = page_dial(url)
+
+  if not s then
+    return false, e
+  end
+  g.sock = s
+  if g.gen ~= gen then
+    return stop(g, s)
+  end
+  local ok, err = s:write(request .. "\r\n")
+
+  if not ok then
+    return stop(g, s, err)
+  end
+  if url:find("^gemini://") then
+    local line, le = s:readln(true)
+
+    -- a cancelled read and eof end the save the same way: a stale
+    -- request reports nothing, say checks gen
+    if g.gen ~= gen or not line then
+      return stop(g, s, le or "closed")
+    end
+    local status = tonumber(line:sub(1, 2))
+
+    if not status then
+      return stop(g, s, "bad response")
+    end
+    if status < 20 or status >= 30 then
+      return stop(g, s, string.format("[%d %s]", status, line:sub(4)))
+    end
+  end
+  local chunks, n = {}, 0
+
+  while true do
+    local d = s:recv(4096, true)
+
+    if g.gen ~= gen then
+      return stop(g, s)
+    end
+    if not d or d == '' then
+      break
+    end
+    table.insert(chunks, d)
+    n = n + d:len()
+    coroutine.yield(true)
+  end
+  stop(g, s)
+  local data = table.concat(chunks)
+  local wok, werr = io.file(name, data)
+
+  if not wok then
+    return false, werr
+  end
+  return true, #data
 end
 
 local function fetch(out, url, depth, gen)
@@ -470,45 +597,33 @@ local function fetch(out, url, depth, gen)
   end
 
   local cert, key = cert_load(u.host)
-  local s, e = sock.dial(u.host, u.port, u.host, cert, key)
+  local s, request, e = page_dial(url, cert, key)
+
   if not s then
     say(out, "error: " .. tostring(e) .. "\n", gen)
     return false
   end
   g.sock = s
   if g.gen ~= gen then
-    g.sock = nil
-    s:close()
-    return false
+    return stop(g, s)
   end
-  local ok, err = s:write(url .. "\r\n")
+  local ok, err = s:write(request .. "\r\n")
 
   if not ok then
     say(out, "error: " .. tostring(err or "send failed") .. "\n", gen)
-    s:close()
-    g.sock = nil
-    return false
+    return stop(g, s)
   end
 
   local line, le = s:readln(true)
-  if g.gen ~= gen then
-    s:close()
-    g.sock = nil
-    return false
-  end
-  if not line then
+  if g.gen ~= gen or not line then
     say(out, "error: " .. tostring(le or "closed") .. "\n", gen)
-    s:close()
-    g.sock = nil
-    return false
+    return stop(g, s)
   end
   local status = tonumber(line:sub(1, 2))
   local meta = line:sub(4)
   if not status then
     say(out, "error: bad response\n", gen)
-    s:close()
-    g.sock = nil
-    return false
+    return stop(g, s)
   end
   say(out, string.format("[%d %s]\n", status, meta), gen)
 
@@ -516,8 +631,7 @@ local function fetch(out, url, depth, gen)
     -- the server wants a client certificate: make one, but only
     -- after the user agrees; a certificate already sent is not
     -- replaced by a new one, the server just did not take it
-    s:close()
-    g.sock = nil
+    stop(g, s)
     if cert then
       say(out, "the certificate is already in use\n", gen)
     else
@@ -533,8 +647,7 @@ local function fetch(out, url, depth, gen)
 
   if status >= 10 and status < 20 then
     gemini.prompt(out, url, meta)
-    s:close()
-    g.sock = nil
+    stop(g, s)
     return true
   end
 
@@ -556,8 +669,7 @@ local function fetch(out, url, depth, gen)
         coroutine.yield(true)
       end
     end
-    s:close()
-    g.sock = nil
+    stop(g, s)
     if g.gen ~= gen then
       return false
     end
@@ -566,8 +678,7 @@ local function fetch(out, url, depth, gen)
     return true
   end
 
-  s:close()
-  g.sock = nil
+  stop(g, s)
   if status >= 30 and status < 40 and depth < 5 and meta ~= '' then
     local loc = gemini.resolve(url, meta)
 
@@ -587,10 +698,7 @@ local function go(w, pos)
   g.input = nil -- a pending 10/11 prompt is stale after a navigation
   g.cert = nil -- so is a pending 60 offer
   g.gen = (g.gen or 0) + 1
-  if g.sock then
-    g.sock:close()
-    g.sock = nil
-  end
+  cancel(g)
   g.pos = pos
   w.cmdline = gemini.words(w)
   w.frame:update()
@@ -606,12 +714,7 @@ local function go(w, pos)
 
   -- the window is closed (or red quits) with the request in flight:
   -- stop it instead of waiting for the server
-  r.kill = function()
-    if g.sock then
-      g.sock:close()
-      g.sock = nil
-    end
-  end
+  r.kill = function() cancel(g) end
 end
 
 -- the user agreed to a certificate: make it and retry the page
@@ -636,7 +739,7 @@ end
 -- remembering the page in the history
 function gemini.follow(w, url)
   gemini.win(w)
-  if not url:find("^gemini://") and not url:find("^gophers?://") then
+  if not page_url(url) then
     url = "gemini://" .. url
   end
   local g = w.gem
@@ -673,6 +776,7 @@ function gemini.words(w)
   if g.pos < #g.hist then
     t = t .. 'Forward '
   end
+  t = t .. 'Save '
   return t .. (w.scroll_mode and 'Noscroll' or 'Scroll')
 end
 
@@ -681,17 +785,14 @@ function gemini.fetch(out, target)
   gemini.win(out)
   local url = target
 
-  if not url:find("^gemini://") and not url:find("^gophers?://") then
+  if not page_url(url) then
     url = "gemini://" .. url
   end
   local g = out.gem
 
   -- as in go(): this navigation cancels the one in flight
   g.gen = (g.gen or 0) + 1
-  if g.sock then
-    g.sock:close()
-    g.sock = nil
-  end
+  cancel(g)
   return fetch(out, url, 0, g.gen)
 end
 
@@ -702,7 +803,7 @@ function gemini.win(w)
   -- the kind keeps these when a rename re-reads the file presets
   w.kind_conf = { syntax = "gemini", wrap = true }
   w.cmd = setmetatable(
-    { Back = gemini.back, Forward = gemini.forward },
+    { Back = gemini.back, Forward = gemini.forward, Save = gemini.save },
     { __index = win.cmd })
   w.cmdline = gemini.words(w)
   w.dump = gemini.dump
@@ -722,6 +823,47 @@ function gemini:Get()
   elseif g.url then
     gemini.follow(self, g.url)
   end
+  return true
+end
+
+-- Save [name] -- download the link at the cursor into a file of the
+-- current directory; the name is taken from the url when not given
+function gemini.save(w, name)
+  local url = gemini.link_pos(w, w.buf.cur)
+
+  if not url then
+    say(w, "? no link at the cursor\n")
+    w:scroll_output()
+    return true
+  end
+  name = name and name:strip()
+
+  if not name or name == '' then
+    name = save_name(url)
+  end
+  local g = w.gem
+
+  -- as in go(): this request cancels the one in flight
+  g.gen = (g.gen or 0) + 1
+  cancel(g)
+  local gen = g.gen
+
+  if not say(w, string.format("saving %s to %s\n", url, name), gen) then
+    return true
+  end
+  w:scroll_output()
+  local r = w:run(function()
+    local ok, e = save_fetch(w, url, name, gen)
+
+    if ok then
+      say(w, string.format("saved %s (%d bytes)\n", name, e), gen)
+    elseif e then
+      say(w, "error: " .. tostring(e) .. "\n", gen)
+    end
+    w:scroll_output()
+  end)
+
+  r.kill = function() cancel(g) end
   return true
 end
 
