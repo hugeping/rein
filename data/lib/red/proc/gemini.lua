@@ -353,14 +353,24 @@ local function gopher_sel(base, sel)
   return remove_dot_segments(merge_path('', base or '', sel))
 end
 
--- a menu item as a gopher url: the selector is percent-encoded, "/"
--- stays as it is, the default port (70, 307 for gophers) is not written
+-- the path of a gopher item: "/<type><selector>", the selector is
+-- percent-encoded, "/" stays as it is
+local function gopher_path(t, sel)
+  return '/' .. t .. (sel:gsub("[^%w%-%._~/]", function(c)
+    return string.format("%%%02X", c:byte())
+  end))
+end
+
+-- the authority of a gopher url: the default port (70, 307 for
+-- gophers) is not written
+local function gopher_host(host, port, tls)
+  return host .. (port ~= (tls and 307 or 70) and (':' .. port) or '')
+end
+
+-- a menu item as a gopher url
 local function gopher_url(host, port, t, sel, tls)
-  return string.format("%s://%s%s/%s%s", tls and 'gophers' or 'gopher',
-    host, port ~= (tls and 307 or 70) and (':' .. port) or '', t,
-    (sel:gsub("[^%w%-%._~/]", function(c)
-      return string.format("%%%02X", c:byte())
-    end)))
+  return (tls and 'gophers' or 'gopher') .. '://' ..
+    gopher_host(host, port, tls) .. gopher_path(t, sel)
 end
 
 -- print a gopher response: a menu becomes "=>" links, the rest goes
@@ -412,8 +422,19 @@ local function read_gopher(out, s, gen, menu, cur_host, cur_port, cur_sel,
           -- the same server of a gophers page keeps TLS; a plain
           -- page gives plain items only, whatever the port is
           local tls = cur_tls and host == cur_host and p == cur_port
-          out:printf("=> %s %s\n", gopher_url(host, p, t, sel, tls),
-            display ~= '' and display or sel)
+          -- the shortest reference that keeps the item: a path of the
+          -- same server, a network path of another one of the same
+          -- scheme, a full url otherwise -- the lines stay readable
+          local link
+
+          if host == cur_host and p == cur_port then
+            link = gopher_path(t, sel)
+          elseif tls == cur_tls then
+            link = '//' .. gopher_host(host, p, tls) .. gopher_path(t, sel)
+          else
+            link = gopher_url(host, p, t, sel, tls)
+          end
+          out:printf("=> %s %s\n", link, display ~= '' and display or sel)
         end
       end
     else

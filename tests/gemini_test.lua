@@ -523,6 +523,12 @@ describe("gemini", function()
       "a gopher+ attribute is ignored")
     eq(w.gem.links[5].url, "gopher://gopher.floodgap.com/1/local",
       "(NULL) host and 0 port mean the current ones")
+    local t = w:gettext()
+    ok(t:find("=> /1/ Floodgap Home", 1, true),
+      "a link of the same server is a short path")
+    ok(t:find("=> /1/v2/vs Search", 1, true))
+    ok(t:find("=> //h2:7070/1/plus Gopher+ item", 1, true),
+      "another server of the same scheme is a network path")
     ok(w:gettext():find("Hello there", 1, true))
     ok(not w:gettext():find("fake", 1, true))
   end)
@@ -568,6 +574,11 @@ describe("gemini", function()
     eq(w.gem.links[2].url, "gopher://h2/1/other",
       "another server is plain unless its port says otherwise")
     eq(w.gem.links[3].url, "gophers://h/0/file")
+    local t = w:gettext()
+    ok(t:find("=> /1/same Same", 1, true),
+      "the same server of a gophers page stays a short path")
+    ok(t:find("=> gopher://h2/1/other Elsewhere", 1, true),
+      "another scheme needs the full url")
 
     reset()
     responses = { { "." } }
@@ -596,6 +607,9 @@ describe("gemini", function()
       "a relative selector joins the page selector")
     eq(w.gem.links[4].url, "gopher://other.host/1",
       "an empty selector is not the current directory")
+    local t = w:gettext()
+    ok(t:find("=> /0/coding/x.ssem Dockerfile", 1, true))
+    ok(t:find("=> //other.host/1 Root", 1, true))
   end)
 
   it("a gopher URL item is left to uri", function()
