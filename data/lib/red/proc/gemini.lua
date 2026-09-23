@@ -404,8 +404,8 @@ local function read_gopher(out, s, gen, menu, cur_host, cur_port, cur_sel,
         out:printf("%s\n", display)
       else
         -- the de facto "URL:" item: http(s) is not gopher's business,
-        -- uri.lua opens it
-        local url = sel:match("^/[Uu][Rr][Ll]:(https?://.+)$")
+        -- uri.lua opens it; the selector may or may not start with "/"
+        local url = sel:match("^/?[Uu][Rr][Ll]:(https?://.+)$")
 
         if url then
           out:printf("=> %s %s\n", url, display ~= '' and display or url)

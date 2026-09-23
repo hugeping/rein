@@ -614,10 +614,13 @@ describe("gemini", function()
 
   it("a gopher URL item is left to uri", function()
     reset()
-    responses = { { "hGitHub\t/URL:https://github.com/x\tygrex.ru\t70", "." } }
+    responses = { { "hGitHub\t/URL:https://github.com/x\tygrex.ru\t70",
+      "hzxnet\tURL:http://zxnet.co.uk/\tzxnet.co.uk\t70", "." } }
     local w = run("gopher://ygrex.ru/1")
-    eq(#w.gem.links, 1)
+    eq(#w.gem.links, 2)
     eq(w.gem.links[1].url, "https://github.com/x")
+    eq(w.gem.links[2].url, "http://zxnet.co.uk/",
+      "the selector may have no leading slash")
     local asked, executed = {}, {}
     w.x, w.y, w.w, w.h = 0, 0, 100, 100
     w.run = function(_, f)
