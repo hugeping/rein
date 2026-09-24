@@ -1,5 +1,6 @@
 #include "external.h"
 #include "platform.h"
+#include "record.h"
 
 #ifndef VERSION
 #define VERSION "unknown"
@@ -193,6 +194,7 @@ main(int argc, const char **argv)
 #endif
 	dostring(L, "core.done()");
 	lua_close(L);
+	RecordStop();
 	PlatformDone();
 	synth_done();
 	return 0;
