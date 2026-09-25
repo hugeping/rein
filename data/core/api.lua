@@ -658,6 +658,9 @@ function env.sys.running(fl)
   local ov = api.running
   if fl ~= nil then
     api.running = fl
+    if fl then
+      core.fn.kill = nil
+    end
   end
   return ov
 end
@@ -730,14 +733,11 @@ function api.event(e, v, a, b, c)
     return true
   end
   if e == 'quit' then
-    if #core.suspended > 0 then
-      mixer.done()
-      core.stop()
-      return true
+    core.fn.kill = true
+    if #core.suspended == 0 then
+      api.running = false
     end
-    api.running = false
     input.fifo  = {}
-    mixer.done()
   elseif e == 'keydown' and (v == 'escape' and input.kbd.shift)
     then -- and #core.suspended > 0 then
     mixer.done()

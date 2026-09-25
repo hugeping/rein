@@ -1,4 +1,5 @@
 local api = require "api"
+local mixer = require "mixer"
 require "std"
 local env
 local fps = 1/20 -- fallback, low fps
@@ -409,6 +410,12 @@ function core.run()
     gfx.flip()
     sys.sleep(fps)
   end
+
+  if core.fn.kill then -- pending stop
+    mixer.done()
+    core.stop()
+  end
+
   return api.event() -- check is running
 end
 
