@@ -125,7 +125,7 @@ function core.init()
     os.exit(1)
   end
 
-  for _, v in ipairs(sys.readdir(DATADIR..'/apps/')) do
+  for _, v in ipairs(sys.readdir(DATADIR..'/apps/') or {}) do
     if v:find("%.[lL][uU][aA]$") then
       local key = v:lower():gsub("%.[lL][uU][aA]$", "")
       core.apps[key] = DATADIR..'/apps/'..v
