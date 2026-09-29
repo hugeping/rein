@@ -106,8 +106,8 @@ function plasma5()
   local i = 1
   for y = 0, h-1 do
     for x = 0, w-1 do
-      v = (x * x + y * y + t) % 256
-      buf[i] = col2int(0, v, v, v/2)
+      v = x * x + y * y + t
+      buf[i] = col2int(0, v % 256, (v/2) % 256, 255)
       i = i + 1
     end
   end
@@ -125,7 +125,7 @@ function plasma6()
       r = v / 2
       g = v
       b = v + v
-      buf[i] = col2int(r, g, b, 255)
+      buf[i] = col2int(r % 256, g % 256, b % 256, 255)
       i = i + 1
     end
   end
