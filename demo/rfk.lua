@@ -1156,7 +1156,7 @@ function handle(r, v)
     return
   end
   if state == WIN then
-    if v == "space" then
+    if v == "space" or v == "z" then
       restart()
     end
   elseif v == "up" or v == "w" then
@@ -1167,7 +1167,7 @@ function handle(r, v)
     move(-1, 0)
   elseif v == "right" or v == "d" then
     move(1, 0)
-  elseif v == "space" then
+  elseif v == "space" or v == "escape" then
     restart()
   end
 end
