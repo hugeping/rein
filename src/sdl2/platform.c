@@ -1033,8 +1033,10 @@ Recv(int fd, void *data, int size)
 {
 	int rc, err;
 	rc = recv(fd, data, size, 0);
-	if (rc == 0) /* closed */
+	if (rc == 0) { /* closed */
+		errno = ECONNRESET;
 		return -1;
+	}
 	err = sock_err(rc);
 	if (rc < 0 && (err == EAGAIN ||
 		err == EWOULDBLOCK || err == ENOENT ||

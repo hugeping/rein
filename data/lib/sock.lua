@@ -3,6 +3,11 @@ local DELAY = 1/30
 local sock = {}
 sock.__index = sock
 
+-- after this many seconds without any progress a read or a write
+-- fails with "timeout"; 0 waits forever.  The connections that read
+-- without waiting (see irc.lua) are not affected
+sock.timeout = 30
+
 local tcp = {}
 tcp.__index = tcp
 
@@ -59,11 +64,15 @@ function tcp:write(data)
   local i = 1
   local len = data:len()
   local rc, e
+  local start = sys.time()
   while len > 0 do
     -- the socket may be closed while this write waits (a page left
     -- before the answer, a window closed): not an error, just a stop
     if not self.sock then
       return false, "socket is closed"
+    end
+    if sock.timeout > 0 and sys.time() - start > sock.timeout then
+      return false, "timeout"
     end
     rc, e = self.sock:send(data, i, len)
     if not rc then
@@ -102,10 +111,14 @@ function tcp:poll()
 end
 
 function tcp:wait(fn)
+  local start = sys.time()
   while not fn(self.data) do
     local r, e = self:poll()
     if not r then
       return r, e
+    end
+    if sock.timeout > 0 and sys.time() - start > sock.timeout then
+      return false, "timeout"
     end
     if sys.incoroutine then
       -- an empty yield would drop the frame rate to idle_hz: poll

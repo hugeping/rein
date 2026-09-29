@@ -43,6 +43,40 @@ describe("sock lines", function()
     eq(e, "closed")
   end)
 
+  it("wait fails with timeout on a silent socket", function()
+    net = { dial = function()
+      return {
+        recv = function() return '' end,
+        send = function() return 0 end,
+        close = function() end,
+      }
+    end }
+    local old = sock.timeout
+    sock.timeout = 0.02
+    local s = sock.dial("example.com", 80)
+    local l, e = s:readln(true)
+    eq(l, nil)
+    eq(e, "timeout")
+    sock.timeout = old
+  end)
+
+  it("write fails with timeout on a stuck socket", function()
+    net = { dial = function()
+      return {
+        recv = function() return '' end,
+        send = function() return 0 end,
+        close = function() end,
+      }
+    end }
+    local old = sock.timeout
+    sock.timeout = 0.02
+    local s = sock.dial("example.com", 80)
+    local r, e = s:write("hello")
+    eq(r, false)
+    eq(e, "timeout")
+    sock.timeout = old
+  end)
+
   it("write returns false when the socket is closed in flight", function()
     -- send() returning 0 means EAGAIN: the write waits, yielding to
     -- the engine; a page left or a window closed in that moment must
