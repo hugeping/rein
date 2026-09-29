@@ -169,23 +169,25 @@ end
 local last_render = 0
 
 local vpad = { fingers = {}, btn = {} }
-local vpad_col = { 192, 192, 192, 255 }
--- translucent colors for the vpad-over-screen mode
-local vpad_col_ov = { 224, 224, 224, 100 }
+-- the vpad is always a translucent overlay: the screen and the
+-- border below show through it
+local vpad_col = { 160, 160, 160, 100 }
+-- the vpad height and the allowed overlap with the screen, in
+-- screen heights
+local vpad_h = 0.4
+local vpad_ovl = 0.25
 
-function core.vpad(x, y, w, h, overlay)
+function core.vpad(x, y, w, h)
   if vpad.x == x and vpad.y == y and
-    vpad.w == w and vpad.h == h and
-    vpad.overlay == overlay and vpad.pxl then
+    vpad.w == w and vpad.h == h and vpad.pxl then
     return vpad.pxl
   end
 
   local win = gfx.new(w, h)
   if not win then return end -- 0?
-  local col = overlay and vpad_col_ov or vpad_col
-  win:clear(0, 0, w, h, { 0, 0, 0, overlay and 0 or 255 })
+  local col = vpad_col
+  win:clear(0, 0, w, h, { 0, 0, 0, 0 })
   vpad.x, vpad.y, vpad.w, vpad.h = x, y, w, h
-  vpad.overlay = overlay
   -- stick: bottom left corner, its top edge is level with the top button
   local rs = math.min(h * 0.45, w * 0.25)
   local ytop = h - 2 * rs
@@ -303,6 +305,11 @@ function core.render(force)
   local ww, hh = sys.window_size()
   local w, h = env.screen:size()
   local xs, ys = ww/w, hh/h
+  if core.vpad_enabled then
+    -- the vpad (vpad_h of the screen) may overlap the screen, but
+    -- not more than vpad_ovl of its height: limit the screen size
+    ys = math.min(ys, hh / (h * (1 + vpad_h - vpad_ovl)))
+  end
   local scale = (xs <= ys) and xs or ys
   if scale > 1.0 and not core.scale then
     scale = math.floor(scale)
@@ -318,23 +325,13 @@ function core.render(force)
 
   gfx.clear()
   if core.vpad_enabled then
-    if hh - dh < hh / 3 then
-      -- not enough room below the screen: draw the vpad over it
-      env.screen:expose(core.view_x, core.view_y, core.view_w, core.view_h)
-      local vh = math.floor(dh * 0.4)
-      if vh > 0 then
-        local vy = core.view_y + dh - vh
-        local vp = core.vpad(core.view_x, vy, dw, vh, true)
-        if vp then vp:expose(core.view_x, vy, dw, vh) end
-      end
-    else
-      core.view_y = 0
-      local vx, vy = 0, core.view_h
-      local vw, vh = ww, hh - vy
-      local vp = core.vpad(vx, vy, vw, vh)
-      if vp then vp:expose(vx, vy) end
-      env.screen:expose(core.view_x, core.view_y, core.view_w, core.view_h)
-    end
+    -- the vpad is a translucent overlay at the bottom of the
+    -- window; the screen itself is always drawn at the top
+    core.view_y = 0
+    local vh = math.max(hh - dh, math.floor(dh * vpad_h))
+    local vp = vh > 0 and core.vpad(0, hh - vh, ww, vh) or nil
+    env.screen:expose(core.view_x, core.view_y, core.view_w, core.view_h)
+    if vp then vp:expose(0, hh - vh) end
   else
     env.screen:expose(core.view_x, core.view_y, core.view_w, core.view_h)
   end

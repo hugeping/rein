@@ -550,22 +550,18 @@ void
 WindowExpose(void *pixels, int w, int h, int pitch, int dx, int dy, int dw, int dh)
 {
 	SDL_Rect rect, drect;
-	int ww = 0, hh = 0, rc = 1;
-	if (expose_texture) {
-		rc = SDL_QueryTexture(expose_texture, NULL, NULL, &ww, &hh);
-		if (rc || w > ww || h > hh) {
-			SDL_DestroyTexture(expose_texture);
-			rc = 1;
-		}
-	}
-	if (rc) {
+	static int expose_w = 0, expose_h = 0;
+	if (!expose_texture || w > expose_w || h > expose_h) {
+		if (w > expose_w)
+			expose_w = w;
+		if (h > expose_h)
+			expose_h = h;
+		SDL_DestroyTexture(expose_texture);
 		expose_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32,
-			SDL_TEXTUREACCESS_STREAMING, w, h);
+			SDL_TEXTUREACCESS_STREAMING, expose_w, expose_h);
 		if (!expose_texture)
 			return;
-		/* be explicit: the screen is opaque pixels, copied as they
-		   are (the defaults may depend on the hints) */
-		SDL_SetTextureBlendMode(expose_texture, SDL_BLENDMODE_NONE);
+		SDL_SetTextureBlendMode(expose_texture, SDL_BLENDMODE_BLEND);
 		SDL_SetTextureScaleMode(expose_texture, SDL_ScaleModeNearest);
 	}
 	rect.x = 0; rect.y = 0; rect.w = w; rect.h = h;
