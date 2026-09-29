@@ -1,4 +1,5 @@
 local api = require "api"
+local mixer = require "mixer"
 require "std"
 local env
 local fps = 1/20 -- fallback, low fps
@@ -125,7 +126,7 @@ function core.init()
     os.exit(1)
   end
 
-  for _, v in ipairs(sys.readdir(DATADIR..'/apps/')) do
+  for _, v in ipairs(sys.readdir(DATADIR..'/apps/') or {}) do
     if v:find("%.[lL][uU][aA]$") then
       local key = v:lower():gsub("%.[lL][uU][aA]$", "")
       core.apps[key] = DATADIR..'/apps/'..v
@@ -409,6 +410,12 @@ function core.run()
     gfx.flip()
     sys.sleep(fps)
   end
+
+  if core.fn.kill then -- pending stop
+    mixer.done()
+    core.stop()
+  end
+
   return api.event() -- check is running
 end
 
