@@ -27,7 +27,7 @@ emcc -O2 -o dist/emscripten/rein.html \
 	-sUSE_SDL=3 -DDATADIR=\"/data\" -DVERSION=\"$VERSION\" \
 	-lidbfs.js -sWASM=1 -sALLOW_MEMORY_GROWTH=1 \
 	--preload-file data/ \
-	--post-js=contrib/post.js -sINVOKE_RUN=0 \
+	--post-js=contrib/em/post.js -sINVOKE_RUN=0 \
 	-sEXPORTED_RUNTIME_METHODS=callMain
 
-cp contrib/rein.html dist/emscripten/
+cp contrib/em/rein.html dist/emscripten/
