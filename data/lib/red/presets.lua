@@ -34,6 +34,13 @@ return {
       syntax = "python",
     }
   },
+  {"%.ya?ml$",
+    { ts = 2,
+      spaces_tab = true,
+      trim_spaces = true,
+      syntax = "yaml",
+    }
+  },
   {"%.md$", { ts = 2,
       spaces_tab = true,
       trim_spaces = true,

@@ -30,6 +30,51 @@ function scheme.rule.bol(txt, i, spaces)
   return true
 end
 
+-- a space or a tab
+function scheme.rule.isspace(c)
+  return c == ' ' or c == '\t'
+end
+
+-- the first position of the line containing i
+function scheme.rule.linebegin(txt, i)
+  while i > 1 and txt[i - 1] ~= '\n' do
+    i = i - 1
+  end
+  return i
+end
+
+-- skip the symbols matching a Lua pattern: dir is 1 (right) or -1
+-- (left); the positions outside the text don't match
+function scheme.rule.skip(txt, i, dir, cls)
+  while txt[i] and txt[i]:find(cls) do
+    i = i + dir
+  end
+  return i
+end
+
+-- skip the spaces and tabs
+function scheme.rule.skipspace(txt, i, dir)
+  return scheme.rule.skip(txt, i, dir, '[ \t]')
+end
+
+-- the indentation of the line containing i: the number of its leading
+-- spaces and tabs
+function scheme.rule.indent(txt, i)
+  i = scheme.rule.linebegin(txt, i)
+  return scheme.rule.skipspace(txt, i, 1) - i
+end
+
+-- the last position of the symbol c not before from (nil when there
+-- is none)
+function scheme.rule.rfind(txt, i, from, c)
+  while i >= from and txt[i] ~= c do
+    i = i - 1
+  end
+  if i >= from then
+    return i
+  end
+end
+
 local num_delim = {
   [')'] = true,
   [']'] = true,
