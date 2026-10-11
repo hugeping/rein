@@ -27,7 +27,7 @@ local function pipe_shell()
     local t = {}
     local last_b='\xff'
     while true do
-      local p, ok = posix.poll(f, 200)
+      local p, ok = posix.poll(f, 100)
       if not ok then break end
       if not p and (t[#t] == '\n' or last_b:byte(1) < 128) then
         break
@@ -392,6 +392,7 @@ function shell:up()
   self:cur(self.output_pos)
   self.buf:kill()
   self.buf:input(t)
+  self:visible()
 end
 
 function shell:down()
@@ -406,6 +407,7 @@ function shell:down()
   self.buf:kill()
   self.buf:input(t or '')
   h.pos = math.min(#h + 1, h.pos)
+  self:visible()
 end
 
 function shell:dump()
