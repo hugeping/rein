@@ -23,23 +23,34 @@ end
 local function pipe_shell()
   local popen = require("red/shell").popen
   local posix = require("red/posix")
+  local function utf_cont(s)
+    return s:byte(#s) > 127
+  end
   local function read_sym(f)
     local t = {}
     local last_b='\xff'
     while true do
-      local p, ok = posix.poll(f, 100)
+      local p, ok = posix.poll(f, 200)
       if not ok then break end
-      if not p and (t[#t] == '\n' or last_b:byte(1) < 128) then
+      if not p and not utf_cont(last_b) then
         break
       end
       if p then
-        local b = f:read(1)
+        local b
+        if not posix.have_poll then
+          b = f:read(1)
+        else
+          b = posix.read(f, 512)
+        end
         if not b then break end
         last_b = b
         table.insert(t, b)
-        if (not posix.have_poll or #t > 256) and
-          b:byte(1) < 128 then
+        if not posix.have_poll then
+          if last_b[#last_b] == '\n' then
             break
+          end
+        elseif not utf_cont(last_b)then
+          break
         end
       end
     end
