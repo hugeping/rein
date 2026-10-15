@@ -389,6 +389,7 @@ function shell:newline()
     end
   end
   h.pos = #h + 1
+  self:visible()
   shell.execute(self, t)
 end
 
